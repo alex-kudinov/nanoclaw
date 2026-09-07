@@ -1,0 +1,1645 @@
+{
+  "snapshot_id": "NC-20260907-004-b1-heartbeat-main",
+  "captured_at_utc": "2026-09-07T18:05:42.798Z",
+  "source": {
+    "workspace": "main",
+    "read_surface": "supported toolbox heartbeat/list-groups and heartbeat/list-courses",
+    "sanitized_group_sha256": "a7db72c1ed15162d34252fdf3abde8b6333291c161fc7b5ef24130644997e74f",
+    "sanitized_course_sha256": "bedf33d075cc01016a438b99d711ecd8204d7598bae341a78043a5c8a91d0916"
+  },
+  "privacy_boundary": {
+    "member_rows_read": 0,
+    "progress_rows_read": 0,
+    "values_retained": "native IDs, public labels, and course-to-cohort nesting",
+    "excluded": "members, people, emails, roles, progress, content, URLs, thumbnails, tokens, and raw provider payloads"
+  },
+  "counts": {
+    "native_groups": 101,
+    "native_courses": 40,
+    "native_course_cohorts": 43,
+    "catalog_declared_unique_group_ids": 25,
+    "catalog_declared_groups_found": 24,
+    "catalog_declared_groups_missing": 1,
+    "catalog_declared_unique_course_ids": 20,
+    "catalog_declared_courses_found": 20,
+    "catalog_declared_courses_missing": 0
+  },
+  "native_inventory": {
+    "groups": [
+      {
+        "id": "00aa09d7-6ea3-42d4-9dc0-0dfacc047efe",
+        "name": "Mentor Coaching Practicum Package"
+      },
+      {
+        "id": "017c7611-6936-4f08-82d4-01bf299e3d41",
+        "name": "September 2026"
+      },
+      {
+        "id": "02e24678-01c6-4ce1-9e66-bcdfe235e29c",
+        "name": "The Practitioner Series - All Access (Español)"
+      },
+      {
+        "id": "031d312f-6ed4-4d6e-987f-a826632f42ff",
+        "name": "PCC Prep Test Free"
+      },
+      {
+        "id": "03dd5ea5-a201-43a2-bc7d-088ac2671e8c",
+        "name": "ICF Level 1: Module 2: Critical Coaching Skills"
+      },
+      {
+        "id": "04e4273e-0851-482b-a34a-9dd12e558989",
+        "name": "LEGACY - ICF Level 1: Full Course"
+      },
+      { "id": "05d21ce1-1c83-436b-82ea-63771214b1ae", "name": "5x Sessions" },
+      {
+        "id": "05feb733-71bc-4aab-a789-0aa4713c7abf",
+        "name": "Career & Transition Coaching: Coach the Transition"
+      },
+      { "id": "0888af16-a1f8-4054-b440-aa75b913c002", "name": "MCS Polska" },
+      {
+        "id": "0c68c6ea-86e4-4d25-aaab-53c7a6437013",
+        "name": "Non Accredited - Self-paced Professional Coaching Learning"
+      },
+      {
+        "id": "0ce0734c-e359-4cf0-9251-4bb54070545a",
+        "name": "Level 2: Group Mentoring"
+      },
+      {
+        "id": "0d21351d-f4be-4af9-8219-92e1d9911a20",
+        "name": "Dominio de las herramientas de coaching"
+      },
+      {
+        "id": "1663bd08-4840-4b5b-804a-c45caa80a70f",
+        "name": "Coaching Tool Mastery: Right Tool, Right Mind"
+      },
+      {
+        "id": "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+        "name": "Level 1: Full Course"
+      },
+      {
+        "id": "1b3afebe-ad92-4e12-b589-715cc6df2477",
+        "name": "Practitioner Series: Running a Coaching Business"
+      },
+      {
+        "id": "1ed67acc-b789-4348-98ac-a6c0e146b492",
+        "name": "LEGACY: Coaching Foundations: ICF Competencies & Ethics Asynchronous Learning Modules "
+      },
+      {
+        "id": "2b1f7c4e-5a8c-4a52-bb13-cdf141adaa4a",
+        "name": "Level 2: Module 2: Coaching Organizational and Team Systems"
+      },
+      {
+        "id": "2b29bcfe-ffad-4567-9867-cdc6676fe9dc",
+        "name": "Founding Cohort"
+      },
+      {
+        "id": "2fec5ee0-586b-4146-891e-c534999d4da4",
+        "name": "Level 2: Individual Mentor Coaching and Coaching Assessments"
+      },
+      {
+        "id": "30d46ee4-3bb9-4c80-bec2-a6e7ccf75291",
+        "name": "Archived Elevate - Individual Coaching"
+      },
+      {
+        "id": "36cd19b3-dbe7-4682-a83b-37296cfe3213",
+        "name": "MCS Foundations Japanese Free Preview"
+      },
+      {
+        "id": "37443ab2-874b-4c3b-8829-8da00025e355",
+        "name": "ICF Level 1: Module 1 Coaching Fundamentals"
+      },
+      {
+        "id": "3f6df8ca-323d-4268-bff5-c3dd85508645",
+        "name": "Master the 2025 ICF Core Coaching Competencies v2"
+      },
+      {
+        "id": "4005359c-a4fb-4722-9e86-5fd9ccce3dfc",
+        "name": "ACTC Practice Test"
+      },
+      {
+        "id": "414dc9c1-8083-4f49-acbe-72272ba6b30a",
+        "name": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording"
+      },
+      {
+        "id": "4329dace-1b23-4923-9bbc-7ba1f9db5d10",
+        "name": " Running a Coaching Business: Working ON the Business"
+      },
+      {
+        "id": "441dcb16-fa75-4f1c-a5fa-e6496b7152db",
+        "name": "LEGACY - Archived"
+      },
+      {
+        "id": "44e455ed-0415-4eaa-a980-69da56acb39c",
+        "name": "Executive Coaching in Context"
+      },
+      {
+        "id": "47489a3c-b777-40e6-a3e3-1b6418a054cd",
+        "name": "Founding Cohort"
+      },
+      {
+        "id": "47708131-4681-4df7-a269-7c519e849c8c",
+        "name": "Coaching Sistémico para Equipos Ejecutivos"
+      },
+      {
+        "id": "483ef61b-e91d-41d8-93c1-c2aa99c40717",
+        "name": "Practitioner Series"
+      },
+      {
+        "id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+        "name": "Mentor Coaching Foundation"
+      },
+      { "id": "4d88ffc6-8ee4-407d-b430-7307418c4322", "name": "Inactive" },
+      {
+        "id": "4ef843cf-c457-41e4-93eb-9877aed2e357",
+        "name": "Founding Cohort"
+      },
+      {
+        "id": "509ebbe1-65bd-4c9a-9fdf-6c79ec89799a",
+        "name": "Single Session"
+      },
+      {
+        "id": "59c54b16-a3b5-45a7-8245-f34d1f44d511",
+        "name": "Level 2: Foundations - ICF Competencies & Ethics Asynchronous Learning Modules"
+      },
+      {
+        "id": "5c2616f5-3379-4144-bbef-8fc746415cdc",
+        "name": "PCC/MCC Practice Test"
+      },
+      {
+        "id": "5df3f15a-2f60-4f4b-8742-f146a148f80e",
+        "name": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs"
+      },
+      {
+        "id": "5ff8be1e-1ce8-4732-a997-62661a1aa1ee",
+        "name": "ACTC: Full Course"
+      },
+      {
+        "id": "61a14401-1600-4d6d-b25e-2dd728962e48",
+        "name": "AI for Coaches"
+      },
+      {
+        "id": "67f0af2a-14ff-48f4-9c35-b54c2373ae0f",
+        "name": "The Practitioner Series - Bundle"
+      },
+      {
+        "id": "71623ddf-bc70-4f5f-bbbb-0ace402fcb26",
+        "name": "September 2026"
+      },
+      {
+        "id": "73f6dabd-0618-4b06-954f-81497512830c",
+        "name": "Mentor Coaching - ACC"
+      },
+      {
+        "id": "7945ed4a-f918-4110-ae18-fd408aeb5c51",
+        "name": "ICF Level 1: Module 4 Advanced Coaching Techniques"
+      },
+      {
+        "id": "7a89b0f8-9b79-4b90-9356-86330ed6ba89",
+        "name": "ICF Level 1: Group Mentoring"
+      },
+      {
+        "id": "7c651734-f5bf-4e9f-a5dc-f73a2d360988",
+        "name": "FREE: ICF Level 1: Module 1 Coaching Fundamentals"
+      },
+      {
+        "id": "7c65c290-56db-422f-bca1-c4494ac2145a",
+        "name": "Group Supervision"
+      },
+      {
+        "id": "7dd31b61-98b3-4dfc-8a8b-2a9d00091351",
+        "name": "AI Coaching Tools Pro"
+      },
+      {
+        "id": "7ff88282-b61a-4a85-81ba-83d0850bef45",
+        "name": "The Practitioner Series: Coaching Tools Mastery"
+      },
+      { "id": "840877cd-07a8-4860-bc7b-95aa712aac94", "name": "EAC Book" },
+      {
+        "id": "86a908b5-5bad-4ddc-bdd1-31a06fdec74e",
+        "name": "Practitioner Series - Coaching Tools Mastery"
+      },
+      { "id": "872674dc-e880-4418-8f57-a1b8a18b285e", "name": "MCC BARS" },
+      {
+        "id": "8e1ba749-f5bf-411f-828d-5d9bb2385cfd",
+        "name": "Practitioner Series - AI for Coaches"
+      },
+      {
+        "id": "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a",
+        "name": "2026 Full Level 1 AND 2 with ACTC"
+      },
+      {
+        "id": "916f8b49-ce7e-443b-8cb5-4c1bc368bfde",
+        "name": "ICF Level 2 Course - Elevate Coaching Enterprises and Teams"
+      },
+      {
+        "id": "917a7a35-2ea8-4fb3-999a-26949d9de4da",
+        "name": "MCS - Standard path"
+      },
+      {
+        "id": "9267b494-b489-46a7-9afa-c8843e02feb4",
+        "name": "Practitioner Series: ADHD Coaching"
+      },
+      {
+        "id": "94af2b4e-d0f5-47cb-8852-cb7533f3da1c",
+        "name": "ACC Practice Test"
+      },
+      {
+        "id": "97356587-4650-4db5-b1d9-6e0b76cc7871",
+        "name": "MCS Inaugural Cohort"
+      },
+      {
+        "id": "996962ae-9fb5-4190-b169-8f0885c2923c",
+        "name": "ICF Prep Test - ACC - FREE"
+      },
+      {
+        "id": "a00695d5-efd8-40c7-acc7-d648309aba19",
+        "name": "ICF Level 1: Individual Mentor Coaching and Coaching Assessments"
+      },
+      {
+        "id": "a0995b8f-8753-4ea2-acda-7995d3c89352",
+        "name": "MCS Practicum - September 2026"
+      },
+      {
+        "id": "a510d0a3-c781-4e61-bbed-b57b7e09c173",
+        "name": "LEGACY - Scrum Alliance"
+      },
+      {
+        "id": "a5e3c98d-0ce4-4eee-b674-ab160f784926",
+        "name": "MCS Foundations Spanish Free Preview"
+      },
+      {
+        "id": "a8e3d6fd-00ea-4213-9cc3-05acedc57f74",
+        "name": "PCC Bridge (with ACTC)"
+      },
+      {
+        "id": "a918cbb6-b45e-4a12-bcc9-c39c2ec9e0bc",
+        "name": "Level 2: Module 4: System Awareness"
+      },
+      {
+        "id": "ad1ee8f1-4b43-41a3-9239-34bdc36a1d23",
+        "name": "Fundamentos de Mentor Coaching"
+      },
+      {
+        "id": "b2482c38-4a11-4dea-8548-134bb766182e",
+        "name": "Dominio de las herramientas de coaching"
+      },
+      {
+        "id": "b4dcb464-f1e9-4099-a73a-66d24f32eb7d",
+        "name": "PCC Markers Training"
+      },
+      {
+        "id": "b5fbf5d6-04bf-479e-aac9-3cf6a61bb3b8",
+        "name": "Systemic Coaching for Executive Teams - Coaching the Collision"
+      },
+      {
+        "id": "b817b870-9d25-415f-bc20-d8a6e9437ccb",
+        "name": "メンターコーチング基礎講座"
+      },
+      {
+        "id": "b979853f-bb7b-4f71-a694-c310b2a4ff6a",
+        "name": "ICF Level 1: Group Supervision"
+      },
+      {
+        "id": "bb326b93-2ec3-4218-9984-f8c225e701c3",
+        "name": "Setting Up Your Coaching Practice: Coach as Founder"
+      },
+      {
+        "id": "bbfd9d42-66c9-4696-8df3-676c51a478e5",
+        "name": "Supervision Subscription Tiers"
+      },
+      {
+        "id": "bc095770-0c8b-4495-9369-985e4c4649d7",
+        "name": "AI Coaching Tools Plus"
+      },
+      {
+        "id": "bc59ba0d-bcb0-4306-aa51-4ae95613c241",
+        "name": "ACC BARS Training"
+      },
+      {
+        "id": "bcf43aa7-1ea3-41c0-949c-45af5129c908",
+        "name": "Level 2 - Competencies and Ethics Self Paced"
+      },
+      {
+        "id": "be8f2aa8-6130-4292-9eed-e30015efd0f6",
+        "name": "ACTC Prep Test Free"
+      },
+      {
+        "id": "c734c1de-3514-4eef-80f0-20c65a8bc16f",
+        "name": "Group Supervision - External"
+      },
+      {
+        "id": "cc2394fa-84c9-427a-8b27-c87da031e50a",
+        "name": "Mentor Coaching Practicum"
+      },
+      {
+        "id": "cf06a973-9c4a-4fee-8c68-d5badd083748",
+        "name": "ADHD Coaching: Work with the Brain, Not Against It"
+      },
+      {
+        "id": "d0feb5db-e06a-454e-9771-06f65b7bbccf",
+        "name": "ICF Level 1 Course - Accelerate Coaching Individuals"
+      },
+      {
+        "id": "d2799e03-6db7-4402-882a-2a0ad8909fcd",
+        "name": "MCQ Foundation "
+      },
+      {
+        "id": "d80b507f-0d16-44a4-b3a5-d34e655a0a33",
+        "name": "Master the ICF Team Coaching Competencies"
+      },
+      {
+        "id": "d8afa7b4-68a1-4dc1-bb59-4ff0fdcd68e9",
+        "name": "The Practitioner Series: Running a Coaching Business"
+      },
+      {
+        "id": "d930d4ee-49b1-4766-a0e8-2f10683f902e",
+        "name": "Level 2: Module 3: System Perception and Framing"
+      },
+      {
+        "id": "db931161-e6f4-4cd0-ad73-b73ec7e00c93",
+        "name": "Practitioner Series: Carer Transition"
+      },
+      {
+        "id": "ddc90a8b-944b-4f68-a473-14e614ddf0f7",
+        "name": "The Practitioner Series - Bundle"
+      },
+      {
+        "id": "e77ffd22-1612-42c2-91af-bdb3d5aff974",
+        "name": "September 2026"
+      },
+      {
+        "id": "e7a9fa46-617e-41ad-85cc-f1823d77f529",
+        "name": "MCS Foundation Free Preview"
+      },
+      {
+        "id": "eaba72a4-f67c-4057-85a1-abf0b0447e17",
+        "name": "Coaching para el TDAH"
+      },
+      {
+        "id": "ed43ee64-d579-4123-979d-606a8aafb0e0",
+        "name": "Level 2: Module 1 System Coaching Mindset and Focus"
+      },
+      {
+        "id": "f1329f65-7a5e-4d3d-a3b6-762151e58faf",
+        "name": "The Practitioner Series - All Access"
+      },
+      {
+        "id": "f343c589-4934-42ff-afdc-589c0146b24d",
+        "name": "community member"
+      },
+      {
+        "id": "f5e6701b-83ad-4b30-8529-c45e107b35d7",
+        "name": "Fondamentaux du mentor coaching"
+      },
+      {
+        "id": "fa132404-b7f1-4c21-8383-196c18b6577f",
+        "name": "Legacy - ICF Level 2: Full Course"
+      },
+      {
+        "id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+        "name": "Coaching Supervision Mastery"
+      },
+      {
+        "id": "fa853b73-6405-4de6-a80f-0818f1a4d934",
+        "name": "Practitioner Series: Systemic Coaching"
+      },
+      { "id": "fcda782f-4896-4cf1-aebd-cdb7be57e59d", "name": "Sample Cohort" },
+      { "id": "fed9bbe1-7762-4000-8402-6389de6e5e80", "name": "Scrum Mastery" },
+      {
+        "id": "ffc187ed-c6b3-4c13-b4ff-8a0f80a28721",
+        "name": "Mentor Coaching - PCC"
+      }
+    ],
+    "courses": [
+      {
+        "id": "01815c79-ccbe-477c-9eb8-a96f0b6f69c0",
+        "name": "Coaching Sistémico para Equipos Ejecutivos",
+        "cohorts": [
+          { "id": "c4f001ee-1839-4cef-8b76-3c76347b6708", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "name": "ACTC Practice Test",
+        "cohorts": [
+          { "id": "afcc3a68-63fb-4a97-993c-86594df5aead", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "11f84515-7bb8-4cc5-8292-e4fae8748461",
+        "name": " Running a Coaching Business: Working ON the Business",
+        "cohorts": [
+          { "id": "ceca22da-b6e1-488c-9443-e8be622d62f5", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "17d6ce83-fdc6-422c-aa31-ebc1c8d7d12f",
+        "name": "Level 2: Module 3: System Perception and Framing",
+        "cohorts": [
+          { "id": "c7d4d3b3-13a8-458e-b54a-dd602287a919", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+        "name": "Coaching Supervision Mastery",
+        "cohorts": [
+          { "id": "c110fd5f-792f-4e13-85aa-1d4c9789ca04", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "27fffe4b-28f5-4f59-b705-71c131c9023b",
+        "name": "ICF Level 1: Module 1 Coaching Fundamentals",
+        "cohorts": [
+          { "id": "8750e33a-67f2-4bb7-aef1-cdbb5b1b127d", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "284aa247-09df-49bd-9283-71c6a2c6238c",
+        "name": "Setting Up Your Coaching Practice: Coach as Founder",
+        "cohorts": [
+          { "id": "e6365df6-bc24-4b6b-8404-761810b97ac2", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "29ea12f4-8cce-42db-b011-cec6c50b2df0",
+        "name": "Level 2: Foundations - ICF Competencies & Ethics Asynchronous Learning Modules",
+        "cohorts": [
+          { "id": "d735c158-e197-446c-9bce-b273e6c0456b", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+        "name": "ICF Level 1: Individual Mentor Coaching and Coaching Assessments",
+        "cohorts": [
+          { "id": "6e689e58-2ff2-416b-91e2-4cfa1e004fdc", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+        "name": "メンターコーチング基礎講座",
+        "cohorts": [
+          { "id": "15b0d919-9c5d-4c37-b8a4-544aeb92a9dc", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "381ea897-a636-440b-b30c-250c1d03d54b",
+        "name": "Mentor Coaching Practicum",
+        "cohorts": [
+          {
+            "id": "644ad414-d8a0-4c0e-a6b8-493e1568d2c7",
+            "name": "September 2026"
+          },
+          {
+            "id": "a294c8a3-3bf0-4aa0-a8a6-7bfbf4ee5985",
+            "name": "Founding Cohort"
+          }
+        ]
+      },
+      {
+        "id": "43780cb3-d6a2-4cec-a1de-da3df8f4db8f",
+        "name": "Coaching Tool Mastery: Right Tool, Right Mind",
+        "cohorts": [
+          { "id": "09585542-1cb0-4551-b93a-ef05f8eb6664", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "43f59311-36c6-4c26-b41f-9cde7c6ef42e",
+        "name": "ACC Practice Test",
+        "cohorts": [
+          { "id": "8f74c339-a899-4636-9330-17efc45ec431", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+        "name": "Fondamentaux du mentor coaching",
+        "cohorts": [
+          { "id": "674dc326-1b7e-488a-b10c-1b764152a54f", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "5c7900ec-f245-44de-80fb-61b3460e0f35",
+        "name": "Executive Coaching in Context",
+        "cohorts": [
+          { "id": "382cedd3-881b-4304-b184-53538f3d951c", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+        "name": "PCC/MCC Practice Test",
+        "cohorts": [
+          { "id": "49b41c18-a8b6-4fb9-b8a4-a0a643ab2519", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "6b822ad8-4136-47ee-bdaa-e13fc2098574",
+        "name": "Systemic Coaching for Executive Teams - Coaching the Collision",
+        "cohorts": [
+          { "id": "06f35587-c114-4a68-ac90-5cadb8f434d0", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "6bbe2b4b-faf7-4b84-9e2a-1ba1f6cd5100",
+        "name": "Coaching para el TDAH",
+        "cohorts": [
+          { "id": "aa66fea3-5d7c-4853-9767-d56fb3bb5662", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "6f0e5cd4-47c7-44e5-92dd-d0d5658a5471",
+        "name": "Master the 2025 ICF Core Coaching Competencies v2",
+        "cohorts": [
+          { "id": "9d57fc28-50bd-442a-b997-5a152e8e3452", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "70572040-5e35-4d03-bf59-9c95934b5a61",
+        "name": "Level 2: Module 4: System Awareness",
+        "cohorts": [
+          { "id": "9e4d254d-520f-4626-87c7-5d105265b532", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "7345f549-1eea-4473-8a75-397826a80f43",
+        "name": "PCC Markers Training",
+        "cohorts": [
+          {
+            "id": "4daf863c-bfee-4291-b371-a6e364158ae5",
+            "name": "Founding Cohort"
+          },
+          {
+            "id": "79284c98-aae8-4e1f-bcec-c625385263fc",
+            "name": "September 2026"
+          }
+        ]
+      },
+      {
+        "id": "7a3cdcff-089e-47e7-bdae-c59e05ae0789",
+        "name": "ICF Level 1: Module 4 Advanced Coaching Techniques",
+        "cohorts": [
+          { "id": "4e2a5916-8c49-4179-846b-39e15e1e0f68", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "7be7606b-8da7-4214-82f2-1a235412fa12",
+        "name": "Fundamentos de Mentor Coaching",
+        "cohorts": [
+          { "id": "f3abc1d5-3c80-43b7-885a-89acf014a7d0", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "87ed446a-cba2-4d37-b677-8086111a3a97",
+        "name": "ACC BARS Training",
+        "cohorts": [
+          {
+            "id": "a627c1c0-810a-4cc3-ab13-612b48ea4f1d",
+            "name": "Founding Cohort"
+          },
+          {
+            "id": "be626220-64cd-442e-9049-4288bdffed5c",
+            "name": "September 2026"
+          }
+        ]
+      },
+      {
+        "id": "8b9b0510-7bfd-4e16-ac4d-07e6393f2a31",
+        "name": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "cohorts": [
+          { "id": "fcf5dedc-2cae-40d6-b92a-518efa773d35", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "9766b662-5d49-4282-8962-3372caad511c",
+        "name": "Level 2: Module 1 System Coaching Mindset and Focus",
+        "cohorts": [
+          { "id": "189e8d7c-83ba-43d1-ab85-a91993356478", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "9c843dd9-8042-4739-97cf-26473a7f4a8d",
+        "name": "Career & Transition Coaching: Coach the Transition",
+        "cohorts": [
+          { "id": "1be0cda1-e5cf-4de3-98d1-0eee7f5f7707", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "a3ec8de6-a854-4c41-b0d5-853ad272d1f0",
+        "name": "Level 2: Group Mentoring",
+        "cohorts": [
+          { "id": "a2bec675-ceb9-432b-a50e-ac6c7e767d0d", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "abd312e4-b01a-4718-8918-f79d081753c0",
+        "name": "Mentor Coaching Foundation",
+        "cohorts": [
+          { "id": "f2a36eca-a017-4536-9b83-368f51219895", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "b2241aa8-da14-48d2-8d6e-9d419b957e36",
+        "name": "Level 2: Module 2: Coaching Organizational and Team Systems",
+        "cohorts": [
+          { "id": "6617fff8-1d28-465a-8d3b-919ba056f70d", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "b7e4a9b4-2948-45e9-8d39-76fb9715af30",
+        "name": "ICF Level 1: Module 2: Critical Coaching Skills",
+        "cohorts": [
+          { "id": "b165ac5e-43d9-4e0e-8ea1-9f31e42ca8d4", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "b889259e-b586-4ada-9102-cdf59bbd62eb",
+        "name": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs",
+        "cohorts": [
+          { "id": "40df9084-1cda-433d-bda9-9aac6c6f7d0b", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "c9ae3319-5d42-42fe-8678-723752348b6f",
+        "name": "MCC BARS",
+        "cohorts": [
+          { "id": "62a65951-9486-4d5d-9a80-99edf500be41", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "ca2e4d23-3582-4e73-be7d-18d8ecbafdda",
+        "name": "Group Supervision",
+        "cohorts": [
+          { "id": "0dcd27a0-477d-4dd7-a2c5-9c1f360e4a69", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "cad1f7f1-54a3-4845-91aa-c527ea13d52a",
+        "name": "AI for Coaches",
+        "cohorts": [
+          { "id": "4ea1b577-27f6-445f-a8a1-0ac57343c971", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "cc660896-b415-4a72-928b-475b3236ea62",
+        "name": "ICF Level 1: Group Mentoring",
+        "cohorts": [
+          { "id": "089d71e9-a7e7-4007-b608-19d699be9618", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "ea94cfd2-8b70-45a7-859c-cf1d357a9455",
+        "name": "Dominio de las herramientas de coaching",
+        "cohorts": [
+          { "id": "6551deb1-0dd8-4777-a2a4-3efdb05b3068", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "ef42da65-acb6-4ee5-9b91-be1f2caa9358",
+        "name": "Level 2: Individual Mentor Coaching and Coaching Assessments",
+        "cohorts": [
+          { "id": "89ffc33a-0029-4a3f-9827-708fdba04db5", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "f43d87f7-b66e-49b4-b46b-7a47ac3c4e43",
+        "name": "Master the ICF Team Coaching Competencies",
+        "cohorts": [
+          { "id": "aa70aa3a-8311-4a42-96bd-44fdbcedb9cf", "name": "Cohort 1" }
+        ]
+      },
+      {
+        "id": "fb696d55-17e0-432a-b66a-c6a69f3e15f4",
+        "name": "ADHD Coaching: Work with the Brain, Not Against It",
+        "cohorts": [
+          { "id": "e84d4731-9aa1-49a3-9674-4be434d58d05", "name": "Cohort 1" }
+        ]
+      }
+    ]
+  },
+  "catalog_relationship_checks": {
+    "group_bindings": [
+      {
+        "declared_group_id": "03dd5ea5-a201-43a2-bc7d-088ac2671e8c",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 2: Critical Coaching Skills",
+        "declarations": [
+          {
+            "component_key": "acc.module-2",
+            "declared_label": "ACC Module 2 - Critical Coaching Skills",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "0ce0734c-e359-4cf0-9251-4bb54070545a",
+        "native_exists": true,
+        "native_label": "Level 2: Group Mentoring",
+        "declarations": [
+          {
+            "component_key": "systems.group-mentoring",
+            "declared_label": "Level 2 Group Mentor Coaching",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "2b1f7c4e-5a8c-4a52-bb13-cdf141adaa4a",
+        "native_exists": true,
+        "native_label": "Level 2: Module 2: Coaching Organizational and Team Systems",
+        "declarations": [
+          {
+            "component_key": "systems.module-2",
+            "declared_label": "Systems Coaching Module 2 - Organizational and Team Systems",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "2fec5ee0-586b-4146-891e-c534999d4da4",
+        "native_exists": true,
+        "native_label": "Level 2: Individual Mentor Coaching and Coaching Assessments",
+        "declarations": [
+          {
+            "component_key": "systems.individual-mentoring",
+            "declared_label": "Level 2 Individual Mentor Coaching and Coaching Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          },
+          {
+            "component_key": "systems.performance-evaluation",
+            "declared_label": "Level 2 Performance Evaluation Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "37443ab2-874b-4c3b-8829-8da00025e355",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 1 Coaching Fundamentals",
+        "declarations": [
+          {
+            "component_key": "acc.module-1",
+            "declared_label": "ACC Module 1 - Coaching Fundamentals",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "4005359c-a4fb-4722-9e86-5fd9ccce3dfc",
+        "native_exists": true,
+        "native_label": "ACTC Practice Test",
+        "declarations": [
+          {
+            "component_key": "systems.team-exam-preparation",
+            "declared_label": "ACTC Team Coaching Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "414dc9c1-8083-4f49-acbe-72272ba6b30a",
+        "native_exists": true,
+        "native_label": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "declarations": [
+          {
+            "component_key": "actc.recording-review",
+            "declared_label": "ACTC Team Coaching Recording Review",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+        "native_exists": true,
+        "native_label": "Mentor Coaching Foundation",
+        "declarations": [
+          {
+            "component_key": "mcs.foundations",
+            "declared_label": "Mentor Coaching Foundations",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "5c2616f5-3379-4144-bbef-8fc225e701c3",
+        "native_exists": false,
+        "native_label": null,
+        "declarations": [
+          {
+            "component_key": "systems.individual-exam-preparation",
+            "declared_label": "PCC Individual Coaching Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": [
+          {
+            "id": "5c2616f5-3379-4144-bbef-8fc746415cdc",
+            "name": "PCC/MCC Practice Test"
+          }
+        ]
+      },
+      {
+        "declared_group_id": "5df3f15a-2f60-4f4b-8742-f146a148f80e",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs",
+        "declarations": [
+          {
+            "component_key": "acc.module-3",
+            "declared_label": "ACC Module 3 - Coaching Client Mindsets and Beliefs",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "7945ed4a-f918-4110-ae18-fd408aeb5c51",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 4 Advanced Coaching Techniques",
+        "declarations": [
+          {
+            "component_key": "acc.module-4",
+            "declared_label": "ACC Module 4 - Advanced Coaching Techniques",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "7a89b0f8-9b79-4b90-9356-86330ed6ba89",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Group Mentoring",
+        "declarations": [
+          {
+            "component_key": "acc.group-mentoring",
+            "declared_label": "ACC Group Mentor Coaching",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "7c65c290-56db-422f-bca1-c4494ac2145a",
+        "native_exists": true,
+        "native_label": "Group Supervision",
+        "declarations": [
+          {
+            "component_key": "systems.group-supervision",
+            "declared_label": "Level 2 / ACTC Group Supervision",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "872674dc-e880-4418-8f57-a1b8a18b285e",
+        "native_exists": true,
+        "native_label": "MCC BARS",
+        "declarations": [
+          {
+            "component_key": "mcs.mcc-bars-bonus",
+            "declared_label": "MCC BARS Self-Paced Bonus",
+            "attachment_status": "group_verified_course_unresolved"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "917a7a35-2ea8-4fb3-999a-26949d9de4da",
+        "native_exists": true,
+        "native_label": "MCS - Standard path",
+        "declarations": [
+          {
+            "component_key": "mcs.live-practicum",
+            "declared_label": "MCS Live Practicum",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.observed-practice",
+            "declared_label": "Observed Mentor Coaching Practice",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.peer-mentoring-arcs",
+            "declared_label": "ACC and PCC Peer Mentor Coaching Arcs",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.mentoring-on-mentoring",
+            "declared_label": "Mentoring-on-Mentoring",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.capstone",
+            "declared_label": "MCS Two-Part Capstone",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "94af2b4e-d0f5-47cb-8852-cb7533f3da1c",
+        "native_exists": true,
+        "native_label": "ACC Practice Test",
+        "declarations": [
+          {
+            "component_key": "acc.exam-preparation",
+            "declared_label": "ACC Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "a00695d5-efd8-40c7-acc7-d648309aba19",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Individual Mentor Coaching and Coaching Assessments",
+        "declarations": [
+          {
+            "component_key": "acc.individual-mentoring",
+            "declared_label": "ACC Individual Mentor Coaching and Coaching Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          },
+          {
+            "component_key": "acc.performance-evaluation",
+            "declared_label": "ACC Performance Evaluation Preparation and Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "a918cbb6-b45e-4a12-bcc9-c39c2ec9e0bc",
+        "native_exists": true,
+        "native_label": "Level 2: Module 4: System Awareness",
+        "declarations": [
+          {
+            "component_key": "systems.module-4",
+            "declared_label": "Systems Coaching Module 4 - System Awareness",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "b4dcb464-f1e9-4099-a73a-66d24f32eb7d",
+        "native_exists": true,
+        "native_label": "PCC Markers Training",
+        "declarations": [
+          {
+            "component_key": "mcs.pcc-markers-training",
+            "declared_label": "PCC Markers Evaluation Training",
+            "attachment_status": "group_verified_course_unresolved"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "b979853f-bb7b-4f71-a694-c310b2a4ff6a",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Group Supervision",
+        "declarations": [
+          {
+            "component_key": "acc.group-supervision",
+            "declared_label": "ACC Group Coaching Supervision",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "bc095770-0c8b-4495-9369-985e4c4649d7",
+        "native_exists": true,
+        "native_label": "AI Coaching Tools Plus",
+        "declarations": [
+          {
+            "component_key": "shared.coaching-tools-plus",
+            "declared_label": "Coaching Tools Plus Access",
+            "attachment_status": "group_verified_course_unresolved"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "bc59ba0d-bcb0-4306-aa51-4ae95613c241",
+        "native_exists": true,
+        "native_label": "ACC BARS Training",
+        "declarations": [
+          {
+            "component_key": "mcs.acc-bars-training",
+            "declared_label": "ACC BARS Evaluation Training",
+            "attachment_status": "group_verified_course_unresolved"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "d930d4ee-49b1-4766-a0e8-2f10683f902e",
+        "native_exists": true,
+        "native_label": "Level 2: Module 3: System Perception and Framing",
+        "declarations": [
+          {
+            "component_key": "systems.module-3",
+            "declared_label": "Systems Coaching Module 3 - Perception and Framing",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "ed43ee64-d579-4123-979d-606a8aafb0e0",
+        "native_exists": true,
+        "native_label": "Level 2: Module 1 System Coaching Mindset and Focus",
+        "declarations": [
+          {
+            "component_key": "systems.module-1",
+            "declared_label": "Systems Coaching Module 1 - Mindset and Focus",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ],
+        "native_near_id_candidates": []
+      },
+      {
+        "declared_group_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+        "native_exists": true,
+        "native_label": "Coaching Supervision Mastery",
+        "declarations": [
+          {
+            "component_key": "supervision.async-curriculum",
+            "declared_label": "Coaching Supervision Mastery Asynchronous Curriculum",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.live-practicum",
+            "declared_label": "Coaching Supervision Mastery Live Practicum",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.fieldwork",
+            "declared_label": "Coaching Supervision Mastery Peer Fieldwork",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.observed-sessions",
+            "declared_label": "Observed Supervision Sessions",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.written-feedback",
+            "declared_label": "Written Feedback on Observed Supervision",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.as-client",
+            "declared_label": "Receiving Coaching Supervision as Client",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.supervision-on-supervision",
+            "declared_label": "Supervision-on-Supervision",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.learning-journal",
+            "declared_label": "Coaching Supervision Learning Journal",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.capstone",
+            "declared_label": "Coaching Supervision Mastery Capstone",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.techniques-book",
+            "declared_label": "Tandem Supervision Techniques Book and Fieldwork Resources",
+            "attachment_status": "exact_component_group_and_course_verified"
+          }
+        ],
+        "native_near_id_candidates": []
+      }
+    ],
+    "course_bindings": [
+      {
+        "declared_course_id": "0574df6b-1159-41f7-b52b-2e058a885856",
+        "native_exists": true,
+        "native_label": "ACTC Practice Test",
+        "native_cohorts": [
+          { "id": "afcc3a68-63fb-4a97-993c-86594df5aead", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.team-exam-preparation",
+            "declared_label": "ACTC Team Coaching Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "17d6ce83-fdc6-422c-aa31-ebc1c8d7d12f",
+        "native_exists": true,
+        "native_label": "Level 2: Module 3: System Perception and Framing",
+        "native_cohorts": [
+          { "id": "c7d4d3b3-13a8-458e-b54a-dd602287a919", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.module-3",
+            "declared_label": "Systems Coaching Module 3 - Perception and Framing",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+        "native_exists": true,
+        "native_label": "Coaching Supervision Mastery",
+        "native_cohorts": [
+          { "id": "c110fd5f-792f-4e13-85aa-1d4c9789ca04", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "supervision.async-curriculum",
+            "declared_label": "Coaching Supervision Mastery Asynchronous Curriculum",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.live-practicum",
+            "declared_label": "Coaching Supervision Mastery Live Practicum",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.fieldwork",
+            "declared_label": "Coaching Supervision Mastery Peer Fieldwork",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.observed-sessions",
+            "declared_label": "Observed Supervision Sessions",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.written-feedback",
+            "declared_label": "Written Feedback on Observed Supervision",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.as-client",
+            "declared_label": "Receiving Coaching Supervision as Client",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.supervision-on-supervision",
+            "declared_label": "Supervision-on-Supervision",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.learning-journal",
+            "declared_label": "Coaching Supervision Learning Journal",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.capstone",
+            "declared_label": "Coaching Supervision Mastery Capstone",
+            "attachment_status": "exact_component_group_and_course_verified"
+          },
+          {
+            "component_key": "supervision.techniques-book",
+            "declared_label": "Tandem Supervision Techniques Book and Fieldwork Resources",
+            "attachment_status": "exact_component_group_and_course_verified"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "27fffe4b-28f5-4f59-b705-71c131c9023b",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 1 Coaching Fundamentals",
+        "native_cohorts": [
+          { "id": "8750e33a-67f2-4bb7-aef1-cdbb5b1b127d", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.module-1",
+            "declared_label": "ACC Module 1 - Coaching Fundamentals",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Individual Mentor Coaching and Coaching Assessments",
+        "native_cohorts": [
+          { "id": "6e689e58-2ff2-416b-91e2-4cfa1e004fdc", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.individual-mentoring",
+            "declared_label": "ACC Individual Mentor Coaching and Coaching Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          },
+          {
+            "component_key": "acc.performance-evaluation",
+            "declared_label": "ACC Performance Evaluation Preparation and Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "381ea897-a636-440b-b30c-250c1d03d54b",
+        "native_exists": true,
+        "native_label": "Mentor Coaching Practicum",
+        "native_cohorts": [
+          {
+            "id": "644ad414-d8a0-4c0e-a6b8-493e1568d2c7",
+            "name": "September 2026"
+          },
+          {
+            "id": "a294c8a3-3bf0-4aa0-a8a6-7bfbf4ee5985",
+            "name": "Founding Cohort"
+          }
+        ],
+        "declarations": [
+          {
+            "component_key": "mcs.live-practicum",
+            "declared_label": "MCS Live Practicum",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.observed-practice",
+            "declared_label": "Observed Mentor Coaching Practice",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.peer-mentoring-arcs",
+            "declared_label": "ACC and PCC Peer Mentor Coaching Arcs",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.mentoring-on-mentoring",
+            "declared_label": "Mentoring-on-Mentoring",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          },
+          {
+            "component_key": "mcs.capstone",
+            "declared_label": "MCS Two-Part Capstone",
+            "attachment_status": "full_group_verified_contents_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "43f59311-36c6-4c26-b41f-9cde7c6ef42e",
+        "native_exists": true,
+        "native_label": "ACC Practice Test",
+        "native_cohorts": [
+          { "id": "8f74c339-a899-4636-9330-17efc45ec431", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.exam-preparation",
+            "declared_label": "ACC Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+        "native_exists": true,
+        "native_label": "PCC/MCC Practice Test",
+        "native_cohorts": [
+          { "id": "49b41c18-a8b6-4fb9-b8a4-a0a643ab2519", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.individual-exam-preparation",
+            "declared_label": "PCC Individual Coaching Exam Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "70572040-5e35-4d03-bf59-9c95934b5a61",
+        "native_exists": true,
+        "native_label": "Level 2: Module 4: System Awareness",
+        "native_cohorts": [
+          { "id": "9e4d254d-520f-4626-87c7-5d105265b532", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.module-4",
+            "declared_label": "Systems Coaching Module 4 - System Awareness",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "7a3cdcff-089e-47e7-bdae-c59e05ae0789",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 4 Advanced Coaching Techniques",
+        "native_cohorts": [
+          { "id": "4e2a5916-8c49-4179-846b-39e15e1e0f68", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.module-4",
+            "declared_label": "ACC Module 4 - Advanced Coaching Techniques",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "8b9b0510-7bfd-4e16-ac4d-07e6393f2a31",
+        "native_exists": true,
+        "native_label": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "native_cohorts": [
+          { "id": "fcf5dedc-2cae-40d6-b92a-518efa773d35", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "actc.recording-review",
+            "declared_label": "ACTC Team Coaching Recording Review",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "9766b662-5d49-4282-8962-3372caad511c",
+        "native_exists": true,
+        "native_label": "Level 2: Module 1 System Coaching Mindset and Focus",
+        "native_cohorts": [
+          { "id": "189e8d7c-83ba-43d1-ab85-a91993356478", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.module-1",
+            "declared_label": "Systems Coaching Module 1 - Mindset and Focus",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "a3ec8de6-a854-4c41-b0d5-853ad272d1f0",
+        "native_exists": true,
+        "native_label": "Level 2: Group Mentoring",
+        "native_cohorts": [
+          { "id": "a2bec675-ceb9-432b-a50e-ac6c7e767d0d", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.group-mentoring",
+            "declared_label": "Level 2 Group Mentor Coaching",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+        "native_exists": true,
+        "native_label": "Mentor Coaching Foundation",
+        "native_cohorts": [
+          { "id": "f2a36eca-a017-4536-9b83-368f51219895", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "mcs.foundations",
+            "declared_label": "Mentor Coaching Foundations",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "b2241aa8-da14-48d2-8d6e-9d419b957e36",
+        "native_exists": true,
+        "native_label": "Level 2: Module 2: Coaching Organizational and Team Systems",
+        "native_cohorts": [
+          { "id": "6617fff8-1d28-465a-8d3b-919ba056f70d", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.module-2",
+            "declared_label": "Systems Coaching Module 2 - Organizational and Team Systems",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "b7e4a9b4-2948-45e9-8d39-76fb9715af30",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 2: Critical Coaching Skills",
+        "native_cohorts": [
+          { "id": "b165ac5e-43d9-4e0e-8ea1-9f31e42ca8d4", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.module-2",
+            "declared_label": "ACC Module 2 - Critical Coaching Skills",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "b889259e-b586-4ada-9102-cdf59bbd62eb",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs",
+        "native_cohorts": [
+          { "id": "40df9084-1cda-433d-bda9-9aac6c6f7d0b", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.module-3",
+            "declared_label": "ACC Module 3 - Coaching Client Mindsets and Beliefs",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "ca2e4d23-3582-4e73-be7d-18d8ecbafdda",
+        "native_exists": true,
+        "native_label": "Group Supervision",
+        "native_cohorts": [
+          { "id": "0dcd27a0-477d-4dd7-a2c5-9c1f360e4a69", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.group-supervision",
+            "declared_label": "ACC Group Coaching Supervision",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          },
+          {
+            "component_key": "systems.group-supervision",
+            "declared_label": "Level 2 / ACTC Group Supervision",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "cc660896-b415-4a72-928b-475b3236ea62",
+        "native_exists": true,
+        "native_label": "ICF Level 1: Group Mentoring",
+        "native_cohorts": [
+          { "id": "089d71e9-a7e7-4007-b608-19d699be9618", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "acc.group-mentoring",
+            "declared_label": "ACC Group Mentor Coaching",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      },
+      {
+        "declared_course_id": "ef42da65-acb6-4ee5-9b91-be1f2caa9358",
+        "native_exists": true,
+        "native_label": "Level 2: Individual Mentor Coaching and Coaching Assessments",
+        "native_cohorts": [
+          { "id": "89ffc33a-0029-4a3f-9827-708fdba04db5", "name": "Cohort 1" }
+        ],
+        "declarations": [
+          {
+            "component_key": "systems.individual-mentoring",
+            "declared_label": "Level 2 Individual Mentor Coaching and Coaching Assessments",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          },
+          {
+            "component_key": "systems.performance-evaluation",
+            "declared_label": "Level 2 Performance Evaluation Preparation",
+            "attachment_status": "group_and_course_verified_attachment_unavailable"
+          }
+        ]
+      }
+    ],
+    "offer_full_access_groups": [
+      {
+        "offer_slug": "acc-module-1",
+        "declared_group_ids": ["37443ab2-874b-4c3b-8829-8da00025e355"],
+        "group_native_existence": [
+          {
+            "id": "37443ab2-874b-4c3b-8829-8da00025e355",
+            "native_exists": true,
+            "native_label": "ICF Level 1: Module 1 Coaching Fundamentals"
+          }
+        ]
+      },
+      {
+        "offer_slug": "acc-full",
+        "declared_group_ids": ["1892f2a6-3117-4c6b-b5fa-540129ce0b3f"],
+        "group_native_existence": [
+          {
+            "id": "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+            "native_exists": true,
+            "native_label": "Level 1: Full Course"
+          }
+        ]
+      },
+      {
+        "offer_slug": "pcc-full",
+        "declared_group_ids": ["a8e3d6fd-00ea-4213-9cc3-05acedc57f74"],
+        "group_native_existence": [
+          {
+            "id": "a8e3d6fd-00ea-4213-9cc3-05acedc57f74",
+            "native_exists": true,
+            "native_label": "PCC Bridge (with ACTC)"
+          }
+        ]
+      },
+      {
+        "offer_slug": "actc-full",
+        "declared_group_ids": ["5ff8be1e-1ce8-4732-a997-62661a1aa1ee"],
+        "group_native_existence": [
+          {
+            "id": "5ff8be1e-1ce8-4732-a997-62661a1aa1ee",
+            "native_exists": true,
+            "native_label": "ACTC: Full Course"
+          }
+        ]
+      },
+      {
+        "offer_slug": "acc-pcc-full",
+        "declared_group_ids": [
+          "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+          "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a"
+        ],
+        "group_native_existence": [
+          {
+            "id": "1892f2a6-3117-4c6b-b5fa-540129ce0b3f",
+            "native_exists": true,
+            "native_label": "Level 1: Full Course"
+          },
+          {
+            "id": "8eb5731a-a812-4ae6-ad6c-e4ad306f9c0a",
+            "native_exists": true,
+            "native_label": "2026 Full Level 1 AND 2 with ACTC"
+          }
+        ]
+      },
+      {
+        "offer_slug": "mcs-full",
+        "declared_group_ids": ["917a7a35-2ea8-4fb3-999a-26949d9de4da"],
+        "group_native_existence": [
+          {
+            "id": "917a7a35-2ea8-4fb3-999a-26949d9de4da",
+            "native_exists": true,
+            "native_label": "MCS - Standard path"
+          }
+        ]
+      },
+      {
+        "offer_slug": "supervision-inaugural",
+        "declared_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
+        "group_native_existence": [
+          {
+            "id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+            "native_exists": true,
+            "native_label": "Coaching Supervision Mastery"
+          }
+        ]
+      },
+      {
+        "offer_slug": "supervision-regular",
+        "declared_group_ids": ["fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83"],
+        "group_native_existence": [
+          {
+            "id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+            "native_exists": true,
+            "native_label": "Coaching Supervision Mastery"
+          }
+        ]
+      }
+    ],
+    "evidence_semantics": {
+      "native_exists": "The exact ID was returned by the supported current list surface.",
+      "catalog_declared": "The local revision-1 entitlement catalog declares the relationship.",
+      "course_to_cohort": "The supported course list nests the cohort under the course.",
+      "attachment_unverified": "These list surfaces do not prove access-group-to-course attachment."
+    }
+  },
+  "explicit_mismatches": [
+    {
+      "declared_group_id": "5c2616f5-3379-4144-bbef-8fc225e701c3",
+      "native_exists": false,
+      "native_label": null,
+      "declarations": [
+        {
+          "component_key": "systems.individual-exam-preparation",
+          "declared_label": "PCC Individual Coaching Exam Preparation",
+          "attachment_status": "group_and_course_verified_attachment_unavailable"
+        }
+      ],
+      "native_near_id_candidates": [
+        {
+          "id": "5c2616f5-3379-4144-bbef-8fc746415cdc",
+          "name": "PCC/MCC Practice Test"
+        }
+      ]
+    }
+  ],
+  "unsupported_relationships": [
+    "Access-group to course attachment is not exposed by the supported list surfaces.",
+    "Group or course existence does not prove purchase, entitlement, membership, progress, class assignment, or publication state.",
+    "Matching or similar labels do not prove object identity; exact native IDs remain required.",
+    "Course-to-cohort nesting does not establish a checkout offer, roster, delivery-block, or capacity relationship."
+  ]
+}

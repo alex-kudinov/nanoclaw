@@ -1,0 +1,721 @@
+{
+  "snapshot_id": "NC-20260907-004-c-publishing-discovery-supplement",
+  "captured_at_utc": "2026-09-07T19:29:03.749Z",
+  "source_index": {
+    "path": "pages/catalog.json",
+    "generated_at": "2026-02-12T15:55:11Z",
+    "entry_count": 97,
+    "live_path_count": 81,
+    "sha256": "017b3d5e52b6b85ac00c15b07931de6aaafb3f45e7cf0e1e80a4cf57214818c1",
+    "freshness_boundary": "Index predates current ES and JA source directories; catalog_live_path=false is not proof that a page is not public."
+  },
+  "site_wide_static_scan": {
+    "scope": "pages/**/*.html excluding sync-conflict, preview, and backup filenames",
+    "files_with_checkout_refs": 21,
+    "distinct_checkout_slugs": 33,
+    "active_checkout_slugs": 37,
+    "active_found": 33,
+    "active_not_found": [
+      "mcq-eval-acc-bars",
+      "mcq-eval-bundle",
+      "mcq-eval-mcc-bars",
+      "mcq-eval-pcc-markers"
+    ],
+    "references_by_active_offer": {
+      "acc-full": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-group-mentoring": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-group-supervision": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-individual-mentoring": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-module-1": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-module-2": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-module-3": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-module-4": [
+        {
+          "file": "pages/acc/05-section-program-overview.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+        },
+        {
+          "file": "pages/acc/11-section-final-cta.html",
+          "page_dir": "pages/acc",
+          "catalog_live_path": true,
+          "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+        }
+      ],
+      "acc-pcc-full": [
+        {
+          "file": "pages/acc-pcc-certification/05-section-program-overview.html",
+          "page_dir": "pages/acc-pcc-certification",
+          "catalog_live_path": true,
+          "sha256": "f53858c74ca62064ca5e07b2d6f941fda82f8c86f089f6ae01ca7d1daa6bd63b"
+        },
+        {
+          "file": "pages/acc-pcc-certification/11-section-final-cta.html",
+          "page_dir": "pages/acc-pcc-certification",
+          "catalog_live_path": true,
+          "sha256": "fe391ccbb0bea59d55b157e8b220d32d495d227913954be3844ac92f9569b319"
+        }
+      ],
+      "actc-full": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/09-section-comparison.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "d85b97136eb2e1fc05c84ee4590219ef492f03712bc3fa52f8076cb3c2003e67"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-group-supervision": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-module-1": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-module-2": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-module-3": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-module-4": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "actc-recording-review": [
+        {
+          "file": "pages/actc/05-section-program-overview.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+        },
+        {
+          "file": "pages/actc/11-section-final-cta.html",
+          "page_dir": "pages/actc",
+          "catalog_live_path": true,
+          "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+        }
+      ],
+      "mcq-eval-acc-bars": [],
+      "mcq-eval-bundle": [],
+      "mcq-eval-mcc-bars": [],
+      "mcq-eval-pcc-markers": [],
+      "mcq-program-a-foundations": [
+        {
+          "file": "pages/mentor-coaching-foundations/01-section-hero.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "b2caed8a0b70ad7c21832d45251da42429d044b3bb758558bffae3dff31ce8f0"
+        },
+        {
+          "file": "pages/mentor-coaching-foundations/03-section-who-this-is-for.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "196197a4641d3480f5e87556992ba330743b908e8f5de29bb2b609ee4e77348e"
+        },
+        {
+          "file": "pages/mentor-coaching-foundations/04-section-program-overview.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "7ae5ce5404f8dbf978c1ffe1eff90f5f511dd588725491135cb5ae183fc33bff"
+        },
+        {
+          "file": "pages/mentor-coaching-foundations/09-section-pricing-checkout.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "939790f424f1cfafd79986c9df84e96b41b8f1911ac8eb800b5ee964858b9c0d"
+        },
+        {
+          "file": "pages/mentor-coaching-foundations/11-section-final-cta.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "8df48e0d49a739f75b4e1bacf079834ea5edc02ac10cb4bde073e4f3690bb862"
+        },
+        {
+          "file": "pages/mentor-coaching-foundations/13-section-sticky-exit.html",
+          "page_dir": "pages/mentor-coaching-foundations",
+          "catalog_live_path": true,
+          "sha256": "240a6a6045ca9bfaa87fab6df124287837fba4ee7f6c71ab569e8786e5986de3"
+        }
+      ],
+      "mcs-cohort-sept-friday": [
+        {
+          "file": "pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+          "page_dir": "pages/mcs-advanced-accreditation-mentor-coaching",
+          "catalog_live_path": true,
+          "sha256": "b7851ef1c8e816e8f7ae662dc858e2bb6f75ac91df410bb2a424fb381ec2eb31"
+        }
+      ],
+      "mcs-cohort-sept-thursday": [
+        {
+          "file": "pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+          "page_dir": "pages/mcs-advanced-accreditation-mentor-coaching",
+          "catalog_live_path": true,
+          "sha256": "b7851ef1c8e816e8f7ae662dc858e2bb6f75ac91df410bb2a424fb381ec2eb31"
+        }
+      ],
+      "mcs-foundations-es": [
+        {
+          "file": "pages/es-mentor-coaching-foundations/01-content.html",
+          "page_dir": "pages/es-mentor-coaching-foundations",
+          "catalog_live_path": false,
+          "sha256": "46266a1bb1266e2a3faa92f5c5f82f218e475a61de9dbb8499be88df7a63e492"
+        }
+      ],
+      "mcs-foundations-ja": [
+        {
+          "file": "pages/ja-mentor-coaching-foundations/01-content.html",
+          "page_dir": "pages/ja-mentor-coaching-foundations",
+          "catalog_live_path": false,
+          "sha256": "2f60da2fa43889f9fa463213ff18336a4f085207227321990efa2090bea17c9c"
+        }
+      ],
+      "mentor-acc": [
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/02-section-path-selector.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "e7379bdf56dbe8a00091c67fb925a92c9a54209b5b797756e1830c4cd69977d7"
+        },
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/10-section-final-cta.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "d4fe1596b98d6b7668e982a9e6074ea0cfe2693669a3920a2dd52f03e39fe3d6"
+        }
+      ],
+      "mentor-mcc": [
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/02-section-path-selector.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "e7379bdf56dbe8a00091c67fb925a92c9a54209b5b797756e1830c4cd69977d7"
+        },
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/10-section-final-cta.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "d4fe1596b98d6b7668e982a9e6074ea0cfe2693669a3920a2dd52f03e39fe3d6"
+        }
+      ],
+      "mentor-pcc": [
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/02-section-path-selector.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "e7379bdf56dbe8a00091c67fb925a92c9a54209b5b797756e1830c4cd69977d7"
+        },
+        {
+          "file": "pages/mentor-coaching-acc-pcc-mcc/10-section-final-cta.html",
+          "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+          "catalog_live_path": true,
+          "sha256": "d4fe1596b98d6b7668e982a9e6074ea0cfe2693669a3920a2dd52f03e39fe3d6"
+        }
+      ],
+      "pcc-full": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-group-mentoring": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-group-supervision": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-individual-mentoring": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-module-1": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-module-2": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-module-3": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "pcc-module-4": [
+        {
+          "file": "pages/pcc/05-section-program-overview.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+        },
+        {
+          "file": "pages/pcc/11-section-final-cta.html",
+          "page_dir": "pages/pcc",
+          "catalog_live_path": true,
+          "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+        }
+      ],
+      "supervision-inaugural": [
+        {
+          "file": "pages/coaching-supervisor-training/08-section-founding-cohort.html",
+          "page_dir": "pages/coaching-supervisor-training",
+          "catalog_live_path": true,
+          "sha256": "28c69807cf18be6c199e08117d0195fe5429ea1a15f3f337ac88ee2d19907eeb"
+        }
+      ]
+    },
+    "files": [
+      {
+        "file": "pages/acc/05-section-program-overview.html",
+        "page_dir": "pages/acc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "acc-full",
+          "acc-group-mentoring",
+          "acc-group-supervision",
+          "acc-individual-mentoring",
+          "acc-module-1",
+          "acc-module-2",
+          "acc-module-3",
+          "acc-module-4"
+        ],
+        "sha256": "3196d5412d1601de62725fd57cee1e1a926a6a0ef741ee591264b0d0b4275add"
+      },
+      {
+        "file": "pages/acc/11-section-final-cta.html",
+        "page_dir": "pages/acc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "acc-full",
+          "acc-group-mentoring",
+          "acc-group-supervision",
+          "acc-individual-mentoring",
+          "acc-module-1",
+          "acc-module-2",
+          "acc-module-3",
+          "acc-module-4"
+        ],
+        "sha256": "e14137c5dbdba057a8f3a66dc1a6f710021a76fe6bc848ac4840f22b4d901deb"
+      },
+      {
+        "file": "pages/acc-pcc-certification/05-section-program-overview.html",
+        "page_dir": "pages/acc-pcc-certification",
+        "catalog_live_path": true,
+        "checkout_slugs": ["acc-pcc-full"],
+        "sha256": "f53858c74ca62064ca5e07b2d6f941fda82f8c86f089f6ae01ca7d1daa6bd63b"
+      },
+      {
+        "file": "pages/acc-pcc-certification/11-section-final-cta.html",
+        "page_dir": "pages/acc-pcc-certification",
+        "catalog_live_path": true,
+        "checkout_slugs": ["acc-pcc-full"],
+        "sha256": "fe391ccbb0bea59d55b157e8b220d32d495d227913954be3844ac92f9569b319"
+      },
+      {
+        "file": "pages/actc/05-section-program-overview.html",
+        "page_dir": "pages/actc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "actc-full",
+          "actc-group-supervision",
+          "actc-module-1",
+          "actc-module-2",
+          "actc-module-3",
+          "actc-module-4",
+          "actc-recording-review"
+        ],
+        "sha256": "c39de82fb0d0faacf185b656bcb225aed5532ab5780c2176160e1cb8d894b5b7"
+      },
+      {
+        "file": "pages/actc/09-section-comparison.html",
+        "page_dir": "pages/actc",
+        "catalog_live_path": true,
+        "checkout_slugs": ["actc-full"],
+        "sha256": "d85b97136eb2e1fc05c84ee4590219ef492f03712bc3fa52f8076cb3c2003e67"
+      },
+      {
+        "file": "pages/actc/11-section-final-cta.html",
+        "page_dir": "pages/actc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "actc-full",
+          "actc-group-supervision",
+          "actc-module-1",
+          "actc-module-2",
+          "actc-module-3",
+          "actc-module-4",
+          "actc-recording-review"
+        ],
+        "sha256": "b40b0a63c8a740325278debf2bc0cea15e388907b1f49c59b1da71b455c5505d"
+      },
+      {
+        "file": "pages/coaching-supervisor-training/08-section-founding-cohort.html",
+        "page_dir": "pages/coaching-supervisor-training",
+        "catalog_live_path": true,
+        "checkout_slugs": ["supervision-inaugural"],
+        "sha256": "28c69807cf18be6c199e08117d0195fe5429ea1a15f3f337ac88ee2d19907eeb"
+      },
+      {
+        "file": "pages/es-mentor-coaching-foundations/01-content.html",
+        "page_dir": "pages/es-mentor-coaching-foundations",
+        "catalog_live_path": false,
+        "checkout_slugs": ["mcs-foundations-es"],
+        "sha256": "46266a1bb1266e2a3faa92f5c5f82f218e475a61de9dbb8499be88df7a63e492"
+      },
+      {
+        "file": "pages/ja-mentor-coaching-foundations/01-content.html",
+        "page_dir": "pages/ja-mentor-coaching-foundations",
+        "catalog_live_path": false,
+        "checkout_slugs": ["mcs-foundations-ja"],
+        "sha256": "2f60da2fa43889f9fa463213ff18336a4f085207227321990efa2090bea17c9c"
+      },
+      {
+        "file": "pages/mcs-advanced-accreditation-mentor-coaching/08-section-pricing.html",
+        "page_dir": "pages/mcs-advanced-accreditation-mentor-coaching",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "mcs-cohort-sept-friday",
+          "mcs-cohort-sept-thursday"
+        ],
+        "sha256": "b7851ef1c8e816e8f7ae662dc858e2bb6f75ac91df410bb2a424fb381ec2eb31"
+      },
+      {
+        "file": "pages/mentor-coaching-acc-pcc-mcc/02-section-path-selector.html",
+        "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mentor-acc", "mentor-mcc", "mentor-pcc"],
+        "sha256": "e7379bdf56dbe8a00091c67fb925a92c9a54209b5b797756e1830c4cd69977d7"
+      },
+      {
+        "file": "pages/mentor-coaching-acc-pcc-mcc/10-section-final-cta.html",
+        "page_dir": "pages/mentor-coaching-acc-pcc-mcc",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mentor-acc", "mentor-mcc", "mentor-pcc"],
+        "sha256": "d4fe1596b98d6b7668e982a9e6074ea0cfe2693669a3920a2dd52f03e39fe3d6"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/01-section-hero.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "b2caed8a0b70ad7c21832d45251da42429d044b3bb758558bffae3dff31ce8f0"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/03-section-who-this-is-for.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "196197a4641d3480f5e87556992ba330743b908e8f5de29bb2b609ee4e77348e"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/04-section-program-overview.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "7ae5ce5404f8dbf978c1ffe1eff90f5f511dd588725491135cb5ae183fc33bff"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/09-section-pricing-checkout.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "939790f424f1cfafd79986c9df84e96b41b8f1911ac8eb800b5ee964858b9c0d"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/11-section-final-cta.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "8df48e0d49a739f75b4e1bacf079834ea5edc02ac10cb4bde073e4f3690bb862"
+      },
+      {
+        "file": "pages/mentor-coaching-foundations/13-section-sticky-exit.html",
+        "page_dir": "pages/mentor-coaching-foundations",
+        "catalog_live_path": true,
+        "checkout_slugs": ["mcq-program-a-foundations"],
+        "sha256": "240a6a6045ca9bfaa87fab6df124287837fba4ee7f6c71ab569e8786e5986de3"
+      },
+      {
+        "file": "pages/pcc/05-section-program-overview.html",
+        "page_dir": "pages/pcc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "pcc-full",
+          "pcc-group-mentoring",
+          "pcc-group-supervision",
+          "pcc-individual-mentoring",
+          "pcc-module-1",
+          "pcc-module-2",
+          "pcc-module-3",
+          "pcc-module-4"
+        ],
+        "sha256": "bb45b81555b22829cdf859f2a73d6b1e809ae1309bc03fdd5da364cf500252aa"
+      },
+      {
+        "file": "pages/pcc/11-section-final-cta.html",
+        "page_dir": "pages/pcc",
+        "catalog_live_path": true,
+        "checkout_slugs": [
+          "pcc-full",
+          "pcc-group-mentoring",
+          "pcc-group-supervision",
+          "pcc-individual-mentoring",
+          "pcc-module-1",
+          "pcc-module-2",
+          "pcc-module-3",
+          "pcc-module-4"
+        ],
+        "sha256": "c2bb97f8e13b566716a93ede4dd0e6002843c69655313ef91c03fb9c9f99a537"
+      }
+    ]
+  },
+  "french_counterpart": {
+    "source_path": "community/icf/mentor-coaching/i18n/fr/course.json",
+    "source_status": "production-published-linked-resource-incident-open",
+    "source_slug": "mcs-foundations-fr",
+    "source_title": "Fondamentaux du mentor coaching",
+    "heartbeat_course_id": "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+    "heartbeat_cohort_id": "674dc326-1b7e-488a-b10c-1b764152a54f",
+    "native_course_exists": true,
+    "native_course_label": "Fondamentaux du mentor coaching",
+    "native_group_candidate": {
+      "id": "f5e6701b-83ad-4b30-8529-c45e107b35d7",
+      "name": "Fondamentaux du mentor coaching",
+      "relationship_status": "exact_label_candidate_attachment_unverified"
+    },
+    "checkout_offer_slug_found": false,
+    "page_meta_or_source_found": false,
+    "sellable_offer_inferred": false,
+    "relationship_boundary": "Course source and native objects prove a French learning counterpart, not a sellable offer, checkout relationship, access-group attachment, entitlement, or publication."
+  },
+  "limits": [
+    "Static source markers do not prove deployed DOM or checkout behavior.",
+    "Four active evaluation-training slugs were not found in the bounded page source scan; this is not proof that no other publishing or direct checkout surface exists.",
+    "The stale page catalog does not include current ES or JA source directories, while public pages were observed separately."
+  ]
+}

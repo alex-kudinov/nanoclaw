@@ -1,0 +1,609 @@
+{
+  "proposal_id": "NC-20260907-004-unapplied-catalog-binding-proposal",
+  "generated_at_utc": "2026-09-07T19:56:48.417Z",
+  "status": "proposal_only_not_applied",
+  "targets": [
+    {
+      "path": "facts/catalogs/student-entitlements-v1.json",
+      "base_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "proposed_next_revision": 2
+    },
+    {
+      "path": "facts/catalogs/student-product-bindings-v1.json",
+      "base_sha256": "08df8787fbf5fa621afe1f727bca7ffdb376da511537df5020db23c0f5a3e5ac",
+      "proposed_next_revision": 2
+    }
+  ],
+  "invariants": [
+    "No canonical or provider mutation in NC-20260907-004.",
+    "Preserve one agreement and order across installments and many receipts.",
+    "Preserve provider account or community namespace on every native reference.",
+    "Do not infer group-to-course attachment, payer-to-participant, or schedule assignment.",
+    "Preserve committed-seat simple sync with no temporary checkout holds or live checkout dependency."
+  ],
+  "proposed_changes": [
+    {
+      "id": "P-01",
+      "target": "entitlement catalog component systems.individual-exam-preparation",
+      "change": "Retain the historical invalid group UUID as unresolved provenance, preserve the promised component and exact course ID, and record the current near-match group only as candidate evidence. Do not erase the component or promote a replacement UUID.",
+      "apply_gate": "supported source-verification evidence establishes the exact group and attachment"
+    },
+    {
+      "id": "P-02",
+      "target": "product binding schema revision 2",
+      "change": "Replace one offer-level stripe_account field with stripe_product_refs carrying source_namespace, account_id, product_id, relationship_type, and evidence per reference. Preserve offer-level price arrays as unscoped declarations and create a product-to-price association only where native evidence verifies it; never form a Cartesian product.",
+      "example_for_mcs_full": [
+        {
+          "source_namespace": "stripe:primary",
+          "account_id": "acct_1PakRkRnZI4gH1uA",
+          "product_id": "prod_UWzqD2zowB8apy",
+          "default_price_status": "native_null"
+        },
+        {
+          "source_namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "product_id": "prod_Uk2OvW03ZwxmAj",
+          "default_price_status": "exact_match"
+        }
+      ],
+      "apply_gate": "schema review and deterministic namespace uniqueness validation"
+    },
+    {
+      "id": "P-03",
+      "target": "MCS binding route",
+      "change": "Model mcs-cohort-sept-thursday and mcs-cohort-sept-friday as context-bearing checkout-variant candidates of mcs-full with exact delivery-block context; do not create a second order per installment receipt.",
+      "apply_gate": "owner confirms whether commercial, agreement, entitlement, or fulfillment promises materially differ; Astra then selects the internal representation after provider evidence closes"
+    },
+    {
+      "id": "P-04",
+      "target": "localized Foundations offer family",
+      "change": "Add candidate locale-specific offer and bundle relationships for checkout slugs mcq-program-a-foundations, mcs-foundations-es, and mcs-foundations-ja with exact source declarations. Retain the French course/native counterpart as source-only and infer no sellable offer.",
+      "apply_gate": "owner confirms material promise differences and French sellable intent; Astra then selects offer-key or variant representation"
+    },
+    {
+      "id": "P-05",
+      "target": "staged active checkout coverage",
+      "change": "Create reviewed catalog and binding records in bounded program or component batches for active unresolved entries; never expand a generic allowlist.",
+      "active_offer_slugs": [
+        "acc-group-mentoring",
+        "acc-group-supervision",
+        "acc-individual-mentoring",
+        "acc-module-2",
+        "acc-module-3",
+        "acc-module-4",
+        "actc-group-supervision",
+        "actc-module-1",
+        "actc-module-2",
+        "actc-module-3",
+        "actc-module-4",
+        "actc-recording-review",
+        "mcq-eval-acc-bars",
+        "mcq-eval-bundle",
+        "mcq-eval-mcc-bars",
+        "mcq-eval-pcc-markers",
+        "mcq-program-a-foundations",
+        "mcs-cohort-sept-friday",
+        "mcs-cohort-sept-thursday",
+        "mcs-foundations-es",
+        "mcs-foundations-ja",
+        "mentor-acc",
+        "mentor-mcc",
+        "mentor-pcc",
+        "pcc-group-mentoring",
+        "pcc-group-supervision",
+        "pcc-individual-mentoring",
+        "pcc-module-1",
+        "pcc-module-2",
+        "pcc-module-3",
+        "pcc-module-4"
+      ],
+      "apply_gate": "each record closes evidence_needed and passes publication validation"
+    },
+    {
+      "id": "P-06",
+      "target": "managed-manifest and service-source coverage",
+      "change": "Record that exact native IDs 2f0da0f8-7278-4cf4-baeb-f5f1949f8c77 and cc660896-b415-4a72-928b-475b3236ea62 were not found in the scanned managed course manifests. Their components are mentoring, performance-evaluation, or service containers, so the authoritative source may instead be an allowance, procedure, or schedule contract.",
+      "apply_gate": "the correct service, allowance, procedure, schedule, or managed-manifest authority is identified"
+    },
+    {
+      "id": "P-07",
+      "target": "Plutio relationships",
+      "change": "Keep proposal and contract template links as structural evidence and project references as unverified; add no offer or agreement binding.",
+      "apply_gate": "supported item or line definition or exact accepted agreement mapping becomes available"
+    }
+  ],
+  "validation_contract": [
+    "Every active checkout record has exactly one treatment and disposition.",
+    "Every Stripe product reference is scoped to one observed namespace and account.",
+    "Every checkout-declared direct or installment price ID remains a separate source declaration and is not attached to a label-matched product as verified.",
+    "Offer-level catalog price arrays remain unscoped; product-to-price association exists only for an exact native default-price match.",
+    "Every record keeps payer, purchaser, sponsor, participant, and student as distinct roles; no identity relation was collected and sameness is never assumed.",
+    "No source-only or label-only relationship becomes accepted identity.",
+    "The audit records observed local active state without conferring grandfathering, an allowlist, or enforced publication blocks; proposed holds remain not applied.",
+    "Canonical catalogs remain unchanged by this proposal artifact."
+  ],
+  "qualified_open_questions": [
+    {
+      "question_id": "acc.group-mentoring:1",
+      "component_key": "acc.group-mentoring",
+      "component_type": "group_mentoring",
+      "evidence_status": "provisional",
+      "source_question": "Confirm the current full-program session and countable-hour promise; the April Plutio template is historical evidence, not current authority.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "7a89b0f8-9b79-4b90-9356-86330ed6ba89",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "cc660896-b415-4a72-928b-475b3236ea62",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": false
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "acc.individual-mentoring:1",
+      "component_key": "acc.individual-mentoring",
+      "component_type": "individual_mentoring",
+      "evidence_status": "provisional",
+      "source_question": "Confirm current session count, duration, and whether coaching assessments consume the same allowance.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "a00695d5-efd8-40c7-acc7-d648309aba19",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": false
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "acc.group-supervision:1",
+      "component_key": "acc.group-supervision",
+      "component_type": "group_supervision",
+      "evidence_status": "provisional",
+      "source_question": "Confirm that the shared Group Supervision course is attached to the ACC-specific access group and confirm the current hours promise.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "b979853f-bb7b-4f71-a694-c310b2a4ff6a",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "ca2e4d23-3582-4e73-be7d-18d8ecbafdda",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": [
+        "quantity_or_consumption_contract",
+        "provider_attachment_or_purpose_authority"
+      ]
+    },
+    {
+      "question_id": "acc.performance-evaluation:1",
+      "component_key": "acc.performance-evaluation",
+      "component_type": "performance_evaluation",
+      "evidence_status": "source_confirmed",
+      "source_question": "Define the current number of recording submissions/reviews and the transition from legacy performance evaluation to the 2027 formative-evaluation process.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "a00695d5-efd8-40c7-acc7-d648309aba19",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "2f0da0f8-7278-4cf4-baeb-f5f1949f8c77",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": false
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["completion_or_transition_policy"]
+    },
+    {
+      "question_id": "acc.exam-preparation:1",
+      "component_key": "acc.exam-preparation",
+      "component_type": "exam_preparation",
+      "evidence_status": "source_confirmed",
+      "source_question": "Verify provider attachment from the Level 1 full-access group.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "94af2b4e-d0f5-47cb-8852-cb7533f3da1c",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "43f59311-36c6-4c26-b41f-9cde7c6ef42e",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "shared.coaching-tools-plus:1",
+      "component_key": "shared.coaching-tools-plus",
+      "component_type": "resource_access",
+      "evidence_status": "provisional",
+      "source_question": "Confirm whether Coaching Tools Plus is the current group intended by all three full-program pages and what content/access interval it grants.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "bc095770-0c8b-4495-9369-985e4c4649d7",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "systems.group-supervision:1",
+      "component_key": "systems.group-supervision",
+      "component_type": "group_supervision",
+      "evidence_status": "source_confirmed",
+      "source_question": "Confirm current included hours/session count independently for PCC Full and ACTC Full.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "7c65c290-56db-422f-bca1-c4494ac2145a",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "ca2e4d23-3582-4e73-be7d-18d8ecbafdda",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "systems.group-mentoring:1",
+      "component_key": "systems.group-mentoring",
+      "component_type": "group_mentoring",
+      "evidence_status": "source_confirmed",
+      "source_question": "Confirm current included hours/session count.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "0ce0734c-e359-4cf0-9251-4bb54070545a",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "a3ec8de6-a854-4c41-b0d5-853ad272d1f0",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "systems.individual-mentoring:1",
+      "component_key": "systems.individual-mentoring",
+      "component_type": "individual_mentoring",
+      "evidence_status": "source_confirmed",
+      "source_question": "Confirm current included hours/session count and assessment consumption relationship.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "2fec5ee0-586b-4146-891e-c534999d4da4",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "ef42da65-acb6-4ee5-9b91-be1f2caa9358",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "systems.performance-evaluation:1",
+      "component_key": "systems.performance-evaluation",
+      "component_type": "performance_evaluation",
+      "evidence_status": "source_confirmed",
+      "source_question": "Define exact current review/submission allowance and graduation gate.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "2fec5ee0-586b-4146-891e-c534999d4da4",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "ef42da65-acb6-4ee5-9b91-be1f2caa9358",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": [
+        "quantity_or_consumption_contract",
+        "completion_or_transition_policy"
+      ]
+    },
+    {
+      "question_id": "systems.individual-exam-preparation:1",
+      "component_key": "systems.individual-exam-preparation",
+      "component_type": "exam_preparation",
+      "evidence_status": "provisional",
+      "source_question": "The inactive standalone checkout maps to the ACC Practice Test group, while Heartbeat exposes a distinct PCC/MCC Practice Test group. Confirm the full-bundle attachment and correct the standalone mapping separately before activation.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "5c2616f5-3379-4144-bbef-8fc225e701c3",
+            "native_exists": false
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "5e9eb6c7-7f5c-4244-b352-e202a604969b",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "systems.team-exam-preparation:1",
+      "component_key": "systems.team-exam-preparation",
+      "component_type": "exam_preparation",
+      "evidence_status": "source_confirmed",
+      "source_question": "Verify provider attachment from both PCC Bridge and ACTC Full groups.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "4005359c-a4fb-4722-9e86-5fd9ccce3dfc",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "0574df6b-1159-41f7-b52b-2e058a885856",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "actc.recording-review:1",
+      "component_key": "actc.recording-review",
+      "component_type": "assessment",
+      "evidence_status": "source_confirmed",
+      "source_question": "Confirm whether the full offer includes exactly one review and whether resubmission is included.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "414dc9c1-8083-4f49-acbe-72272ba6b30a",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "8b9b0510-7bfd-4e16-ac4d-07e6393f2a31",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["quantity_or_consumption_contract"]
+    },
+    {
+      "question_id": "mcs.foundations:1",
+      "component_key": "mcs.foundations",
+      "component_type": "course",
+      "evidence_status": "source_confirmed",
+      "source_question": "Verify attachment from the MCS Standard Path full-access group.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "abd312e4-b01a-4718-8918-f79d081753c0",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "mcs.acc-bars-training:1",
+      "component_key": "mcs.acc-bars-training",
+      "component_type": "course",
+      "evidence_status": "source_confirmed",
+      "source_question": "Resolve the exact course ID and full-group attachment.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "bc59ba0d-bcb0-4306-aa51-4ae95613c241",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "mcs.pcc-markers-training:1",
+      "component_key": "mcs.pcc-markers-training",
+      "component_type": "course",
+      "evidence_status": "source_confirmed",
+      "source_question": "Resolve the exact course ID and full-group attachment.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "b4dcb464-f1e9-4099-a73a-66d24f32eb7d",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "mcs.live-practicum:1",
+      "component_key": "mcs.live-practicum",
+      "component_type": "live_class_series",
+      "evidence_status": "verified",
+      "source_question": "Reconcile the current generic full group with the existing MCS Practicum September 2026 marker and three ambiguous September 2026 groups before creating any new marker taxonomy.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "917a7a35-2ea8-4fb3-999a-26949d9de4da",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "381ea897-a636-440b-b30c-250c1d03d54b",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "mcs.mcc-bars-bonus:1",
+      "component_key": "mcs.mcc-bars-bonus",
+      "component_type": "course",
+      "evidence_status": "verified",
+      "source_question": "Conditional on the enrollee holding an active MCC credential; exact credential verification source must be defined before automatic grant.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "872674dc-e880-4418-8f57-a1b8a18b285e",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["eligibility_source_authority"]
+    },
+    {
+      "question_id": "supervision.fieldwork:1",
+      "component_key": "supervision.fieldwork",
+      "component_type": "fieldwork",
+      "evidence_status": "verified",
+      "source_question": "Define whether standing-trio assignment merits a separate hidden series marker or remains an operator-managed sub-assignment.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["provider_attachment_or_purpose_authority"]
+    },
+    {
+      "question_id": "supervision.as-client:1",
+      "component_key": "supervision.as-client",
+      "component_type": "individual_supervision",
+      "evidence_status": "verified",
+      "source_question": "Track the individual appointment separately from the live-class demonstration turn so both evidence sources remain exact.",
+      "audit_status": "partially_resolved_remaining_evidence_open",
+      "resolved_facts": {
+        "declared_groups": [
+          {
+            "id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+            "native_exists": true
+          }
+        ],
+        "declared_courses": [
+          {
+            "id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+            "native_exists": true,
+            "found_in_scanned_managed_manifest": true
+          }
+        ],
+        "supported_group_course_attachment": "not_exposed_by_current_list_surfaces"
+      },
+      "remaining_evidence": ["typed_service_or_evidence_procedure"]
+    }
+  ]
+}

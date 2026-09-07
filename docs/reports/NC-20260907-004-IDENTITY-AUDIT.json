@@ -1,0 +1,481 @@
+{
+  "binding_revision": 1,
+  "entitlement_catalog_revision": 1,
+  "checkout_products": 47,
+  "active_products": 37,
+  "active_canonical_routes": 1,
+  "active_coverage_gaps": [
+    "acc-full",
+    "acc-module-1",
+    "acc-module-2",
+    "acc-module-3",
+    "acc-module-4",
+    "acc-group-supervision",
+    "acc-group-mentoring",
+    "acc-individual-mentoring",
+    "actc-full",
+    "actc-module-1",
+    "actc-module-2",
+    "actc-module-3",
+    "actc-module-4",
+    "actc-group-supervision",
+    "actc-recording-review",
+    "pcc-full",
+    "pcc-module-1",
+    "pcc-module-2",
+    "pcc-module-3",
+    "pcc-module-4",
+    "pcc-group-supervision",
+    "pcc-group-mentoring",
+    "pcc-individual-mentoring",
+    "acc-pcc-full",
+    "mcq-program-a-foundations",
+    "mcs-foundations-es",
+    "mcs-foundations-ja",
+    "mcq-eval-acc-bars",
+    "mcq-eval-pcc-markers",
+    "mcq-eval-mcc-bars",
+    "mcq-eval-bundle",
+    "mcs-cohort-sept-thursday",
+    "mcs-cohort-sept-friday",
+    "mentor-acc",
+    "mentor-pcc",
+    "mentor-mcc"
+  ],
+  "catalog_offers_absent_from_checkout": ["mcs-full"],
+  "coverage": [
+    {
+      "offer_key": "acc-full",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "acc-free",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-module-1",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "acc-module-2",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-module-3",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-module-4",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-group-supervision",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-group-mentoring",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-individual-mentoring",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-exam-prep",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-full",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "actc-free",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-module-1",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-module-2",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-module-3",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-module-4",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-group-supervision",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-recording-review",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "actc-exam-prep",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-full",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "pcc-free-competencies",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-free-core",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-module-1",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-module-2",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-module-3",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-module-4",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-group-supervision",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-group-mentoring",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-individual-mentoring",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-exam-prep-individual",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "pcc-exam-prep-team",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "acc-pcc-full",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "acc-pcc-free",
+      "checkout_active": false,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcq-program-a-foundations",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcs-foundations-es",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcs-foundations-ja",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcq-eval-acc-bars",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcq-eval-pcc-markers",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcq-eval-mcc-bars",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcq-eval-bundle",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcs-cohort-sept-thursday",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mcs-cohort-sept-friday",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "supervision-inaugural",
+      "checkout_active": true,
+      "entitlement_catalogued": true,
+      "identity_status": "resolved",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "supervision-regular",
+      "checkout_active": false,
+      "entitlement_catalogued": true,
+      "identity_status": "resolved",
+      "roster_route_present": true,
+      "code": null,
+      "price_bindings_match": true
+    },
+    {
+      "offer_key": "mentor-acc",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mentor-pcc",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    },
+    {
+      "offer_key": "mentor-mcc",
+      "checkout_active": true,
+      "entitlement_catalogued": false,
+      "identity_status": "legacy",
+      "roster_route_present": false,
+      "code": null,
+      "price_bindings_match": null
+    }
+  ],
+  "source_sha256": {
+    "checkout": "e7dc68f42709feaf1643971363c264bd73ec7d17c61fb64128b42890f5369011",
+    "product_map": "966124436f21dd28f01c313d9ee63e25dfe29cc654e39386904df99e78c22c60"
+  },
+  "strict_gate": {
+    "flag": "--require-active-coverage",
+    "observed_exit_code": 2,
+    "meaning": "expected refusal while active gaps remain"
+  },
+  "captured_at_utc": "2026-09-07T19:07:49.241Z"
+}

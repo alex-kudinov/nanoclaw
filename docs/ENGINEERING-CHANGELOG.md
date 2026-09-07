@@ -236,6 +236,65 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   the existing unclaimed/unauthorized ingress candidate for orientation because
   the checker rejects terminal bindings; the completed work item is separately
   named without reopening it. No live/business-data verification is claimed.
+### NC-20260907-004 — Reconcile the student product catalog as read-only evidence
+
+- Date: 2026-09-07T20:01:00Z
+- Owner/client: Astra strategy/acceptance owner; Codex Sol High execution
+  worker; Claude Sonnet/high independent reviewer
+- State: ready_for_review; source evidence, disposition draft, owner decision
+  brief, unapplied proposal, deterministic verification, and two review rounds
+  are complete; final commit/push and program reconciliation wait for Astra
+  acceptance
+- Branch/base: `codex/student-catalog-reconciliation-20260907` from
+  `40f0d364`; current uncommitted HEAD `ab8a3c99`
+- Change class: C1 internal evidence and proposal documents; all provider
+  interactions were read-only
+- Outcome: records 56 source/disposition entries without converting them into
+  canonical orders or new offers: 47 checkout entries, the accepted catalog-only
+  MCS offer, seven native non-student Product Map counterparts, and one French
+  learning counterpart with no sellable-offer inference. All 37 active checkout
+  entries have one treatment and disposition; 8 accepted catalog offer keys and
+  0 canonical orders remain explicit.
+- Source coverage: 47/37 local checkout total/active; 156 Product Map rows; 101
+  Heartbeat groups and 40 courses; 128 Stripe products across two account
+  namespaces; 9/9 declared Stripe product references exist; 3 native
+  product/default-price matches and 6 native null defaults; bounded Plutio
+  template/custom-field structure; 30 managed ICF course manifests; six
+  recovered calendar program reads; five accepted delivery blocks; static page
+  references for 33/37 active checkout slugs.
+- Authority and holds: current source behavior is observed without granting
+  grandfathering, an allowlist, or an enforced publication block. Holds remain
+  unapplied proposals. Payer, purchaser, sponsor, participant, and student are
+  distinct unevidenced roles. Checkout and offer price declarations remain
+  separately scoped; no product/price Cartesian association is created. The
+  invalid PCC group UUID remains historical unresolved evidence. Two service
+  container IDs absent from scanned course manifests do not prove absent
+  curriculum. Plutio student-master wording is recorded as superseded drift.
+- Review: Sonnet/high R1 found one material packet gap for payer/participant
+  separation and one review-boundary omission for the nine initially selected
+  page families. Codex added explicit per-record party-role separation and the
+  exact source-family projection. Narrow R2 returned
+  `NO MATERIAL FINDINGS`, with no policy, price, privacy, or external-effect
+  regression. R1 usage: 4 calls, 88,112 cache-create, 139,796 cache-read, 22,567
+  output, max context 88,114. R2 usage: 4 calls, 43,541 cache-create, 125,748
+  cache-read, 8,291 output, max context 52,107.
+- Verification: deterministic generator, focused 56-record validator, catalog
+  validator, exact B2 checksums, JSON/privacy scans, expected strict identity
+  audit exit 2 at 1 active canonical route/36 active gaps, Prettier,
+  `git diff --check`, and `npm run docs:continuity-check` pass under Node
+  22.23.2.
+- Deployment/migration: not applicable. No canonical catalog/binding change,
+  provider or student write, roster/payment/class/capacity/schedule mutation,
+  migration, runtime/service release, communication, publication, primary
+  checkout edit, or `.program` mutation occurred.
+- Rollback/recovery: discard or revert only the NC-004 evidence/proposal files
+  and continuity updates. No external rollback is required.
+- Follow-ups: Astra decides the exact program delta and final commit/push.
+  Owner decisions remain limited to material promise differences, French
+  sellable intent, PCC group source verification, correct service-source types,
+  and unresolved service quantities/attachments. Publication/rollout and any
+  production pilot remain separately gated.
+
 ### NC-20260907-003 — Adopt model routing and durable student lifecycle strategy
 
 - Date: 2026-09-07T15:05:00Z
