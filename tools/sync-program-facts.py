@@ -221,12 +221,36 @@ def validate_aacs(catalog_path: Path, pack_path: Path) -> list[str]:
         errors.append("Coaching Supervision Mastery catalog lacks exact AACS authority")
     expectations = catalog.get("checkout_expectations")
     expected_products = [
-        ("supervision-inaugural", 399600, True),
-        ("supervision-regular", 479600, False),
+        (
+            "supervision-inaugural",
+            399600,
+            True,
+            True,
+            "supervision",
+            ["2026-10-07"],
+            [],
+        ),
+        (
+            "supervision-regular",
+            479600,
+            True,
+            True,
+            "supervision",
+            [],
+            ["2026-10-07"],
+        ),
     ]
     actual_products = (
         [
-            (item.get("product"), item.get("price_cents"), item.get("active"))
+            (
+                item.get("product"),
+                item.get("price_cents"),
+                item.get("active"),
+                item.get("requires_cohort"),
+                item.get("cohort_program"),
+                item.get("cohort_start_dates"),
+                item.get("cohort_excluded_start_dates"),
+            )
             for item in expectations
         ]
         if isinstance(expectations, list)

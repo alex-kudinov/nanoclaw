@@ -73,6 +73,10 @@ interface FactsFile {
 interface ProductEntry {
   price_cents?: number;
   active?: boolean;
+  requires_cohort?: boolean;
+  cohort_program?: string;
+  cohort_start_dates?: string[];
+  cohort_excluded_start_dates?: string[];
 }
 
 function resolveTrackedPath(...segments: string[]): string {
@@ -489,12 +493,36 @@ export function detectCoachingSupervisionCatalogDrift(
   const normalizedExpectations = checkoutRecordsValid
     ? checkoutExpectations.map((entry) => {
         const record = entry as Record<string, unknown>;
-        return [record.product, record.price_cents, record.active];
+        return [
+          record.product,
+          record.price_cents,
+          record.active,
+          record.requires_cohort,
+          record.cohort_program,
+          record.cohort_start_dates,
+          record.cohort_excluded_start_dates,
+        ];
       })
     : [];
   const expectedExpectations = [
-    ['supervision-inaugural', 399600, true],
-    ['supervision-regular', 479600, false],
+    [
+      'supervision-inaugural',
+      399600,
+      true,
+      true,
+      'supervision',
+      ['2026-10-07'],
+      [],
+    ],
+    [
+      'supervision-regular',
+      479600,
+      true,
+      true,
+      'supervision',
+      [],
+      ['2026-10-07'],
+    ],
   ];
   const staleClaims = Array.isArray(catalog.stale_claims)
     ? catalog.stale_claims.filter(
@@ -570,12 +598,18 @@ export function detectCoachingSupervisionCatalogDrift(
       }
       if (
         actual.price_cents !== record.price_cents ||
-        actual.active !== record.active
+        actual.active !== record.active ||
+        actual.requires_cohort !== record.requires_cohort ||
+        actual.cohort_program !== record.cohort_program ||
+        JSON.stringify(actual.cohort_start_dates ?? []) !==
+          JSON.stringify(record.cohort_start_dates) ||
+        JSON.stringify(actual.cohort_excluded_start_dates ?? []) !==
+          JSON.stringify(record.cohort_excluded_start_dates)
       ) {
         findings.push({
           program,
           kind: 'price_mismatch',
-          detail: `products.json "${productId}" price/active state does not match the pinned Coaching Supervision Mastery catalog`,
+          detail: `products.json "${productId}" price/active/cohort eligibility does not match the pinned Coaching Supervision Mastery catalog`,
         });
       }
     }

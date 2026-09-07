@@ -10,6 +10,16 @@ deterministic preparation, validation, staged activation, exact readback, and
 consumer-local rollback. It does not publish a catalog, add an allowlist, change
 checkout, activate provider access, or change the current enrollment processor.
 
+### Current-source correction applied by NC-20260907-006
+
+The NC-005 packet's “regular inactive” assumption came from stale Tandemweb
+branch `0e42c7dd2c27`. Current deployed/main source `c61fabf84f45`, reviewed in
+`fbce5638da96`, makes both products active and binds availability to the selected
+cohort: `supervision-inaugural` allows only `2026-10-07`, while
+`supervision-regular` excludes that date and serves later cohorts. The
+publication contract preserves that current behavior. Native Stripe product
+activity cannot supply or override checkout/cohort eligibility.
+
 The first proposed population is the two existing Coaching Supervision Mastery
 routes. The contract is designed for later populations, but a v1 compatibility
 export is allowed only when it can preserve the present resolver exactly.
@@ -237,8 +247,9 @@ never a rollback or replay canary.
 ## Required positive and negative acceptance
 
 The first implementation must prove exact inaugural and regular route parity,
-preserve inaugural active and regular inactive checkout states, validate the
-`tandem` alias, and reproduce the current resolved and legacy results.
+preserve both active checkout routes plus the inaugural-only and
+regular-excludes-inaugural cohort constraints, validate the `tandem` alias, and
+reproduce the current resolved and legacy results.
 
 It must also prove rejection or hold for:
 
@@ -250,8 +261,8 @@ It must also prove rejection or hold for:
 - incomplete provider evidence;
 - a Product Map target differing from the bound CSS target;
 - a source digest, catalog revision, bundle version, or output hash mismatch;
-- an attempt to turn regular checkout active because its native product is
-  active;
+- an attempt to infer either route's active state or cohort eligibility from
+  native product activity;
 - an attempt to claim Heartbeat attachment or learner access from group/course
   existence; and
 - any future scoped binding that cannot be lowered to the v1 index without loss.

@@ -5,7 +5,8 @@
   "population_keys": ["supervision-inaugural", "supervision-regular"],
   "bases": {
     "nanoclaw": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
-    "tandemweb": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+    "tandemweb_initial": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+    "tandemweb_current_source": "c61fabf84f45e70630751de44ece1b368505b531",
     "claim_commit": "fba915c421d1166af26273e6a3c1e517ab71f262"
   },
   "actual_consumer_alias": {
@@ -19,9 +20,9 @@
   },
   "deterministic_payloads": {
     "nanoclaw_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
-    "tandemweb_sha256": "2e12395f47601b9f7a0698417a0f34b6bb9828520d12f8d75fb26590a550218a",
-    "tandemweb_payload_sha256": "25e1d2f22f410861cdb0904f4948727a95575973f30ae27ab29c6c6ad1ebb71c",
-    "selected_checkout_sha256": "bb6d256909260977e0a6ccf7db790215a56de32323b69295f09f8403634e3237"
+    "tandemweb_file_sha256": "9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4",
+    "tandemweb_payload_sha256": "70657a2cd41c624e0345a8ec2e0e72190a7e686eb9d6bb1f4d468f2e66d3ec78",
+    "selected_checkout_sha256": "2235d83be9169ab668e0475e19bd79ce212d73ea2b8ff8b960bbc6cfe63a9723"
   },
   "consumers": {
     "nanoclaw-v1": {
@@ -35,17 +36,35 @@
     },
     "tandemweb-checkout-validation": {
       "state": "validated",
-      "prior_source": "0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
+      "prior_source": "c61fabf84f45e70630751de44ece1b368505b531",
       "artifact": "data/generated/student-catalog-publication-v1.json",
-      "artifact_sha256": "2e12395f47601b9f7a0698417a0f34b6bb9828520d12f8d75fb26590a550218a",
+      "artifact_sha256": "9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4",
       "new_source": null,
       "activated_at": null,
       "read_back_at": null
     }
   },
+  "source_mirror_reconciliation": {
+    "state": "dry_run",
+    "syncthing": {
+      "studio_dev_tandemweb_paused": false,
+      "mini_dev_tandemweb_paused": true
+    },
+    "studio": {
+      "before_sha256": "e7dc68f42709feaf1643971363c264bd73ec7d17c61fb64128b42890f5369011",
+      "proposed_after_sha256": "8dbc84f72ac979475851837e9f7b6fe8a28a48be146af8d50b8654b8b9b444c4",
+      "nonselected_bytes_sha256": "9a10cf4b4e43ff1907adc5f5927959315445e9b701363a86473f481c44d68365"
+    },
+    "mini": {
+      "before_sha256": "87646188b32d47a5e4300ea8c3393d614d27b5ec1e4677519dea24899818dd06",
+      "proposed_after_sha256": "52a6f5b535585ee736dacb6585c03ee763a2305af80b368494576e7e2615405f",
+      "nonselected_bytes_sha256": "2168fd6f064f351496257d1a16200497eed2681ed08a0d1be49dbeb4b9ebe852"
+    },
+    "applied_at": null
+  },
   "verification": {
-    "nanoclaw_focused": "3 files / 22 tests passed",
-    "tandemweb_focused": "10 tests passed",
+    "nanoclaw_focused": "publication/resolver/drift 4 files / 50 tests; source mirror 4 tests; fact sync 8 tests passed",
+    "tandemweb_focused": "16 tests passed",
     "nanoclaw_email_replay": "13 tests passed",
     "nanoclaw_email_critical": "801 tests passed; runner 45 tests passed",
     "nanoclaw_full": "3656 passed, 32 skipped, 3 failed; exact base 1449812c reproduces academy-capacity-operator-disposable reserved expected 1 actual 0; established CNPC and Trafft failures also unchanged",
