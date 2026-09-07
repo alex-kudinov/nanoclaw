@@ -302,9 +302,9 @@ index dcb8cecb..51df7826 100644
  const { execFileSync } = require('child_process');
  const { resolveCohortLabel, COHORT_COLUMN } = require('./lib/cohort.cjs');
 +const { loadProductBindings, resolveProductIdentity } = require('./lib/product-identity.cjs');
- 
+
  // ── Config ──────────────────────────────────────────────────────────────────
- 
+
 @@ -557,12 +558,23 @@ async function fetchPaymentData() {
    let invoiceId = '';
    let chargeDescription = '';
@@ -318,7 +318,7 @@ index dcb8cecb..51df7826 100644
 +    if (product) identityProductIds.push(typeof product === 'string' ? product : product.id);
 +    if (price) identityPriceIds.push(typeof price === 'string' ? price : price.id);
 +  };
- 
+
    if (ID_TYPE === 'checkout') {
      const session = await stripeGet(
        `/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`,
@@ -357,7 +357,7 @@ index dcb8cecb..51df7826 100644
 +    identityProductIds, identityPriceIds, identityIncomplete,
    };
  }
- 
+
 @@ -753,6 +771,9 @@ function derivePaymentFulfillmentOutcome({
    } else if (rosterMode === 'unmapped_product') {
      state = 'needs_product';
@@ -393,7 +393,7 @@ index dcb8cecb..51df7826 100644
 +    identityProductIds, identityPriceIds, identityIncomplete,
    } = fetchResult;
    const accountingStripeId = canonicalTransactionId || STRIPE_ID;
- 
+
 @@ -970,12 +994,15 @@ async function main() {
        // Combo products have multiple rows — one per roster tab
        const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
@@ -415,11 +415,11 @@ index dcb8cecb..51df7826 100644
 +      const productRows = identity.rows;
        const targets = resolveRosterTargets(productRows);
        ({ notAStudent, rosterMatches } = targets);
- 
+
 @@ -988,7 +1015,10 @@ async function main() {
          rosterMatches = await resolveExamRouting(rosterMatches, programTabs, customerEmail);
        }
- 
+
 -      if (notAStudent) {
 +      if (identity.status === 'conflict') {
 +        rosterMode = 'identity_conflict';
