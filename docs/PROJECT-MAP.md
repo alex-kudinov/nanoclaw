@@ -696,6 +696,13 @@ underlying processing or routing.
 
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 
+`NC-20260906-008` adds the unwired disposable-only transactional store and
+relational mapper for both enrollment/capacity aggregates. It serializes local
+transactions, checks versions, verifies readback and reports uncertain commits.
+Local/unapplied migration 146 adds projection versions and evidence-key history.
+See `docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md`; this does not activate
+production persistence or providers.
+
 `NC-20260906-007` adds the pure, synthetic-only snapshot adapters in
 `src/student-enrollment-ingress.ts`. The typed envelope independently binds
 funding, commercial, participant, and class proofs, normalizes canonical

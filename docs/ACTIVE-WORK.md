@@ -13,7 +13,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-008` | Persist both enrollment and capacity aggregates atomically with source/seat race and recovery proof | Codex | `codex/student-enrollment-transactional-store-20260906` @ `e6463ba2` | `in_progress` | C2 | Unwired relational store and disposable PostgreSQL tests; future C5/C4 impact | Implement, prove rollback/concurrency/retry, independently review, verify and commit/push | 2026-09-07T01:40Z |
+| `NC-20260906-008` | Persist both enrollment and capacity aggregates atomically with source/seat race and recovery proof | Codex | `codex/student-enrollment-transactional-store-20260906` @ `e6463ba2`; registration `1dcb9350` pushed | `ready_for_review` | C2 | Reviewed disposable-only store, local migration 146, 148 focused tests and real PostgreSQL proof; no live actions | Commit/push, reconcile program and verify final handoff | 2026-09-07T03:10Z |
 
 - Company OS r233: sole claim `work:student-enrollment-transactional-store`.
   Owner's Go is recorded in the accepted transactional-store decision; nine
@@ -26,6 +26,13 @@ outside the current client conversation.
 - Excluded: production migration/data/runtime, real or historical records,
   provider activity, deployment, financial actions and communication. Local
   disposable PostgreSQL DDL/DML is explicitly authorized for proof only.
+- Review: fresh bounded Sonnet/high R1 returned NO MATERIAL FINDINGS. Real
+  PostgreSQL testing corrected projection-version and evidence-history schema
+  mismatches before review; those changes were included in the independent packet.
+- Verification: focused 148/148, root/strict worker typechecks, real database
+  concurrency/rollback/uncertain-commit and complete mapping proof, continuity
+  165/161 pass. Full root 3,706 pass / 32 skipped / two failures reproduced on
+  unchanged `e6463ba2` (CNPC wrapper literal, Trafft freshness).
 
 ### NC-20260906-007 — Local multi-source enrollment adapters
 

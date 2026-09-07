@@ -117,6 +117,10 @@ readback contract succeeds. Nothing here writes a Sheet or provider.
 
 ## Remaining implementation gates
 
+`NC-20260906-008` supplies a local disposable-only persistence proof in
+`docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md`. Production source admission,
+pool/migration selection and runtime activation remain separate gates.
+
 The later host must persist BOTH canonical aggregates and aliases/evidence/
 exceptions/outbox atomically under serializable transaction/CAS before receipt
 acknowledgement. This local slice provides no database durability or concurrent

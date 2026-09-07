@@ -8,6 +8,49 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-008 — Disposable-only atomic enrollment persistence
+
+- Date: 2026-09-07T03:05:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_review; independent review complete, commit/push pending
+- Branch/base: `codex/student-enrollment-transactional-store-20260906` over
+  `e6463ba2`, isolated source worktree; primary dirty source preserved.
+- Change class: C2 local source/disposable DDL/DML; future C5/C4 impact.
+- Outcome: relational persistence of all 20 canonical enrollment/capacity
+  relations under ordered table locks, SERIALIZABLE isolation, row-version CAS,
+  exact readback and explicit uncertain-commit handling. No JSON-state ledger,
+  destructive replacement, runtime wiring or production connection defaults.
+- Schema findings: actual PostgreSQL proof exposed missing projection versions
+  and duplicate parent-order version-zero history entries for evidence. Local
+  migration 146 adds projection versions/evidence-history subjects; the pure
+  evidence command logs the evidence key. Existing audit rows remain untouched.
+- Verification: focused store/ingress/foundation/capacity proof 148/148; actual
+  disposable database races, rollback, commit-ack loss, alias replay, grants,
+  partial sponsors, waitlist, linked evidence, synthetic readback, stale CAS,
+  lease refusal and delivery metadata retention pass. Empty rollback/reapply
+  and populated rollback refusal pass. Root and worker typechecks pass. Full
+  root: 3,706 pass / 32 skipped / two known CNPC/Trafft predecessor failures.
+- Deployment/migration: production not applicable and excluded. Migration 146
+  applied only to fresh generated disposable databases, then removed with them.
+  No real rows, provider activity, historical replay/reconciliation, deployment,
+  payment/refund, credential, cluster-role/membership or communication mutation.
+- Documentation: transactional-store contract, source/ingress and database
+  authority notes, local-only schema delta, project map, active work, review and
+  task evidence. No live schema snapshot was regenerated or presented as migrated.
+- Rollback: remove unwired source; SQL rollback refuses outbox/evidence-history
+  data. Production promotion needs separate authority and data/locking policy.
+- Follow-up: authenticated-source admission now must explicitly promote the
+  disposable boundary, apply migration with authority and verify bounded new
+  events before any assignment/capacity cutover.
+- Review addendum 2026-09-07T03:10:00Z: one bounded Sonnet/high review returned
+  NO MATERIAL FINDINGS on the store, relational mapper, disposable harness,
+  worker and exact migration/audit correction. Four model calls; 67,325
+  cache-create, 132,807 cache-read, 16,994 output, max context 74,099 tokens;
+  no usage warning. Codex independently checked the verdict against actual
+  PostgreSQL tests. Root and strict standalone worker typechecks pass;
+  final continuity passes (165 task rows / 161 changelog entries). Both full
+  suite failures reproduced on the unchanged predecessor in this task.
+
 ### NC-20260906-007 — Local multi-source enrollment snapshot adapters
 
 - Date: 2026-09-07T01:21:00Z

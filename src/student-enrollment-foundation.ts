@@ -804,8 +804,8 @@ export function attachEnrollmentEvidence(
   next.evidence[input.evidenceKey] = input;
   next.history.push(
     history({
-      subjectType: input.subjectType,
-      subjectKey: input.subjectKey,
+      subjectType: 'evidence',
+      subjectKey: input.evidenceKey,
       previousVersion: null,
       commandKey: 'attach_evidence',
       reasonCode: input.evidenceType,

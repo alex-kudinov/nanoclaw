@@ -4,6 +4,12 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Local/unapplied migration 146 supports the unwired enrollment store: projection
+row versions and individual evidence-history identities. It changes no roles
+or grants and has guarded rollback. See
+`docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md`; its disposable proof is not a
+production migration or persistence activation receipt.
+
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
 Migration 144 is the separately gated Academy Capacity Gate D operator ledger.
