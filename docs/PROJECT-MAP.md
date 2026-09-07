@@ -19,6 +19,20 @@ coverage audit and cross-provider ownership contract are in
 `docs/STUDENT-PRODUCT-IDENTITY.md`. This does not activate the new enrollment
 writer, access provisioning or supervision capacity.
 
+Strategy checkpoint `NC-20260907-003`: `docs/MODEL-ROUTING-POLICY.md` and
+project `.codex/config.toml` adopt Astra strategy/acceptance, one explicit Sol
+High execution writer, and bounded Claude Sonnet/high review while preserving one
+Company OS claim and every existing action/release gate. The two-child setting is
+a runtime ceiling, not resource-scoped program concurrency. The owner-directed
+`docs/STUDENT-LIFECYCLE-STRATEGY.md` extends the entitlement, enrollment,
+capacity, and control-plane foundations through typed source relationships,
+agreement-versus-receipt identity, staged publication coverage, deliberate
+integration of the undeployed `8b1ffbb9` enrollment line with the live
+supervision bridge, and later evidence-bound progress/actions. This planning
+checkpoint applies no migrations, provider/student writes, or runtime deployment.
+Sol made no portfolio mutation; after R2, Astra registered the four reviewed
+candidate gaps at revision 247 without activating them.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.
