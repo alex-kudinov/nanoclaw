@@ -68,12 +68,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   and date-sensitive Trafft failures remain. Broad Tandem Python collection is
   unavailable because the current interpreter lacks optional BeautifulSoup and
   markdownify dependencies; the task-owned and checkout suites do not use them.
-  Independent review remains.
+  Claude Sonnet/high R1 found that the Nano generator checked only the number of
+  held evidence claims, so a renamed key could retain count eight. The generator
+  now requires the exact eight names and a renamed-key regression passes. R1's
+  other finding was a bounded projection omission around the already-present
+  interval/cardinality/lowering helpers. Narrow R2 inspected those definitions
+  and the exact-key correction and returned `NO MATERIAL FINDINGS`. R1 usage:
+  four calls, 74,159 cache-create, 126,705 cache-read, 17,544 output, max context
+  74,161. R2 usage: five calls, 35,713 cache-create, 148,656 cache-read, 5,164
+  output, max context 42,487.
+  Astra then identified handwritten business constants in the Tandem consumer
+  and the generator's independent date literal. Both now derive from the
+  digest-pinned canonical/generated sources while retaining generic price-role,
+  arithmetic, date-partition, evidence, and hash enforcement. Artifact bytes
+  did not change. Authorized narrow R3 returned `NO MATERIAL FINDINGS`: four
+  calls, 43,231 cache-create, 115,120 cache-read, 10,217 output, max context
+  50,005.
+  Final full Nano is 3,661 pass / 32 skip with the same three independently
+  classified predecessor failures.
 - Boundary: native price amount/recurrence, Heartbeat group-course attachment,
   learner access/progress/class/completion, and global strict publication
   eligibility remain explicitly false. No provider, roster, payment,
   enrollment, access, capacity, schedule, message, migration, checkout promise,
   or customer action changed.
+- Mirror hold: Studio and Mini configure the same Syncthing folder ID but expose
+  divergent local/global block hashes and vector versions for `products.json`;
+  Mini is paused and reports no file availability. The two exact dry-run patches
+  preserve each local file independently, but applying either could overwrite
+  unrelated edits on a later unpause. No operational mirror write occurs until
+  an exact cross-host convergence plan is accepted.
 - Rollback: NanoClaw restores the prior immutable release; Tandemweb restores
   the prior source commit. Neither rollback edits provider or student state.
 
