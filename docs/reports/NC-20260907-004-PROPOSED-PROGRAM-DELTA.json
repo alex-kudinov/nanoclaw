@@ -2,7 +2,7 @@
   "proposal_id": "NC-20260907-004-proposed-program-delta",
   "generated_at_utc": "2026-09-07T20:04:51.903Z",
   "apply_authority": "Astra only",
-  "status": "review_complete_pending_astra_acceptance_do_not_apply",
+  "status": "repository_evidence_pushed_pending_astra_program_apply",
   "observed_state_revision": 253,
   "work_item": "work:student-product-catalog-source-reconciliation",
   "pre_review_operations": {
@@ -61,5 +61,12 @@
     "Do not apply against stale revision 253 without refresh.",
     "Do not mark review or source-closure commitments complete before review, commit, push, and handoff evidence exist.",
     "Do not activate rollout, mutate catalogs or providers or runtime, or begin the production pilot."
-  ]
+  ],
+  "repository_acceptance": {
+    "receipt": "receipt:astra-independent-nc004-counts-and-scope-pass",
+    "evidence_commit": "7de990e3",
+    "branch": "codex/student-catalog-reconciliation-20260907",
+    "push_verified": true,
+    "primary_program_apply": "pending_astra"
+  }
 }
