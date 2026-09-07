@@ -13,7 +13,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260906-007` | Normalize eight enrollment ingress channels with independent host evidence and canonical aliases | Codex | `codex/student-enrollment-ingress-adapters-20260906` @ `2755a284` | `in_progress` | C2 | Local synthetic source adapter/test, contract, continuity; future identity/financial impact C5/C4 | Implement, test, independently review, commit/push and reconcile | 2026-09-07T01:06Z |
+| `NC-20260906-007` | Normalize eight enrollment ingress channels with independent host evidence and canonical aliases | Codex | `codex/student-enrollment-ingress-adapters-20260906` @ `2755a284` | `ready_for_review` | C2 | Reviewed local snapshot adapters; 166 focused pass; full retains two proved baseline failures; no live actions | Commit/push reviewed source, reconcile program and verify handoff | 2026-09-07T01:28Z |
 
 - Company OS `work:student-enrollment-multisource-ingress-adapters` is the sole
   active claim at r229. User's proceed instruction is recorded in the accepted
@@ -26,6 +26,12 @@ outside the current client conversation.
 - No real records, historical inspection/replay/reconciliation, production
   data/schema/runtime integration, provider/Sheet writes, deployment, financial
   action or communication. Database integration and activation are later work.
+- Review: two bounded Sonnet/high rounds. R1 conflated a counted funding
+  commitment with student materialization; Codex reproduced zero student
+  effects and clarified the contract. R2 found no material defect. No code
+  change weakened the accepted funding-count rule.
+- Validation: pinned Node 22.23.2 typecheck, 166 focused tests, 3,699 root
+  passes / 32 skipped / two predecessor failures, format/diff/continuity.
 
 ### NC-20260906-006 — Bookkeeper funding contract (local-only)
 

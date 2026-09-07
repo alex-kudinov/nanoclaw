@@ -5,6 +5,11 @@ is unwired: it changes neither the live Contador pipeline nor provider state.
 
 ## Authority and admission
 
+`NC-20260906-007` implements the local normalized-snapshot caller described in
+`docs/STUDENT-ENROLLMENT-INGRESS-ADAPTERS.md`. It verifies independent host proof
+records and aliases before calling this contract. Network authentication,
+source retrieval, persistence, and runtime activation remain unimplemented here.
+
 `src/bookkeeper-enrollment-contract.ts` composes the existing enrollment
 foundation (migration 142) and capacity commands (143–145). It introduces no
 parallel database or person, entitlement, assignment, or finance model.

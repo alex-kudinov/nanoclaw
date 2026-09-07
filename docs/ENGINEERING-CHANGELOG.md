@@ -8,6 +8,42 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-007 — Local multi-source enrollment snapshot adapters
+
+- Date: 2026-09-07T01:21:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_review; independent review complete, commit/push pending
+- Branch/base: `codex/student-enrollment-ingress-adapters-20260906` over
+  `2755a284`; registration `ea6ec317` committed/pushed before source changes.
+- Change class: C2 local source; future identity/financial impact C5/C4.
+- Outcome: versioned bounded snapshot adapters check independently supplied
+  host proof purpose/hash/role/actor/time, bind exact source/offer/seat/person/
+  assignment, preserve account-scoped funding aliases, and produce canonical
+  engine state or owned intake exceptions across all eight source channels.
+  Correction intake creates an owner resolution case, never historical replay.
+- Verification: focused 165/165 (34 new adapter tests), initial pinned Node
+  22.23.2 typecheck pass. Full suite retains only the CNPC wrapper-literal and
+  Trafft freshness failures independently reproduced on predecessor `2755a284`.
+  Final review, checks and Git receipts will be appended.
+- Deployment/migration: not applicable under explicit local/synthetic scope.
+  No provider retrieval/authentication, runtime consumer, database writer,
+  historical or real records, provider/Sheet write, payment/refund,
+  communication, deployment, or production schema/runtime change.
+- Documentation: ingress-adapter contract, Bookkeeper contract, project map,
+  active work, this changelog, review packets and task evidence.
+- Rollback: remove the unwired source/test files; no live state rollback needed.
+- Follow-ups: atomic ingress persistence and authenticated source admission
+  require separate program items/authority before any real-world integration.
+- Review/verification addendum 2026-09-07T01:28:00Z: R1's claimed material
+  finding equated capacity commitments with student materialization. Exact
+  execution proves zero enrollments/entitlements/class assignments/projections
+  while independently proved paid capacity remains counted. The accepted
+  predecessor contract requires this behavior. Documentation now names the
+  entities explicitly, and a regression covers them. R2 returned NO MATERIAL
+  FINDINGS; no code/policy change was needed. Final focused 166/166 (35 new),
+  typecheck pass, root 3,699 pass / 32 skip / two unchanged CNPC/Trafft failures.
+  Session metrics and disposition are preserved in the task evidence.
+
 ### NC-20260906-006 — Local Bookkeeper funding to enrollment contract
 
 - Date: 2026-09-07T00:26:00Z

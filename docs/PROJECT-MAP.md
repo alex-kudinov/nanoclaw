@@ -696,6 +696,14 @@ underlying processing or routing.
 
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 
+`NC-20260906-007` adds the pure, synthetic-only snapshot adapters in
+`src/student-enrollment-ingress.ts`. The typed envelope independently binds
+funding, commercial, participant, and class proofs, normalizes canonical
+aliases, and admits owned correction/intake exceptions. See
+`docs/STUDENT-ENROLLMENT-INGRESS-ADAPTERS.md`. It has no provider retrieval,
+runtime consumer, database writer or activation path; existing live writers
+remain untouched.
+
 `NC-20260906-006` adds the local-only, unwired
 `src/bookkeeper-enrollment-contract.ts` adapter over the existing enrollment
 and capacity engines. See `docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md` for exact
