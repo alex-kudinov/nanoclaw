@@ -220,44 +220,40 @@ def validate_aacs(catalog_path: Path, pack_path: Path) -> list[str]:
     ):
         errors.append("Coaching Supervision Mastery catalog lacks exact AACS authority")
     expectations = catalog.get("checkout_expectations")
-    expected_products = [
-        (
-            "supervision-inaugural",
-            399600,
-            True,
-            True,
-            "supervision",
-            ["2026-10-07"],
-            [],
-        ),
-        (
-            "supervision-regular",
-            479600,
-            True,
-            True,
-            "supervision",
-            [],
-            ["2026-10-07"],
-        ),
-    ]
-    actual_products = (
-        [
-            (
-                item.get("product"),
-                item.get("price_cents"),
-                item.get("active"),
-                item.get("requires_cohort"),
-                item.get("cohort_program"),
-                item.get("cohort_start_dates"),
-                item.get("cohort_excluded_start_dates"),
-            )
-            for item in expectations
-        ]
+    records = (
+        expectations
         if isinstance(expectations, list)
         and all(isinstance(item, dict) for item in expectations)
         else []
     )
-    if actual_products != expected_products:
+    products = [item.get("product") for item in records]
+    structural_valid = products == [
+        "supervision-inaugural",
+        "supervision-regular",
+    ] and all(
+        isinstance(item.get("price_cents"), int)
+        and item["price_cents"] > 0
+        and isinstance(item.get("active"), bool)
+        and item.get("requires_cohort") is True
+        and item.get("cohort_program") == "supervision"
+        and isinstance(item.get("cohort_start_dates"), list)
+        and isinstance(item.get("cohort_excluded_start_dates"), list)
+        and all(
+            isinstance(value, str)
+            for value in item["cohort_start_dates"]
+            + item["cohort_excluded_start_dates"]
+        )
+        for item in records
+    )
+    partition_valid = (
+        structural_valid
+        and bool(records[0]["cohort_start_dates"])
+        and not records[0]["cohort_excluded_start_dates"]
+        and not records[1]["cohort_start_dates"]
+        and records[1]["cohort_excluded_start_dates"]
+        == records[0]["cohort_start_dates"]
+    )
+    if not partition_valid:
         errors.append("Coaching Supervision Mastery checkout expectations are invalid")
     stale_claims = catalog.get("stale_claims")
     if not isinstance(stale_claims, list) or len(stale_claims) < 4 or any(

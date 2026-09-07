@@ -31,6 +31,11 @@ operational mirror is stale: inaugural is active without cohort fields; regular
 is inactive without cohort fields. The Mac Studio copy is also stale. Syncthing
 folder `dev-tandemweb` is active on Studio and paused on Mini, so no automatic
 concurrent write is currently expected, but a later unpause could conflict.
+Syncthing's file-level debug read confirms divergence rather than quiescent
+replication: Studio and Mini each report global equal to local, but their block
+hashes and vector versions differ; Mini reports no current availability. The
+same folder ID means these are configured replicas even though the paused Mini
+currently treats its older version independently.
 
 The guarded repair helper
 `scripts/reconcile-supervision-checkout-source.mjs` refuses any selected-field
@@ -49,7 +54,10 @@ Dry-run receipts:
   unchanged nonselected-byte digest
   `2168fd6f064f351496257d1a16200497eed2681ed08a0d1be49dbeb4b9ebe852`.
 
-Application waits for Astra's reviewed release acceptance. It will not reset,
-reformat, or copy either repository; touch PHP; deploy Tandemweb; or change
+Application is additionally held until a safe cross-host convergence decision
+can preserve each file's unrelated edits; running both independent patches
+would create competing Syncthing versions. It waits for Astra's reviewed release
+acceptance and an exact convergence plan. It will not reset, reformat, or copy
+either repository; touch PHP; deploy Tandemweb; or change
 provider, roster, payment, enrollment, access, class, capacity, schedule, or
 customer state.

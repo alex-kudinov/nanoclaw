@@ -29,6 +29,7 @@ const tandemwebRoot = path.resolve(
 const sourceManifest = require('../../facts/catalogs/student-catalog-publication-v1.json');
 const publicationSchema = require('../../facts/catalogs/student-catalog-publication-v1.schema.json');
 const entitlementCatalog = require('../../facts/catalogs/student-entitlements-v1.json');
+const supervisionProgram = require('../../facts/catalogs/coaching-supervision-mastery.json');
 const manualBindings = require('../../facts/catalogs/student-product-bindings-v1.json');
 const generatedBindings = require('../../facts/generated/student-product-bindings-v1.compat.json');
 const temporaryRoots: string[] = [];
@@ -183,6 +184,35 @@ describe('student catalog publication generator', () => {
       heartbeat_completion_verified: false,
       global_strict_publication_eligible: false,
     });
+  });
+
+  it('derives cohort dates from the digest-pinned canonical sources', () => {
+    const fixture = makeFixture();
+    const program = clone(supervisionProgram);
+    const checkout = JSON.parse(
+      fs.readFileSync(
+        path.join(tandemwebRoot, 'data/checkout/products.json'),
+        'utf8',
+      ),
+    );
+    program.checkout_expectations[0].cohort_start_dates = ['2027-01-06'];
+    program.checkout_expectations[1].cohort_excluded_start_dates = [
+      '2027-01-06',
+    ];
+    checkout['supervision-inaugural'].cohort_start_dates = ['2027-01-06'];
+    checkout['supervision-regular'].cohort_excluded_start_dates = [
+      '2027-01-06',
+    ];
+    replaceSource(fixture, 'supervision_program', program);
+    replaceSource(fixture, 'checkout_catalog', checkout);
+
+    const built = build(fixture);
+    expect(
+      built.tandemweb.routes[0].cohort_eligibility.allowed_start_dates,
+    ).toEqual(['2027-01-06']);
+    expect(
+      built.tandemweb.routes[1].cohort_eligibility.excluded_start_dates,
+    ).toEqual(['2027-01-06']);
   });
 
   it('preserves exact current resolver behavior for resolved, conflict, and legacy paths', () => {
@@ -414,6 +444,13 @@ describe('student catalog publication generator', () => {
     const overstated = clone(sourceManifest);
     overstated.holds.heartbeat_learner_access_verified = true;
     expect(() => validateManifestBeforeReads(overstated)).toThrowError(
+      expect.objectContaining({ code: 'evidence_hold_invalid' }),
+    );
+
+    const renamed = clone(sourceManifest);
+    delete renamed.holds.heartbeat_completion_verified;
+    renamed.holds.customer_action_verified = false;
+    expect(() => validateManifestBeforeReads(renamed)).toThrowError(
       expect.objectContaining({ code: 'evidence_hold_invalid' }),
     );
   });

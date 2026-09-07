@@ -491,39 +491,35 @@ export function detectCoachingSupervisionCatalogDrift(
       entry !== null && typeof entry === 'object' && !Array.isArray(entry),
   );
   const normalizedExpectations = checkoutRecordsValid
-    ? checkoutExpectations.map((entry) => {
-        const record = entry as Record<string, unknown>;
-        return [
-          record.product,
-          record.price_cents,
-          record.active,
-          record.requires_cohort,
-          record.cohort_program,
-          record.cohort_start_dates,
-          record.cohort_excluded_start_dates,
-        ];
-      })
+    ? checkoutExpectations.map((entry) => entry as Record<string, unknown>)
     : [];
-  const expectedExpectations = [
-    [
-      'supervision-inaugural',
-      399600,
-      true,
-      true,
-      'supervision',
-      ['2026-10-07'],
-      [],
-    ],
-    [
-      'supervision-regular',
-      479600,
-      true,
-      true,
-      'supervision',
-      [],
-      ['2026-10-07'],
-    ],
-  ];
+  const inauguralExpectation = normalizedExpectations[0];
+  const regularExpectation = normalizedExpectations[1];
+  const checkoutSemanticsValid =
+    normalizedExpectations.length === 2 &&
+    inauguralExpectation.product === 'supervision-inaugural' &&
+    regularExpectation.product === 'supervision-regular' &&
+    normalizedExpectations.every(
+      (record) =>
+        typeof record.price_cents === 'number' &&
+        Number.isInteger(record.price_cents) &&
+        record.price_cents > 0 &&
+        typeof record.active === 'boolean' &&
+        record.requires_cohort === true &&
+        record.cohort_program === 'supervision' &&
+        Array.isArray(record.cohort_start_dates) &&
+        Array.isArray(record.cohort_excluded_start_dates) &&
+        [
+          ...record.cohort_start_dates,
+          ...record.cohort_excluded_start_dates,
+        ].every((value) => typeof value === 'string' && value.length > 0),
+    ) &&
+    (inauguralExpectation.cohort_start_dates as unknown[]).length > 0 &&
+    (inauguralExpectation.cohort_excluded_start_dates as unknown[]).length ===
+      0 &&
+    (regularExpectation.cohort_start_dates as unknown[]).length === 0 &&
+    JSON.stringify(regularExpectation.cohort_excluded_start_dates) ===
+      JSON.stringify(inauguralExpectation.cohort_start_dates);
   const staleClaims = Array.isArray(catalog.stale_claims)
     ? catalog.stale_claims.filter(
         (claim): claim is string =>
@@ -539,8 +535,7 @@ export function detectCoachingSupervisionCatalogDrift(
     catalog.accreditation?.program_level ===
       'ICF Advanced Accreditation in Coaching Supervision (AACS)' &&
     checkoutRecordsValid &&
-    JSON.stringify(normalizedExpectations) ===
-      JSON.stringify(expectedExpectations) &&
+    checkoutSemanticsValid &&
     staleClaims.length >= 4;
   if (
     !catalogValid ||

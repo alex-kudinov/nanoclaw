@@ -22,6 +22,16 @@ const TRACKED_OUTPUTS = {
 };
 const EXPECTED_POPULATION = ['supervision-inaugural', 'supervision-regular'];
 const EXPECTED_CONSUMERS = ['nanoclaw-v1', 'tandemweb-checkout-validation'];
+const EXPECTED_HOLDS = [
+  'global_strict_publication_eligible',
+  'heartbeat_class_assignment_verified',
+  'heartbeat_completion_verified',
+  'heartbeat_group_course_attachment_verified',
+  'heartbeat_learner_access_verified',
+  'heartbeat_progress_verified',
+  'native_price_amount_verified',
+  'native_price_recurrence_verified',
+];
 const ALLOWED_SOURCES = new Map(
   [
     [
@@ -487,7 +497,7 @@ export function validateManifestBeforeReads(manifest) {
 
   if (
     !isObject(manifest.holds) ||
-    Object.keys(manifest.holds).length !== 8 ||
+    !sameArray(Object.keys(manifest.holds).sort(), EXPECTED_HOLDS) ||
     Object.values(manifest.holds).some((value) => value !== false)
   ) {
     fail('evidence_hold_invalid');
@@ -833,14 +843,6 @@ function validateAndProject(manifest, sources) {
       !sameArray(
         cohortExcludedStartDates,
         programExpectation.cohort_excluded_start_dates,
-      ) ||
-      !sameArray(
-        cohortStartDates,
-        offerKey === 'supervision-inaugural' ? ['2026-10-07'] : [],
-      ) ||
-      !sameArray(
-        cohortExcludedStartDates,
-        offerKey === 'supervision-regular' ? ['2026-10-07'] : [],
       )
     ) {
       fail('checkout_cohort_eligibility_invalid', offerKey);
@@ -901,6 +903,20 @@ function validateAndProject(manifest, sources) {
       },
       roster_projection: { tab: roster.tab, column: roster.column },
     });
+  }
+
+  const inauguralEligibility = checkoutProjection[0].cohort_eligibility;
+  const regularEligibility = checkoutProjection[1].cohort_eligibility;
+  if (
+    inauguralEligibility.allowed_start_dates.length === 0 ||
+    inauguralEligibility.excluded_start_dates.length !== 0 ||
+    regularEligibility.allowed_start_dates.length !== 0 ||
+    !sameArray(
+      regularEligibility.excluded_start_dates,
+      inauguralEligibility.allowed_start_dates,
+    )
+  ) {
+    fail('checkout_cohort_partition_invalid');
   }
 
   const groupExists = exactlyOne(
