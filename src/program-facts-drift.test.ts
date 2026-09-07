@@ -151,11 +151,19 @@ describe('detectCoachingSupervisionCatalogDrift', () => {
         product: 'supervision-inaugural',
         price_cents: 399600,
         active: true,
+        requires_cohort: true,
+        cohort_program: 'supervision',
+        cohort_start_dates: ['2026-10-07'],
+        cohort_excluded_start_dates: [],
       },
       {
         product: 'supervision-regular',
         price_cents: 479600,
-        active: false,
+        active: true,
+        requires_cohort: true,
+        cohort_program: 'supervision',
+        cohort_start_dates: [],
+        cohort_excluded_start_dates: ['2026-10-07'],
       },
     ],
     stale_claims: [
@@ -177,8 +185,22 @@ Live and enrolling.`;
 ${pack}
 <!-- END CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->`;
   const products = {
-    'supervision-inaugural': { price_cents: 399600, active: true },
-    'supervision-regular': { price_cents: 479600, active: false },
+    'supervision-inaugural': {
+      price_cents: 399600,
+      active: true,
+      requires_cohort: true,
+      cohort_program: 'supervision',
+      cohort_start_dates: ['2026-10-07'],
+      cohort_excluded_start_dates: [],
+    },
+    'supervision-regular': {
+      price_cents: 479600,
+      active: true,
+      requires_cohort: true,
+      cohort_program: 'supervision',
+      cohort_start_dates: [],
+      cohort_excluded_start_dates: ['2026-10-07'],
+    },
   };
 
   it('accepts the exact live catalog, pack, checkout state, and Sales block', () => {
@@ -203,11 +225,14 @@ ${pack}
     ]);
   });
 
-  it('flags checkout price or active-state drift', () => {
+  it('flags checkout price, active-state, or cohort-eligibility drift', () => {
     expect(
       detectCoachingSupervisionCatalogDrift(catalog, pack, kb, {
         ...products,
-        'supervision-inaugural': { price_cents: 399600, active: false },
+        'supervision-inaugural': {
+          ...products['supervision-inaugural'],
+          active: false,
+        },
       }).findings,
     ).toEqual([
       expect.objectContaining({

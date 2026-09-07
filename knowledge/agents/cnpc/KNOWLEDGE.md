@@ -121,7 +121,7 @@ Availability boundaries:
 <!-- BEGIN CANONICAL PROGRAM FACTS: coaching-supervision-mastery -->
 ## Canonical Coaching Supervision Mastery Facts
 
-<!-- program-facts: coaching-supervision-mastery revision=1 sha256=285b306d5d8936881009f4663cf2a726896a72a55c860b69193cfcd00f3870c4 -->
+<!-- program-facts: coaching-supervision-mastery revision=1 sha256=535088c9ff7a55c823d123d5d521bb244de95aa0d14d530d5e8892d9f23013a5 -->
 
 This block is deterministic authority output. Current provider/checkout
 evidence and accepted owner decisions outrank it; website browsing history,
@@ -145,6 +145,9 @@ or an interest-only offer, and never say that dates or pricing are not public.
 - Tuition: $3,996 for the inaugural cohort, payable in full or four monthly
   payments of $999. Regular tuition is $4,796, or four monthly payments of
   $1,199.
+- Checkout eligibility: the inaugural route is valid only for the October 7,
+  2026 cohort. The regular route is active for later cohorts and explicitly
+  excludes October 7, 2026. Both require an exact supervision cohort choice.
 - Enrollment page: https://tandemcoach.co/coaching-supervisor-training/
 
 Schedule boundary:

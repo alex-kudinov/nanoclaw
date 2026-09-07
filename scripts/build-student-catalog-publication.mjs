@@ -823,6 +823,28 @@ function validateAndProject(manifest, sources) {
     ) {
       fail('checkout_source_mismatch', offerKey);
     }
+    const cohortStartDates = checkoutProduct.cohort_start_dates ?? [];
+    const cohortExcludedStartDates =
+      checkoutProduct.cohort_excluded_start_dates ?? [];
+    if (
+      checkoutProduct.requires_cohort !== true ||
+      checkoutProduct.cohort_program !== 'supervision' ||
+      !sameArray(cohortStartDates, programExpectation.cohort_start_dates) ||
+      !sameArray(
+        cohortExcludedStartDates,
+        programExpectation.cohort_excluded_start_dates,
+      ) ||
+      !sameArray(
+        cohortStartDates,
+        offerKey === 'supervision-inaugural' ? ['2026-10-07'] : [],
+      ) ||
+      !sameArray(
+        cohortExcludedStartDates,
+        offerKey === 'supervision-regular' ? ['2026-10-07'] : [],
+      )
+    ) {
+      fail('checkout_cohort_eligibility_invalid', offerKey);
+    }
     if (
       !isObject(installments) ||
       installments.enabled !== true ||
@@ -852,6 +874,12 @@ function validateAndProject(manifest, sources) {
         amount_cents: checkoutProduct.price_cents,
       },
       direct_price_id: null,
+      cohort_eligibility: {
+        required: true,
+        program: 'supervision',
+        allowed_start_dates: cohortStartDates,
+        excluded_start_dates: cohortExcludedStartDates,
+      },
       installment_plan: {
         count: installments.count,
         interval: installments.interval,

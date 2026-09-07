@@ -58,6 +58,14 @@ do not acquire coverage or block the consumer. This adds no live website call,
 paid-event writer, Heartbeat attachment/access claim, or global strict
 publication eligibility.
 
+Current Tandemweb source additionally binds both supervision routes to exact
+cohort eligibility. The inaugural product allows only October 7, 2026; regular
+tuition excludes that date and serves later cohorts. NanoClaw's default external
+checkout path points to a stale synchronized operational mirror, so activation
+includes the reviewed, exact-hash, backup-first selected-field repair in
+`scripts/reconcile-supervision-checkout-source.mjs`. The helper preserves all
+other fields and bytes and does not deploy or change live website behavior.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.

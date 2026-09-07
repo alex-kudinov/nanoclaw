@@ -16,8 +16,8 @@
       "namespace": "catalog:coaching-supervision-mastery",
       "object_type": "catalog",
       "object_id": "coaching-supervision-mastery",
-      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
-      "source_sha256": "285b306d5d8936881009f4663cf2a726896a72a55c860b69193cfcd00f3870c4"
+      "source_version": "catalog_revision:1+correction:NC-20260907-006",
+      "source_sha256": "535088c9ff7a55c823d123d5d521bb244de95aa0d14d530d5e8892d9f23013a5"
     },
     {
       "source_key": "entitlement_catalog",
@@ -46,8 +46,8 @@
       "namespace": "checkout:tandemweb",
       "object_type": "catalog",
       "object_id": "checkout-products",
-      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
-      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528"
+      "source_version": "git:c61fabf84f45e70630751de44ece1b368505b531",
+      "source_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9"
     },
     {
       "source_key": "stripe_snapshot",
@@ -286,8 +286,8 @@
         "object_id": "supervision-inaugural"
       },
       "source_ref": "data/checkout/products.json",
-      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
-      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528",
+      "source_version": "git:c61fabf84f45e70630751de44ece1b368505b531",
+      "source_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9",
       "evidence_class": "source_declaration",
       "evidence_ref": "data/checkout/products.json#supervision-inaugural",
       "observed_at": null,
@@ -312,8 +312,8 @@
         "object_id": "supervision-regular"
       },
       "source_ref": "data/checkout/products.json",
-      "source_version": "git:0e42c7dd2c271926e09ec5f16e0a71ef3936d68f",
-      "source_sha256": "f45ba9c0dce6265c69176a21778b8e93ee63ced65740cfadaf5e8b9cf0c49528",
+      "source_version": "git:c61fabf84f45e70630751de44ece1b368505b531",
+      "source_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9",
       "evidence_class": "source_declaration",
       "evidence_ref": "data/checkout/products.json#supervision-regular",
       "observed_at": null,

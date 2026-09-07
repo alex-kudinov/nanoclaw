@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | `codex/catalog-publication-20260907` from exact live `1449812c1e71`; claim `fba915c4` pushed; dirty primary preserved; Tandemweb companion branch from `0e42c7dd2c27` | `validating` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | Focused generator/resolver/security checks are 22/22 and Tandem validation checks 10/10. Complete continuity, full gates and bounded Sonnet/high review; then obtain Astra acceptance and activate/read back each exact consumer release. | 2026-09-07T22:12Z |
+| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw `codex/catalog-publication-20260907` from exact live `1449812c1e71`; Tandemweb current-lineage `codex/catalog-publication-current-20260907` from deployed `c61fabf84f45`; dirty primaries preserved | `validating` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | Current-source correction is implemented and focused checks pass. Complete bounded review and final gates; then obtain Astra acceptance before mirror repair and one-consumer-at-a-time activation/readback. | 2026-09-07T22:44Z |
 
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
 
@@ -200,7 +200,10 @@ outside the current client conversation.
 - Implementation: schema-validated source-reference manifest, deterministic
   two-consumer generator, generated exact v1 binding loaded by the current
   resolver, release-owned stale/tamper gate, static Tandemweb artifact, and
-  one-commit staged deploy preflight. No website-to-NanoClaw runtime call.
+  one-commit staged deploy preflight. Current source correction preserves both
+  active routes with inaugural-only / regular-excludes-inaugural date rules.
+  A guarded backup-first helper repairs only those stale selected fields in the
+  synchronized operational source mirror. No website-to-NanoClaw runtime call.
 - Account gate: the actual live consumer configuration reader selected native
   account `acct_1G1wKzA7hTBWpVVq` through `STRIPE_SECRET_KEY_ALT`, matching
   `stripe:alt`; the receipt contains no credential or population data.

@@ -24,7 +24,7 @@ const {
 const repoRoot = process.cwd();
 const tandemwebRoot = path.resolve(
   repoRoot,
-  '../tandemweb-catalog-publication-20260907',
+  '../tandemweb-catalog-publication-current-20260907',
 );
 const sourceManifest = require('../../facts/catalogs/student-catalog-publication-v1.json');
 const publicationSchema = require('../../facts/catalogs/student-catalog-publication-v1.schema.json');
@@ -140,6 +140,12 @@ describe('student catalog publication generator', () => {
       active: true,
       declared_total: { currency: 'usd', amount_cents: 399600 },
       direct_price_id: null,
+      cohort_eligibility: {
+        required: true,
+        program: 'supervision',
+        allowed_start_dates: ['2026-10-07'],
+        excluded_start_dates: [],
+      },
       installment_plan: {
         count: 4,
         amount_cents: 99900,
@@ -151,7 +157,7 @@ describe('student catalog publication generator', () => {
     });
     expect(regular).toMatchObject({
       offer_key: 'supervision-regular',
-      active: false,
+      active: true,
       declared_total: { currency: 'usd', amount_cents: 479600 },
       direct_price_id: null,
       installment_plan: {
@@ -159,6 +165,12 @@ describe('student catalog publication generator', () => {
         amount_cents: 119900,
         total_cents: 479600,
         stripe_price_id: 'price_1Tvz3MA7hTBWpVVq9gL3v49F',
+      },
+      cohort_eligibility: {
+        required: true,
+        program: 'supervision',
+        allowed_start_dates: [],
+        excluded_start_dates: ['2026-10-07'],
       },
     });
     expect(built.tandemweb.evidence_limits).toEqual({
@@ -460,10 +472,18 @@ describe('student catalog publication generator', () => {
       ),
     );
     const activeCheckout = clone(checkout);
-    activeCheckout['supervision-regular'].active = true;
+    activeCheckout['supervision-regular'].active = false;
     replaceSource(activeDrift, 'checkout_catalog', activeCheckout);
     expect(() => build(activeDrift)).toThrowError(
       expect.objectContaining({ code: 'checkout_source_mismatch' }),
+    );
+
+    const cohortDrift = makeFixture();
+    const cohortCheckout = clone(checkout);
+    cohortCheckout['supervision-regular'].cohort_excluded_start_dates = [];
+    replaceSource(cohortDrift, 'checkout_catalog', cohortCheckout);
+    expect(() => build(cohortDrift)).toThrowError(
+      expect.objectContaining({ code: 'checkout_cohort_eligibility_invalid' }),
     );
 
     const directPrice = makeFixture();
