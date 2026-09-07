@@ -11,7 +11,11 @@ outside the current client conversation.
 
 ### NC-20260906-006 — Bookkeeper funding contract (local-only)
 
-- Owner: Codex with independent Claude Sonnet/high review; `in_progress`, C2
+| Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260906-006` | Source-bound Bookkeeper enrollment and capacity contract | Codex | `codex/bookkeeper-capacity-enrollment-contract-20260906` @ `f5adc8cc` | `ready_for_review` | C2 | Reviewed pure adapter; 131 focused tests pass, full suite retains two proved baseline failures; no live actions | Commit/push reviewed source, reconcile program and verify final handoff | 2026-09-07T00:44Z |
+
+- Owner: Codex with independent Claude Sonnet/high review; `ready_for_review`, C2
   local source (future operational identity/financial impact C5/C4).
 - Branch: `codex/bookkeeper-capacity-enrollment-contract-20260906`, isolated
   `/Users/xbohdpukc/dev/NanoClaw-bookkeeper-enrollment-20260906`, base `f5adc8cc`.
@@ -22,9 +26,11 @@ outside the current client conversation.
   are inspected only; no overlap with the older Bookkeeper retry work.
 - Pickup: 2026-09-07T00:20:00Z. Checkpoint and program match; primary remains
   dirty and untouched except authorized governance and final checkpoint.
-- Next: implement source-bound funding, independent participant/catalog/class
-  gates, per-seat capacity disposition and projection/exception semantics;
-  synthetic focused/full checks, bounded review, commit/push, reconcile state.
+- Review complete: R1B material findings fixed; R2 and final narrow R3 return
+  NO MATERIAL FINDINGS. Codex also reproduced/corrected resolved-conflict replay.
+- Verification: pinned Node 22.23.2 typecheck; focused 131/131; full 3,664 pass /
+  32 skipped / two reproduced predecessor failures; format/diff/continuity pass.
+- Next: commit/push source, reconcile Company OS, verify final handoff.
 - Excluded: history/reconciliation, real records, production/schema/runtime,
   provider/Sheet writes, deployment, payments/refunds, communication.
 

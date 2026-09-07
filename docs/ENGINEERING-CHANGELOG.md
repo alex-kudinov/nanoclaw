@@ -8,6 +8,43 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260906-006 — Local Bookkeeper funding to enrollment contract
+
+- Date: 2026-09-07T00:26:00Z
+- Owner/client: Codex with independent Claude Sonnet/high review
+- State: ready_for_review; independent review complete, commit/push pending
+- Branch/base: `codex/bookkeeper-capacity-enrollment-contract-20260906` from
+  exact `f5adc8cc`; registration `38813c85` pushed before source edits.
+- Change class: C2 local source; future financial/identity impact C4/C5.
+- Outcome: pure unwired composition of existing canonical enrollment and
+  capacity commands. Exact source idempotency, trusted host evidence binding,
+  independent participant and payer, settled-payment/grant validation, typed
+  catalog entitlements, per-seat commitments, partial sponsor handling,
+  owned exceptions, future pending class state, and roster preview/readback.
+- Verification: initial focused 124/124; pinned Node 22.23.2 typecheck passed;
+  root 3,657 passed / 32 skipped / two failures. Both failures reproduced on
+  unchanged `f5adc8cc`: CNPC wrapper-literal assertion and date-sensitive
+  Trafft freshness fixture. Final correction verification remains pending.
+- Deployment/migration: not applicable; explicitly local/synthetic only. No
+  production, historical records, provider/Sheet write, runtime wiring,
+  payment/refund, communication, or deployment. Disposable synthetic database
+  tests run by the full suite are separate from production schema changes.
+- Documentation: contract, enrollment foundation, capacity control plane,
+  project map, active work, this changelog, review and task evidence.
+- Rollback/recovery: remove the unwired adapter/test; no live rollback needed.
+- Follow-ups: production admission/persistence and replacement of the legacy
+  payment/roster/commitment path remain separately governed under
+  `work:student-enrollment-multisource-ingress-adapters`.
+- Review/verification addendum 2026-09-07T00:44:00Z: R1 interrupted without
+  verdict after engine-read scope drift. Fresh Sonnet/high R1B found generic
+  commitment-source labels and duplicate cross-order participants; both were
+  corrected. Codex additionally fixed mutable-evidence replay, unattested
+  conflict mutation, and resolved-conflict replay. R2 and narrow R3 report
+  NO MATERIAL FINDINGS. Final focused 131/131 (44 adapter cases), typecheck,
+  format/diff pass; full 3,664 passed / 32 skipped with the same two independently
+  reproduced predecessor failures. Session metrics and before/after regression
+  evidence are in the task report. No unresolved material review finding.
+
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 
 - Date: 2026-09-06T21:43:00Z

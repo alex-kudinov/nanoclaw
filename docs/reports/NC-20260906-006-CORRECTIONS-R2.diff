@@ -1,0 +1,240 @@
+diff --git a/docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md b/docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md
+index c012fbbf..2d39babd 100644
+--- a/docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md
++++ b/docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md
+@@ -77,10 +77,21 @@ names, email-based identity, default quantities, or default classes.
+
+ An exact replay returns the original decision without recalculating capacity or
+ catalog or adding history, seats, commitments, exceptions, or requests. A changed
+-receipt on the same source opens `duplicate_source_conflict`, preserves previous
++host-attested receipt on the same source opens `duplicate_source_conflict`, preserves previous
+ facts, and holds queued/failed projections. Verified target receipts remain
+ historical evidence. A corrected held receipt needs an explicit versioned
+ resolution command; changing a proposal and retrying cannot bypass its hold.
++Replay compares an immutable `bookkeeper_admission` evidence record, so later
++order-term corrections do not invalidate the original receipt. Unattested
++conflicting proposals are rejected without changing an existing order or request.
++
++Capacity commitments retain the established website/invoice/check/sponsor/manual
++source category plus the exact order/source reference. Grants use the manual
++category and remain explicitly grants on their order. A second funded order
++naming the same Party for a currently assigned class (or an active nonscheduled
++offer) creates an owner exception instead of another enrollment/roster request;
++the genuine funding commitment stays counted until explicitly reconciled.
++Completed prior episodes do not prevent a legitimate later enrollment.
+
+ All semantic failures have durable typed exceptions with owner, source hash,
+ first/last observation, version, review time, and canonical subject. No Slack
+diff --git a/src/bookkeeper-enrollment-contract.test.ts b/src/bookkeeper-enrollment-contract.test.ts
+index c39df888..5e1d3216 100644
+--- a/src/bookkeeper-enrollment-contract.test.ts
++++ b/src/bookkeeper-enrollment-contract.test.ts
+@@ -10,6 +10,7 @@ import {
+   createEmptyEnrollmentFoundationState,
+   recordProjectionReadback,
+   captureOrder,
++  correctOrderTerms,
+ } from './student-enrollment-foundation.js';
+ import {
+   createEmptyAcademyCapacityState,
+@@ -174,6 +175,17 @@ describe('local Bookkeeper funding to canonical enrollment contract', () => {
+     expect(Object.values(result.capacity.reservations)[0].state).toBe(
+       'consumed',
+     );
++    expect(Object.values(result.capacity.reservations)[0].sourceScope).toBe(
++      channel === 'website_stripe_checkout'
++        ? 'website_stripe_sale'
++        : channel === 'plutio_invoice_or_contract'
++          ? 'invoice'
++          : channel === 'check_ach_or_wire'
++            ? 'check'
++            : channel === 'sponsored_cohort'
++              ? 'sponsor'
++              : 'manual_sale',
++    );
+     expect(
+       showInventory(result.capacity, result.enrollment, 'pool:synthetic', at)
+         .available,
+@@ -245,6 +257,95 @@ describe('local Bookkeeper funding to canonical enrollment contract', () => {
+     const second = run(r, first);
+     expect(Object.keys(second.enrollment.orders)).toHaveLength(2);
+   });
++  it('replays immutable admission after later legitimate order terms change', () => {
++    const r = receipt();
++    const first = run(r);
++    const o = first.enrollment.orders[first.orderKey];
++    first.enrollment = correctOrderTerms(first.enrollment, {
++      orderKey: first.orderKey,
++      expectedOrderVersion: o.version,
++      offerKey: o.offerKey!,
++      bundleKey: o.bundleKey!,
++      bundleVersion: o.bundleVersion!,
++      financialClassification: 'held',
++      evidenceSha256: b,
++      actor: 'synthetic-owner',
++      occurredAt: at,
++    });
++    const replay = run(r, first);
++    expect(replay.duplicate).toBe(true);
++    expect(replay.enrollment).toEqual(first.enrollment);
++    expect(reasons(replay)).toEqual([]);
++  });
++  it('does not let an unattested conflicting proposal freeze an existing order', () => {
++    const r = receipt();
++    const first = run(r);
++    const before = structuredClone(first);
++    const auth = authority(r);
++    r.seats[0].participantPartyId = 3;
++    expect(() => run(r, first, auth)).toThrow(
++      'unattested conflict cannot change an existing order',
++    );
++    expect(first).toEqual(before);
++    expect(Object.values(first.enrollment.projections)[0].state).toBe('queued');
++  });
++  it('holds a second funded order for the same person and delivery block', () => {
++    const r = receipt();
++    const first = run(r);
++    r.source.objectId = 'pi_SecondSynthetic';
++    const second = run(r, first);
++    expect(reasons(second)).toEqual(['participant_already_enrolled']);
++    expect(Object.keys(second.enrollment.assignments)).toHaveLength(1);
++    expect(Object.keys(second.enrollment.projections)).toHaveLength(1);
++    expect(
++      Object.values(second.capacity.reservations)
++        .map((x) => x.state)
++        .sort(),
++    ).toEqual(['consumed', 'held']);
++    expect(Object.values(second.enrollment.exceptions)[0].ownerRole).toBe(
++      'owner_admin',
++    );
++  });
++  it('holds an ambiguous repeat active nonscheduled offer but permits a completed episode', () => {
++    const r = receipt();
++    r.seats[0].assignment = null;
++    const auth = authority(r);
++    auth.offers[0].components = [
++      {
++        componentKey: 'synthetic.content',
++        state: 'included',
++        requiresAssignment: false,
++      },
++    ];
++    const first = run(r, state(), auth);
++    r.source.objectId = 'pi_SecondSynthetic';
++    auth.acceptedReceiptSha256 = hash(r);
++    expect(reasons(run(r, first, auth))).toEqual([
++      'participant_already_enrolled',
++    ]);
++    const finished = structuredClone(first);
++    Object.values(finished.enrollment.enrollments)[0].state = 'completed';
++    expect(reasons(run(r, finished, auth))).toEqual([]);
++  });
++  it('holds expired or closed delivery blocks', () => {
++    const r = receipt();
++    const auth = authority(r);
++    auth.occurredAt = '2026-11-01T00:00:00Z';
++    const expired = run(r, state(), auth);
++    expect(reasons(expired)).toEqual(['delivery_block_expired']);
++    expect(Object.keys(expired.capacity.reservations)).toHaveLength(0);
++    const closed = state();
++    closed.capacity.seatPools['pool:synthetic'].operationalState = 'closed';
++    expect(reasons(run(r, closed))).toEqual(['pool_closed']);
++  });
++  it('does not accept delivery events or checkout aliases as canonical funding', () => {
++    const r = receipt();
++    r.source.objectType = 'checkout_session';
++    r.source.objectId = 'cs_Synthetic';
++    const out = run(r);
++    expect(reasons(out)).toEqual(['source_identity_invalid']);
++    expect(Object.keys(out.enrollment.seats)).toHaveLength(0);
++  });
+   it('owns conflicting receipt reuse without a second order or seat', () => {
+     const r = receipt();
+     const first = run(r);
+diff --git a/src/bookkeeper-enrollment-contract.ts b/src/bookkeeper-enrollment-contract.ts
+index aadebe22..12c25154 100644
+--- a/src/bookkeeper-enrollment-contract.ts
++++ b/src/bookkeeper-enrollment-contract.ts
+@@ -215,8 +215,21 @@ export function applyBookkeeperFundingReceipt(
+   };
+   // A duplicate is the original decision, even when catalog, capacity, or time changed.
+   if (old || priorRef) {
+-    if (priorRef?.orderKey === orderKey && old?.evidenceSha256 === fingerprint)
++    if (
++      priorRef?.orderKey === orderKey &&
++      old &&
++      enrollment.evidence[`${orderKey}:admission`]?.evidenceSha256 ===
++        fingerprint
++    )
+       return { ...original, orderKey, duplicate: true };
++    if (
++      authority.acceptedReceiptSha256 !== fingerprint ||
++      Date.parse(receipt.source.effectiveAt) > Date.parse(occurredAt)
++    )
++      throw new EnrollmentCommandError(
++        'source_unverified',
++        'unattested conflict cannot change an existing order',
++      );
+     hold('order', boundKey, 'duplicate_source_conflict', 'owner_admin');
+     // Freeze pending projections from the disputed order without rewriting any
+     // already verified target receipt or silently revoking entitlements.
+@@ -276,6 +289,17 @@ export function applyBookkeeperFundingReceipt(
+       recordedBy: actor,
+     },
+   }).state;
++  enrollment = attachEnrollmentEvidence(enrollment, {
++    evidenceKey: `${orderKey}:admission`,
++    subjectType: 'order',
++    subjectKey: orderKey,
++    evidenceType: 'bookkeeper_admission',
++    sourceReferenceKey: null,
++    evidenceSha256: fingerprint,
++    observedAt: receipt.source.effectiveAt,
++    recordedAt: occurredAt,
++    recordedBy: actor,
++  });
+   const finish = () => ({ enrollment, capacity, orderKey, duplicate: false });
+   if (
+     authority.acceptedReceiptSha256 !== fingerprint ||
+@@ -475,7 +499,16 @@ export function applyBookkeeperFundingReceipt(
+           poolKey: pool.poolKey,
+           expectedPoolVersion: pool.version,
+           channel: 'commitment',
+-          sourceScope: 'manual_sale',
++          sourceScope:
++            receipt.sourceChannel === 'website_stripe_checkout'
++              ? 'website_stripe_sale'
++              : receipt.sourceChannel === 'plutio_invoice_or_contract'
++                ? 'invoice'
++                : receipt.sourceChannel === 'check_ach_or_wire'
++                  ? 'check'
++                  : receipt.sourceChannel === 'sponsored_cohort'
++                    ? 'sponsor'
++                    : 'manual_sale',
+           idempotencyKey: reservationKey,
+           offerKey: offer.offerKey,
+           catalogRevision: offer.catalogRevision,
+@@ -513,6 +546,23 @@ export function applyBookkeeperFundingReceipt(
+     // commitment remains counted and its exception remains durably owned.
+     const beforeSeat = enrollment;
+     try {
++      const existingParticipant = Object.values(enrollment.enrollments).some(
++        (e) =>
++          e.participantPartyId === seat.participantPartyId &&
++          ['pending', 'active', 'held'].includes(e.state) &&
++          (block
++            ? Object.values(enrollment.assignments).some(
++                (a) =>
++                  a.enrollmentKey === e.enrollmentKey &&
++                  a.deliveryBlockKey === block.deliveryBlockKey &&
++                  ['pending', 'active'].includes(a.state),
++              )
++            : e.offerKey === offer.offerKey),
++      );
++      if (existingParticipant) {
++        hold('seat', seatKey, 'participant_already_enrolled', 'owner_admin');
++        continue;
++      }
+       if (seat.payerRelationship === 'unknown')
+         throw new EnrollmentCommandError(
+           'payer_relationship_missing',

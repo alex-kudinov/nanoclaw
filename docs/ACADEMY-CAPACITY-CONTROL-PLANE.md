@@ -213,6 +213,11 @@ assignment.
 
 ## Cross-system boundary
 
+The local `NC-20260906-006` Bookkeeper composition now reuses commitment and
+assignment commands; `docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md` defines the exact
+receipt and exception boundary. It does not replace the live website-sale
+consumer or authorize dual processing, reconciliation, or provider writes.
+
 - Google Calendar supplies schedule evidence for accepted delivery blocks.
 - Bookkeeper/Contador records source-bound funding evidence and enrollment
   exceptions; it never decides occupancy or a last seat.

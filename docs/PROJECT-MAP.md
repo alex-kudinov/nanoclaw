@@ -696,6 +696,15 @@ underlying processing or routing.
 
 ### Contador payment-fulfillment checkpoint (`NC-20260823-006`)
 
+`NC-20260906-006` adds the local-only, unwired
+`src/bookkeeper-enrollment-contract.ts` adapter over the existing enrollment
+and capacity engines. See `docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md` for exact
+host admission, source identity, payer/participant separation, counted funding
+commitments, partial sponsor orders, owned exceptions, and versioned roster
+preview/readback. It has no database or provider consumer. The current live
+payment/roster/website commitment path remains unchanged; replacing or reconciling
+that path requires separately authorized ingress integration.
+
 The live webhook archive already deduplicates Stripe provider events, but the
 host previously treated a successful child-process exit as fulfillment even
 when its summary reported a Payment Log, roster, or PostgreSQL stage failure.
