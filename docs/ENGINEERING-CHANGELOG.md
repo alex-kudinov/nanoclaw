@@ -31,8 +31,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 ### NC-20260907-002 — Selective consultative Sales dialogue
 
 - Date: 2026-09-07T14:26Z
-- Owner/client: Codex with bounded Claude Sonnet/high review pending
-- State: in_progress
+- Owner/client: Codex with two completed bounded Claude Sonnet/high reviews
+- State: complete
 - Base: exact live `aa73538c84505212767628b81477e7d287e98af9`; isolated
   `codex/sales-consultative-dialogue-20260907`; shared primary preserved.
 - Change class: C3, selective customer-facing drafting with tighter automatic
@@ -91,6 +91,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   or messages. Live Sales prompt hashes match the original baseline, and
   active send states and automatic holds are zero. Activation waits for the
   two active Sales conversations to finish; staged is not deployed.
+- Deployment addendum 2026-09-07T14:55Z: state moved through
+  `deployed_unverified` to `complete` for this implementation/release. During
+  the wait, continued message arrivals prevented a globally empty queue.
+  Current `GroupQueue.shutdown` and startup adoption code, already exercised
+  by the release suite, preserve detached message containers across host
+  restart. The final preflight verified all five workers were adoptable message
+  containers, no task workers and zero active sends. The established activator
+  switched only its three release pointers and verified release
+  `1449812c1e716135cd90c5d28c5a80d31ff197a0`. All five existing workers were
+  present and marked adopted after restart; none was restarted or force-stopped.
+  Old Sales prompt hashes were checked against the baseline, backed up, then
+  all five reviewed files (including the new playbook) were installed only after
+  the host's tighter approval check was active. Exact readback hashes match the
+  archive and are recorded in `docs/reports/NC-20260907-002-DEPLOYMENT.json`.
+- Live proof: `/health` verifies full commit/tree/artifact, Node 22.23.2 and
+  matching code root; Gmail/Slack connected; one listener PID 14563. Installed
+  bundle verification still passes. Six compiled pure cases pass; an actual
+  compiled `autonomyTick` canary with an in-memory database and mocked external
+  effects allows DIRECT while CONSULTATIVE/MIXED create no automatic hold or
+  approval. No provider call, real database write or customer message was used
+  for verification. Source-scoped context tests and 15 generated conversation
+  turns are behavioral evidence, not proof of natural customer outcomes.
+- Rollback receipt: service plist
+  `com.nanoclaw.plist.rollback-138e43abb7a5-2026-09-07T14-53-16-910Z`;
+  prompt backup at
+  `~/.local/share/nanoclaw-deployment-backups/NC-20260907-002/`. Restore the four
+  prior prompt files and remove only the new playbook, then use the established
+  prior-release activation/readback. Do not recreate cancelled automatic holds.
+- Review totals: Sonnet/high, two rounds, 10 model calls, 130,844 cache-create,
+  184,027 cache-read and 23,228 output tokens; maximum context 65,202. No
+  unresolved material findings. Natural response quality/conversion remains an
+  observation boundary; no scheduled monitor or customer canary was created.
 
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 

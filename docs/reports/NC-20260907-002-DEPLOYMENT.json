@@ -1,0 +1,28 @@
+{
+  "release": {
+    "mode": "release",
+    "verified": true,
+    "commit": "1449812c1e716135cd90c5d28c5a80d31ff197a0",
+    "sourceTree": "8dadb4e363e7cc99c488203dca35e6c326de2df4",
+    "artifactHash": "1e9998539da8cc0a98ee422dd9f9d98cb2ae4f54e670d313f844f78e27c616fa",
+    "builtAt": "2026-09-07T14:44:00.796Z",
+    "nodePin": "22.23.2",
+    "nodeVersion": "22.23.2",
+    "codeRoot": "/Users/xbohdpukc/.local/share/nanoclaw-releases/1449812c1e716135cd90c5d28c5a80d31ff197a0",
+    "codeRootMatchesRelease": true
+  },
+  "promptHashes": {
+    "CONSULTATIVE-DIALOGUE.md": "7ce2f1142bf4e09b78b16cc862e82a6b8bd321743fe35d32f9a31e2bcb741a69",
+    "WORKFLOWS.md": "8248ec71fbe6bc54261bcc1d52ecf8e25e741c9e9ee9c31fe0b7f26f2127b41e",
+    "EMAIL-RESPONSE-GUIDELINES.md": "df59544da448dcd14dab85621da5f5cfa71fefac760089ab0516b8859360d3fa",
+    "CLAUDE-MAIN.md": "559f6721a2ad4b00db03850632e6e7fff1cabaa431dd24c2ac6e5a7c73dbd012",
+    "CLAUDE.md": "6918beadc53f967c9a9619d6e6c84a0c2290af5ad9ecfb76208f03df2db9402d"
+  },
+  "previousWorkers": 5,
+  "survivingWorkers": 5,
+  "allSurvivorsAdopted": true,
+  "channels": {
+    "gmail": true,
+    "slack": true
+  }
+}
