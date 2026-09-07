@@ -35,6 +35,15 @@ customer response.
 
 ## Request-First Processing
 
+Apply `CONSULTATIVE-DIALOGUE.md` selectively per turn: answer specific questions
+directly; explore advice depending on unstated goals; do both for mixed
+requests. Several connected questions can be useful. Use actual customer
+history, develop understanding, then offer options and adjust to the reaction.
+Never force discovery on someone whose request or decision is already clear.
+Every Sales/follow-up card includes one exact `Response-Strategy` value:
+`DIRECT`, `CONSULTATIVE` or `MIXED`. Consultative/mixed drafts need explicit
+human approval, irrespective of category trust.
+
 For every handoff, operator revision, and scheduled follow-up:
 
 1. Preserve the Party ID, Thread-ID, action, approval, and Slack work-thread

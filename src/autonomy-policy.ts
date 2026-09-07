@@ -84,6 +84,28 @@ export function parseDraftCategory(text: string): Category | undefined {
     : undefined;
 }
 
+/**
+ * Selective-consultation pilot: category trust is insufficient for advice.
+ * Read only the card header; quoted/customer body text cannot grant authority.
+ * Missing, duplicated or unknown metadata stays at explicit human approval.
+ * This validates declared strategy, not the semantic correctness of the model.
+ */
+export function permitsSalesAutoApproval(text: string): boolean {
+  const marker = DRAFT_MARKER_RE.exec(text);
+  if (!marker) return false;
+  const header = text.slice(0, marker.index).split(/\r?\n[ \t]*\r?\n/, 1)[0];
+  const strategies = [...header.matchAll(/^Response-Strategy:[ \t]*(.*)$/gim)];
+  const routes = [...header.matchAll(/^Route:[ \t]*(.*)$/gim)];
+  return (
+    strategies.length === 1 &&
+    strategies[0][1].trim() === 'DIRECT' &&
+    routes.length === 1 &&
+    ['ANSWER', 'TRANSACT', 'CLARIFY', 'SERVICE', 'DECLINE'].includes(
+      routes[0][1].trim(),
+    )
+  );
+}
+
 /** An injected approval row (reaction, bare-✅, or auto-approve). */
 export function isApprovalMessage(text: string): boolean {
   return /^✅ (Approved|Auto-approved)/.test(text.trim());

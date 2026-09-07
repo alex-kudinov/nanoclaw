@@ -176,8 +176,8 @@ describe('Sales request-first prompt contract', () => {
     expect(workflows).toContain('Route-Basis:');
     expect(workflows).toContain('a verbatim span of at most 15 words');
     expect(workflows).not.toContain('RECOMMENDED NEXT STEP:');
-    expect(guidelines).toContain(
-      'Mention pricing only when it is explicitly requested and the card carries a valid current-message `Route-Basis` for `TRANSACT`.',
+    expect(normalizedGuidelines).toContain(
+      'Mention pricing only when explicitly requested, with a valid current-message `Route-Basis` for `TRANSACT`, or a verbatim price-question basis on a `MIXED` `ORIENT` card.',
     );
     expect(contract).not.toContain(
       'Mention both pricing options: full program price and pay-as-you-go module pricing.',

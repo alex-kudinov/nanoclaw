@@ -18,6 +18,7 @@ import {
   findAutonomyPendingByTs,
   getAutonomyThreadMessagesAfter,
   getOpenAutonomyPendings,
+  getMessageById,
   resolveAutonomyDraftEvent,
   setAutonomyPendingStatus,
   type AutonomyPendingRow,
@@ -28,6 +29,9 @@ import {
   autonomyGroups,
   computeVetoExpiry,
   isApprovalMessage,
+  permitsSalesAutoApproval,
+  parseDraftCategory,
+  GUARDED_CATEGORIES,
   VETO_WINDOW_MINUTES,
 } from './autonomy-policy.js';
 import {
@@ -139,6 +143,23 @@ function buildAutoApproval(p: AutonomyPendingRow, now: Date): NewMessage {
 async function fireDuePendings(deps: AutonomyDeps, now: Date): Promise<void> {
   const nowIso = now.toISOString();
   for (const p of getOpenAutonomyPendings()) {
+    // Recheck persisted holds after restart/deployment, not just new drafts.
+    // A pre-pilot or changed/missing Sales card cannot inherit auto-approval.
+    const source = getMessageById(p.draft_id, p.chat_jid);
+    if (
+      p.group_folder === 'sales' &&
+      (GUARDED_CATEGORIES.has(p.category) ||
+        !source ||
+        !source.is_from_me ||
+        (source.thread_ts ?? null) !== p.thread_ts ||
+        source.timestamp !== p.draft_ts ||
+        parseDraftCategory(source.content ?? '') !== p.category ||
+        (source.from_group && source.from_group !== 'sales') ||
+        !permitsSalesAutoApproval(source.content ?? ''))
+    ) {
+      setAutonomyPendingStatus(p.draft_id, 'cancelled');
+      continue;
+    }
     if (p.expires_at > nowIso) continue;
     if (threadHasOperatorActivity(p)) {
       setAutonomyPendingStatus(p.draft_id, 'cancelled');

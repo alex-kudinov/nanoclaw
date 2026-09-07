@@ -30,6 +30,7 @@ groups/*/*
 !groups/*/CLAUDE-MAIN.md
 !groups/booking/EXECUTION-STEPS.md
 !groups/*/WORKFLOWS.md
+!groups/sales/CONSULTATIVE-DIALOGUE.md
 !groups/*/VOICE-AND-TONE.md
 !groups/*/EMAIL-RESPONSE-GUIDELINES.md
 !groups/chief/SUPPORT-REPLY.md

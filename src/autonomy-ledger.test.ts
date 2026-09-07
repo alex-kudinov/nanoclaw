@@ -38,7 +38,7 @@ function draft(id: string, ts: string, category = 'enrollment'): NewMessage {
     timestamp: ts,
     is_from_me: true,
     from_group: 'sales',
-    content: `Entry ID: 42\nCategory: ${category}\n\nDRAFT RESPONSE TO LEAD:\nHi there…`,
+    content: `Entry ID: 42\nCategory: ${category}\nRoute: TRANSACT\nResponse-Strategy: DIRECT\n\nDRAFT RESPONSE TO LEAD:\nHi there…`,
   });
 }
 

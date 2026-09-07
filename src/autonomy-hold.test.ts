@@ -42,7 +42,7 @@ function draft(id: string, ts: string): NewMessage {
     is_from_me: true,
     from_group: 'sales',
     content:
-      'Entry ID: 42\nCategory: enrollment\n\nDRAFT RESPONSE TO LEAD:\nHi there…',
+      'Entry ID: 42\nCategory: enrollment\nRoute: TRANSACT\nResponse-Strategy: DIRECT\n\nDRAFT RESPONSE TO LEAD:\nHi there…',
   });
 }
 

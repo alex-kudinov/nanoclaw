@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "facts": "Synthetic evaluation authority, not production offers: ACC training costs $3,999; each live class lasts two hours. Mentor coaching is included. The Professional Coach Program includes ACC and PCC training and costs $7,499. ACC training teaches foundational coaching skills. Professional adds deeper systems coaching training. Neither guarantees clients or employment. No prior experience automatically establishes credential eligibility. Enrollment URL: https://training.example.invalid/enroll . No transfer-credit exceptions or refund decisions are supplied. Sales signs as The Tandem Coaching Team.",
+  "cases": [
+    {
+      "id": "direct-price",
+      "split": "holdout",
+      "messages": ["What does the ACC training cost?"],
+      "expected": [
+        {
+          "strategy": "DIRECT",
+          "must": "Give $3,999 directly, without discovery questions."
+        }
+      ]
+    },
+    {
+      "id": "direct-long-background",
+      "split": "holdout",
+      "messages": [
+        "I have managed engineering teams for many years, trained managers and led several departments. My work includes facilitation and internal development. How long is each ACC live class?"
+      ],
+      "expected": [
+        {
+          "strategy": "DIRECT",
+          "must": "Answer two hours. Do not ask about goals because of the biography."
+        }
+      ]
+    },
+    {
+      "id": "direct-one-missing-detail",
+      "split": "holdout",
+      "messages": ["How much does the course cost?"],
+      "expected": [
+        {
+          "strategy": "DIRECT",
+          "must": "Ask which course, without assuming ACC or launching discovery."
+        }
+      ]
+    },
+    {
+      "id": "direct-enroll",
+      "split": "holdout",
+      "messages": ["I have decided on ACC. Please send the enrollment link."],
+      "expected": [
+        {
+          "strategy": "DIRECT",
+          "must": "Give supplied enrollment URL without delaying for goals or upselling."
+        }
+      ]
+    },
+    {
+      "id": "direct-inclusion",
+      "split": "holdout",
+      "messages": ["Does ACC training include mentor coaching?"],
+      "expected": [
+        { "strategy": "DIRECT", "must": "Answer yes directly; no discovery." }
+      ]
+    },
+    {
+      "id": "mixed-career-price",
+      "split": "holdout",
+      "messages": [
+        "What does ACC cost, and is certification the right move if I want to leave management?"
+      ],
+      "expected": [
+        {
+          "strategy": "MIXED",
+          "must": "Give price immediately and explore intended direction; do not assume independent practice."
+        }
+      ]
+    },
+    {
+      "id": "mixed-timing-fit",
+      "split": "holdout",
+      "messages": [
+        "How long is each ACC class, and would this suit someone who wants a different kind of work but hasn't figured out what?"
+      ],
+      "expected": [
+        {
+          "strategy": "MIXED",
+          "must": "Give duration, then explore goals before recommending."
+        }
+      ]
+    },
+    {
+      "id": "advice-missing-goal",
+      "split": "development",
+      "messages": [
+        "I have spent years developing leaders and hold advanced degrees. I don't have a coaching certification. What options would make sense for me?"
+      ],
+      "expected": [
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Ask connected goal/outcome questions. No immediate ACC recommendation, ACC-vs-PCC forced choice, retirement assumption or escalation."
+        }
+      ]
+    },
+    {
+      "id": "advice-goal-already-clear",
+      "split": "holdout",
+      "messages": [
+        "I want foundational coaching skills for my internal manager-development role. I have no coach training, my employer isn't asking for a credential, and I can attend two-hour classes. I want a structured course, not a business-building package. Which option would you recommend?"
+      ],
+      "expected": [
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Recommend supported foundational training with reasons and invite a reaction. Do not re-ask supplied goals or invent a business need."
+        }
+      ]
+    },
+    {
+      "id": "dialogue-internal",
+      "split": "holdout",
+      "messages": [
+        "I have a long consulting background but no coaching certificate. I'd appreciate advice about what direction to take.",
+        "I want coaching skills for internal leadership development, not an independent business. I have no coach training. I can attend two-hour classes, and a structured foundation would help.",
+        "That sounds relevant. Is mentor coaching included?"
+      ],
+      "expected": [
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Explore goals without recommending prematurely."
+        },
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Use internal-work goal to recommend a supported foundation with reasons and invite reaction; no repeated business question."
+        },
+        {
+          "strategy": "DIRECT",
+          "must": "Answer yes directly; switch out of discovery despite earlier consultation."
+        }
+      ]
+    },
+    {
+      "id": "dialogue-reconsider",
+      "split": "holdout",
+      "messages": [
+        "I have no coach training and want a thorough path toward an independent practice, including foundational and deeper systems skills. I can make the time. How would you compare ACC training with the Professional Coach Program?",
+        "I see the distinction, but I don't want to commit to the longer path yet. I want to start with the foundation and decide about deeper study later.",
+        "Actually, I want to pause this until next year. Please don't follow up."
+      ],
+      "expected": [
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Compare both supported options against stated goals, explain tradeoff and invite reaction without forcing more discovery."
+        },
+        {
+          "strategy": "CONSULTATIVE",
+          "must": "Adjust recommendation toward foundation; don't push longer bundle or invent upgrade pricing."
+        },
+        {
+          "strategy": "DIRECT",
+          "must": "Respect pause and no-follow-up; no objection handling, alternative pitch or unsolicited next step."
+        }
+      ]
+    }
+  ]
+}

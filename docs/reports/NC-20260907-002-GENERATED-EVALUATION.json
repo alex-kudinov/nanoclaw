@@ -1,0 +1,980 @@
+{
+  "status": "scored-by-codex",
+  "scoringDocument": "NC-20260907-002-EVALUATION.md",
+  "records": [
+    {
+      "caseId": "advice-goal-already-clear",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "9ad792403a60f2d8ac257eaed835fd2dd1ee0162dff747b81bd9372b81f0c431",
+      "sessionId": "905ef31a-9321-42c6-935f-60e3149b36e3",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nBased on what you shared, ACC training is the better starting point for you. It teaches foundational coaching skills, which is what you need to bring coaching into your internal manager-development work, and it doesn't require any prior coaching experience.\n\nLive classes run in two-hour sessions, which fits the time you described having available.\n\nThe Professional Coach Program builds on this with additional systems coaching training and leads toward a further credential. Since your employer isn't asking for a credential and you're looking for a structured foundational course rather than a broader program, ACC training is the more direct fit for what you described.\n\nLet us know if this sounds right, or if there's more about your situation that should factor into the recommendation.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predates this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Wants foundational coaching skills for an internal manager-development role, has no prior coach training, employer does not require a credential, can attend two-hour classes, wants a structured course rather than a business-building package, and asks which option we would recommend.\n\nANSWERABLE: YES \u2014 stated goal, constraints, and preferences map directly to verified program facts (ACC teaches foundational coaching skills, two-hour live classes, no prior experience required; Professional Coach Program adds PCC and deeper systems coaching training)\n\nCONVERSATION BASIS: Stated goal is internal manager-development, not external practice or business-building; no employer credential requirement; can attend two-hour sessions. These fully distinguish ACC from the Professional Coach Program for this person's stated purpose, so a recommendation can be made now without further questions.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Coaching Training Recommendation for Your Manager-Development Role\n\nHi Taylor,\n\nBased on what you shared, ACC training is the better starting point for you. It teaches foundational coaching skills, which is what you need to bring coaching into your internal manager-development work, and it doesn't require any prior coaching experience.\n\nLive classes run in two-hour sessions, which fits the time you described having available.\n\nThe Professional Coach Program builds on this with additional systems coaching training and leads toward a further credential. Since your employer isn't asking for a credential and you're looking for a structured foundational course rather than a broader program, ACC training is the more direct fit for what you described.\n\nLet us know if this sounds right, or if there's more about your situation that should factor into the recommendation.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8136,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 3630,
+        "output_tokens_details": {
+          "thinking_tokens": 2852
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8136,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3630,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8136,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8136
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 40548
+    },
+    {
+      "caseId": "advice-missing-goal",
+      "turn": 1,
+      "split": "development",
+      "inputSha256": "fa0987242e8466a0452eef098c2d867a8d3f76b10889c49921093b657d8749c1",
+      "sessionId": "b5a75855-ec0a-4ef4-ada9-98f02f848555",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nWith years of experience developing leaders and advanced degrees already behind you, understanding what you want a coaching credential to make possible will help us point you toward the right path. Are you thinking about building an independent coaching practice, bringing coaching more formally into your current work, or something else? What would you most want the credential to open up for you?\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Given years of leadership-development experience and advanced degrees but no coaching certification, what options would make sense?\n\nANSWERABLE: PARTIAL \u2014 program facts are known, but which path fits depends on an unstated goal (independent coaching practice vs. bringing coaching into current work vs. another direction)\n\nCONVERSATION BASIS: Stated goal unknown; only experience and degree background volunteered. Material uncertainty: what Taylor wants a credential to make possible. This response opens that question before recommending a path, per the selective consultation playbook.\n\nABSTAINED: Which specific program (or whether one is needed at all) fits Taylor's situation \u2014 depends on the unstated goal, not yet known.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Coaching Certification Options for Your Background\n\nHi Taylor,\n\nWith years of experience developing leaders and advanced degrees already behind you, understanding what you want a coaching credential to make possible will help us point you toward the right path. Are you thinking about building an independent coaching practice, bringing coaching more formally into your current work, or something else? What would you most want the credential to open up for you?\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8101,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 1967,
+        "output_tokens_details": {
+          "thinking_tokens": 1348
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8101,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1967,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8101,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8101
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 21324
+    },
+    {
+      "caseId": "dialogue-internal",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "93ac8fb224e3be5eafedc104b5385b1e81d965f5fb03d0fc799a0c966a88233b",
+      "sessionId": "69cfbcaa-0172-4391-83ac-c834e1d5507a",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nA consulting background gives you a real head start \u2014 you already know how to work with clients and drive change, which is different from starting from zero. Before pointing you toward a specific credential, it would help to understand what you want it to make possible.\n\nAre you thinking about building an independent coaching practice, bringing coaching skills into your current consulting work, or something else? And what would having a credential actually let you do that you can't do now?\n\nOnce I know that, I can lay out which path fits and why.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predates this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Advice on what direction to take, given a long consulting background but no coaching certificate\n\nANSWERABLE: PARTIAL \u2014 background is known, but the goal a credential should serve (independent practice, internal use, or something else) is not yet stated\n\nCONVERSATION BASIS: No stated goal yet; no prior questions answered; the material uncertainty is what Taylor wants the credential to enable. This response asks that before recommending a path, per the consultative-dialogue playbook.\n\nABSTAINED: A specific program recommendation \u2014 depends on the unstated goal (independent coaching practice vs. applying coaching within existing consulting work vs. another direction)\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Finding the Right Direction for Your Coaching Path\n\nHi Taylor,\n\nA consulting background gives you a real head start \u2014 you already know how to work with clients and drive change, which is different from starting from zero. Before pointing you toward a specific credential, it would help to understand what you want it to make possible.\n\nAre you thinking about building an independent coaching practice, bringing coaching skills into your current consulting work, or something else? And what would having a credential actually let you do that you can't do now?\n\nOnce I know that, I can lay out which path fits and why.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8093,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 1502,
+        "output_tokens_details": {
+          "thinking_tokens": 847
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8093,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1502,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8093,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8093
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 16341
+    },
+    {
+      "caseId": "dialogue-internal",
+      "turn": 2,
+      "split": "holdout",
+      "inputSha256": "e651f055a6f3454feda686b228fc0624077d902402770e3dcdef5132f1cca6d5",
+      "sessionId": "959e9bd9-4517-4e0e-abf9-0ac2bba1d952",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nInternal leadership development points to ACC. It teaches foundational coaching skills through weekly two-hour live classes, no prerequisites, with mentor coaching included \u2014 matching the structured foundation you're after.\n\nThe Professional Coach Program builds on ACC with deeper systems coaching training (ACC plus PCC). That's a larger step than what you need to get started.\n\nDoes ACC sound like the right starting point, or is there something that gives you pause?\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predates this inbound conversation; prior turns are this same exchange, not a verified pre-existing engagement\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Wants coaching skills for internal leadership development (not an independent practice), has no prior coach training, prefers a structured foundation, and can attend two-hour live classes \u2014 implicitly asking which path fits\n\nANSWERABLE: YES \u2014 stated goal (internal leadership development, no independent practice, no prior training, wants structured foundation, can attend two-hour classes) is enough to recommend a supported path per the consultative-dialogue playbook\n\nCONVERSATION BASIS: Stated goal is internal leadership development using coaching skills, not an independent coaching business (their reply). No prior coach training confirmed. They confirmed the two-hour live class format works and that a structured foundation would help. No material uncertainty remains that would change which program is the starting recommendation; this response recommends ACC and invites their reaction, per the playbook's \"agree the next step\" and \"invite a reaction\" moves.\n\nADDED BEYOND ASK: Named the Professional Coach Program only as a comparison point to show why it goes beyond their stated current need \u2014 required by the consultative-dialogue instruction to compare actual depth/scope to what they said they need rather than recommend in isolation.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: Coaching path for internal leadership development\n\nHi Taylor,\n\nInternal leadership development points to ACC. It teaches foundational coaching skills through weekly two-hour live classes, no prerequisites, with mentor coaching included \u2014 matching the structured foundation you're after.\n\nThe Professional Coach Program builds on ACC with deeper systems coaching training (ACC plus PCC). That's a larger step than what you need to get started.\n\nDoes ACC sound like the right starting point, or is there something that gives you pause?\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8358,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 4234,
+        "output_tokens_details": {
+          "thinking_tokens": 3389
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8358,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 4234,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8358,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8358
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 44163
+    },
+    {
+      "caseId": "dialogue-internal",
+      "turn": 3,
+      "split": "holdout",
+      "inputSha256": "1f26fded733a6ec95502487eb315dfaa05ffdefd6fecd384e4dfb5a455f0ae1c",
+      "sessionId": "d31b42bf-3aa7-498a-8070-0bde2a973d3d",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nYes \u2014 mentor coaching is included as part of the ACC program, along with the weekly two-hour live classes.\n\nLet me know if you'd like to move forward or if anything else comes up.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ANSWER\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: prior_contact \u2014 prior email exchange in this thread predates the current message.\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Is mentor coaching included in ACC?\n\nANSWERABLE: YES \u2014 confirmed fact: mentor coaching is included in ACC training.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: ACC Program Details\n\nHi Taylor,\n\nYes \u2014 mentor coaching is included as part of the ACC program, along with the weekly two-hour live classes.\n\nLet me know if you'd like to move forward or if anything else comes up.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8590,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 1831,
+        "output_tokens_details": {
+          "thinking_tokens": 1439
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8590,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1831,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8590,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8590
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 19005
+    },
+    {
+      "caseId": "dialogue-reconsider",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "348cb6b44e55b10f229faacb7af7b07a111bd057b66ebdfebc053a7c148db993",
+      "sessionId": "e32d205e-442f-4691-8a55-85abb8792563",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nSince you're starting without formal coach training and want real depth \u2014 both the foundational skills and the deeper systems-level work \u2014 here's how the two paths line up.\n\nACC training builds the foundational coaching competencies: the core skills you need to coach well. The Professional Coach Program includes that same ACC training and continues into PCC-level work, going further into systems coaching. Given you described wanting both layers for an independent practice, the Professional Coach Program is built to cover that fuller arc in one path, where ACC training alone gets you the foundational layer only.\n\nOne thing worth naming plainly: completing either path builds your skill and credential standing, but neither guarantees clients or employment once you're out running your own practice \u2014 that part comes down to how you build it.\n\nWhich of these feels closer to what you have in mind?\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message.\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Compare ACC training with the Professional Coach Program, given no prior coach training and a stated goal of a thorough path \u2014 foundational plus deeper systems skills \u2014 toward an independent practice.\n\nANSWERABLE: PARTIAL \u2014 program scope and content differences are fully supported by verified facts; which path actually fits Taylor depends on their reaction to this comparison, which is not yet known.\n\nCONVERSATION BASIS: Stated goal (first message): no coach training, wants both foundational and deeper systems-level skills, aiming at independent practice, has time to commit. No prior exchange exists. Enough goal context is already present to ground a direct comparison now rather than ask another question first; remaining uncertainty is which option Taylor prefers, which the closing question is designed to surface.\n\nABSTAINED: Final program selection / personal fit confirmation \u2014 reserved for Taylor's own reaction to the comparison.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: ACC Training vs. the Professional Coach Program\n\nHi Taylor,\n\nSince you're starting without formal coach training and want real depth \u2014 both the foundational skills and the deeper systems-level work \u2014 here's how the two paths line up.\n\nACC training builds the foundational coaching competencies: the core skills you need to coach well. The Professional Coach Program includes that same ACC training and continues into PCC-level work, going further into systems coaching. Given you described wanting both layers for an independent practice, the Professional Coach Program is built to cover that fuller arc in one path, where ACC training alone gets you the foundational layer only.\n\nOne thing worth naming plainly: completing either path builds your skill and credential standing, but neither guarantees clients or employment once you're out running your own practice \u2014 that part comes down to how you build it.\n\nWhich of these feels closer to what you have in mind?\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 44390,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 5073,
+        "output_tokens_details": {
+          "thinking_tokens": 4226
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 44390,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 5073,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 44390,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 44390
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 52091
+    },
+    {
+      "caseId": "dialogue-reconsider",
+      "turn": 2,
+      "split": "holdout",
+      "inputSha256": "511315307d00ceca5a924529df78316bca24a4f6388fa8c29f1f85f765ca082a",
+      "sessionId": "8cd5a982-2080-4a6d-b5dd-527852d4bbd2",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nStarting with ACC training and deciding on the deeper systems work later makes sense. You'll build the foundational coaching skills now, and nothing about that choice closes the door on the Professional Coach Program down the road if you want to continue.\n\nLet me know when you're ready to enroll, or if any questions come up about the ACC track in the meantime.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: CONSULTATIVE\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: prior_contact \u2014 prior email exchange in this thread predates the current message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Confirms they want to start with ACC training (the foundational path) now, and decide about the deeper Professional Coach Program later rather than committing to it upfront.\n\nANSWERABLE: YES \u2014 this is a decision reaction to options already presented in this thread; no new fact is required to acknowledge and support it.\n\nCONVERSATION BASIS: Stated goal is an independent practice; prior turn compared ACC vs Professional Coach Program in that light. Taylor has now chosen to begin with ACC and defer the deeper-study decision. Nothing remains materially unresolved for this turn \u2014 the useful next move is to affirm the choice and leave the door open for enrollment or further questions, not to re-argue for the longer path.\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: ACC Training vs Professional Coach Program\n\nHi Taylor,\n\nStarting with ACC training and deciding on the deeper systems work later makes sense. You'll build the foundational coaching skills now, and nothing about that choice closes the door on the Professional Coach Program down the road if you want to continue.\n\nLet me know when you're ready to enroll, or if any questions come up about the ACC track in the meantime.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8488,
+        "cache_read_input_tokens": 36269,
+        "output_tokens": 1958,
+        "output_tokens_details": {
+          "thinking_tokens": 1316
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8488,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1958,
+            "cache_read_input_tokens": 36269,
+            "cache_creation_input_tokens": 8488,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8488
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 21864
+    },
+    {
+      "caseId": "dialogue-reconsider",
+      "turn": 3,
+      "split": "holdout",
+      "inputSha256": "6afbd05ae5d0cb6b0417cc16a4eaac1dd33ce1ec11ac32b0771e84469b4403f2",
+      "sessionId": "a1fbb315-37b0-42cc-81b1-1c1b9f5abe1f",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nThat's completely understandable \u2014 we won't follow up. Whenever you're ready to pick this back up next year, just reach out and we can continue from where we left off.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: enrollment\nEmail: taylor@example.invalid\nRoute: ANSWER\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: prior_contact \u2014 earlier team-sent replies in this thread predate this message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Pause the enrollment decision until next year and stop following up\n\nANSWERABLE: YES \u2014 acknowledging a pause/opt-out request needs no unresolved fact\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: ACC Training vs Professional Coach Program\n\nHi Taylor,\n\nThat's completely understandable \u2014 we won't follow up. Whenever you're ready to pick this back up next year, just reach out and we can continue from where we left off.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes.\n\n[INTERNAL NOTE \u2014 not for customer]: Lead has explicitly asked to stop follow-ups. Once approved and sent, this entry should be pulled from the follow-up queue (fn_drop_followups on the party) \u2014 action not executed in this environment."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8684,
+        "cache_read_input_tokens": 36269,
+        "output_tokens": 2210,
+        "output_tokens_details": {
+          "thinking_tokens": 1726
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8684,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 2210,
+            "cache_read_input_tokens": 36269,
+            "cache_creation_input_tokens": 8684,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8684
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 27003
+    },
+    {
+      "caseId": "direct-enroll",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "46e22bca32c12504af8c7181a741fd2e930748eca461f630d0219f866a7b1ab9",
+      "sessionId": "2bf34f37-2d51-493d-b43f-c562129f3c2a",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "TRANSACT",
+        "draft": "Hi Taylor,\n\nHere's your enrollment link for the ACC Coach Certification Training:\n\nhttps://training.example.invalid/enroll\n\nOnce you're in, you'll get access to everything you need to get started, including mentor coaching.\n\nFeel free to reply if you have any questions along the way.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: enrollment\nEmail: taylor@example.invalid\nRoute: TRANSACT\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Wants the enrollment link for ACC\n\nANSWERABLE: YES \u2014 enrollment URL for ACC is a verified fact\n\nRoute-Basis: \"I have decided on ACC. Please send the enrollment link.\"\n\nPROGRAM MATCH:\n- ACC Certification Training: $3,999 \u2014 explicitly requested program\n\nESTIMATED DEAL: ~$3,999\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Your ACC Enrollment Link\n\nHi Taylor,\n\nHere's your enrollment link for the ACC Coach Certification Training:\n\nhttps://training.example.invalid/enroll\n\nOnce you're in, you'll get access to everything you need to get started, including mentor coaching.\n\nFeel free to reply if you have any questions along the way.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 44285,
+        "output_tokens": 1189,
+        "output_tokens_details": {
+          "thinking_tokens": 676
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1189,
+            "cache_read_input_tokens": 44285,
+            "cache_creation_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 12742
+    },
+    {
+      "caseId": "direct-inclusion",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "91714ee6139bd8eb8254e4b8d29ca6eab669cfba99d68b1e15e32bfb6f9139cc",
+      "sessionId": "2770307c-695a-4ef1-9c87-e8c238c4f975",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nYes, mentor coaching is included in the ACC training.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ANSWER\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] Does ACC training include mentor coaching?\n\nANSWERABLE: YES \u2014 confirmed by supplied program facts\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Re: ACC Training Question\n\nHi Taylor,\n\nYes, mentor coaching is included in the ACC training.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8075,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 476,
+        "output_tokens_details": {
+          "thinking_tokens": 144
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8075,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 476,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8075,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8075
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 5985
+    },
+    {
+      "caseId": "direct-long-background",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "7ac9b0c990bf5c155d400e5e85102e6d9a53d6cb860496411b83cfb1af2f1894",
+      "sessionId": "ca52f469-cdbd-4a20-8d5c-2d1c329ad60c",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nEach ACC live class runs two hours.\n\nFeel free to reply if you have any other questions.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ANSWER\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] How long is each ACC live class?\n\nANSWERABLE: YES \u2014 verified program fact (each live class is two hours)\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: ACC Live Class Length\n\nHi Taylor,\n\nEach ACC live class runs two hours.\n\nFeel free to reply if you have any other questions.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 44313,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 695,
+        "output_tokens_details": {
+          "thinking_tokens": 352
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 44313,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 695,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 44313,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 44313
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 7086
+    },
+    {
+      "caseId": "direct-one-missing-detail",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "e01055a98f567fbc888c646f02ab5d0e731ee3fae0d5171322d81e99d30afdde",
+      "sessionId": "bcfd37a2-331b-4431-b663-c0b40aea0345",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "CLARIFY",
+        "draft": "Hi Taylor,\n\nHappy to get you the right number \u2014 we have a couple of different paths, and pricing depends on which one you're asking about.\n\nCould you let me know if you're asking about the ACC coach certification training, or the full Professional Coach Program (which includes both ACC and PCC training)?\n\nOnce I know which one, I'll send the exact pricing.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: pricing\nEmail: taylor@example.invalid\nRoute: CLARIFY\nResponse-Strategy: DIRECT\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] How much does the course cost?\n\nANSWERABLE: PARTIAL \u2014 pricing is confirmed but depends on which program (ACC training vs. the Professional Coach Program), which the message doesn't specify\n\nABSTAINED: exact price to quote \u2014 need to know which course Taylor means before naming a number\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Quick question about your pricing request\n\nHi Taylor,\n\nHappy to get you the right number \u2014 we have a couple of different paths, and pricing depends on which one you're asking about.\n\nCould you let me know if you're asking about the ACC coach certification training, or the full Professional Coach Program (which includes both ACC and PCC training)?\n\nOnce I know which one, I'll send the exact pricing.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8069,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 879,
+        "output_tokens_details": {
+          "thinking_tokens": 391
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8069,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 879,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8069,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8069
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 10370
+    },
+    {
+      "caseId": "direct-price",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "692233dc099b7cf0e98b7a8a1a240e3381b1f4fff285bee09078e6ed466f6edb",
+      "sessionId": "30ec4f09-cbf7-4c28-9734-f067cfb9d168",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nThe ACC training program is $3,999.\n\nFeel free to reply if you have any other questions.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: pricing\nEmail: taylor@example.invalid\nRoute: ANSWER\nResponse-Strategy: DIRECT\nConfidence: HIGH\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] What does the ACC training cost?\n\nANSWERABLE: YES \u2014 verified price ($3,999) supplied in authoritative facts\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: ACC Training Cost\n\nHi Taylor,\n\nThe ACC training program is $3,999.\n\nFeel free to reply if you have any other questions.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 44277,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 1740,
+        "output_tokens_details": {
+          "thinking_tokens": 1397
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 44277,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1740,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 44277,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 44277
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 19194
+    },
+    {
+      "caseId": "mixed-career-price",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "edd3b85d241281c818e2d6574b488ccc3389309be2224a2795f485eb49169c97",
+      "sessionId": "ac96ada4-8434-460c-a68b-6756949430d2",
+      "response": {
+        "strategy": "MIXED",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nACC certification is $3,999, and that includes mentor coaching.\n\nOn whether it's the right move for leaving management \u2014 that really depends on what you picture doing next. Are you thinking about building an independent coaching practice, bringing coaching skills into a different kind of role, or something else entirely? That's the piece that would tell us whether ACC on its own is the fit, or whether a different path makes more sense.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: MIXED\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] What does ACC certification cost?\n2. [CURRENT MESSAGE] Is certification the right move if they want to leave management?\n\nANSWERABLE: PARTIAL \u2014 price is directly supported; whether certification is the right move depends on unstated goals for what comes after leaving management\n\nCONVERSATION BASIS: Stated goal is to leave management; no information yet on what they want to do instead (independent coaching practice, bringing coaching into a new role, or an unrelated path). That distinction determines whether ACC alone fits or a different conversation is needed, so it's asked before any recommendation.\n\nABSTAINED: Whether certification is the right move for leaving management \u2014 missing what they envision doing after leaving management\n\nRequested-Fact-Basis: \"What does ACC cost\" \u2014 supports including price\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: Your ACC Question \u2014 Tandem Coaching\n\nHi Taylor,\n\nACC certification is $3,999, and that includes mentor coaching.\n\nOn whether it's the right move for leaving management \u2014 that really depends on what you picture doing next. Are you thinking about building an independent coaching practice, bringing coaching skills into a different kind of role, or something else entirely? That's the piece that would tell us whether ACC on its own is the fit, or whether a different path makes more sense.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 44290,
+        "output_tokens": 3496,
+        "output_tokens_details": {
+          "thinking_tokens": 2824
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3496,
+            "cache_read_input_tokens": 44290,
+            "cache_creation_input_tokens": 0,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 0
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 35787
+    },
+    {
+      "caseId": "mixed-timing-fit",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "ca42b6a1b9037571faf4a47a61f80e58e4b8cf987475fe0c69a481099e8b7912",
+      "sessionId": "85b81590-a4b6-4160-a445-43aa5d9c61e9",
+      "response": {
+        "strategy": "MIXED",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nEach live ACC class runs two hours, held weekly.\n\nOn fit \u2014 ACC builds foundational coaching skills, and those skills apply in a lot of directions, so the class itself isn't limited to one type of work. What would help is understanding what's pulling you toward something different. Are you thinking about an independent coaching practice, bringing coaching skills into your current field, or something else you're still sorting out?\n\nOnce we know that, we can point you toward the right path \u2014 that might be ACC on its own, or it might be worth looking at something further before you decide.\n\nBest,\nThe Tandem Coaching Team",
+        "card": "[SALES REVIEW] Lead #999999\nCategory: program-content\nEmail: taylor@example.invalid\nRoute: ORIENT\nResponse-Strategy: MIXED\nConfidence: MEDIUM\n\nTaylor | (none)\n\nRELATIONSHIP: unknown \u2014 no evidence predating this inbound message\n\nTHEIR ASK:\n1. [CURRENT MESSAGE] How long is each ACC class?\n2. [CURRENT MESSAGE] Whether ACC would suit someone who wants different kind of work but hasn't figured out what that is\n\nANSWERABLE: PARTIAL \u2014 class length is a verified fact; personal fit depends on a career direction the person has not yet identified\n\nCONVERSATION BASIS: Stated goal unknown beyond wanting \"different kind of work.\" Class-duration question is answered directly. Remaining uncertainty: what kind of work draws them, and whether that points toward ACC alone or a deeper track. This response answers the factual question and asks one connected question to move the fit conversation forward without assuming a path.\n\nABSTAINED: Which program best fits their unspecified career direction \u2014 needs their stated goal before a recommendation can be made\n\nDRAFT RESPONSE TO LEAD:\n---\nSubject: ACC Class Length \u2014 and Finding the Right Fit\n\nHi Taylor,\n\nEach live ACC class runs two hours, held weekly.\n\nOn fit \u2014 ACC builds foundational coaching skills, and those skills apply in a lot of directions, so the class itself isn't limited to one type of work. What would help is understanding what's pulling you toward something different. Are you thinking about an independent coaching practice, bringing coaching skills into your current field, or something else you're still sorting out?\n\nOnce we know that, we can point you toward the right path \u2014 that might be ACC on its own, or it might be worth looking at something further before you decide.\n\nBest,\nThe Tandem Coaching Team\n---\n\nWaiting for approval. Reply \"Approved\" to send, or reply with changes."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8096,
+        "cache_read_input_tokens": 36206,
+        "output_tokens": 3369,
+        "output_tokens_details": {
+          "thinking_tokens": 2648
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8096,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3369,
+            "cache_read_input_tokens": 36206,
+            "cache_creation_input_tokens": 8096,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8096
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 35600
+    }
+  ],
+  "manifests": [
+    {
+      "run": "nanoclaw-consultation-native-r1",
+      "version": 1,
+      "startedAt": "2026-09-07T14:29:36.581Z",
+      "model": "sonnet",
+      "effort": "high",
+      "suiteSha256": "597b52dd34a14a5fbca65b4867af1bfac23b6a7aa684442f73baeaca3a86932e",
+      "policies": [
+        {
+          "file": "CLAUDE.md",
+          "sha256": "6918beadc53f967c9a9619d6e6c84a0c2290af5ad9ecfb76208f03df2db9402d"
+        },
+        {
+          "file": "WORKFLOWS.md",
+          "sha256": "8248ec71fbe6bc54261bcc1d52ecf8e25e741c9e9ee9c31fe0b7f26f2127b41e"
+        },
+        {
+          "file": "EMAIL-RESPONSE-GUIDELINES.md",
+          "sha256": "df59544da448dcd14dab85621da5f5cfa71fefac760089ab0516b8859360d3fa"
+        },
+        {
+          "file": "VOICE-AND-TONE.md",
+          "sha256": "aee8db58fa71a1a2dc9afb016c321bfd926b57e1430e2ed7c508ee273a086e0a"
+        },
+        {
+          "file": "CONSULTATIVE-DIALOGUE.md",
+          "sha256": "73558fa91b4dd01bd7498b58a47c9477febbacabf5d1d17e9d232a1504630f84"
+        }
+      ],
+      "caseIds": [
+        "direct-price",
+        "direct-long-background",
+        "direct-one-missing-detail",
+        "direct-enroll",
+        "direct-inclusion",
+        "mixed-career-price",
+        "mixed-timing-fit",
+        "advice-missing-goal",
+        "advice-goal-already-clear",
+        "dialogue-internal",
+        "dialogue-reconsider"
+      ],
+      "qualityStatus": "unscored"
+    },
+    {
+      "run": "nanoclaw-consultation-native-r1b",
+      "version": 1,
+      "startedAt": "2026-09-07T14:31:27.679Z",
+      "model": "sonnet",
+      "effort": "high",
+      "suiteSha256": "597b52dd34a14a5fbca65b4867af1bfac23b6a7aa684442f73baeaca3a86932e",
+      "policies": [
+        {
+          "file": "CLAUDE.md",
+          "sha256": "6918beadc53f967c9a9619d6e6c84a0c2290af5ad9ecfb76208f03df2db9402d"
+        },
+        {
+          "file": "WORKFLOWS.md",
+          "sha256": "8248ec71fbe6bc54261bcc1d52ecf8e25e741c9e9ee9c31fe0b7f26f2127b41e"
+        },
+        {
+          "file": "EMAIL-RESPONSE-GUIDELINES.md",
+          "sha256": "df59544da448dcd14dab85621da5f5cfa71fefac760089ab0516b8859360d3fa"
+        },
+        {
+          "file": "VOICE-AND-TONE.md",
+          "sha256": "aee8db58fa71a1a2dc9afb016c321bfd926b57e1430e2ed7c508ee273a086e0a"
+        },
+        {
+          "file": "CONSULTATIVE-DIALOGUE.md",
+          "sha256": "73558fa91b4dd01bd7498b58a47c9477febbacabf5d1d17e9d232a1504630f84"
+        }
+      ],
+      "caseIds": [
+        "direct-enroll",
+        "mixed-career-price",
+        "mixed-timing-fit",
+        "advice-missing-goal",
+        "advice-goal-already-clear",
+        "dialogue-internal",
+        "dialogue-reconsider"
+      ],
+      "qualityStatus": "unscored"
+    },
+    {
+      "run": "nanoclaw-consultation-native-correction",
+      "version": 1,
+      "startedAt": "2026-09-07T14:36:31.586Z",
+      "model": "sonnet",
+      "effort": "high",
+      "suiteSha256": "597b52dd34a14a5fbca65b4867af1bfac23b6a7aa684442f73baeaca3a86932e",
+      "policies": [
+        {
+          "file": "CLAUDE.md",
+          "sha256": "6918beadc53f967c9a9619d6e6c84a0c2290af5ad9ecfb76208f03df2db9402d"
+        },
+        {
+          "file": "WORKFLOWS.md",
+          "sha256": "8248ec71fbe6bc54261bcc1d52ecf8e25e741c9e9ee9c31fe0b7f26f2127b41e"
+        },
+        {
+          "file": "EMAIL-RESPONSE-GUIDELINES.md",
+          "sha256": "df59544da448dcd14dab85621da5f5cfa71fefac760089ab0516b8859360d3fa"
+        },
+        {
+          "file": "VOICE-AND-TONE.md",
+          "sha256": "aee8db58fa71a1a2dc9afb016c321bfd926b57e1430e2ed7c508ee273a086e0a"
+        },
+        {
+          "file": "CONSULTATIVE-DIALOGUE.md",
+          "sha256": "7ce2f1142bf4e09b78b16cc862e82a6b8bd321743fe35d32f9a31e2bcb741a69"
+        }
+      ],
+      "caseIds": [
+        "dialogue-reconsider"
+      ],
+      "qualityStatus": "unscored"
+    }
+  ],
+  "baselineSimplifiedTransport": [
+    {
+      "caseId": "mixed-career-price",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "ae4081c8c336b3956e01ad38c923e43b81a3854c1ded5ffad78f27570d5ea6a2",
+      "sessionId": "c5353471-ae10-48be-9625-7ccb1f004cf9",
+      "response": {
+        "strategy": "MIXED",
+        "route": "CLARIFY",
+        "draft": "Hi Taylor,\n\nACC certification costs $3,999. Each live class runs two hours, and mentor coaching is included in that price.\n\nWhether certification is the right move depends on what you're aiming for once you leave management. ACC builds the foundational coaching skills needed to start working with clients. If you're picturing a more established coaching practice built around deeper systems work, the Professional Coach Program (which includes both ACC and PCC training) goes further, and runs $7,499. Neither path guarantees clients or employment on its own \u2014 that part is on the business side, not the credential.\n\nWhat do you picture doing with the certification once you leave management \u2014 coaching as your main work, or something else where coaching skills support a different role?\n\nBest,\nThe Tandem Coaching Team",
+        "goalEvidence": "Customer asked ACC cost and whether certification is the right move given a goal to leave management.",
+        "unresolved": "What role or work the customer plans to pursue after leaving management \u2014 needed to judge whether ACC alone or the Professional Coach Program fits, and no employment/client guarantee exists either way.",
+        "nextMove": "Answer the supported price question directly, then ask one focused question about their post-management goal to resolve the fit fork before recommending a specific path."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 40382,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 3273,
+        "output_tokens_details": {
+          "thinking_tokens": 2840
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 40382,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 3273,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 40382,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 40382
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 36880
+    },
+    {
+      "caseId": "advice-missing-goal",
+      "turn": 1,
+      "split": "development",
+      "inputSha256": "f8855f963e09e6ab813e1ae7b0e6942437e1b23b65d997d6aba193ca0c5ab79a",
+      "sessionId": "de783959-4b45-4bb3-8e7d-bdedbc9102f9",
+      "response": {
+        "strategy": "CONSULTATIVE",
+        "route": "ORIENT",
+        "draft": "Hi Taylor,\n\nSince you don't currently hold a coaching certification, ACC training is the standard starting point \u2014 it builds foundational coaching skills and includes mentor coaching along the way. If you already know you want to go further, the Professional Coach Program combines ACC and PCC training for deeper systemic coaching work.\n\nGiven your background in leadership development, would you rather start with the foundational ACC credential on its own, or move directly into the combined Professional Coach Program?\n\nBest,\nThe Tandem Coaching Team",
+        "goalEvidence": "Years developing leaders, advanced degrees, no coaching certification, explicitly asked what options would make sense.",
+        "unresolved": "Whether Taylor wants the standalone ACC credential or prefers the combined ACC+PCC Professional Coach Program; leadership experience does not itself establish credential eligibility.",
+        "nextMove": "Ask one clarifying question distinguishing ACC-only vs. the combined Professional Coach Program before naming price, cohort, or enrollment steps."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 8080,
+        "cache_read_input_tokens": 32319,
+        "output_tokens": 2316,
+        "output_tokens_details": {
+          "thinking_tokens": 1939
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 8080,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 2316,
+            "cache_read_input_tokens": 32319,
+            "cache_creation_input_tokens": 8080,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 8080
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 24278
+    },
+    {
+      "caseId": "direct-long-background",
+      "turn": 1,
+      "split": "holdout",
+      "inputSha256": "48b8f7be3670d97cb8e5436a71b809d821ee5025ddbf2db2acc1e1c0d9e5db9e",
+      "sessionId": "90ddff36-23ae-4bad-941e-b977aac26c90",
+      "response": {
+        "strategy": "DIRECT",
+        "route": "ANSWER",
+        "draft": "Hi Taylor,\n\nEach ACC live class runs two hours.\n\nFeel free to reply if you have other questions.\n\nBest,\nThe Tandem Coaching Team",
+        "goalEvidence": "Customer explicitly asked: \"How long is each ACC live class?\"",
+        "unresolved": "none \u2014 fact directly available (each live class lasts two hours)",
+        "nextMove": "Send direct factual answer; no program recommendation or pricing added since not requested."
+      },
+      "usage": {
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 40405,
+        "cache_read_input_tokens": 0,
+        "output_tokens": 385,
+        "output_tokens_details": {
+          "thinking_tokens": 201
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 40405,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "not_available",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 385,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 40405,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 40405
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard"
+      },
+      "durationMs": 5764
+    }
+  ]
+}

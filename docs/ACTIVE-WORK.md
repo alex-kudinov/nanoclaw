@@ -184,6 +184,32 @@ outside the current client conversation.
 
 ## Task details
 
+### NC-20260907-002 — Selective Sales consultation
+
+- Accepted scope: selective consultative judgment for advice inquiries, direct
+  answers for direct asks, mixed handling, source-bound continuity, options and
+  reactions. Several purposeful questions are welcome; no blanket funnel.
+- Baseline: exact healthy live `aa73538c8450`, Node 22.23.2; Sales shares
+  operational prompt hashes with that release; no overlapping Sales source work.
+- Worktree: `/Users/xbohdpukc/dev/NanoClaw-sales-consultative-20260907` on
+  `codex/sales-consultative-dialogue-20260907`; claim `fc124ae2` pushed.
+- Implementation: five Sales authorities/playbook, three autonomy modules,
+  approval regression tests, synthetic conversation harness/rubric/cases,
+  continuity/release-test lists. Existing assigned Gmail retrieval reconstructs
+  customer history; bounded Slack context reconstructs operator revisions.
+- Validation: 53 focused tests; email-critical 800 plus runner 45; typecheck;
+  full root 3,635 passed / 32 skipped with the two unchanged CNPC wrapper and
+  time-sensitive Trafft baseline failures. Generation and review still underway.
+- The initial simplified-output evaluation exposed unrequested comparison
+  pricing and weak reaction invitations. Policy was corrected; the final
+  harness now generates the normal full review card with its audits, changing
+  only transport. Earlier generations remain evidence, not a claimed pass.
+- Next: score native-card conversations, complete bounded Sonnet review, fix
+  verified material findings, release and verify non-sending live behavior.
+  No customer send, new follow-up, migration or provider access is authorized.
+- Rollback: prior release and backed-up exact operational Sales prompt bytes;
+  cancelled automatic holds remain manual.
+
 ### NC-20260906-004 — Sales fact consistency
 
 - Trigger: a 2026-09-06 Sales card used the current March/July 2027

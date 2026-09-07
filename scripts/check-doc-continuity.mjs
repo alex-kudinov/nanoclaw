@@ -29,6 +29,7 @@ const trackedAuthorityFiles = [
   'groups/sales/SCHEMA.md',
   'groups/sales/VOICE-AND-TONE.md',
   'groups/sales/WORKFLOWS.md',
+  'groups/sales/CONSULTATIVE-DIALOGUE.md',
   'scripts/check-doc-continuity.mjs',
   'scripts/sanitize-schema-doc.mjs',
   'tools/refresh-schemas.sh',

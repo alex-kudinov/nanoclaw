@@ -8,6 +8,51 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260907-002 — Selective consultative Sales dialogue
+
+- Date: 2026-09-07T14:26Z
+- Owner/client: Codex with bounded Claude Sonnet/high review pending
+- State: in_progress
+- Base: exact live `aa73538c84505212767628b81477e7d287e98af9`; isolated
+  `codex/sales-consultative-dialogue-20260907`; shared primary preserved.
+- Change class: C3, selective customer-facing drafting with tighter automatic
+  approval eligibility. Customer communications remain separately approved.
+- Owner authority: preserve direct answers; explore only inquiries requiring
+  advice; use several purposeful questions, build understanding over replies,
+  offer grounded options, invite reactions and adapt. The operator-corrected
+  educator inquiry is accepted positive behavior, not a defect to rewrite.
+- Implementation: canonical Sales role/workflow/guidelines and a trackable
+  consultation playbook; per-turn DIRECT/CONSULTATIVE/MIXED; reconstructed
+  conversation brief from exact assigned thread evidence. No new storage,
+  provider grant, identity inference, schema, cadence or send path.
+- Host boundary: consultative/mixed or missing/conflicting strategy/route
+  metadata cannot start or fire an L2 hold. Existing persisted holds are
+  rechecked. Human advice approvals retain counts but do not earn direct-answer
+  promotion streaks. Declared metadata is not an independent intent classifier.
+- Evaluation: 11 synthetic cases / 15 generated turns, including five direct,
+  two mixed, two standalone advice and two three-turn conversations; separate
+  source-hashed generation and Codex scoring. Generation/review/results pending.
+- Verification so far: 53 focused prompt/autonomy tests pass. Full checks,
+  review, immutable release and non-sending production verification pending.
+- Rollback: previous immutable release plus exact prior operational Sales
+  prompt bytes; no schema rollback. Cancelled L2 holds remain manual and must
+  never be automatically recreated during rollback.
+- Documentation: project map, this entry, active work and evaluation rubric.
+- Review/validation addendum 2026-09-07T14:43Z: R1 found one rubric ambiguity;
+  all cases/turns are now explicitly critical. R2 independently verified that
+  correction, first-paragraph approval metadata parsing, and the final
+  reaction/claim-calibration playbook, returning NO MATERIAL FINDINGS. Codex
+  independently verified both reviews and all changed source. R1 usage: 6 model
+  calls, 108,663 cache-create, 141,172 cache-read, 17,105 output tokens,
+  65,202 maximum context. Final native-card evaluation: all 11 cases / 15 turns
+  pass material criteria with limitations recorded in
+  `docs/reports/NC-20260907-002-EVALUATION.md`. The credential-wording defect
+  found in the first native continuation was corrected and that full sequence
+  regenerated. Final focused 54/54; exact context/Gmail/approval 103/103;
+  email-critical 800/800 plus runner 45/45; typecheck and continuity pass.
+  A concurrent non-overlapping product-identity release at 138e43ab must be
+  preserved in final lineage before building/deploying.
+
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 
 - Date: 2026-09-06T21:43:00Z

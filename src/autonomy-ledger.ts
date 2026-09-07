@@ -22,6 +22,7 @@ import {
   getAutonomyThreadMessagesAfter,
   getAutonomyTrust,
   getBotMessagesSince,
+  getMessageById,
   getPendingAutonomyDraftEvents,
   getRouterState,
   hasAutonomyDraftEvent,
@@ -45,6 +46,7 @@ import {
   isOperatorApprovalText,
   isDraftMessage,
   parseDraftCategory,
+  permitsSalesAutoApproval,
   shouldPromote,
 } from './autonomy-policy.js';
 
@@ -123,7 +125,11 @@ function ingestNewDrafts(
     const t = trustFor(g.folder, category);
     t.drafts += 1;
     saveTrust(t, nowIso);
-    if (t.level >= AUTONOMY_LEVELS.L2 && !GUARDED_CATEGORIES.has(category)) {
+    if (
+      t.level >= AUTONOMY_LEVELS.L2 &&
+      !GUARDED_CATEGORIES.has(category) &&
+      (g.folder !== 'sales' || permitsSalesAutoApproval(m.content))
+    ) {
       out.push({
         draft_id: m.id,
         chat_jid: g.jid,
@@ -185,8 +191,14 @@ function applyOutcome(
   let promotion: Promotion | undefined;
   if (outcome === 'approved_clean') {
     t.approved_clean += 1;
-    t.streak += 1;
-    if (shouldPromote(t.level, t.streak, ev.category)) {
+    const direct =
+      ev.group_folder !== 'sales' ||
+      permitsSalesAutoApproval(
+        getMessageById(ev.draft_id, ev.chat_jid)?.content ?? '',
+      );
+    // Keep outcome counts, but advice approvals do not earn direct-answer trust.
+    if (direct) t.streak += 1;
+    if (direct && shouldPromote(t.level, t.streak, ev.category)) {
       t.level = AUTONOMY_LEVELS.L2;
       promotion = {
         group_folder: ev.group_folder,

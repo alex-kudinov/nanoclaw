@@ -14,7 +14,10 @@ These rules govern every Sales-authored customer-facing draft, including initial
   defined next step under `WORKFLOWS.md`'s calibrated custom-engagement rule.
 - NEVER volunteer ICF credential fees — that is between the lead and ICF. Only mention if they specifically ask.
 - NEVER list included items with dollar values (e.g., "$29 value, included"). Just say what is included without value inflation.
-- Mention pricing only when it is explicitly requested and the card carries a valid current-message `Route-Basis` for `TRANSACT`. Include only the option(s) required to answer the question; do not automatically add full-program and pay-as-you-go prices.
+- Mention pricing only when explicitly requested, with a valid current-message
+  `Route-Basis` for `TRANSACT`, or a verbatim price-question basis on a `MIXED`
+  `ORIENT` card. Answer the price immediately; include only the options needed
+  to answer, without automatically adding full-program and pay-as-you-go prices.
 - Mention a cohort only when the current message asks about timing/scheduling or a valid `TRANSACT` Route-Basis makes it necessary. Then include the verified start date, format, and relevant timezone framing from SCHEDULE.md.
 - Mention the free Coaching Foundations module only when the current message explicitly asks for a way to begin or a valid `TRANSACT` Route-Basis requires it. `ORIENT` must not use it as a sales CTA.
 - Mention an alternative cohort only when schedule fit is part of the ask and SCHEDULE.md verifies it.
@@ -75,8 +78,13 @@ likely branch and write as if it were true.
    customer-facing draft.
 
 **Guidelines:**
-- One clarifying ask per email max. Never stack multiple questions — it reads like a form.
-- The ask should be specific, not open-ended. "Do you already hold an ACC credential?" beats "Can you tell me more about your background?"
+- For a specific factual question, ask only the missing detail needed to answer.
+  For exploratory advice, use `CONSULTATIVE-DIALOGUE.md`: a few connected
+  questions can help understand the person's goals. Do not turn every inquiry
+  into a consultation or every email into a questionnaire.
+- Ask questions whose answers can change the advice. Goal questions can reveal
+  an unexpected direction; do not confine people to our products or re-ask
+  background already supplied.
 - Never infer ACC or another program merely because it is the statistically common path. Recommend a program only when an `ORIENT` route has enough stated context; otherwise ask the one detail that distinguishes the paths.
 - If the question is clear enough for a definitive answer, skip the clarifying ask entirely. Most emails should still be straight answers.
 

@@ -9,6 +9,32 @@ Code and Codex without replacing Claude-owned sources.
 
 ## 1. How to use this map
 
+### Selective Sales consultation (NC-20260907-002)
+
+`groups/sales/CONSULTATIVE-DIALOGUE.md` extends the request-first workflow per
+customer turn: DIRECT for concrete answers, CONSULTATIVE for advice/fit and
+reactions, MIXED for direct answers plus exploration. It is not a lead-stage
+classification or a blanket discovery funnel. The host's existing bounded
+Slack thread context and exact assigned Gmail reads supply a reconstructed
+working brief; no new database, Party Context grant or provider access exists.
+The current owner policy outranks older learned sales tactics on request scope.
+
+Every Sales/follow-up card declares Response-Strategy. `autonomy-policy.ts`
+permits automatic approval only for a single DIRECT declaration and supported
+non-ORIENT route in the header. `autonomy-ledger.ts` checks that before starting
+a hold or earning a direct-answer promotion streak; `autonomy-hold.ts` rechecks
+the exact stored card before firing persisted holds. Missing/conflicting
+metadata and consultative/mixed cards remain manual. This protects declared
+strategy, not semantic intent independently of the model. Human approval,
+fact consistency, exact recipients, Action-ID and Gmail execution remain the
+existing authority. No follow-up cadence/cap or customer-send change is made.
+
+`evals/sales/run-consultation.mjs` generates tool-free synthetic direct, mixed
+and multistep conversations in fresh sessions with prior generated emails.
+Expectations are withheld from generation and independently scored under
+`consultation-rubric.md`. Synthetic behavior, host tests, deployed prompt hashes
+and natural customer outcomes are separate evidence in the task changelog.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.
