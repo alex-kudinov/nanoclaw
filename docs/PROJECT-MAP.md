@@ -45,6 +45,19 @@ coverage audit and cross-provider ownership contract are in
 `docs/STUDENT-PRODUCT-IDENTITY.md`. This does not activate the new enrollment
 writer, access provisioning or supervision capacity.
 
+Publication checkpoint `NC-20260907-006`: the schema-validated coordination
+manifest references the existing program, entitlement, binding, checkout, and
+privacy-minimized provider evidence by exact version and SHA-256. The
+deterministic generator produces a byte-exact v1 binding compatibility artifact
+loaded by the existing Contador resolver plus a static Tandemweb checkout
+validation artifact. NanoClaw release build and fresh-archive verification fail
+on stale or tampered compatibility bytes. Tandemweb validates one pinned
+candidate commit before reset; its selected projection covers only
+`supervision-inaugural` and `supervision-regular`, so unrelated checkout entries
+do not acquire coverage or block the consumer. This adds no live website call,
+paid-event writer, Heartbeat attachment/access claim, or global strict
+publication eligibility.
+
 This document separates four things that are easy to conflate:
 
 1. **Intent** — requirements, prompts, and design documents.

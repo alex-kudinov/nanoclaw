@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entitlement_catalog_revision": 1,
+  "authority": "Identity and legacy roster projection bindings only. Offers, bundles and provider IDs are referenced from student-entitlements-v1.json; prices, obligations, access and class assignments retain their native authorities.",
+  "routes": [
+    {
+      "offer_key": "supervision-inaugural",
+      "stripe_account": "tandem",
+      "roster_targets": [
+        {
+          "tab": "CSS",
+          "column": "Coaching Supervision Mastery"
+        }
+      ]
+    },
+    {
+      "offer_key": "supervision-regular",
+      "stripe_account": "tandem",
+      "roster_targets": [
+        {
+          "tab": "CSS",
+          "column": "Coaching Supervision Mastery"
+        }
+      ]
+    }
+  ]
+}

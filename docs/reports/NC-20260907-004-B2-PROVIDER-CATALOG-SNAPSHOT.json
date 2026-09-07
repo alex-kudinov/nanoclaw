@@ -1,0 +1,1347 @@
+{
+  "snapshot_id": "NC-20260907-004-b2-provider-catalog",
+  "integrated_at_utc": "2026-09-07T18:47:54.503Z",
+  "source_receipt": {
+    "receipt_id": "NC-20260907-004-provider-read-receipt",
+    "captured_at_utc": "2026-09-07T18:08:37.303Z",
+    "updated_at_utc": "2026-09-07T18:42:45.768Z",
+    "scope": "read-only native Stripe product catalog metadata in both configured account namespaces and Plutio template/custom-field relationship metadata",
+    "artifacts": [
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/plutio-catalog-relationship-summary-sanitized.json",
+        "sha256": "9b02e60d654f8ea75956f5560d6e36240ae268eec5230529df6fa3ea5e6a79f7"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/plutio-custom-field-structure-sanitized.json",
+        "sha256": "0d6d26baaf6a020d1c84596b4f7ea8dd8ced390d8df72251dc7ec98d95017b7c"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/plutio-exact-project-reference-supplement-sanitized.json",
+        "sha256": "170d332a0f29b3c851a72a787e4ab5ef03963b596d8f1c5d55397941e438bd39"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/plutio-template-relationships-sanitized.json",
+        "sha256": "64773b66a2404b5a41f15347a204c70b81c5a2719772ad277685121a9777547b"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/stripe-entitlement-product-default-price-supplement-sanitized.json",
+        "sha256": "ee1bc840953092063450ddd0f09a44435264efc34a02890a96d9627bf065824a"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/stripe-native-catalog-sanitized.json",
+        "sha256": "596240367efad06141ee6e855bfdb0d4f3c0d04cfee228f9d19014284bb2acb9"
+      },
+      {
+        "path": "/tmp/NC-20260907-004-provider-reads/stripe-price-capability-limitation-sanitized.json",
+        "sha256": "24e2d2e1694b0d10a1bd873f258e8cde0c03e533fbe128f5e7153e0926bc1eee"
+      }
+    ],
+    "checksum_validation": "all seven listed SHA-256 values reproduced before integration"
+  },
+  "privacy_boundary": "No repository, provider, business/runtime, credential, program, or configuration write; no customer/student/person/payment/invoice/contract population export.",
+  "stripe": {
+    "namespaces": [
+      {
+        "source_namespace": "stripe:primary",
+        "account_id": "acct_1PakRkRnZI4gH1uA",
+        "default_currency": "usd",
+        "returned_count": 75,
+        "completeness": {
+          "pagination_supported_by_operation": false,
+          "has_more_exposed": false,
+          "interpretation": "single bounded page; exact catalog completeness cannot be proven because no cursor or has_more field is exposed"
+        },
+        "label_counts": { "safe": 2, "unknown_omitted": 73 }
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "default_currency": "usd",
+        "returned_count": 53,
+        "completeness": {
+          "pagination_supported_by_operation": false,
+          "has_more_exposed": false,
+          "interpretation": "single bounded page; exact catalog completeness cannot be proven because no cursor or has_more field is exposed"
+        },
+        "label_counts": { "safe": 26, "unknown_omitted": 27 }
+      }
+    ],
+    "safe_label_matches": [
+      {
+        "source_namespace": "stripe:primary",
+        "account_id": "acct_1PakRkRnZI4gH1uA",
+        "product_id": "prod_V5QFa9j8Lpz197",
+        "safe_label": "Fundamentos de Mentor Coaching",
+        "matched_offer_slug": "mcs-foundations-es",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:primary",
+        "account_id": "acct_1PakRkRnZI4gH1uA",
+        "product_id": "prod_V62G7wZkeC0rxV",
+        "safe_label": "メンターコーチング基礎講座",
+        "matched_offer_slug": "mcs-foundations-ja",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JQdTeTsQzIq",
+        "safe_label": "ACC Group Coaching Supervision",
+        "matched_offer_slug": "acc-group-supervision",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JrqJxXmYJ7X",
+        "safe_label": "ACC Group Mentor Coaching",
+        "matched_offer_slug": "acc-group-mentoring",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JsMDf9PLj9J",
+        "safe_label": "ACC ICF Exam Prep",
+        "matched_offer_slug": "acc-exam-prep",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JJowKA3MojD",
+        "safe_label": "ACC Individual Mentor Coaching",
+        "matched_offer_slug": "acc-individual-mentoring",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JxVERhLtwb4",
+        "safe_label": "ACC Level 1 Full Program",
+        "matched_offer_slug": "acc-full",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JkPYLMo0rcZ",
+        "safe_label": "ACC Module 1: Coaching Fundamentals",
+        "matched_offer_slug": "acc-module-1",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6J0JzL4EJw2A",
+        "safe_label": "ACC Module 2: Deepening Practice",
+        "matched_offer_slug": "acc-module-2",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6J8UgbeDRvLB",
+        "safe_label": "ACC Module 3: Coaching Mastery",
+        "matched_offer_slug": "acc-module-3",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH6JA1uJdijPLp",
+        "safe_label": "ACC Module 4: Advanced Coaching Techniques",
+        "matched_offer_slug": "acc-module-4",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vCA9Lnv0ZTi",
+        "safe_label": "ACTC Exam Prep",
+        "matched_offer_slug": "actc-exam-prep",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vmY0DzypACl",
+        "safe_label": "ACTC Full Program",
+        "matched_offer_slug": "actc-full",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vgs8dFUCaJn",
+        "safe_label": "ACTC Group Supervision",
+        "matched_offer_slug": "actc-group-supervision",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vXzgIshf41m",
+        "safe_label": "ACTC Module 1: System Coaching Mindset",
+        "matched_offer_slug": "actc-module-1",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vRaY5ESKm81",
+        "safe_label": "ACTC Module 2: Coaching Systems",
+        "matched_offer_slug": "actc-module-2",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vxu5Bexc7L1",
+        "safe_label": "ACTC Module 3: System Perception",
+        "matched_offer_slug": "actc-module-3",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8v8L4GRwqiHT",
+        "safe_label": "ACTC Module 4: System Awareness",
+        "matched_offer_slug": "actc-module-4",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UH8vNyWNabUTak",
+        "safe_label": "ACTC Recording Review",
+        "matched_offer_slug": "actc-recording-review",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9erN2dhUvNa",
+        "safe_label": "PCC Group Mentoring",
+        "matched_offer_slug": "pcc-group-mentoring",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9llrZQoXXAn",
+        "safe_label": "PCC Group Supervision",
+        "matched_offer_slug": "pcc-group-supervision",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9SwOMUvKG3c",
+        "safe_label": "PCC Individual Exam Prep",
+        "matched_offer_slug": "pcc-exam-prep-individual",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9EXipWkYeaW",
+        "safe_label": "PCC Individual Mentoring",
+        "matched_offer_slug": "pcc-individual-mentoring",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9XNEFR1px1t",
+        "safe_label": "PCC Module 1: System Coaching Mindset",
+        "matched_offer_slug": "pcc-module-1",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9wchB1u3wmk",
+        "safe_label": "PCC Module 2: Coaching Systems",
+        "matched_offer_slug": "pcc-module-2",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9WVAcZNkhsG",
+        "safe_label": "PCC Module 3: System Perception",
+        "matched_offer_slug": "pcc-module-3",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9lBfTk1jUMB",
+        "safe_label": "PCC Module 4: System Awareness",
+        "matched_offer_slug": "pcc-module-4",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      },
+      {
+        "source_namespace": "stripe:alt",
+        "account_id": "acct_1G1wKzA7hTBWpVVq",
+        "product_id": "prod_UHB9VTce5OwkIa",
+        "safe_label": "PCC Team Exam Prep",
+        "matched_offer_slug": "pcc-exam-prep-team",
+        "active": true,
+        "default_price_structure": {
+          "amount_minor": null,
+          "currency": null,
+          "price_id": null
+        },
+        "label_classification": "exact_safe_local_catalog_label"
+      }
+    ],
+    "declared_entitlement_product_checks": {
+      "counts": {
+        "declared_product_references": 9,
+        "verified_product_existence": 9,
+        "missing_or_roundtrip_mismatch": 0,
+        "default_price_matches_declared": 3,
+        "default_price_conflicts": 0,
+        "default_price_null": 6,
+        "whitelisted_metadata_declarations": 12,
+        "products_with_whitelisted_metadata_declarations": 6
+      },
+      "references": [
+        {
+          "offer_key": "acc-module-1",
+          "status": "active",
+          "declared_product_id": "prod_UH6JkPYLMo0rcZ",
+          "declared_price_ids": ["price_1TIY6rA7hTBWpVVqY6t4VpzY"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UH6JkPYLMo0rcZ",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["program", "slug"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "program",
+              "value": "acc",
+              "validation": "exact_local_program_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "slug",
+              "value": "acc-module-1",
+              "validation": "exact_local_offer_slug_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "acc-full",
+          "status": "active",
+          "declared_product_id": "prod_UH6JxVERhLtwb4",
+          "declared_price_ids": ["price_1TIY6rA7hTBWpVVqNg7G7XzC"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UH6JxVERhLtwb4",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["program", "slug"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "program",
+              "value": "acc",
+              "validation": "exact_local_program_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "slug",
+              "value": "acc-full",
+              "validation": "exact_local_offer_slug_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "pcc-full",
+          "status": "active",
+          "declared_product_id": "prod_UHB9DrYIrstLJT",
+          "declared_price_ids": ["price_1TIcnWA7hTBWpVVqJHoGwLnO"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UHB9DrYIrstLJT",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["program", "slug"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "program",
+              "value": "pcc",
+              "validation": "exact_local_program_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "slug",
+              "value": "pcc-full",
+              "validation": "exact_local_offer_slug_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "actc-full",
+          "status": "active",
+          "declared_product_id": "prod_UH8vmY0DzypACl",
+          "declared_price_ids": ["price_1TIadwA7hTBWpVVq4UQilXGE"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UH8vmY0DzypACl",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["program", "slug"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "program",
+              "value": "actc",
+              "validation": "exact_local_program_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "slug",
+              "value": "actc-full",
+              "validation": "exact_local_offer_slug_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "acc-pcc-full",
+          "status": "active",
+          "declared_product_id": "prod_UHBORCHyWDea4N",
+          "declared_price_ids": ["price_1TId1qA7hTBWpVVqEqTpvs14"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UHBORCHyWDea4N",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["program", "slug"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "program",
+              "value": "acc-pcc",
+              "validation": "exact_local_program_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "slug",
+              "value": "acc-pcc-full",
+              "validation": "exact_local_offer_slug_allowlist",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "mcs-full",
+          "status": "active",
+          "declared_product_id": "prod_UWzqD2zowB8apy",
+          "declared_price_ids": ["price_1TkYJfA7hTBWpVVqm502swAb"],
+          "namespace": "stripe:primary",
+          "account_id": "acct_1PakRkRnZI4gH1uA",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UWzqD2zowB8apy",
+          "native_active": true,
+          "native_account": "primary",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "null",
+          "native_default_price_id": null,
+          "default_price_matches_declared": null,
+          "metadata_keys": ["communityID", "offerID", "type"],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": [
+            {
+              "key": "communityID",
+              "value": "e30ba037-e06d-44bb-b18b-d33b119da62f",
+              "validation": "uuid_shape_only",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            },
+            {
+              "key": "offerID",
+              "value": "6c95fb84-7f40-4fe8-847b-32bdd7a52254",
+              "validation": "uuid_shape_only",
+              "meaning_status": "provider_declared_unverified_target_meaning"
+            }
+          ]
+        },
+        {
+          "offer_key": "mcs-full",
+          "status": "active",
+          "declared_product_id": "prod_Uk2OvW03ZwxmAj",
+          "declared_price_ids": ["price_1TkYJfA7hTBWpVVqm502swAb"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_Uk2OvW03ZwxmAj",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "price_id",
+          "native_default_price_id": "price_1TkYJfA7hTBWpVVqm502swAb",
+          "default_price_matches_declared": true,
+          "metadata_keys": [],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": []
+        },
+        {
+          "offer_key": "supervision-inaugural",
+          "status": "active",
+          "declared_product_id": "prod_UvqkpUONPWr8Bo",
+          "declared_price_ids": ["price_1Tvz3MA7hTBWpVVqhF708kPv"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UvqkpUONPWr8Bo",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "price_id",
+          "native_default_price_id": "price_1Tvz3MA7hTBWpVVqhF708kPv",
+          "default_price_matches_declared": true,
+          "metadata_keys": [],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": []
+        },
+        {
+          "offer_key": "supervision-regular",
+          "status": "active_future_cohort",
+          "declared_product_id": "prod_UvqkMSjRqR4zho",
+          "declared_price_ids": ["price_1Tvz3MA7hTBWpVVq9gL3v49F"],
+          "namespace": "stripe:alt",
+          "account_id": "acct_1G1wKzA7hTBWpVVq",
+          "namespace_match_count": 1,
+          "fetch_ok": true,
+          "native_product_id": "prod_UvqkMSjRqR4zho",
+          "native_active": true,
+          "native_account": "alt",
+          "product_id_roundtrip_match": true,
+          "default_price_field_present": true,
+          "default_price_value_class": "price_id",
+          "native_default_price_id": "price_1Tvz3MA7hTBWpVVq9gL3v49F",
+          "default_price_matches_declared": true,
+          "metadata_keys": [],
+          "amount_exposed": false,
+          "recurring_exposed": false,
+          "metadata_declarations": []
+        }
+      ],
+      "verified_facts": [
+        "All nine declared product references exist in the exact account namespace observed by the refreshed account-scoped native list.",
+        "Three products return the catalog-declared default-price ID; six products return default_price:null. Null is a product-level result, not an unavailable field.",
+        "Retained metadata values are limited to exact local slug/program allowlists or UUID-shaped offerID/communityID values and remain provider declarations with unverified target meaning.",
+        "A matching default_price establishes an exact native product-to-default-price ID relationship; it does not establish offer, payment-plan, participant, fulfillment, or agreement meaning."
+      ],
+      "field_level_limits": {
+        "amount": "stripe/get-product did not expose amount or unit_amount; no amount was inferred from the default-price ID",
+        "recurrence": "stripe/get-product did not expose recurring interval, interval_count, iterations, or installment total",
+        "other_prices": "non-default price collection is not exposed",
+        "catalog_completeness": "exact declared-ID checks do not close list-products pagination completeness",
+        "default_price": "supported and checked on all nine declared product references; three exact matches, six nulls, zero conflicts"
+      }
+    },
+    "price_capability": {
+      "secondary_checks": [
+        {
+          "source_namespace": "stripe:primary",
+          "operation": "stripe/get-product",
+          "product_id": "prod_V5QFa9j8Lpz197",
+          "product_exists": true,
+          "safe_label_exact_match": true,
+          "active": true,
+          "account": "primary",
+          "exposed_noncontent_fields": [
+            "account",
+            "active",
+            "created",
+            "default_price",
+            "id"
+          ],
+          "metadata_keys": ["communityID", "offerID", "type"],
+          "price_id_field_exposed": true,
+          "default_price_value": null,
+          "amount_field_exposed": false
+        },
+        {
+          "source_namespace": "stripe:alt",
+          "operation": "stripe/get-product",
+          "product_id": "prod_UH6JQdTeTsQzIq",
+          "product_exists": true,
+          "safe_label_exact_match": true,
+          "active": true,
+          "account": "alt",
+          "exposed_noncontent_fields": [
+            "account",
+            "active",
+            "created",
+            "default_price",
+            "id"
+          ],
+          "metadata_keys": ["program", "slug"],
+          "price_id_field_exposed": true,
+          "default_price_value": null,
+          "amount_field_exposed": false
+        }
+      ],
+      "attempts": [
+        "stripe/list-products in each exact account namespace: exposes product id, active state, and optional amount/currency, but no price id and no cursor/has_more",
+        "Initial stripe/get-product samples returned default_price:null; the exact entitlement-product supplement then checked all nine declared product references and found three matching default-price IDs plus six nulls"
+      ],
+      "supplement": "stripe-entitlement-product-default-price-supplement-sanitized.json",
+      "remaining_limitation": "Three declared product-to-default-price IDs are verified and six declared products return default_price:null. The other declared price IDs, amounts, recurring interval/count, non-default prices, and complete price population remain unverified. No invoice/subscription/customer/payment read was used as a workaround.",
+      "binding_boundary": "Product existence and exact safe-label match do not prove offer, financial, participant, fulfillment, or agreement meaning."
+    },
+    "binding_boundary": "Each product reference retains its observed source_namespace/account_id. Offer-level account scope must not duplicate products across accounts or erase the primary/alt distinction. Metadata declarations remain unverified meaning."
+  },
+  "plutio": {
+    "template_counts": {
+      "invoice": 18,
+      "proposal": 5,
+      "contract": 22,
+      "project": 5,
+      "task": 72
+    },
+    "template_completeness": {
+      "invoice": {
+        "exhausted": true,
+        "page_count": 1,
+        "returned_count": 18,
+        "cap_pages": 20
+      },
+      "proposal": {
+        "exhausted": true,
+        "page_count": 1,
+        "returned_count": 5,
+        "cap_pages": 20
+      },
+      "contract": {
+        "exhausted": true,
+        "page_count": 1,
+        "returned_count": 22,
+        "cap_pages": 20
+      },
+      "project": {
+        "exhausted": true,
+        "page_count": 1,
+        "returned_count": 5,
+        "cap_pages": 20
+      },
+      "task": {
+        "exhausted": true,
+        "page_count": 1,
+        "returned_count": 72,
+        "cap_pages": 20
+      }
+    },
+    "invoice_payment_and_receipt_structure": {
+      "total": 18,
+      "with_stripe_payment_option": 7,
+      "with_bank_payment_option": 16,
+      "with_no_payment_options": 2,
+      "distinct_receipt_template_ids": ["km6PWHxwPPHDsetBx"]
+    },
+    "proposal_contract_project_links": [
+      {
+        "proposal_template_id": "LPDH5H98HwZorKWzd",
+        "contract_template_id": "6dmTRnLG5EkmTxnbX",
+        "contract_template_present_in_returned_list": true,
+        "project_template_id": "QtyfWidbfMyHGFSFf",
+        "project_template_present_in_returned_list": false,
+        "auto_project": true
+      },
+      {
+        "proposal_template_id": "REDYzbsi4S98noaR2",
+        "contract_template_id": "95mKba8TvQ9wyx2EG",
+        "contract_template_present_in_returned_list": true,
+        "project_template_id": "n3wmkDPHHfoDLZGmN",
+        "project_template_present_in_returned_list": false,
+        "auto_project": true
+      },
+      {
+        "proposal_template_id": "CBbgcxc5XhgkeKQQy",
+        "contract_template_id": "Wu2Y3eMGcQPNqHjPq",
+        "contract_template_present_in_returned_list": true,
+        "project_template_id": "QtyfWidbfMyHGFSFf",
+        "project_template_present_in_returned_list": false,
+        "auto_project": true
+      }
+    ],
+    "proposal_link_counts": {
+      "linked_proposals": 3,
+      "contract_links": 3,
+      "contract_links_resolved_to_returned_template": 3,
+      "project_links": 3,
+      "project_links_resolved_to_returned_template": 0
+    },
+    "item_structure_attempts": [
+      {
+        "operation": "plutio/list-templates",
+        "scope": "all invoice/proposal/contract/project/task templates",
+        "result": "template block ids, block usage roles, financial aggregate fields, and proposal contract/project links exposed; no line-item definitions"
+      },
+      {
+        "operation": "plutio/list-blocks",
+        "scope": "exact invoice template 8oYnSen3zzresYKHS and exact proposal template LPDH5H98HwZorKWzd",
+        "invoice_returned_block_records": 0,
+        "proposal_returned_block_records": 0,
+        "result": "no block records returned for either exact template"
+      },
+      {
+        "operation": "plutio/get-invoice + plutio/get-proposal",
+        "scope": "the same exact template ids",
+        "invoice_exposed_keys": [
+          "_id",
+          "amount",
+          "blocks",
+          "blocksLayout",
+          "blocksUsage",
+          "createdAt",
+          "currency",
+          "customFields",
+          "designOptions",
+          "discountAmount",
+          "discountPercentage",
+          "dueDate",
+          "dueDateTemplate",
+          "isDiscountBeforeTax",
+          "isLegacy",
+          "isTemplate",
+          "issueDate",
+          "locale",
+          "paymentOptions",
+          "receiptTemplateId",
+          "status",
+          "subTotal",
+          "tax",
+          "totalDiscount",
+          "type",
+          "updatedAt"
+        ],
+        "proposal_exposed_keys": [
+          "_id",
+          "amount",
+          "autoInvoice",
+          "autoProject",
+          "billableItems",
+          "blocks",
+          "blocksLayout",
+          "blocksUsage",
+          "contractId",
+          "createdAt",
+          "currency",
+          "customFields",
+          "designOptions",
+          "discountAmount",
+          "discountPercentage",
+          "isDiscountBeforeTax",
+          "isLegacy",
+          "isTemplate",
+          "issueDate",
+          "locale",
+          "projectId",
+          "projectTemplateId",
+          "status",
+          "subTotal",
+          "tax",
+          "totalDiscount",
+          "updatedAt"
+        ],
+        "result": "exact getters repeated aggregate and block-id structure; no line-item definition or catalog binding surfaced"
+      }
+    ],
+    "custom_field_structure": {
+      "returned_count": 74,
+      "counts_by_entity_type": {
+        "company": 1,
+        "contract": 33,
+        "form": 3,
+        "invoice": 1,
+        "person": 5,
+        "project": 8,
+        "proposal": 19,
+        "task": 4
+      },
+      "pagination": {
+        "pages": [{ "skip": 0, "limit": 100, "returned": 74 }],
+        "exhausted": true,
+        "cap_pages": 20
+      },
+      "field_type_counts": {
+        "company:text": 1,
+        "contract:select": 10,
+        "contract:text": 15,
+        "contract:date": 5,
+        "contract:checkbox": 2,
+        "contract:currency": 1,
+        "form:multirange": 1,
+        "form:text": 1,
+        "form:select": 1,
+        "invoice:multi": 1,
+        "person:text": 3,
+        "person:select": 1,
+        "person:date": 1,
+        "project:text": 4,
+        "project:contact": 1,
+        "project:select": 3,
+        "proposal:select": 7,
+        "proposal:text": 10,
+        "proposal:date": 2,
+        "task:select": 1,
+        "task:text": 3
+      },
+      "limitation": "The supported definition read exposes identifiers and types but, with titles deliberately omitted for privacy, does not establish that any field is a canonical product, offer, price, participant, or agreement binding."
+    },
+    "project_reference_supplement": {
+      "counts": {
+        "proposal_project_references": 3,
+        "unique_project_reference_ids": 2,
+        "exact_getter_exists": 0,
+        "exact_getter_is_template_true": 0,
+        "exact_getter_is_template_false": 0,
+        "exact_getter_existence_unverified": 2,
+        "supported_exact_operations_attempted_per_id": 2,
+        "wrapper_exit_1_without_provider_status_or_code": 4
+      },
+      "unique_target_checks": [
+        {
+          "project_reference_id": "QtyfWidbfMyHGFSFf",
+          "existence": null,
+          "target_kind": null,
+          "is_template": null,
+          "attempts": [
+            {
+              "operation": "plutio/get-project",
+              "scope": "exact id",
+              "tool_is_error": true,
+              "wrapper_exit_code": 1,
+              "provider_http_status": null,
+              "provider_error_code": null,
+              "wrapper_content_blocks": 1,
+              "wrapper_content_length": 34,
+              "structured_content_present": false,
+              "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+            },
+            {
+              "operation": "plutio/list-projects",
+              "scope": "exact _id filter; limit 2; skip 0",
+              "filter_field": "_id",
+              "tool_is_error": true,
+              "wrapper_exit_code": 1,
+              "provider_http_status": null,
+              "provider_error_code": null,
+              "wrapper_content_blocks": 1,
+              "wrapper_content_length": 34,
+              "structured_content_present": false,
+              "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+            }
+          ],
+          "verified_fields": [
+            "project_reference_id",
+            "both_supported_operations_attempted",
+            "wrapper_failure_class"
+          ],
+          "unverified_fields": [
+            "existence",
+            "target_kind",
+            "isTemplate",
+            "status",
+            "provider_http_status",
+            "provider_error_code"
+          ],
+          "omitted_fields": [
+            "name",
+            "content",
+            "contributors",
+            "clients",
+            "people",
+            "creator",
+            "business"
+          ]
+        },
+        {
+          "project_reference_id": "n3wmkDPHHfoDLZGmN",
+          "existence": null,
+          "target_kind": null,
+          "is_template": null,
+          "attempts": [
+            {
+              "operation": "plutio/get-project",
+              "scope": "exact id",
+              "tool_is_error": true,
+              "wrapper_exit_code": 1,
+              "provider_http_status": null,
+              "provider_error_code": null,
+              "wrapper_content_blocks": 1,
+              "wrapper_content_length": 34,
+              "structured_content_present": false,
+              "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+            },
+            {
+              "operation": "plutio/list-projects",
+              "scope": "exact _id filter; limit 2; skip 0",
+              "filter_field": "_id",
+              "tool_is_error": true,
+              "wrapper_exit_code": 1,
+              "provider_http_status": null,
+              "provider_error_code": null,
+              "wrapper_content_blocks": 1,
+              "wrapper_content_length": 34,
+              "structured_content_present": false,
+              "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+            }
+          ],
+          "verified_fields": [
+            "project_reference_id",
+            "both_supported_operations_attempted",
+            "wrapper_failure_class"
+          ],
+          "unverified_fields": [
+            "existence",
+            "target_kind",
+            "isTemplate",
+            "status",
+            "provider_http_status",
+            "provider_error_code"
+          ],
+          "omitted_fields": [
+            "name",
+            "content",
+            "contributors",
+            "clients",
+            "people",
+            "creator",
+            "business"
+          ]
+        }
+      ],
+      "proposal_references": [
+        {
+          "proposal_template_id": "LPDH5H98HwZorKWzd",
+          "project_reference_id": "QtyfWidbfMyHGFSFf",
+          "target": {
+            "project_reference_id": "QtyfWidbfMyHGFSFf",
+            "existence": null,
+            "target_kind": null,
+            "is_template": null,
+            "attempts": [
+              {
+                "operation": "plutio/get-project",
+                "scope": "exact id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              },
+              {
+                "operation": "plutio/list-projects",
+                "scope": "exact _id filter; limit 2; skip 0",
+                "filter_field": "_id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              }
+            ],
+            "verified_fields": [
+              "project_reference_id",
+              "both_supported_operations_attempted",
+              "wrapper_failure_class"
+            ],
+            "unverified_fields": [
+              "existence",
+              "target_kind",
+              "isTemplate",
+              "status",
+              "provider_http_status",
+              "provider_error_code"
+            ],
+            "omitted_fields": [
+              "name",
+              "content",
+              "contributors",
+              "clients",
+              "people",
+              "creator",
+              "business"
+            ]
+          }
+        },
+        {
+          "proposal_template_id": "REDYzbsi4S98noaR2",
+          "project_reference_id": "n3wmkDPHHfoDLZGmN",
+          "target": {
+            "project_reference_id": "n3wmkDPHHfoDLZGmN",
+            "existence": null,
+            "target_kind": null,
+            "is_template": null,
+            "attempts": [
+              {
+                "operation": "plutio/get-project",
+                "scope": "exact id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              },
+              {
+                "operation": "plutio/list-projects",
+                "scope": "exact _id filter; limit 2; skip 0",
+                "filter_field": "_id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              }
+            ],
+            "verified_fields": [
+              "project_reference_id",
+              "both_supported_operations_attempted",
+              "wrapper_failure_class"
+            ],
+            "unverified_fields": [
+              "existence",
+              "target_kind",
+              "isTemplate",
+              "status",
+              "provider_http_status",
+              "provider_error_code"
+            ],
+            "omitted_fields": [
+              "name",
+              "content",
+              "contributors",
+              "clients",
+              "people",
+              "creator",
+              "business"
+            ]
+          }
+        },
+        {
+          "proposal_template_id": "CBbgcxc5XhgkeKQQy",
+          "project_reference_id": "QtyfWidbfMyHGFSFf",
+          "target": {
+            "project_reference_id": "QtyfWidbfMyHGFSFf",
+            "existence": null,
+            "target_kind": null,
+            "is_template": null,
+            "attempts": [
+              {
+                "operation": "plutio/get-project",
+                "scope": "exact id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              },
+              {
+                "operation": "plutio/list-projects",
+                "scope": "exact _id filter; limit 2; skip 0",
+                "filter_field": "_id",
+                "tool_is_error": true,
+                "wrapper_exit_code": 1,
+                "provider_http_status": null,
+                "provider_error_code": null,
+                "wrapper_content_blocks": 1,
+                "wrapper_content_length": 34,
+                "structured_content_present": false,
+                "failure_class": "tool_wrapper_exit_1_without_provider_status_or_code"
+              }
+            ],
+            "verified_fields": [
+              "project_reference_id",
+              "both_supported_operations_attempted",
+              "wrapper_failure_class"
+            ],
+            "unverified_fields": [
+              "existence",
+              "target_kind",
+              "isTemplate",
+              "status",
+              "provider_http_status",
+              "provider_error_code"
+            ],
+            "omitted_fields": [
+              "name",
+              "content",
+              "contributors",
+              "clients",
+              "people",
+              "creator",
+              "business"
+            ]
+          }
+        }
+      ],
+      "interpretation": "The referenced IDs are absent from the returned current project-template list. For each unique ID, both the exact getter and the documented exact `_id` filter exited through the toolbox wrapper with code 1, no provider HTTP status, no provider error code, and no structured result. The supported surfaces therefore do not distinguish resource absence from endpoint/tool behavior or unavailable provider authority. Target existence, kind, status, and isTemplate remain unverified.",
+      "precise_limitation": "Failure class: tool_wrapper_exit_1_without_provider_status_or_code. Because neither operation surfaced a provider HTTP response or semantic error code, no native not-found, bad-invocation, unsupported-endpoint, or access-denial conclusion is available."
+    },
+    "agreement_population_boundary": "No live contract, proposal, invoice, client, or person population was enumerated. Template linkage is structural and does not prove acceptance, receipt, payer, participant, product, or offer meaning.",
+    "remaining_limitation": "Supported reads do not expose a Plutio item catalog or dereference template block IDs into line-item definitions. Three proposal projectTemplateId references are absent from the returned current project-template list; both exact get-project and exact _id-filtered list-projects attempts for the two unique IDs exited through the toolbox wrapper with code 1 and no provider HTTP status, semantic error code, or structured result. Target existence, kind, status, and isTemplate remain unverified. No exact known catalog agreement IDs were present in the safe local baseline, so broad live agreement reads were not used as a workaround."
+  },
+  "holds": [
+    {
+      "scope": "Stripe price and agreement semantics",
+      "hold": "Six declared product references return default_price:null; amounts, recurrence, non-default prices, and agreement meaning remain unverified. Preserve local commercial terms but block native-price completeness claims."
+    },
+    {
+      "scope": "Stripe account namespaces",
+      "hold": "Keep mcs-full primary product prod_UWzqD2zowB8apy and alt product prod_Uk2OvW03ZwxmAj as separate scoped references. Do not register either product under both accounts."
+    },
+    {
+      "scope": "Stripe metadata",
+      "hold": "Treat retained slug/program/UUID metadata as provider declarations, not verified target meaning."
+    },
+    {
+      "scope": "Plutio project references",
+      "hold": "Two unique referenced IDs remain unverified after exact supported getters; do not classify them as missing or valid templates."
+    },
+    {
+      "scope": "Plutio offer/agreement mapping",
+      "hold": "Template structure does not expose line-item catalog bindings or live agreement population; do not infer offer, payer, participant, or fulfillment meaning."
+    }
+  ]
+}

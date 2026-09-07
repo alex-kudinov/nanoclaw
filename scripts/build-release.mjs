@@ -27,6 +27,15 @@ if (status) {
   );
 }
 
+// The daemon loads this generated compatibility artifact at runtime. Prove it
+// remains byte-exact to the authoritative v1 binding and its pinned manifest
+// sources before any compiled or archive artifact can be created.
+execFileSync(
+  process.execPath,
+  [path.join(root, 'scripts', 'build-student-catalog-publication.mjs'), '--check-nanoclaw'],
+  { cwd: root, stdio: 'inherit' },
+);
+
 // The release must carry canonical fact sources that can reproduce every
 // tracked consumer before any artifact is built. This is source-local and
 // does not depend on an external provider checkout.
@@ -124,6 +133,11 @@ try {
       'setup/launchd',
       'tools/contador',
       'tools/plutio',
+      'scripts/build-student-catalog-publication.mjs',
+      'docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json',
+      'docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json',
+      'docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json',
+      'docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json',
     ],
     { cwd: root },
   )
@@ -136,6 +150,14 @@ try {
     'tools/contador/lib/product-identity.cjs',
     'facts/catalogs/student-entitlements-v1.json',
     'facts/catalogs/student-product-bindings-v1.json',
+    'facts/catalogs/student-catalog-publication-v1.schema.json',
+    'facts/catalogs/student-catalog-publication-v1.json',
+    'facts/generated/student-product-bindings-v1.compat.json',
+    'scripts/build-student-catalog-publication.mjs',
+    'docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json',
+    'docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json',
+    'docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json',
+    'docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json',
   ];
   for (const relative of requiredTrackedRuntimeInputs) {
     if (!tracked.includes(relative)) {
@@ -198,6 +220,7 @@ try {
     'data/business/migrations/nanoclaw-v2/145_academy_capacity_simple_sync.sql',
     'data/business/migrations/nanoclaw-v2/rollback_145_academy_capacity_simple_sync.sql',
     'scripts/verify-release.mjs',
+    'scripts/build-student-catalog-publication.mjs',
     'scripts/runtime-doctor.mjs',
     'scripts/with-pinned-node.sh',
     'scripts/activate-release.mjs',

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "receipt_id": "NC-20260907-006-stripe-alias-attestation",
+  "observed_at": "2026-09-07T21:39:46Z",
+  "consumer": {
+    "consumer_key": "tandem",
+    "configuration_slot": "STRIPE_SECRET_KEY_ALT",
+    "configuration_reader": "dist/env.js#readEnvFile",
+    "consumer_source": "tools/contador/process-payment.cjs",
+    "operational_host": "mini-claw.local",
+    "operational_working_directory": "/Users/xbohdpukc/dev/NanoClaw",
+    "release_commit": "1449812c1e716135cd90c5d28c5a80d31ff197a0"
+  },
+  "provider": {
+    "namespace": "stripe:alt",
+    "native_account_id": "acct_1G1wKzA7hTBWpVVq",
+    "read_method": "GET /v1/account through the configured consumer credential slot",
+    "match": true
+  },
+  "privacy": {
+    "credential_value_read_into_output": false,
+    "credential_value_persisted": false,
+    "customer_or_financial_population_read": false
+  },
+  "scope": "Current account alias identity only. This receipt grants no payment, checkout, roster, enrollment, access, or provider mutation authority."
+}
