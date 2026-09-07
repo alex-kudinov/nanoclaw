@@ -72,6 +72,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   email-critical 800/800 plus runner 45/45; typecheck and continuity pass.
   A concurrent non-overlapping product-identity release at 138e43ab must be
   preserved in final lineage before building/deploying.
+- Release staging 2026-09-07T14:47Z: implementation `747e0a28` merged the
+  current non-overlapping live release `138e43ab` as `1449812c1e716135cd90c5d28c5a80d31ff197a0`.
+  Only continuity prose conflicted; both task records were preserved. Sales
+  source is unchanged by the merge. R2 usage: 4 calls, 22,181 cache-create,
+  42,855 cache-read, 6,123 output tokens, 27,022 max context; no usage warnings.
+  Merged typecheck and continuity pass. Full root: 3,645 pass / 32 skip, same
+  two baseline failures plus one 5-second capacity-proof timeout; isolated
+  capacity rerun passed 2/2 in 1.10 seconds with no source change. Clean release
+  gate passed 801/801 plus runner build and 45/45 tests. Release tree
+  `8dadb4e363e7cc99c488203dca35e6c326de2df4`, artifact
+  `1e9998539da8cc0a98ee422dd9f9d98cb2ae4f54e670d313f844f78e27c616fa`,
+  1,072 inventoried files, archive SHA-256
+  `317272f5a483e0a7410f70e7bc0708bd4609240a6b53674b7266a0d0cd2b13e0`.
+  Local fresh extraction and Mini transfer/extraction verify. Activation
+  dry-run names exactly the three intended release-pointer changes from
+  `138e43ab`. Six pure compiled checks on the Mini pass without database writes
+  or messages. Live Sales prompt hashes match the original baseline, and
+  active send states and automatic holds are zero. Activation waits for the
+  two active Sales conversations to finish; staged is not deployed.
 
 ### NC-20260906-004 — Bind Sales drafts to current program authority
 
