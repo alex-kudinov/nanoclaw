@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libdrm2 \
     libxshmfence1 \
     curl \
+    jq \
     git \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*

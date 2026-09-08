@@ -54,4 +54,12 @@ describe('Gru certificate API follow-through contract', () => {
       .includes('!groups/certifier/EXECUTION-STEPS.md');
     expect(ignored).toBe(true);
   });
+
+  it('ships jq in every Gru container that runs the API tools', () => {
+    const dockerfile = fs.readFileSync(
+      path.join(root, 'container/Dockerfile'),
+      'utf8',
+    );
+    expect(dockerfile).toMatch(/\n\s+jq \\\n\s+git \\/);
+  });
 });
