@@ -32,8 +32,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-08T01:00Z
 - Owner/client: Astra owner, one Sol High execution writer, bounded Claude
-  Sonnet/high review planned
-- State: in_progress; claim registered before implementation
+  Sonnet/high review complete
+- State: ready_for_review; source reviewed and Tandem branch pushed, production
+  activation awaits Astra's exact release acceptance
 - Base: NanoClaw docs-only descendant `28df1ba6c51b` of exact live
   `c5fdf5f6d9d5`; Tandemweb exact live/current-main
   `9d708ec4d940`; isolated task worktrees preserve both dirty primaries.
@@ -44,6 +45,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   independent review, and release preparation. No payment, customer/student
   population, roster/access/capacity/schedule/message/migration/provider-product
   mutation, source-sync convergence, or manufactured business canary.
+- Implementation: a source-scoped v2 generated binding carries exact
+  per-account product/price arrays and typed resolution profiles. It preserves
+  both supervision routes, manages current ALT MCS on exact admitted price or
+  exact managed offer-key qualification, and keeps primary MCS plus
+  unqualified/unlisted/retired ALT contexts on Product Map unless a known
+  account or offer contradiction exists. The Tandem v2 artifact validates
+  source-owned totals, installment arithmetic, cohort-context role, enrollment
+  scope, hashes and evidence holds without a live NanoClaw request.
+- Source evidence: the actual configured ALT consumer remains
+  `acct_1G1wKzA7hTBWpVVq`; primary is `acct_1PakRkRnZI4gH1uA`. Exact native
+  price read proves active recurring USD 99,900 cents/month on the selected ALT
+  product. Source policy remains three obligations; direct price is empty.
+  Heartbeat existence and exact roster structure were verified without person
+  rows. Historical/nondefault ALT price population remains unenumerated and no
+  product-wide price coverage is claimed.
+- Toolbox: isolated branch `codex/stripe-get-price-20260907` at `778a60e` adds
+  the public-field-only price getter. R1's cross-project env fallback was
+  removed from both isolated and installed shared copies; caller-local explicit
+  keys retain precedence and exact price/account readback passes.
+- Review: Sonnet/high R1 found two material issues; both were independently
+  verified and fixed. Narrow R2 returned `NO MATERIAL FINDINGS`. R1 usage was
+  13 calls, 116,353 cache-create, 1,020,508 cache-read, 30,925 output, max
+  context 116,355. R2 was 4 calls, 45,302 cache-create, 117,136 cache-read,
+  10,387 output, max context 52,076.
+- Verification: focused Nano 65/65, typecheck, runtime doctor, continuity,
+  email replay 13/13, email-critical 801/801, runner 45/45, Tandem publication
+  19/19, regional 95/95, installment 11/11, cohort 16/16 and design gates pass.
+  Full NanoClaw is 3,670 pass / 32 skip / three failures, exactly the recorded
+  predecessor CNPC wrapper, date-sensitive Trafft, and Capacity disposable
+  reserved expected 1 / actual 0 failures.
 
 ### NC-20260907-006 — Two-route student catalog publication
 

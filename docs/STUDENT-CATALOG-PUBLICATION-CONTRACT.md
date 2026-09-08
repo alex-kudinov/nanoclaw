@@ -1,6 +1,7 @@
 # Student catalog publication contract
 
-Status: accepted under `NC-20260907-005`; first two-route implementation in progress under `NC-20260907-006`
+Status: accepted under `NC-20260907-005`; supervision v1 activated by
+`NC-20260907-006`; scoped MCS expansion in progress under `NC-20260907-007`
 
 ## Purpose and boundary
 
@@ -24,13 +25,32 @@ The first proposed population is the two existing Coaching Supervision Mastery
 routes. The contract is designed for later populations, but a v1 compatibility
 export is allowed only when it can preserve the present resolver exactly.
 
+### Scoped v2 expansion applied by NC-20260907-007
+
+The current website `mcs-full` offer is one program enrollment whose selected
+`mcs-practicum` cohort is a delivery assignment. The selected managed identity
+is the exact ALT product/default-price pair used by the checkout source. The
+primary account's `MCS - Standard path` product remains an explicit legacy
+Product Map scope; it does not become another managed roster route, another
+purchase, bundle issuance, cohort assignment, or certificate decision.
+
+The entitlement catalog's flat product and price arrays cannot be copied into
+both account indexes without inventing cross-account bindings. The scoped v2
+consumer therefore carries exact product and price IDs inside each managed
+account route and keeps legacy preservation separate. A known native ID in the
+wrong account, mixed managed and legacy identities, or conflicting known offers
+still holds. A primary legacy MCS event with an unlisted historical price or an
+incomplete lookup retains the pre-v2 Product Map outcome when no proved
+conflict exists. Unregistered products outside the selected population retain
+their existing legacy behavior.
+
 ## Authority remains with the owning source
 
 | Fact | Current authority | Publication treatment |
 | --- | --- | --- |
 | Program promise, cohort facts, expected checkout state | `facts/catalogs/coaching-supervision-mastery.json` plus its named course, website, checkout, and schedule sources | Reference by source revision and digest; do not copy the source into a new master |
 | Offer, frozen bundle, component inclusion | `facts/catalogs/student-entitlements-v1.json` | Reference exact catalog revision, offer key, bundle key, and bundle version |
-| Current v1 Stripe-to-offer and legacy roster route | `facts/catalogs/student-product-bindings-v1.json` | Generate only an equivalent v1 compatibility export; do not broaden semantics |
+| Existing supervision Stripe-to-offer and legacy roster route | `facts/catalogs/student-product-bindings-v1.json` | Preserve the two accepted routes as source input; do not project MCS flat arrays across accounts |
 | Website checkout configuration and active state | Tandemweb `data/checkout/products.json` at a pinned revision | Produce a static consumer artifact; checkout never calls NanoClaw live |
 | Native Stripe account, object, and default-price relationship | Exact read-only provider read in its account scope | Store the relationship evidence class, native namespace, account ID, object IDs, observation time, and digest; do not infer price amount or recurrence |
 | Heartbeat group and course existence | Exact documented read-only provider surfaces plus managed course source | Store separate existence observations. Attachment, access, progress, class, and completion require their own evidence |
@@ -90,7 +110,9 @@ paths requires an explicit packet correction before coding.
 | NanoClaw | `scripts/build-student-catalog-publication.mjs` | pure deterministic validation and consumer projection builder |
 | NanoClaw | `tools/contador/student-catalog-publication.test.ts` | resolver-parity, unsafe-lowering, active-state, and hash tests |
 | NanoClaw | `facts/generated/student-product-bindings-v1.compat.json` | pinned existing-processor identity/roster consumer output |
+| NanoClaw | `facts/generated/student-product-bindings-v2.scoped.json` | current scoped processor identity/roster output: three managed routes plus one exact legacy scope |
 | Tandemweb | `data/generated/student-catalog-publication-v1.json` | pinned static checkout-validation consumer output; no live NanoClaw dependency |
+| Tandemweb | `data/generated/student-catalog-publication-v2.json` | current static checkout-validation output for both supervision routes and `mcs-full` |
 | Each release packet | `docs/reports/NC-<task>-STUDENT-CATALOG-PUBLICATION-RECEIPT.json` | wall-clock preparation, activation, and readback receipts |
 
 The accepted NC-004 source bases are NanoClaw
@@ -175,6 +197,20 @@ cannot lower without losing scope, interval, relationship, evidence, or target
 meaning. It must not flatten a many-to-many relationship into a v1 product or
 price index. Such a population requires a separately reviewed resolver change.
 
+The `nanoclaw-source-scoped-v2` successor preserves those v1 outcomes for both
+supervision routes and adds only exact account-local identity arrays plus a
+typed resolution profile. The ALT `mcs-full` route becomes managed when the
+exact admitted price is present with no source key, or when the exact managed
+offer key is present. An unknown or retired offer key alongside the known price
+retains Product Map behavior; a known other managed offer remains a conflict. A
+qualified incomplete context or qualified context with an unknown companion
+holds. Product-only ALT context and product plus only unlisted prices retain
+Product Map behavior unless another known account or offer proves a conflict.
+Its explicit primary MCS legacy scope recognizes the
+known primary product without assigning a managed destination; Product Map
+continues to decide the legacy result. The scoped consumer must never build the
+Cartesian product of an offer's flat product and price arrays.
+
 ## Validation and coverage states
 
 Validation is per population and per consumer. Passing JSON syntax or generation
@@ -198,9 +234,10 @@ unverified attachment and live-price semantics prevent any claim that the
 supervision family is globally `strict_publish_eligible` or has full fulfillment
 or lifecycle coverage. Coverage cannot silently grow from an audit record,
 source generation, native object existence, a staged
-file, or another consumer's activation. Unresolved MCS, locale, PCC attachment,
-and service-policy populations stay held without blocking an independently
-validated supervision population.
+file, or another consumer's activation. Unverified MCS attachment, learner
+access, progress, class assignment, completion and certificate state, plus
+locale, PCC attachment, and service-policy populations, stay held without
+blocking independently validated identity/checkout populations.
 
 Strict publication eligibility is a later enforcement decision. When enabled
 for an accepted population, it must fail a new or changed publication if any

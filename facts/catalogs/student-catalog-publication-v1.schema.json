@@ -10,6 +10,7 @@
     "revision",
     "compatibility_profile",
     "population_keys",
+    "resolution_profiles",
     "source_roots",
     "sources",
     "relationships",
@@ -20,9 +21,41 @@
     "schema_version": { "const": 1 },
     "catalog_id": { "const": "student-catalog-publication" },
     "revision": { "type": "integer", "minimum": 1 },
-    "compatibility_profile": { "const": "nanoclaw-v1-exact" },
+    "compatibility_profile": { "const": "nanoclaw-source-scoped-v2" },
     "population_keys": {
-      "const": ["supervision-inaugural", "supervision-regular"]
+      "const": ["supervision-inaugural", "supervision-regular", "mcs-full"]
+    },
+    "resolution_profiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offer_key",
+          "managed_signal_kinds",
+          "unknown_companion",
+          "unrecognized_offer",
+          "incomplete",
+          "unqualified"
+        ],
+        "properties": {
+          "offer_key": {
+            "enum": ["supervision-inaugural", "supervision-regular", "mcs-full"]
+          },
+          "managed_signal_kinds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "enum": ["offer", "product", "price"] }
+          },
+          "unknown_companion": { "const": "conflict" },
+          "unrecognized_offer": { "enum": ["conflict", "legacy"] },
+          "incomplete": { "const": "conflict" },
+          "unqualified": { "const": "legacy" }
+        }
+      }
     },
     "source_roots": {
       "type": "object",
@@ -35,8 +68,8 @@
     },
     "sources": {
       "type": "array",
-      "minItems": 8,
-      "maxItems": 8,
+      "minItems": 9,
+      "maxItems": 9,
       "items": { "$ref": "#/$defs/source" }
     },
     "relationships": {
@@ -45,7 +78,7 @@
       "items": { "$ref": "#/$defs/relationship" }
     },
     "consumers": {
-      "const": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "const": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     "holds": {
       "type": "object",
@@ -102,7 +135,8 @@
             "docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json",
             "docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json",
             "docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json",
-            "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json"
+            "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json",
+            "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json"
           ]
         },
         "namespace": { "type": "string", "minLength": 1 },
@@ -160,7 +194,8 @@
             "offer_declares_access_group",
             "bundle_declares_course",
             "access_group_exists",
-            "course_exists"
+            "course_exists",
+            "offer_preserves_legacy_product"
           ]
         },
         "relationship_status": {
@@ -204,7 +239,7 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["nanoclaw-v1", "tandemweb-checkout-validation"] }
+          "items": { "enum": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"] }
         }
       }
     }

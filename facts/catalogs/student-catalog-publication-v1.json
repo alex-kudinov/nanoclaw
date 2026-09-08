@@ -1,9 +1,39 @@
 {
   "schema_version": 1,
   "catalog_id": "student-catalog-publication",
-  "revision": 1,
-  "compatibility_profile": "nanoclaw-v1-exact",
-  "population_keys": ["supervision-inaugural", "supervision-regular"],
+  "revision": 2,
+  "compatibility_profile": "nanoclaw-source-scoped-v2",
+  "population_keys": [
+    "supervision-inaugural",
+    "supervision-regular",
+    "mcs-full"
+  ],
+  "resolution_profiles": [
+    {
+      "offer_key": "supervision-inaugural",
+      "managed_signal_kinds": ["offer", "product", "price"],
+      "unknown_companion": "conflict",
+      "unrecognized_offer": "conflict",
+      "incomplete": "conflict",
+      "unqualified": "legacy"
+    },
+    {
+      "offer_key": "supervision-regular",
+      "managed_signal_kinds": ["offer", "product", "price"],
+      "unknown_companion": "conflict",
+      "unrecognized_offer": "conflict",
+      "incomplete": "conflict",
+      "unqualified": "legacy"
+    },
+    {
+      "offer_key": "mcs-full",
+      "managed_signal_kinds": ["offer", "price"],
+      "unknown_companion": "conflict",
+      "unrecognized_offer": "legacy",
+      "incomplete": "conflict",
+      "unqualified": "legacy"
+    }
+  ],
   "source_roots": {
     "nanoclaw": "nanoclaw",
     "tandemweb": "tandemweb"
@@ -88,6 +118,16 @@
       "object_id": "NC-20260907-006-stripe-alias-attestation",
       "source_version": "receipt:2026-09-07T21:39:46Z",
       "source_sha256": "18954c1aea6a0042d89e918f9300c26369a7c419c315016fd66df634097a3ef1"
+    },
+    {
+      "source_key": "mcs_source_evidence",
+      "root": "nanoclaw",
+      "path": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "namespace": "evidence:NC-20260907-007",
+      "object_type": "evidence_snapshot",
+      "object_id": "NC-20260907-007-mcs-source-evidence",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6"
     }
   ],
   "relationships": [
@@ -115,7 +155,7 @@
         "source": "NanoClaw host operations",
         "consumer": "NanoClaw Contador"
       },
-      "consumer_keys": ["nanoclaw-v1"]
+      "consumer_keys": ["nanoclaw-scoped-v2"]
     },
     {
       "relationship_key": "offer:supervision-inaugural:bundle",
@@ -141,7 +181,7 @@
         "source": "student entitlement catalog",
         "consumer": "both publication consumers"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "offer:supervision-regular:bundle",
@@ -167,7 +207,7 @@
         "source": "student entitlement catalog",
         "consumer": "both publication consumers"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "offer:supervision-inaugural:product",
@@ -193,7 +233,7 @@
         "source": "Stripe alt account",
         "consumer": "NanoClaw Contador"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "offer:supervision-regular:product",
@@ -219,7 +259,7 @@
         "source": "Stripe alt account",
         "consumer": "NanoClaw Contador"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "product:supervision-inaugural:default-price",
@@ -245,7 +285,7 @@
         "source": "Stripe alt account",
         "consumer": "both publication consumers"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "product:supervision-regular:default-price",
@@ -271,7 +311,7 @@
         "source": "Stripe alt account",
         "consumer": "both publication consumers"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "checkout:supervision-inaugural:offer",
@@ -349,7 +389,7 @@
         "source": "Student Roster Product Map binding",
         "consumer": "NanoClaw Contador"
       },
-      "consumer_keys": ["nanoclaw-v1"]
+      "consumer_keys": ["nanoclaw-scoped-v2"]
     },
     {
       "relationship_key": "offer:supervision-regular:roster",
@@ -375,7 +415,7 @@
         "source": "Student Roster Product Map binding",
         "consumer": "NanoClaw Contador"
       },
-      "consumer_keys": ["nanoclaw-v1"]
+      "consumer_keys": ["nanoclaw-scoped-v2"]
     },
     {
       "relationship_key": "offer:supervision-inaugural:access-group",
@@ -401,7 +441,7 @@
         "source": "student entitlement catalog",
         "consumer": "publication evidence only"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "offer:supervision-regular:access-group",
@@ -427,7 +467,7 @@
         "source": "student entitlement catalog",
         "consumer": "publication evidence only"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "heartbeat:supervision-access-group:exists",
@@ -453,7 +493,7 @@
         "source": "Heartbeat",
         "consumer": "publication evidence only"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "bundle:supervision:course",
@@ -479,7 +519,7 @@
         "source": "managed supervision course source",
         "consumer": "publication evidence only"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
     },
     {
       "relationship_key": "heartbeat:supervision-course:exists",
@@ -505,10 +545,244 @@
         "source": "Heartbeat",
         "consumer": "publication evidence only"
       },
-      "consumer_keys": ["nanoclaw-v1", "tandemweb-checkout-validation"]
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "alias:heartbeat:stripe-primary",
+      "namespace": "consumer:nanoclaw",
+      "object_type": "consumer_account_key",
+      "object_id": "heartbeat",
+      "relationship_type": "consumer_account_alias",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:primary",
+        "object_type": "account",
+        "object_id": "acct_1PakRkRnZI4gH1uA"
+      },
+      "source_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": "2026-09-08T01:01:40Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "NanoClaw host operations",
+        "consumer": "NanoClaw Contador legacy path"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2"]
+    },
+    {
+      "relationship_key": "offer:mcs-full:bundle",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "mcs-full",
+      "relationship_type": "offer_includes_bundle",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "bundle",
+        "object_id": "mcs-standard-path:v1"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json#mcs-full",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:mcs-full:alt-product",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "mcs-full",
+      "relationship_type": "offer_uses_product",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "product",
+        "object_id": "prod_Uk2OvW03ZwxmAj"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account and student entitlement catalog",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "product:mcs-full:alt-default-price",
+      "namespace": "stripe:alt",
+      "object_type": "product",
+      "object_id": "prod_Uk2OvW03ZwxmAj",
+      "relationship_type": "product_default_price",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:alt",
+        "object_type": "price",
+        "object_id": "price_1TkYJfA7hTBWpVVqm502swAb"
+      },
+      "source_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": "2026-09-08T01:01:40Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe alt account",
+        "consumer": "both publication consumers"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "checkout:mcs-full:offer",
+      "namespace": "checkout:tandemweb",
+      "object_type": "checkout_product",
+      "object_id": "mcs-full",
+      "relationship_type": "checkout_represents_offer",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "catalog:student-entitlements",
+        "object_type": "offer",
+        "object_id": "mcs-full"
+      },
+      "source_ref": "data/checkout/products.json",
+      "source_version": "git:c61fabf84f45e70630751de44ece1b368505b531",
+      "source_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "data/checkout/products.json#mcs-full",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Tandemweb checkout catalog",
+        "consumer": "Tandemweb checkout validation"
+      },
+      "consumer_keys": ["tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:mcs-full:roster",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "mcs-full",
+      "relationship_type": "offer_projects_to_roster",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "roster:student-roster",
+        "object_type": "tab_column",
+        "object_id": "MCS/MCS Practicum"
+      },
+      "source_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": "2026-09-08T01:01:40Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Student Roster Product Map",
+        "consumer": "NanoClaw Contador"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2"]
+    },
+    {
+      "relationship_key": "offer:mcs-full:access-group",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "mcs-full",
+      "relationship_type": "offer_declares_access_group",
+      "relationship_status": "source_declared",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "group",
+        "object_id": "917a7a35-2ea8-4fb3-999a-26949d9de4da"
+      },
+      "source_ref": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1@1449812c1e716135cd90c5d28c5a80d31ff197a0",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+      "evidence_class": "source_declaration",
+      "evidence_ref": "facts/catalogs/student-entitlements-v1.json#mcs-full",
+      "observed_at": null,
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "student entitlement catalog",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "heartbeat:mcs-full-access-group:exists",
+      "namespace": "heartbeat:main",
+      "object_type": "group",
+      "object_id": "917a7a35-2ea8-4fb3-999a-26949d9de4da",
+      "relationship_type": "access_group_exists",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "heartbeat:main",
+        "object_type": "existence_observation",
+        "object_id": "group:917a7a35-2ea8-4fb3-999a-26949d9de4da"
+      },
+      "source_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6",
+      "evidence_class": "existence_only",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": "2026-09-08T01:01:40Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Heartbeat",
+        "consumer": "publication evidence only"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"]
+    },
+    {
+      "relationship_key": "offer:mcs-full:primary-legacy-product",
+      "namespace": "catalog:student-entitlements",
+      "object_type": "offer",
+      "object_id": "mcs-full",
+      "relationship_type": "offer_preserves_legacy_product",
+      "relationship_status": "native_verified",
+      "target": {
+        "namespace": "stripe:primary",
+        "object_type": "product",
+        "object_id": "prod_UWzqD2zowB8apy"
+      },
+      "source_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "source_version": "snapshot:2026-09-08T01:01:40Z",
+      "source_sha256": "aa14966812d09e111d30efb47c511f4dbd4de9f6bf67c497bd5a42d103e80ef6",
+      "evidence_class": "native_readback",
+      "evidence_ref": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json",
+      "observed_at": "2026-09-08T01:01:40Z",
+      "effective_from": null,
+      "effective_to": null,
+      "owner": {
+        "source": "Stripe primary account",
+        "consumer": "NanoClaw Contador legacy Product Map path"
+      },
+      "consumer_keys": ["nanoclaw-scoped-v2"]
     }
   ],
-  "consumers": ["nanoclaw-v1", "tandemweb-checkout-validation"],
+  "consumers": ["nanoclaw-scoped-v2", "tandemweb-checkout-validation"],
   "holds": {
     "native_price_amount_verified": false,
     "native_price_recurrence_verified": false,

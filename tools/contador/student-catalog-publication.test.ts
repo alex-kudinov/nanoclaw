@@ -23,15 +23,15 @@ const {
 } = require('./lib/product-identity.cjs');
 const repoRoot = process.cwd();
 const tandemwebRoot = path.resolve(
-  repoRoot,
-  '../tandemweb-catalog-publication-current-20260907',
+  process.env.TANDEMWEB_PUBLICATION_ROOT ??
+    path.join(repoRoot, '../tandemweb-mcs-publication-20260907'),
 );
 const sourceManifest = require('../../facts/catalogs/student-catalog-publication-v1.json');
 const publicationSchema = require('../../facts/catalogs/student-catalog-publication-v1.schema.json');
 const entitlementCatalog = require('../../facts/catalogs/student-entitlements-v1.json');
 const supervisionProgram = require('../../facts/catalogs/coaching-supervision-mastery.json');
 const manualBindings = require('../../facts/catalogs/student-product-bindings-v1.json');
-const generatedBindings = require('../../facts/generated/student-product-bindings-v1.compat.json');
+const generatedBindings = require('../../facts/generated/student-product-bindings-v2.scoped.json');
 const temporaryRoots: string[] = [];
 
 function clone<T>(value: T): T {
@@ -114,14 +114,21 @@ afterEach(() => {
 });
 
 describe('student catalog publication generator', () => {
-  it('builds byte-identical payloads twice and preserves the complete v1 binding', () => {
+  it('builds byte-identical payloads twice and preserves supervision while adding scoped MCS coverage', () => {
     const fixture = makeFixture();
     const first = build(fixture);
     const second = build(fixture);
 
     expect(first.bytes).toEqual(second.bytes);
-    expect(first.nanoclaw).toEqual(manualBindings);
     expect(first.nanoclaw).toEqual(generatedBindings);
+    expect(
+      first.nanoclaw.routes
+        .map(
+          ({ provider_identity: _, resolution_profile: __, ...route }: any) =>
+            route.offer_key.startsWith('supervision-') ? route : null,
+        )
+        .filter(Boolean),
+    ).toEqual(manualBindings.routes);
     expect(first.envelope.output_sha256.nanoclaw).toBe(
       sha256Bytes(first.bytes.nanoclaw),
     );
@@ -184,6 +191,55 @@ describe('student catalog publication generator', () => {
       heartbeat_completion_verified: false,
       global_strict_publication_eligible: false,
     });
+  });
+
+  it('publishes the exact current ALT MCS family while retaining primary legacy scope', () => {
+    const built = build();
+    const route = built.tandemweb.routes.find(
+      (item: any) => item.offer_key === 'mcs-full',
+    );
+    expect(route).toMatchObject({
+      active: true,
+      declared_total: { currency: 'usd', amount_cents: 299700 },
+      direct_price_id: null,
+      cohort_eligibility: {
+        required: true,
+        program: 'mcs-practicum',
+        context_role: 'delivery_assignment',
+        allowed_start_dates: [],
+        excluded_start_dates: [],
+      },
+      installment_plan: {
+        count: 3,
+        interval: 'month',
+        amount_cents: 99900,
+        total_cents: 299700,
+        stripe_price_id: 'price_1TkYJfA7hTBWpVVqm502swAb',
+      },
+      native_identity: {
+        namespace: 'stripe:alt',
+        account_id: 'acct_1G1wKzA7hTBWpVVq',
+        product_id: 'prod_Uk2OvW03ZwxmAj',
+        default_price_id: 'price_1TkYJfA7hTBWpVVqm502swAb',
+      },
+      entitlement: {
+        bundle_key: 'mcs-standard-path:v1',
+        bundle_version: 1,
+        enrollment_scope: 'cohort_program',
+      },
+      roster_projection: { tab: 'MCS', column: 'MCS Practicum' },
+    });
+    expect(built.nanoclaw.legacy_scopes).toEqual([
+      {
+        offer_key: 'mcs-full',
+        stripe_account: 'heartbeat',
+        provider_identity: {
+          product_ids: ['prod_UWzqD2zowB8apy'],
+          price_ids: [],
+        },
+        fallback: 'product_map',
+      },
+    ]);
   });
 
   it('derives cohort dates from the digest-pinned canonical sources', () => {
@@ -257,7 +313,7 @@ describe('student catalog publication generator', () => {
             'Coaching Supervision Mastery',
           ],
         ],
-        revision: 1,
+        revision: 2,
       });
     }
 
@@ -438,7 +494,9 @@ describe('student catalog publication generator', () => {
         relation.relationship_type === 'consumer_account_alias',
     ).target.object_id = 'acct_wrong';
     expect(() => build(mismatchedAlias)).toThrowError(
-      expect.objectContaining({ code: 'consumer_account_alias_invalid' }),
+      expect.objectContaining({
+        code: 'consumer_account_alias_evidence_invalid',
+      }),
     );
 
     const overstated = clone(sourceManifest);
@@ -457,11 +515,16 @@ describe('student catalog publication generator', () => {
 
   it('rejects lossy many-to-many, interval, and consumer-specific lowering', () => {
     const manyProducts = makeFixture();
-    const catalog = clone(entitlementCatalog);
-    catalog.offers
-      .find((offer: any) => offer.offer_key === 'supervision-inaugural')
-      .stripe_product_ids.push('prod_second');
-    replaceSource(manyProducts, 'entitlement_catalog', catalog);
+    const second = clone(
+      manyProducts.manifest.relationships.find(
+        (relation: any) =>
+          relation.relationship_type === 'offer_uses_product' &&
+          relation.object_id === 'supervision-inaugural',
+      ),
+    );
+    second.relationship_key = 'offer:supervision-inaugural:second-product';
+    second.target.object_id = 'prod_second';
+    manyProducts.manifest.relationships.push(second);
     expect(() => build(manyProducts)).toThrowError(
       expect.objectContaining({ code: 'unsafe_lowering_many_to_many' }),
     );
@@ -477,7 +540,7 @@ describe('student catalog publication generator', () => {
     const scoped = makeFixture();
     scoped.manifest.relationships.find(
       (relation: any) => relation.relationship_type === 'offer_uses_product',
-    ).consumer_keys = ['nanoclaw-v1'];
+    ).consumer_keys = ['nanoclaw-scoped-v2'];
     expect(() => build(scoped)).toThrowError(
       expect.objectContaining({ code: 'unsafe_lowering_consumer_scope' }),
     );
@@ -537,8 +600,40 @@ describe('student catalog publication generator', () => {
     rosterBindings.routes[0].roster_targets[0] = { tab: 'ACC', column: 'M1' };
     replaceSource(rosterDrift, 'binding_catalog', rosterBindings);
     expect(() => build(rosterDrift)).toThrowError(
-      expect.objectContaining({ code: 'product_projection_conflict' }),
+      expect.objectContaining({ code: 'nanoclaw_compatibility_mismatch' }),
     );
+  });
+
+  it('rejects MCS native price amount, recurrence, product, and account drift', () => {
+    const mutations = [
+      (evidence: any) =>
+        (evidence.native_provider_readback.stripe.alt_price.unit_amount_cents += 1),
+      (evidence: any) =>
+        (evidence.native_provider_readback.stripe.alt_price.interval = 'year'),
+      (evidence: any) =>
+        (evidence.native_provider_readback.stripe.alt_price.product_id =
+          'prod_other'),
+      (evidence: any) =>
+        (evidence.native_provider_readback.stripe.alt_product.account =
+          'primary'),
+    ];
+    for (const mutate of mutations) {
+      const fixture = makeFixture();
+      const evidence = JSON.parse(
+        fs.readFileSync(
+          path.join(
+            fixture.nanoclaw,
+            'docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json',
+          ),
+          'utf8',
+        ),
+      );
+      mutate(evidence);
+      replaceSource(fixture, 'mcs_source_evidence', evidence);
+      expect(() => build(fixture)).toThrowError(
+        expect.objectContaining({ code: 'native_product_evidence_invalid' }),
+      );
+    }
   });
 
   it('keeps generated tracked output hashes exact', () => {
@@ -547,7 +642,7 @@ describe('student catalog publication generator', () => {
       hashFile(
         path.join(
           repoRoot,
-          'facts/generated/student-product-bindings-v1.compat.json',
+          'facts/generated/student-product-bindings-v2.scoped.json',
         ),
       ),
     ).toBe(built.envelope.output_sha256.nanoclaw);
@@ -555,7 +650,7 @@ describe('student catalog publication generator', () => {
       hashFile(
         path.join(
           tandemwebRoot,
-          'data/generated/student-catalog-publication-v1.json',
+          'data/generated/student-catalog-publication-v2.json',
         ),
       ),
     ).toBe(built.envelope.output_sha256.tandemweb);

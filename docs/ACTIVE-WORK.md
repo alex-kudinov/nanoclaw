@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | `codex/mcs-publication-20260907` from docs-only descendant `28df1ba6` of live `c5fdf5f6`; Tandemweb `codex/mcs-publication-20260907` from exact live/main `9d708ec4`; dirty primaries preserved | `in_progress` | C4 | Read-only source/provider/roster-structure verification, source-scoped MCS identity/publication, coordinated pinned consumers, regression tests, bounded review, and prepared releases. Preserve both supervision routes and legitimate unmigrated/legacy populations. No payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Verify exact current MCS account/product/price and roster destination; send the evidence-backed bounded scope to Astra before changing runtime design. | 2026-09-08T01:00Z |
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw `codex/mcs-publication-20260907` from docs-only `28df1ba6` over live `c5fdf5f6`; Tandemweb reviewed/pushed `94effae9c` from exact live/main `9d708ec4`; Toolbox isolated `778a60e`; dirty primaries preserved | `ready_for_review` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Commit/push the reviewed NanoClaw source, build exact immutable release artifacts, and present the per-consumer release/rollback packet for Astra acceptance before production activation. | 2026-09-08T02:13Z |
 
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
@@ -205,6 +205,29 @@ outside the current client conversation.
 - Boundary: preserve both live supervision routes and legitimate unmigrated or
   legacy paths. No product, price, payment, roster, access, enrollment, class,
   capacity, schedule, message, migration, source-sync, or customer mutation.
+- Implementation: generated source-scoped v2 routes keep both supervision
+  products exact and add current ALT `mcs-full` only when the admitted price or
+  exact managed offer key qualifies. Primary MCS, ALT product-only/unlisted
+  price, and unknown/retired source-key history remain Product Map legacy;
+  known account/offer contradictions still hold. Cohort context is delivery
+  assignment after one program enrollment; bundle conditions and certificates
+  remain outside identity routing.
+- Provider/source evidence: exact ALT product/default price is active recurring
+  USD 999/month; source policy remains three obligations and no direct
+  full-payment Price is inferred. The primary/ALT configured consumer slots,
+  Heartbeat group existence, Product Map aliases, and MCS header were read
+  without customer, payment, or student rows. No bounded price-population list
+  exists, so product-wide/historical-price completeness is not claimed.
+- Verification: 65 focused identity/publication/payment/release tests,
+  typecheck, runtime doctor, continuity, email replay 13/13, email-critical
+  801/801, runner build/tests 45/45, Tandem publication 19/19, regional 95/95,
+  installment 11/11, cohort 16/16, and design asset/release gates pass. Full
+  NanoClaw is 3,670 pass / 32 skip / the same three predecessor CNPC, Trafft,
+  and Capacity failures.
+- Review: Sonnet/high R1 found an unsafe shared Toolbox env fallback and one
+  diagnostic qualification mismatch. Both were fixed and regression-tested;
+  narrow R2 returned `NO MATERIAL FINDINGS`. R1 used 13 calls / max context
+  116,355; R2 used 4 calls / max context 52,076.
 
 ### NC-20260907-006 — Supervision catalog publication
 

@@ -12,7 +12,7 @@ describe('Contador cohort release lineage', () => {
 
     expect(builder).toContain("'tools/contador/lib/cohort.cjs'");
     expect(builder).toContain(
-      "'facts/generated/student-product-bindings-v1.compat.json'",
+      "'facts/generated/student-product-bindings-v2.scoped.json'",
     );
     expect(builder).toContain(
       "'scripts/build-student-catalog-publication.mjs'",

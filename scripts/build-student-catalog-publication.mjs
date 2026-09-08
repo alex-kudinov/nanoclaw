@@ -12,16 +12,20 @@ const SCRIPT_ROOT = path.resolve(
 const MANIFEST_PATH = 'facts/catalogs/student-catalog-publication-v1.json';
 const SCHEMA_PATH = 'facts/catalogs/student-catalog-publication-v1.schema.json';
 const OUTPUT_NAMES = {
-  nanoclaw: 'nanoclaw-product-bindings-v1.compat.json',
-  tandemweb: 'tandemweb-checkout-publication-v1.json',
-  envelope: 'student-catalog-publication-envelope-v1.json',
+  nanoclaw: 'nanoclaw-product-bindings-v2.scoped.json',
+  tandemweb: 'tandemweb-checkout-publication-v2.json',
+  envelope: 'student-catalog-publication-envelope-v2.json',
 };
 const TRACKED_OUTPUTS = {
-  nanoclaw: 'facts/generated/student-product-bindings-v1.compat.json',
-  tandemweb: 'data/generated/student-catalog-publication-v1.json',
+  nanoclaw: 'facts/generated/student-product-bindings-v2.scoped.json',
+  tandemweb: 'data/generated/student-catalog-publication-v2.json',
 };
-const EXPECTED_POPULATION = ['supervision-inaugural', 'supervision-regular'];
-const EXPECTED_CONSUMERS = ['nanoclaw-v1', 'tandemweb-checkout-validation'];
+const SUPERVISION_POPULATION = ['supervision-inaugural', 'supervision-regular'];
+const EXPECTED_POPULATION = [...SUPERVISION_POPULATION, 'mcs-full'];
+const EXPECTED_CONSUMERS = [
+  'nanoclaw-scoped-v2',
+  'tandemweb-checkout-validation',
+];
 const EXPECTED_HOLDS = [
   'global_strict_publication_eligible',
   'heartbeat_class_assignment_verified',
@@ -70,6 +74,11 @@ const ALLOWED_SOURCES = new Map(
       'nanoclaw',
       'docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json',
     ],
+    [
+      'mcs_source_evidence',
+      'nanoclaw',
+      'docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json',
+    ],
   ].map(([key, root, relative]) => [key, { root, path: relative }]),
 );
 const RELATIONSHIP_TYPES = new Set([
@@ -83,6 +92,7 @@ const RELATIONSHIP_TYPES = new Set([
   'bundle_declares_course',
   'access_group_exists',
   'course_exists',
+  'offer_preserves_legacy_product',
 ]);
 const EVIDENCE_STATUSES = {
   source_declaration: new Set([
@@ -313,10 +323,17 @@ export function validateManifestBeforeReads(manifest) {
   ) {
     fail('manifest_version_invalid');
   }
-  if (manifest.compatibility_profile !== 'nanoclaw-v1-exact')
+  if (manifest.compatibility_profile !== 'nanoclaw-source-scoped-v2')
     fail('compatibility_profile_invalid');
   if (!sameArray(manifest.population_keys, EXPECTED_POPULATION))
     fail('population_scope_invalid');
+  if (
+    !sameArray(
+      manifest.resolution_profiles?.map((profile) => profile.offer_key),
+      EXPECTED_POPULATION,
+    )
+  )
+    fail('resolution_profile_invalid');
   if (!sameArray(manifest.consumers, EXPECTED_CONSUMERS))
     fail('consumer_scope_invalid');
   if (
@@ -561,6 +578,185 @@ function readDeclaredSources(manifest, sourcesByKey, roots) {
   return values;
 }
 
+function splitRosterTarget(value, offerKey) {
+  const separator = value.indexOf('/');
+  if (separator <= 0 || separator === value.length - 1)
+    fail('product_projection_conflict', offerKey);
+  return { tab: value.slice(0, separator), column: value.slice(separator + 1) };
+}
+
+function buildScopedBindings(manifest, sources) {
+  const entitlements = sources.get('entitlement_catalog');
+  const bindings = sources.get('binding_catalog');
+  const aliasAttestation = sources.get('consumer_alias_attestation');
+  const mcsEvidence = sources.get('mcs_source_evidence');
+  const legacyAccount =
+    mcsEvidence?.native_provider_readback?.stripe?.legacy_consumer_account;
+  if (
+    entitlements?.catalog_revision !== 1 ||
+    bindings?.schema_version !== 1 ||
+    bindings?.revision !== 1 ||
+    bindings?.entitlement_catalog_revision !== entitlements.catalog_revision ||
+    !sameArray(
+      bindings.routes?.map((route) => route.offer_key),
+      SUPERVISION_POPULATION,
+    )
+  ) {
+    fail('catalog_revision_mismatch');
+  }
+
+  const tandemAlias = exactlyOne(manifest, 'consumer_account_alias', 'tandem');
+  const heartbeatAlias = exactlyOne(
+    manifest,
+    'consumer_account_alias',
+    'heartbeat',
+  );
+  if (
+    tandemAlias.relationship_status !== 'native_verified' ||
+    tandemAlias.target.namespace !== 'stripe:alt' ||
+    tandemAlias.target.object_type !== 'account' ||
+    tandemAlias.target.object_id !==
+      aliasAttestation?.provider?.native_account_id ||
+    aliasAttestation?.provider?.match !== true ||
+    heartbeatAlias.relationship_status !== 'native_verified' ||
+    heartbeatAlias.target.namespace !== 'stripe:primary' ||
+    heartbeatAlias.target.object_type !== 'account' ||
+    heartbeatAlias.target.object_id !== legacyAccount?.native_account_id ||
+    legacyAccount?.configuration_slot !== 'STRIPE_RESTRICTED_KEY' ||
+    legacyAccount?.configuration_reader !== 'dist/env.js#readEnvFile' ||
+    legacyAccount?.consumer_source !== 'tools/contador/process-payment.cjs' ||
+    legacyAccount?.operational_host !== 'mini-claw.local' ||
+    legacyAccount?.operational_working_directory !==
+      '/Users/xbohdpukc/dev/NanoClaw' ||
+    !/^[a-f0-9]{40}$/.test(legacyAccount?.installed_release_commit ?? '') ||
+    typeof legacyAccount?.provider_read_method !== 'string' ||
+    !legacyAccount.provider_read_method.includes('stripe/whoami primary') ||
+    !/^[a-f0-9]{64}$/.test(legacyAccount?.provider_reader_sha256 ?? '') ||
+    !/^[a-f0-9]{64}$/.test(legacyAccount?.account_selector_sha256 ?? '') ||
+    Number.isNaN(Date.parse(legacyAccount?.observed_at ?? '')) ||
+    legacyAccount?.credential_value_read_into_output !== false
+  ) {
+    fail('consumer_account_alias_evidence_invalid');
+  }
+  assertLowerable(tandemAlias, ['nanoclaw-scoped-v2']);
+  assertLowerable(heartbeatAlias, ['nanoclaw-scoped-v2']);
+
+  const routes = [];
+  for (const offerKey of EXPECTED_POPULATION) {
+    const offer = entitlements.offers?.find(
+      (item) => item.offer_key === offerKey,
+    );
+    const sourceBinding = bindings.routes.find(
+      (item) => item.offer_key === offerKey,
+    );
+    const resolutionProfile = manifest.resolution_profiles.find(
+      (item) => item.offer_key === offerKey,
+    );
+    const offerProduct = exactlyOne(
+      manifest,
+      'offer_uses_product',
+      offerKey,
+      'unsafe_lowering_many_to_many',
+    );
+    const defaultPrice = exactlyOne(
+      manifest,
+      'product_default_price',
+      offerProduct.target.object_id,
+      'unsafe_lowering_many_to_many',
+    );
+    const rosterRelation = exactlyOne(
+      manifest,
+      'offer_projects_to_roster',
+      offerKey,
+      'unsafe_lowering_many_to_many',
+    );
+    if (
+      !offer ||
+      !resolutionProfile ||
+      offerProduct.target.namespace !== 'stripe:alt' ||
+      !offer.stripe_product_ids?.includes(offerProduct.target.object_id) ||
+      !offer.stripe_price_ids?.includes(defaultPrice.target.object_id)
+    ) {
+      fail('relationship_source_value_mismatch', offerKey);
+    }
+    assertLowerable(offerProduct, EXPECTED_CONSUMERS);
+    assertLowerable(defaultPrice, EXPECTED_CONSUMERS);
+    assertLowerable(rosterRelation, ['nanoclaw-scoped-v2']);
+
+    const rosterTarget = splitRosterTarget(
+      rosterRelation.target.object_id,
+      offerKey,
+    );
+    if (
+      sourceBinding &&
+      (sourceBinding.stripe_account !== 'tandem' ||
+        canonicalJson(sourceBinding.roster_targets) !==
+          canonicalJson([rosterTarget]))
+    ) {
+      fail('nanoclaw_compatibility_mismatch', offerKey);
+    }
+    routes.push({
+      offer_key: offerKey,
+      stripe_account: 'tandem',
+      provider_identity: {
+        product_ids: [offerProduct.target.object_id],
+        price_ids: [defaultPrice.target.object_id],
+      },
+      resolution_profile: {
+        managed_signal_kinds: [...resolutionProfile.managed_signal_kinds],
+        unknown_companion: resolutionProfile.unknown_companion,
+        unrecognized_offer: resolutionProfile.unrecognized_offer,
+        incomplete: resolutionProfile.incomplete,
+        unqualified: resolutionProfile.unqualified,
+      },
+      roster_targets: [rosterTarget],
+    });
+  }
+
+  const legacyProduct = exactlyOne(
+    manifest,
+    'offer_preserves_legacy_product',
+    'mcs-full',
+  );
+  const mcsOffer = entitlements.offers.find(
+    (item) => item.offer_key === 'mcs-full',
+  );
+  if (
+    legacyProduct.target.namespace !== 'stripe:primary' ||
+    !mcsOffer?.stripe_product_ids?.includes(legacyProduct.target.object_id) ||
+    routes
+      .find((route) => route.offer_key === 'mcs-full')
+      ?.provider_identity.product_ids.includes(
+        legacyProduct.target.object_id,
+      ) ||
+    legacyProduct.target.object_id !==
+      mcsEvidence?.native_provider_readback?.stripe?.primary_product?.id
+  ) {
+    fail('legacy_scope_invalid', 'mcs-full');
+  }
+  assertLowerable(legacyProduct, ['nanoclaw-scoped-v2']);
+
+  return {
+    schema_version: 2,
+    revision: manifest.revision,
+    entitlement_catalog_revision: entitlements.catalog_revision,
+    authority:
+      'Identity and legacy roster projection bindings only. Account-scoped provider identities identify managed offers; explicit legacy scopes preserve the existing Product Map fallback. Offers, bundles, prices, obligations, access, cohort assignment and completion retain their native authorities.',
+    routes,
+    legacy_scopes: [
+      {
+        offer_key: 'mcs-full',
+        stripe_account: 'heartbeat',
+        provider_identity: {
+          product_ids: [legacyProduct.target.object_id],
+          price_ids: [],
+        },
+        fallback: 'product_map',
+      },
+    ],
+  };
+}
+
 export function validateNanoclawArtifact({ manifest, schema, nanoclawRoot }) {
   validateManifestSchema(schema, manifest);
   const indexes = validateManifestBeforeReads(manifest);
@@ -572,62 +768,8 @@ export function validateNanoclawArtifact({ manifest, schema, nanoclawRoot }) {
   const sources = readDeclaredSources(manifest, nanoclawSources, {
     nanoclaw: nanoclawRoot,
   });
-  const entitlements = sources.get('entitlement_catalog');
-  const bindings = sources.get('binding_catalog');
-  const aliasAttestation = sources.get('consumer_alias_attestation');
-  if (
-    entitlements?.catalog_revision !== 1 ||
-    bindings?.revision !== 1 ||
-    bindings?.entitlement_catalog_revision !== entitlements.catalog_revision
-  ) {
-    fail('catalog_revision_mismatch');
-  }
-  if (
-    !Array.isArray(bindings.routes) ||
-    bindings.routes.length !== EXPECTED_POPULATION.length
-  )
-    fail('binding_population_invalid');
-  const alias = exactlyOne(manifest, 'consumer_account_alias', 'tandem');
-  if (
-    alias.relationship_status !== 'native_verified' ||
-    alias.target.object_id !== 'acct_1G1wKzA7hTBWpVVq' ||
-    aliasAttestation?.provider?.native_account_id !== alias.target.object_id ||
-    aliasAttestation?.provider?.match !== true
-  ) {
-    fail('consumer_account_alias_evidence_invalid');
-  }
-  for (const offerKey of EXPECTED_POPULATION) {
-    const offer = entitlements.offers?.find(
-      (item) => item.offer_key === offerKey,
-    );
-    const binding = bindings.routes.find((item) => item.offer_key === offerKey);
-    if (
-      !offer ||
-      !binding ||
-      offer.stripe_product_ids?.length !== 1 ||
-      offer.stripe_price_ids?.length !== 1 ||
-      binding.stripe_account !== 'tandem' ||
-      binding.roster_targets?.length !== 1
-    ) {
-      fail('nanoclaw_compatibility_mismatch', offerKey);
-    }
-    const offerProduct = exactlyOne(manifest, 'offer_uses_product', offerKey);
-    const defaultPrice = exactlyOne(
-      manifest,
-      'product_default_price',
-      offerProduct.target.object_id,
-    );
-    const roster = exactlyOne(manifest, 'offer_projects_to_roster', offerKey);
-    if (
-      offerProduct.target.object_id !== offer.stripe_product_ids[0] ||
-      defaultPrice.target.object_id !== offer.stripe_price_ids[0] ||
-      roster.target.object_id !==
-        `${binding.roster_targets[0].tab}/${binding.roster_targets[0].column}`
-    ) {
-      fail('nanoclaw_compatibility_mismatch', offerKey);
-    }
-  }
-  const expected = prettyJson(bindings);
+  const scopedBindings = buildScopedBindings(manifest, sources);
+  const expected = prettyJson(scopedBindings);
   const generatedPath = resolveAllowedSourceForRead(
     nanoclawRoot,
     TRACKED_OUTPUTS.nanoclaw,
@@ -636,7 +778,8 @@ export function validateNanoclawArtifact({ manifest, schema, nanoclawRoot }) {
     fail('nanoclaw_output_stale');
   return {
     output_sha256: sha256Bytes(expected),
-    routes: bindings.routes.length,
+    routes: scopedBindings.routes.length,
+    legacy_scopes: scopedBindings.legacy_scopes.length,
   };
 }
 
@@ -686,20 +829,18 @@ function validateAndProject(manifest, sources) {
   const heartbeatSnapshot = sources.get('heartbeat_snapshot');
   const courseSnapshot = sources.get('course_source_snapshot');
   const aliasAttestation = sources.get('consumer_alias_attestation');
+  const mcsEvidence = sources.get('mcs_source_evidence');
 
   if (
     program?.catalog_revision !== 1 ||
     entitlements?.catalog_revision !== 1 ||
+    bindings?.schema_version !== 1 ||
     bindings?.revision !== 1 ||
     bindings?.entitlement_catalog_revision !== 1
   ) {
     fail('catalog_revision_mismatch');
   }
-  if (
-    !Array.isArray(bindings.routes) ||
-    bindings.routes.length !== EXPECTED_POPULATION.length
-  )
-    fail('binding_population_invalid');
+  const scopedBindings = buildScopedBindings(manifest, sources);
   const alias = exactlyOne(manifest, 'consumer_account_alias', 'tandem');
   if (
     alias.relationship_status !== 'native_verified' ||
@@ -718,48 +859,44 @@ function validateAndProject(manifest, sources) {
   ) {
     fail('consumer_account_alias_evidence_invalid');
   }
-  assertLowerable(alias, ['nanoclaw-v1']);
+  assertLowerable(alias, ['nanoclaw-scoped-v2']);
 
-  const bundle = entitlements?.bundles?.find(
-    (item) => item.bundle_key === 'coaching-supervision-mastery:v1',
-  );
-  if (!bundle || bundle.version !== 1) fail('bundle_version_mismatch');
-
-  const routes = [];
   const checkoutProjection = [];
   for (const offerKey of EXPECTED_POPULATION) {
     const offer = entitlements?.offers?.find(
       (item) => item.offer_key === offerKey,
     );
-    const binding = bindings.routes.find((item) => item.offer_key === offerKey);
-    const checkoutProduct = checkout?.[offerKey];
-    const programExpectation = program?.checkout_expectations?.find(
-      (item) => item.product === offerKey,
+    const binding = scopedBindings.routes.find(
+      (item) => item.offer_key === offerKey,
     );
-    if (!offer || !binding || !checkoutProduct || !programExpectation)
+    const checkoutProduct = checkout?.[offerKey];
+    const programExpectation = SUPERVISION_POPULATION.includes(offerKey)
+      ? program?.checkout_expectations?.find(
+          (item) => item.product === offerKey,
+        )
+      : null;
+    const bundle = entitlements?.bundles?.find(
+      (item) => item.bundle_key === offer?.bundle_key,
+    );
+    if (
+      !offer ||
+      !binding ||
+      !checkoutProduct ||
+      !bundle ||
+      (SUPERVISION_POPULATION.includes(offerKey) && !programExpectation)
+    )
       fail('population_source_missing', offerKey);
     if (offer.bundle_key !== bundle.bundle_key)
       fail('bundle_reference_mismatch', offerKey);
     if (
-      !Array.isArray(offer.stripe_product_ids) ||
-      offer.stripe_product_ids.length !== 1 ||
-      !Array.isArray(offer.stripe_price_ids) ||
-      offer.stripe_price_ids.length !== 1
-    ) {
-      fail('unsafe_lowering_many_to_many', offerKey);
-    }
-    if (
       binding.stripe_account !== 'tandem' ||
+      binding.provider_identity?.product_ids?.length !== 1 ||
+      binding.provider_identity?.price_ids?.length !== 1 ||
       !Array.isArray(binding.roster_targets) ||
       binding.roster_targets.length !== 1
     )
       fail('unsafe_lowering_roster', offerKey);
     const roster = binding.roster_targets[0];
-    if (
-      roster.tab !== 'CSS' ||
-      roster.column !== 'Coaching Supervision Mastery'
-    )
-      fail('product_projection_conflict', offerKey);
 
     const offerBundle = exactlyOne(manifest, 'offer_includes_bundle', offerKey);
     const offerProduct = exactlyOne(
@@ -793,43 +930,83 @@ function validateAndProject(manifest, sources) {
     assertLowerable(offerProduct, EXPECTED_CONSUMERS);
     assertLowerable(defaultPrice, EXPECTED_CONSUMERS);
     assertLowerable(checkoutRelation, ['tandemweb-checkout-validation']);
-    assertLowerable(rosterRelation, ['nanoclaw-v1']);
+    assertLowerable(rosterRelation, ['nanoclaw-scoped-v2']);
     if (
       offerBundle.target.object_id !== bundle.bundle_key ||
-      offerProduct.target.object_id !== offer.stripe_product_ids[0] ||
-      defaultPrice.target.object_id !== offer.stripe_price_ids[0]
+      offerProduct.target.object_id !==
+        binding.provider_identity.product_ids[0] ||
+      defaultPrice.target.object_id !== binding.provider_identity.price_ids[0]
     ) {
       fail('relationship_source_value_mismatch', offerKey);
     }
     if (
       checkoutRelation.target.object_id !== offerKey ||
-      rosterRelation.target.object_id !== 'CSS/Coaching Supervision Mastery' ||
-      accessRelation.target.object_id !== 'fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83'
+      rosterRelation.target.object_id !== `${roster.tab}/${roster.column}` ||
+      offer.heartbeat_full_access_group_ids?.length !== 1 ||
+      accessRelation.target.object_id !==
+        offer.heartbeat_full_access_group_ids[0]
     ) {
       fail('relationship_source_value_mismatch', offerKey);
     }
 
-    const stripeEvidence = findObjects(
-      stripeSnapshot,
-      (item) =>
-        item.offer_key === offerKey &&
-        item.native_product_id === offerProduct.target.object_id,
-    );
-    if (
-      stripeEvidence.length !== 1 ||
-      stripeEvidence[0].account_id !== alias.target.object_id ||
-      stripeEvidence[0].native_default_price_id !==
-        defaultPrice.target.object_id ||
-      stripeEvidence[0].default_price_matches_declared !== true
-    ) {
-      fail('native_product_evidence_invalid', offerKey);
+    if (offerKey === 'mcs-full') {
+      const productEvidence =
+        mcsEvidence?.native_provider_readback?.stripe?.alt_product;
+      const priceEvidence =
+        mcsEvidence?.native_provider_readback?.stripe?.alt_price;
+      if (
+        productEvidence?.id !== offerProduct.target.object_id ||
+        productEvidence?.account !== 'alt' ||
+        productEvidence?.active !== true ||
+        productEvidence?.default_price_id !== defaultPrice.target.object_id ||
+        priceEvidence?.id !== defaultPrice.target.object_id ||
+        priceEvidence?.account !== 'alt' ||
+        priceEvidence?.product_id !== offerProduct.target.object_id ||
+        priceEvidence?.active !== true ||
+        priceEvidence?.currency !== checkoutProduct.currency ||
+        priceEvidence?.unit_amount_cents !==
+          checkoutProduct.installments?.amount_cents ||
+        priceEvidence?.type !== 'recurring' ||
+        priceEvidence?.interval !== checkoutProduct.installments?.interval ||
+        priceEvidence?.interval_count !== 1 ||
+        mcsEvidence?.native_provider_readback?.stripe?.price_population_limit
+          ?.bounded_product_price_listing_available !== false ||
+        mcsEvidence?.native_provider_readback?.stripe?.price_population_limit
+          ?.historical_nondefault_prices_verified !== false ||
+        mcsEvidence?.native_provider_readback?.stripe?.price_population_limit
+          ?.managed_scope !== 'exact_product_and_default_price_pair' ||
+        mcsEvidence?.native_provider_readback?.stripe?.price_population_limit
+          ?.product_wide_price_coverage_claimed !== false
+      ) {
+        fail('native_product_evidence_invalid', offerKey);
+      }
+    } else {
+      const stripeEvidence = findObjects(
+        stripeSnapshot,
+        (item) =>
+          item.offer_key === offerKey &&
+          item.native_product_id === offerProduct.target.object_id,
+      );
+      if (
+        stripeEvidence.length !== 1 ||
+        stripeEvidence[0].account_id !== alias.target.object_id ||
+        stripeEvidence[0].native_default_price_id !==
+          defaultPrice.target.object_id ||
+        stripeEvidence[0].default_price_matches_declared !== true
+      ) {
+        fail('native_product_evidence_invalid', offerKey);
+      }
     }
     const installments = checkoutProduct.installments;
+    const expectedActive = programExpectation
+      ? programExpectation.active
+      : offer.status === 'active';
     if (
       checkoutProduct.price_cents !== offer.price_cents ||
       checkoutProduct.currency !== offer.currency ||
-      checkoutProduct.active !== programExpectation.active ||
-      programExpectation.price_cents !== offer.price_cents
+      checkoutProduct.active !== expectedActive ||
+      (programExpectation &&
+        programExpectation.price_cents !== offer.price_cents)
     ) {
       fail('checkout_source_mismatch', offerKey);
     }
@@ -838,12 +1015,17 @@ function validateAndProject(manifest, sources) {
       checkoutProduct.cohort_excluded_start_dates ?? [];
     if (
       checkoutProduct.requires_cohort !== true ||
-      checkoutProduct.cohort_program !== 'supervision' ||
-      !sameArray(cohortStartDates, programExpectation.cohort_start_dates) ||
-      !sameArray(
-        cohortExcludedStartDates,
-        programExpectation.cohort_excluded_start_dates,
-      )
+      typeof checkoutProduct.cohort_program !== 'string' ||
+      !checkoutProduct.cohort_program ||
+      (programExpectation &&
+        (!sameArray(cohortStartDates, programExpectation.cohort_start_dates) ||
+          !sameArray(
+            cohortExcludedStartDates,
+            programExpectation.cohort_excluded_start_dates,
+          ))) ||
+      (!programExpectation &&
+        (cohortStartDates.length !== 0 ||
+          cohortExcludedStartDates.length !== 0))
     ) {
       fail('checkout_cohort_eligibility_invalid', offerKey);
     }
@@ -851,8 +1033,9 @@ function validateAndProject(manifest, sources) {
       !isObject(installments) ||
       installments.enabled !== true ||
       !Number.isInteger(installments.count) ||
-      installments.count !== 4 ||
-      installments.interval !== 'month' ||
+      installments.count < 1 ||
+      typeof installments.interval !== 'string' ||
+      !installments.interval ||
       installments.total_cents !== checkoutProduct.price_cents ||
       installments.amount_cents * installments.count !==
         installments.total_cents ||
@@ -863,11 +1046,6 @@ function validateAndProject(manifest, sources) {
     if (checkoutProduct.stripe_price_id !== '')
       fail('checkout_direct_price_role_invalid', offerKey);
 
-    routes.push({
-      offer_key: binding.offer_key,
-      stripe_account: binding.stripe_account,
-      roster_targets: binding.roster_targets,
-    });
     checkoutProjection.push({
       offer_key: offerKey,
       active: checkoutProduct.active,
@@ -878,7 +1056,10 @@ function validateAndProject(manifest, sources) {
       direct_price_id: null,
       cohort_eligibility: {
         required: true,
-        program: 'supervision',
+        program: checkoutProduct.cohort_program,
+        context_role: programExpectation
+          ? 'offer_eligibility'
+          : 'delivery_assignment',
         allowed_start_dates: cohortStartDates,
         excluded_start_dates: cohortExcludedStartDates,
       },
@@ -900,6 +1081,7 @@ function validateAndProject(manifest, sources) {
         catalog_revision: entitlements.catalog_revision,
         bundle_key: bundle.bundle_key,
         bundle_version: bundle.version,
+        enrollment_scope: offer.enrollment_scope,
       },
       roster_projection: { tab: roster.tab, column: roster.column },
     });
@@ -932,11 +1114,14 @@ function validateAndProject(manifest, sources) {
   const bundleCourse = exactlyOne(
     manifest,
     'bundle_declares_course',
-    bundle.bundle_key,
+    'coaching-supervision-mastery:v1',
+  );
+  const supervisionBundle = entitlements.bundles.find(
+    (item) => item.bundle_key === 'coaching-supervision-mastery:v1',
   );
   const declaredCourseComponent = entitlements?.components?.find(
     (component) =>
-      bundle.components?.some(
+      supervisionBundle?.components?.some(
         (entry) => entry.component_key === component.component_key,
       ) && component.heartbeat?.course_ids?.includes(courseExists.object_id),
   );
@@ -954,16 +1139,24 @@ function validateAndProject(manifest, sources) {
   ) {
     fail('heartbeat_evidence_invalid');
   }
+  const mcsGroupExists = exactlyOne(
+    manifest,
+    'access_group_exists',
+    '917a7a35-2ea8-4fb3-999a-26949d9de4da',
+  );
+  if (
+    mcsGroupExists.evidence_class !== 'existence_only' ||
+    mcsEvidence?.native_provider_readback?.heartbeat?.group_id !==
+      mcsGroupExists.object_id ||
+    mcsEvidence?.native_provider_readback?.heartbeat?.existence_verified !==
+      true ||
+    mcsEvidence?.native_provider_readback?.heartbeat
+      ?.course_attachment_verified !== false
+  ) {
+    fail('heartbeat_evidence_invalid');
+  }
 
-  const nanoclawCompat = {
-    schema_version: bindings.schema_version,
-    revision: bindings.revision,
-    entitlement_catalog_revision: bindings.entitlement_catalog_revision,
-    authority: bindings.authority,
-    routes,
-  };
-  if (canonicalJson(nanoclawCompat) !== canonicalJson(bindings))
-    fail('nanoclaw_compatibility_mismatch');
+  const nanoclawCompat = scopedBindings;
 
   const selectedCheckoutSha256 = sha256Value(checkoutProjection);
   const sourceDigests = Object.fromEntries(
@@ -973,8 +1166,8 @@ function validateAndProject(manifest, sources) {
     }),
   );
   const tandemwebPublicationPayload = {
-    schema_version: 1,
-    publication_id: 'student-catalog-publication-v1',
+    schema_version: 2,
+    publication_id: 'student-catalog-publication-v2',
     publication_revision: manifest.revision,
     compatibility_profile: manifest.compatibility_profile,
     coverage_state: 'validated',
@@ -993,6 +1186,11 @@ function validateAndProject(manifest, sources) {
     },
     source_digests: sourceDigests,
     routes: checkoutProjection,
+    identity_resolution_profiles: scopedBindings.routes.map((route) => ({
+      offer_key: route.offer_key,
+      ...route.resolution_profile,
+    })),
+    legacy_scopes: scopedBindings.legacy_scopes,
     evidence_limits: { ...manifest.holds },
   };
   const tandemwebPublication = {
@@ -1018,9 +1216,9 @@ export function buildPublication({
   const nanoclawBytes = prettyJson(projected.nanoclawCompat);
   const tandemwebBytes = prettyJson(projected.tandemwebPublication);
   const envelope = {
-    schema_version: 1,
+    schema_version: 2,
     publication_revision: manifest.revision,
-    build_tool_version: 1,
+    build_tool_version: 2,
     compatibility_profile: manifest.compatibility_profile,
     population_keys: [...EXPECTED_POPULATION],
     coverage_state: 'validated',
@@ -1114,7 +1312,7 @@ function runCli() {
       nanoclawRoot: args.nanoclawRoot,
     });
     process.stdout.write(
-      `${JSON.stringify({ status: 'validated', consumer: 'nanoclaw-v1', ...result })}\n`,
+      `${JSON.stringify({ status: 'validated', consumer: 'nanoclaw-scoped-v2', ...result })}\n`,
     );
     return;
   }
