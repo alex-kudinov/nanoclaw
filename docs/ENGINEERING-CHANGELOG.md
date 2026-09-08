@@ -33,8 +33,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-08T01:00Z
 - Owner/client: Astra owner, one Sol High execution writer, bounded Claude
   Sonnet/high review complete
-- State: ready_for_review; source reviewed and Tandem branch pushed, production
-  activation awaits Astra's exact release acceptance
+- State: complete; Astra accepted the exact packet, both consumers are live,
+  and installed artifacts and behavior were read back independently
 - Base: NanoClaw docs-only descendant `28df1ba6c51b` of exact live
   `c5fdf5f6d9d5`; Tandemweb exact live/current-main
   `9d708ec4d940`; isolated task worktrees preserve both dirty primaries.
@@ -97,8 +97,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Git-archive validation reports artifact `a0730a1f…5a9b9`, payload
   `bac4dee8…68eb`, and selected checkout `5d5dcc2b…35db`. The operational
   Contador prompt is not supplied by the immutable code root; the exact packet
-  includes one-file hash-preconditioned backup/install/readback and rollback.
-  Production remains held for Astra's exact packet acceptance.
+  includes its one-file hash-preconditioned backup/install/readback and rollback.
+- Live activation: the Mini moved from `c5fdf5f6d9d5` to exact immutable
+  `013b1d86d884`, source tree `b185a4c0`, changing only the three release
+  pointers and retaining rollback plist
+  `com.nanoclaw.plist.rollback-c5fdf5f6d9d5-2026-09-08T02-54-51-540Z`.
+  Installed resolver `c9a79690…2bc0f` and binding `61bd302a…1e8a0` match the
+  reviewed archive; health reports Node 22.23.2, matched code root, connected
+  Gmail/Slack, zero active containers, and an empty queue. Astra independently
+  passed six installed resolver cases.
+- Operational prompt: exact preimage `dc1629cd…b394` was backed up at
+  `~/.local/share/nanoclaw-operational-backups/NC-20260907-007/contador-CLAUDE.pre-013b1d86.20260908T025525Z.md`, then the one reviewed file was installed
+  atomically and read back as `16b33986…9784`; no other operational file changed.
+- Tandem activation: origin/main and installed
+  `/home/tca/tcawp/tandem-snippets` are exact `5ed4a462a3a1`. The installed
+  artifact is `a0730a1f…5a9b9`; the installed validator returned payload
+  `bac4dee8…68eb` and selected checkout `5d5dcc2b…35db`. Design/publication
+  preflight, LiteSpeed purge, Cloudflare purge HTTP 200, and public HTTP 200
+  passed. `mcs-full` remains active, cohort-required for `mcs-practicum`, USD
+  299,700 cents total with three monthly 99,900-cent obligations and no direct
+  price ID. Existing server untracked paths remain preserved.
+- External boundaries: no source-sync, provider/product, payment, customer,
+  student, roster, access, cohort, certificate, capacity, schedule, or message
+  write ran. Broader catalog coverage and natural enrollment outcome evidence
+  remain future work.
 
 ### NC-20260907-006 — Two-route student catalog publication
 

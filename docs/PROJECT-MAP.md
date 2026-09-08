@@ -74,6 +74,15 @@ price, installment arithmetic, enrollment scope, and cohort-context role;
 `mcs-practicum` selects delivery after one program enrollment and adds no order,
 seat, access, completion, or certificate action.
 
+Exact NanoClaw release `013b1d86d884` now runs the scoped v2 resolver and
+binding; the operational Contador prompt matches the reviewed release copy.
+Tandemweb main/install `5ed4a462a3a1` validates the pinned v2 artifact before
+activation. Live readback reproduced the expected source, payload, and selected
+checkout hashes with connected NanoClaw channels, empty work queues, successful
+site cache purges, and HTTP 200. Source sync remains paused, and this release
+performed no provider, payment, customer, student, roster, access, or cohort
+mutation.
+
 Current Tandemweb source additionally binds both supervision routes to exact
 cohort eligibility. The inaugural product allows only October 7, 2026; regular
 tuition excludes that date and serves later cohorts. NanoClaw's default external

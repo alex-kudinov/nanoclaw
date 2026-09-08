@@ -2,7 +2,8 @@
   "schema_version": 1,
   "packet_id": "NC-20260907-007-mcs-publication-release",
   "prepared_at": "2026-09-08T02:49:10Z",
-  "state": "awaiting_astra_release_acceptance",
+  "state": "activated_live_verified",
+  "completed_at": "2026-09-08T02:57:57Z",
   "authority": ".program/decisions/decision-mcs-catalog-publication-expansion-2026-09-07.json",
   "sources": {
     "nanoclaw": {
@@ -210,6 +211,68 @@
     "rollback": "require the reviewed target SHA-256, atomically restore the exact backup, and read back precondition SHA-256 dc1629cd42fe70b7adf52e7de2e19aa4c7fa092ae41955ba3e5d13900b02b394",
     "runtime_reason": "GROUPS_DIR resolves from the operational working directory, so immutable code-root activation alone does not make this instruction effective"
   },
+  "activation_receipt": {
+    "astra_acceptance": "accepted exact packet prepared 2026-09-08T02:49:10Z before activation",
+    "nanoclaw": {
+      "host": "mini-claw.local",
+      "activated_commit": "013b1d86d88442aed9eaf5e58343f02991bc43d3",
+      "activated_source_tree": "b185a4c02600370502fedf49cbb71481728f9059",
+      "code_root": "/Users/xbohdpukc/.local/share/nanoclaw-releases/013b1d86d88442aed9eaf5e58343f02991bc43d3",
+      "previous_commit": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+      "rollback_plist": "/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-c5fdf5f6d9d5-2026-09-08T02-54-51-540Z",
+      "changed_paths": [
+        "EnvironmentVariables.NANOCLAW_CODE_ROOT",
+        "EnvironmentVariables.NANOCLAW_EXPECTED_RELEASE_COMMIT",
+        "ProgramArguments.1"
+      ],
+      "health": {
+        "verified": true,
+        "node_version": "22.23.2",
+        "artifact_sha256": "945c70544c489a159e78291a92dfef631d56ddb736cd2b5aed9fb020950ef660",
+        "code_root_matches_release": true,
+        "gmail_connected": true,
+        "slack_connected": true,
+        "active_containers": 0,
+        "active_queue": 0,
+        "waiting_groups": 0
+      },
+      "installed_resolver_sha256": "c9a7969060df429cea39018349d66a03c79b6e533c5c7d88c0a1ba5a5632bc0f",
+      "installed_binding_sha256": "61bd302a4d474805ab012072e3d16615f523d73db85b54c042d487dafca1e8a0",
+      "installed_publication_receipt": "3 managed routes, 1 legacy scope",
+      "installed_acceptance_cases": "Astra independently passed six pure resolver cases, including offer key plus only historical price retaining legacy"
+    },
+    "operational_contador_prompt": {
+      "preimage_sha256": "dc1629cd42fe70b7adf52e7de2e19aa4c7fa092ae41955ba3e5d13900b02b394",
+      "installed_sha256": "16b33986e1ea413441b3c2733023068d41b6a9debc845c68d73dbee91a201784",
+      "backup": "/Users/xbohdpukc/.local/share/nanoclaw-operational-backups/NC-20260907-007/contador-CLAUDE.pre-013b1d86.20260908T025525Z.md",
+      "backup_sha256": "dc1629cd42fe70b7adf52e7de2e19aa4c7fa092ae41955ba3e5d13900b02b394",
+      "files_changed": 1
+    },
+    "tandemweb": {
+      "ssh_host": "tandem",
+      "installed_host": "tandemcoach.co",
+      "installed_path": "/home/tca/tcawp/tandem-snippets",
+      "previous_commit": "5a14d5d8c5a64181d22e6ec3ea679b96867aabbf",
+      "installed_commit": "5ed4a462a3a1a579861c53845acffc21d152d207",
+      "installed_artifact_sha256": "a0730a1ff369e11aab9b8fd5da01ab94d753f44de8d66ad40625da9253d5a9b9",
+      "installed_validator_sha256": "65483b3121134501ebe63e9e0423e4b8a06320bf9d12dfcf67d4c2f6f7694aa5",
+      "validator_payload_sha256": "bac4dee83b2d3b8691702d130cb5e7019730babcd54f1490ee140041268568eb",
+      "validator_selected_checkout_sha256": "5d5dcc2b3555341ff787a08844e837d2fd25b8f453d5d5f28b79eaf50f3b35db",
+      "independent_validator_command": "ssh tandem 'cd /home/tca/tcawp/tandem-snippets && python3 tools/validate-student-catalog-publication.py --root .'",
+      "design_release_gate": "passed",
+      "litespeed_cache_purge": "passed",
+      "cloudflare_purge_http": 200,
+      "public_homepage_http": 200,
+      "mcs_full_source_readback": "active; cohort required mcs-practicum; USD 299700 cents total; 3 monthly obligations of 99900 cents; direct price ID empty",
+      "preexisting_untracked_paths_preserved": [
+        "deploy.log",
+        "pages/leadership-development-consultant/current-content.html",
+        "run.sh",
+        "wordpress/tandem-snippets/coach-tools/"
+      ],
+      "independently_verified_by_astra": true
+    }
+  },
   "rollback": {
     "nanoclaw": "reactivate prior immutable release c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1 and verify prior v1 binding SHA-256 95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
     "tandemweb": "revert exact task commits 5ed4a462a3a1a579861c53845acffc21d152d207 then 8f0dcca290efada06a3dd8f39546861e957a8390 through the normal main/webhook path and verify predecessor main 5a14d5d8c5a64181d22e6ec3ea679b96867aabbf plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4; initial task-start live evidence was 9d708ec4d940065df5919c9306d5de285cdd52a9",
@@ -224,5 +287,5 @@
     "product_wide_alt_price_coverage_claim": false,
     "broader_catalog_coverage": "unfinished"
   },
-  "remaining_blocker": "Astra must accept this exact corrected packet before NanoClaw, the operational Contador prompt, or Tandemweb production activation."
+  "remaining_blocker": null
 }

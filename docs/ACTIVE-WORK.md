@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | Corrected Nano source `013b1d86` with verified immutable archive; Tandemweb `5ed4a462a` over current main `5a14d5d8`; Toolbox isolated `778a60e`; dirty primaries preserved | `ready_for_review` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Offer-key qualification requires zero supplied price IDs. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Astra accepts the refreshed exact packet before NanoClaw, the one-file operational Contador prompt, or Tandemweb production activation. | 2026-09-08T02:47Z |
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
 
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
@@ -240,13 +240,18 @@ outside the current client conversation.
   exceeded its diff-only read scope by three related repository files; no
   secret or unrelated private source was read. It used 9 calls / max context
   76,142.
-- Prepared release: corrected NanoClaw source `013b1d86d884`, immutable archive
+- Live release: corrected NanoClaw source `013b1d86d884`, immutable archive
   SHA-256 `2c203f62…3e927`, exact resolver `c9a79690…2bc0f`, v2 binding
   `61bd302a…1e8a0`, and fresh extraction pass. Tandem `5ed4a462a3a1` and v2
-  artifact `a0730a1f…5a9b9` pass fresh Git-archive validation. The operational
-  Contador prompt remains exact old hash `dc1629cd…b394`; the accepted packet
-  includes a one-file preconditioned backup/install/readback to target
-  `16b33986…9784` and exact rollback. Production awaits Astra.
+  artifact `a0730a1f…5a9b9` passed fresh Git-archive validation. The Mini now
+  runs exact source tree `b185a4c0`, resolver `c9a79690…2bc0f`, and binding
+  `61bd302a…1e8a0`; health reports Node 22.23.2, connected Gmail/Slack, and no
+  active container or queued group. A one-file preconditioned operational
+  Contador update changed `dc1629cd…b394` to reviewed `16b33986…9784` with an
+  exact retained backup. Tandem installed `5ed4a462a3a1`; its validator emitted
+  payload `bac4dee8…68eb` and selected checkout `5d5dcc2b…35db`, both cache
+  purges succeeded, and the public site returned HTTP 200. Source sync remains
+  paused; no provider, business, customer, student, or roster write occurred.
 
 ### NC-20260907-006 — Supervision catalog publication
 
