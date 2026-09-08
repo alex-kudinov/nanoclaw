@@ -75,6 +75,13 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Full NanoClaw is 3,670 pass / 32 skip / three failures, exactly the recorded
   predecessor CNPC wrapper, date-sensitive Trafft, and Capacity disposable
   reserved expected 1 / actual 0 failures.
+- Prepared release: reviewed Nano source `c56d3c24a422` is pushed. Its exact
+  immutable archive SHA-256 is `feeb53ba…68ac8`, release artifact SHA-256 is
+  `945c7054…f660`, and fresh extraction reports the exact v2 binding hash and
+  three managed / one legacy scopes. Tandem source `94effae9c88a` is pushed;
+  fresh Git-archive validation reports artifact `f1a3c35c…009b4`, payload
+  `58448067…b904`, and selected checkout `5d5dcc2b…35db`. Production activation
+  remains held for Astra's exact packet acceptance.
 
 ### NC-20260907-006 — Two-route student catalog publication
 
