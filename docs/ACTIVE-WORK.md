@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw reviewed/pushed source `c56d3c24` with verified immutable archive; Tandemweb reviewed/pushed `94effae9c` from exact live/main `9d708ec4`; Toolbox isolated `778a60e`; dirty primaries preserved | `ready_for_review` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Astra independently accepts the exact release/rollback packet before NanoClaw or Tandemweb production activation. | 2026-09-08T02:18Z |
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw reviewed/pushed source `c56d3c24` with verified immutable archive; Tandemweb reviewed bytes rebased without overlap onto current main `5a14d5d8` as pushed `8f0dcca29`; Toolbox isolated `778a60e`; dirty primaries preserved | `ready_for_review` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Astra independently accepts the refreshed exact release/rollback packet before NanoClaw or Tandemweb production activation. | 2026-09-08T02:28Z |
 
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
@@ -230,8 +230,9 @@ outside the current client conversation.
   116,355; R2 used 4 calls / max context 52,076.
 - Prepared release: NanoClaw source `c56d3c24a422`, immutable archive SHA-256
   `feeb53ba…68ac8`, artifact SHA-256 `945c7054…f660`, and fresh-extraction v2
-  readback pass. Tandem source `94effae9c88a` and v2 artifact
-  `f1a3c35c…009b4` pass a fresh Git-archive validator. Exact activation and
+  readback pass. Reviewed Tandem bytes were transplanted without overlap onto
+  current main `5a14d5d8` as source `8f0dcca290ef`; v2 artifact
+  `f1a3c35c…009b4` passes a fresh Git-archive validator. Exact activation and
   rollback steps are in the NC007 release packet; production awaits Astra.
 
 ### NC-20260907-006 — Supervision catalog publication

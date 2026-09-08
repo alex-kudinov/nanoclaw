@@ -16,11 +16,12 @@
     },
     "tandemweb": {
       "branch": "codex/mcs-publication-20260907",
-      "commit": "94effae9c88a9fb83ec405dc7b93a824871a1477",
+      "commit": "8f0dcca290efada06a3dd8f39546861e957a8390",
+      "source_tree": "d9c6530915bf60749f7fb893d0324a70b5efa289",
       "pushed": true,
       "worktree_clean": true,
-      "base": "9d708ec4d940065df5919c9306d5de285cdd52a9",
-      "base_relation": "exact live and origin/main at task start",
+      "base": "5a14d5d8c5a64181d22e6ec3ea679b96867aabbf",
+      "base_relation": "current origin/main after a verified no-overlap content-only lineage advance; task bytes match reviewed commit 94effae9 exactly",
       "protected_deploy_script_changed": false
     },
     "toolbox": {
@@ -170,8 +171,8 @@
       "order": 2,
       "consumer": "Tandemweb checkout validation",
       "target": "origin/main standard webhook release",
-      "candidate": "94effae9c88a9fb83ec405dc7b93a824871a1477",
-      "precondition": "Astra accepts this exact packet; origin/main/live provenance remains 9d708ec4 or an accepted no-overlap fast-forward",
+      "candidate": "8f0dcca290efada06a3dd8f39546861e957a8390",
+      "precondition": "Astra accepts this exact packet; origin/main remains 5a14d5d8 or fast-forwards exactly to this one-commit descendant; installed predecessor is captured before deploy",
       "readback": [
         "installed Git commit and v2 artifact SHA-256",
         "installed static validator exact payload and selected-checkout hashes",
@@ -182,7 +183,7 @@
   ],
   "rollback": {
     "nanoclaw": "reactivate prior immutable release c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1 and verify prior v1 binding SHA-256 95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
-    "tandemweb": "revert exact commit 94effae9c88a9fb83ec405dc7b93a824871a1477 through the normal main/webhook path and verify prior release 9d708ec4d940065df5919c9306d5de285cdd52a9 plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4",
+    "tandemweb": "revert exact task commit 8f0dcca290efada06a3dd8f39546861e957a8390 through the normal main/webhook path and verify predecessor main 5a14d5d8c5a64181d22e6ec3ea679b96867aabbf plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4; initial task-start live evidence was 9d708ec4d940065df5919c9306d5de285cdd52a9",
     "toolbox": "restore the three scoped paths from isolated base 67287bec722bd297d8825b17327f596682596cc9; no provider or business state rollback is involved"
   },
   "held_boundaries": {

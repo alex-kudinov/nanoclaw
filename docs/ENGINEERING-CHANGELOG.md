@@ -78,8 +78,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Prepared release: reviewed Nano source `c56d3c24a422` is pushed. Its exact
   immutable archive SHA-256 is `feeb53ba…68ac8`, release artifact SHA-256 is
   `945c7054…f660`, and fresh extraction reports the exact v2 binding hash and
-  three managed / one legacy scopes. Tandem source `94effae9c88a` is pushed;
-  fresh Git-archive validation reports artifact `f1a3c35c…009b4`, payload
+  three managed / one legacy scopes. Reviewed Tandem task bytes were rebased
+  without overlap from `94effae9c88a` onto current main `5a14d5d8` as pushed
+  `8f0dcca290ef`; fresh Git-archive validation reports artifact
+  `f1a3c35c…009b4`, payload
   `58448067…b904`, and selected checkout `5d5dcc2b…35db`. Production activation
   remains held for Astra's exact packet acceptance.
 
