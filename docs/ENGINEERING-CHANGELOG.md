@@ -28,6 +28,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260907-007 — Current MCS catalog publication expansion
+
+- Date: 2026-09-08T01:00Z
+- Owner/client: Astra owner, one Sol High execution writer, bounded Claude
+  Sonnet/high review planned
+- State: in_progress; claim registered before implementation
+- Base: NanoClaw docs-only descendant `28df1ba6c51b` of exact live
+  `c5fdf5f6d9d5`; Tandemweb exact live/current-main
+  `9d708ec4d940`; isolated task worktrees preserve both dirty primaries.
+- Change class: C4 — source-scoped product identity and publication coverage for
+  the current program-wide `mcs-full` checkout population.
+- Authorized boundary: targeted read-only source, native provider-object, and
+  roster-structure verification; coordinated generated consumers; tests,
+  independent review, and release preparation. No payment, customer/student
+  population, roster/access/capacity/schedule/message/migration/provider-product
+  mutation, source-sync convergence, or manufactured business canary.
+
 ### NC-20260907-006 — Two-route student catalog publication
 
 - Date: 2026-09-07T22:12Z

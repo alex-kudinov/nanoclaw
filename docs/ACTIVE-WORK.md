@@ -9,6 +9,8 @@ outside the current client conversation.
 
 ## Active work
 
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | `codex/mcs-publication-20260907` from docs-only descendant `28df1ba6` of live `c5fdf5f6`; Tandemweb `codex/mcs-publication-20260907` from exact live/main `9d708ec4`; dirty primaries preserved | `in_progress` | C4 | Read-only source/provider/roster-structure verification, source-scoped MCS identity/publication, coordinated pinned consumers, regression tests, bounded review, and prepared releases. Preserve both supervision routes and legitimate unmigrated/legacy populations. No payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Verify exact current MCS account/product/price and roster destination; send the evidence-backed bounded scope to Astra before changing runtime design. | 2026-09-08T01:00Z |
+
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
@@ -186,6 +188,23 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260907-007 — Current MCS catalog publication expansion
+
+- Authority: accepted decision
+  `.program/decisions/decision-mcs-catalog-publication-expansion-2026-09-07.json`;
+  Astra owns strategy, `.program`, and release acceptance. The Sol High writer
+  owns the bounded implementation, verification, review, and release-execution
+  slice.
+- Lineage: NanoClaw uses docs-only descendant `28df1ba6c51b` of exact live
+  `c5fdf5f6d9d5`; Tandemweb uses exact live/current-main `9d708ec4d940`.
+  Both dirty primary checkouts remain untouched.
+- First gate: verify the exact current `mcs-full` source roles, account-scoped
+  provider objects and prices, and Product Map/roster destination structure;
+  no customer, payment, or student population read is included.
+- Boundary: preserve both live supervision routes and legitimate unmigrated or
+  legacy paths. No product, price, payment, roster, access, enrollment, class,
+  capacity, schedule, message, migration, source-sync, or customer mutation.
 
 ### NC-20260907-006 — Supervision catalog publication
 
