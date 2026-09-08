@@ -601,6 +601,13 @@ as behavior authority rather than remaining an ignored operational file, and a
 prompt/workflow deployment must reset the certifier root session so a resumed
 Claude conversation cannot retain the prior contract.
 
+The production agent image includes `jq`, which all shared API tools require.
+Heartbeat's `PUT /directMessages` field remains named `text`, but the stored
+body must be valid rich-text HTML; Gru therefore accepts a plain caller message,
+encodes it into escaped paragraphs, and requires exact stored-body readback.
+Authenticated host repair jobs are trusted only in runtime-marked scheduled
+task context; the same source label typed into Slack is not authority.
+
 ## 12. Integrations
 
 The repository contains active or planned connections to:

@@ -12,10 +12,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-07T22:20Z
 - Owner/client: Codex Astra, bounded Sol implementer, Claude Sonnet/high reviewer
-- State: validating — isolated source and stubbed provider tests; not yet
-  deployed or live-verified.
-- Branches: NanoClaw `codex/certifier-api-followthrough` from `51185a5d`;
-  toolbox `codex/heartbeat-certificate-followthrough` from `67287be`.
+- State: complete — reviewed source deployed; Gru and provider readbacks
+  verified for all three owner-authorized repair canaries.
+- Commits: NanoClaw `ff8e959b` on pushed
+  `codex/certifier-api-followthrough`; toolbox `ce00285` on local-only
+  `codex/heartbeat-certificate-followthrough` (the toolbox repository has no
+  configured remote).
 - Change class: C4 — newly automated student-facing direct messages and public
   community announcements, preserving the existing issuance approval.
 - Scope: documented Heartbeat `/directChats`, `/directMessages`, and message
@@ -27,10 +29,21 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   sender resolve by exact email; a message intent is persisted before the only
   send; uncertain sends and posts reconcile without blind retry; private and
   already-issued credentials do not auto-follow-through; repair never issues.
-- Current verification: toolbox shell syntax, both shared registries, focused
-  Heartbeat/Sertifier stubs, live GET-only dry-runs for Nola Gephart, Sheizana
-  Murji, and Lori Pietropaoli, and the Nano prompt contract. Production sync,
-  session reset, Gru execution, and exact API receipts remain pending.
+- Review: Claude Sonnet/high identified non-credential-specific announcement
+  dedupe and a merely role-based DM sender check. Both were fixed; a second
+  review found a URL-prefix collision, and the final exact-match review found
+  no unresolved material issue.
+- Production verification: exact tools and prompts synchronized; certifier root
+  session backed up/reset; agent image rebuilt with `jq-1.6`; Gru returned
+  `followthrough_complete` for Nola Gephart, Sheizana Murji, and Lori
+  Pietropaoli. Independent Heartbeat reads found one exact nonempty DM per
+  graduate from Alex Kudinov and one exact `Our Graduates` thread per
+  credential. No credential was reissued and dedupe prevented reposting.
+- Canary correction: Heartbeat accepts a bare `text` request with 204 but stores
+  empty content unless it is rich-text HTML. The DM tool now escapes the plain
+  caller message into paragraph HTML and verifies that exact body. The three
+  immutable empty canary messages and their receipts were preserved; corrected
+  messages were then sent once and read back exactly.
 
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 
