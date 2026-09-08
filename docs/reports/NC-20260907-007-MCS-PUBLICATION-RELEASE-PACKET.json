@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "packet_id": "NC-20260907-007-mcs-publication-release",
-  "prepared_at": "2026-09-08T02:17:47Z",
-  "state": "superseded_by_qualification_correction_rebuild_pending",
+  "prepared_at": "2026-09-08T02:49:10Z",
+  "state": "awaiting_astra_release_acceptance",
   "authority": ".program/decisions/decision-mcs-catalog-publication-expansion-2026-09-07.json",
   "sources": {
     "nanoclaw": {
       "branch": "codex/mcs-publication-20260907",
-      "commit": "c56d3c24a4225d43e1a356ed0de0caebd01a2ce2",
-      "source_tree": "be8d6b0fd6ad3e1e1ccb55c9f871f2d78b79985f",
+      "commit": "013b1d86d88442aed9eaf5e58343f02991bc43d3",
+      "source_tree": "b185a4c02600370502fedf49cbb71481728f9059",
       "pushed": true,
       "worktree_clean": true,
       "base": "28df1ba6c51b540f91306ffb600c386055bd0339",
@@ -16,12 +16,12 @@
     },
     "tandemweb": {
       "branch": "codex/mcs-publication-20260907",
-      "commit": "8f0dcca290efada06a3dd8f39546861e957a8390",
-      "source_tree": "d9c6530915bf60749f7fb893d0324a70b5efa289",
+      "commit": "5ed4a462a3a1a579861c53845acffc21d152d207",
+      "source_tree": "cc0d1bf59dd6795402dbeb7200569857ee61a9f2",
       "pushed": true,
       "worktree_clean": true,
       "base": "5a14d5d8c5a64181d22e6ec3ea679b96867aabbf",
-      "base_relation": "current origin/main after a verified no-overlap content-only lineage advance; task bytes match reviewed commit 94effae9 exactly",
+      "base_relation": "two task commits over current origin/main after a verified no-overlap content-only lineage advance; final qualification correction reviewed in R3",
       "protected_deploy_script_changed": false
     },
     "toolbox": {
@@ -44,30 +44,37 @@
   "artifacts": {
     "nanoclaw_scoped_binding": {
       "path": "facts/generated/student-product-bindings-v2.scoped.json",
-      "sha256": "7d1ddfe361065322b89de7957fac2b7c2943650f38a573b449b36299f045dcd6",
+      "sha256": "61bd302a4d474805ab012072e3d16615f523d73db85b54c042d487dafca1e8a0",
       "managed_routes": 3,
       "legacy_scopes": 1,
       "prior_path": "facts/generated/student-product-bindings-v1.compat.json",
       "prior_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9"
     },
+    "nanoclaw_runtime_files": {
+      "resolver_path": "tools/contador/lib/product-identity.cjs",
+      "resolver_sha256": "c9a7969060df429cea39018349d66a03c79b6e533c5c7d88c0a1ba5a5632bc0f",
+      "binding_path": "facts/generated/student-product-bindings-v2.scoped.json",
+      "binding_sha256": "61bd302a4d474805ab012072e3d16615f523d73db85b54c042d487dafca1e8a0",
+      "source_tree": "b185a4c02600370502fedf49cbb71481728f9059"
+    },
     "tandemweb_static_publication": {
       "path": "data/generated/student-catalog-publication-v2.json",
-      "sha256": "f1a3c35c491992853b06a1af04e4157a5c54de2e892f66384fd0dbfb647009b4",
-      "payload_sha256": "58448067c34598c711d628efc94369f75a337187363b5b142c31a77f2fc2b904",
+      "sha256": "a0730a1ff369e11aab9b8fd5da01ab94d753f44de8d66ad40625da9253d5a9b9",
+      "payload_sha256": "bac4dee83b2d3b8691702d130cb5e7019730babcd54f1490ee140041268568eb",
       "selected_checkout_sha256": "5d5dcc2b3555341ff787a08844e837d2fd25b8f453d5d5f28b79eaf50f3b35db",
       "prior_path": "data/generated/student-catalog-publication-v1.json",
       "prior_sha256": "9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4"
     },
     "nanoclaw_release": {
-      "archive": "/Users/xbohdpukc/dev/NanoClaw-mcs-publication-20260907/.release/nanoclaw-c56d3c24a422.tar.gz",
-      "archive_sha256": "feeb53ba17253da4a03a2767aeef3ef0c2edc0adb6b55a2d081de50fafd68ac8",
+      "archive": "/Users/xbohdpukc/dev/NanoClaw-mcs-publication-20260907/.release/nanoclaw-013b1d86d884.tar.gz",
+      "archive_sha256": "2c203f62847fb786490065159881c11bf2c86a72ae71a464a493ca3f8bc3e927",
       "artifact_sha256": "945c70544c489a159e78291a92dfef631d56ddb736cd2b5aed9fb020950ef660",
       "artifact_files": 1072,
       "node_version": "22.23.2",
       "fresh_archive_verification": true,
       "fresh_archive_publication_receipt": {
         "consumer": "nanoclaw-scoped-v2",
-        "output_sha256": "7d1ddfe361065322b89de7957fac2b7c2943650f38a573b449b36299f045dcd6",
+        "output_sha256": "61bd302a4d474805ab012072e3d16615f523d73db85b54c042d487dafca1e8a0",
         "routes": 3,
         "legacy_scopes": 1
       }
@@ -114,7 +121,8 @@
     "nanoclaw_email_replay": "13 passed",
     "nanoclaw_email_critical": "801 passed",
     "nanoclaw_runner": "build passed; 45 tests passed",
-    "nanoclaw_full": "3670 passed, 32 skipped, 3 predecessor failures",
+    "nanoclaw_full": "serial full run: 3670 passed, 32 skipped, 3 predecessor failures",
+    "nanoclaw_parallel_load_check": "standard parallel full run added one 5000 ms timeout in academy-capacity-shadow-population-disposable; exact test passed 2/2 in 610 ms alone and the serial full run returned the three predecessor failures only",
     "nanoclaw_full_failures": [
       "CNPC wrapper contract",
       "date-sensitive Trafft shadow status",
@@ -126,7 +134,8 @@
     "tandem_cohort": "16 passed",
     "tandem_design": "asset and release gates passed",
     "tandem_fresh_archive_preflight": true,
-    "toolbox": "strict registry, help, invalid-id refusal, caller-scoped exact account/price read passed"
+    "toolbox": "strict registry, help, invalid-id refusal, caller-scoped exact account/price read passed",
+    "astra_supervision_parity": "216 synthetic v1-versus-v2 cases passed after stripping binding revision only"
   },
   "review": {
     "r1": {
@@ -151,6 +160,18 @@
       "cache_read": 117136,
       "output": 10387,
       "max_context": 52076
+    },
+    "r3": {
+      "model": "claude-sonnet-5",
+      "effort": "high",
+      "session_id": "2d3def7c-e729-4f24-b9d0-607a621e20da",
+      "status": "no logic-level material findings; Tandem cwd concern independently resolved",
+      "scope_deviation": "read three extra repository files beyond the correction diff; no secret or unrelated private source",
+      "unique_calls": 9,
+      "cache_create": 69368,
+      "cache_read": 383783,
+      "output": 24456,
+      "max_context": 76142
     }
   },
   "activation_plan": [
@@ -158,7 +179,7 @@
       "order": 1,
       "consumer": "NanoClaw Contador",
       "target": "mini-claw.local immutable release",
-      "candidate": "c56d3c24a4225d43e1a356ed0de0caebd01a2ce2",
+      "candidate": "013b1d86d88442aed9eaf5e58343f02991bc43d3",
       "precondition": "Astra accepts this exact packet and live release still descends from c5fdf5f6 without overlapping runtime bytes",
       "readback": [
         "archive and installed RELEASE.json exact hashes",
@@ -171,8 +192,8 @@
       "order": 2,
       "consumer": "Tandemweb checkout validation",
       "target": "origin/main standard webhook release",
-      "candidate": "8f0dcca290efada06a3dd8f39546861e957a8390",
-      "precondition": "Astra accepts this exact packet; origin/main remains 5a14d5d8 or fast-forwards exactly to this one-commit descendant; installed predecessor is captured before deploy",
+      "candidate": "5ed4a462a3a1a579861c53845acffc21d152d207",
+      "precondition": "Astra accepts this exact packet; origin/main remains 5a14d5d8 or fast-forwards exactly through task commits 8f0dcca2 then 5ed4a462; installed predecessor is captured before deploy",
       "readback": [
         "installed Git commit and v2 artifact SHA-256",
         "installed static validator exact payload and selected-checkout hashes",
@@ -181,9 +202,17 @@
       ]
     }
   ],
+  "operational_contador_prompt": {
+    "path": "/Users/xbohdpukc/dev/NanoClaw/groups/contador/CLAUDE.md",
+    "precondition_sha256": "dc1629cd42fe70b7adf52e7de2e19aa4c7fa092ae41955ba3e5d13900b02b394",
+    "reviewed_release_sha256": "16b33986e1ea413441b3c2733023068d41b6a9debc845c68d73dbee91a201784",
+    "install_plan": "after exact precondition readback, copy the prior file to a new exclusive backup under /Users/xbohdpukc/.local/share/nanoclaw-operational-backups/NC-20260907-007/, install only the reviewed release file through a temporary sibling and atomic rename, then read back the target SHA-256; no other operational file is touched",
+    "rollback": "require the reviewed target SHA-256, atomically restore the exact backup, and read back precondition SHA-256 dc1629cd42fe70b7adf52e7de2e19aa4c7fa092ae41955ba3e5d13900b02b394",
+    "runtime_reason": "GROUPS_DIR resolves from the operational working directory, so immutable code-root activation alone does not make this instruction effective"
+  },
   "rollback": {
     "nanoclaw": "reactivate prior immutable release c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1 and verify prior v1 binding SHA-256 95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
-    "tandemweb": "revert exact task commit 8f0dcca290efada06a3dd8f39546861e957a8390 through the normal main/webhook path and verify predecessor main 5a14d5d8c5a64181d22e6ec3ea679b96867aabbf plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4; initial task-start live evidence was 9d708ec4d940065df5919c9306d5de285cdd52a9",
+    "tandemweb": "revert exact task commits 5ed4a462a3a1a579861c53845acffc21d152d207 then 8f0dcca290efada06a3dd8f39546861e957a8390 through the normal main/webhook path and verify predecessor main 5a14d5d8c5a64181d22e6ec3ea679b96867aabbf plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4; initial task-start live evidence was 9d708ec4d940065df5919c9306d5de285cdd52a9",
     "toolbox": "restore the three scoped paths from isolated base 67287bec722bd297d8825b17327f596682596cc9; no provider or business state rollback is involved"
   },
   "held_boundaries": {
@@ -195,5 +224,5 @@
     "product_wide_alt_price_coverage_claim": false,
     "broader_catalog_coverage": "unfinished"
   },
-  "remaining_blocker": "Do not activate the hashes in this superseded packet. Commit the reviewed offer-without-price qualification correction, rebuild both exact consumers and the Nano archive, then replace this packet before Astra acceptance."
+  "remaining_blocker": "Astra must accept this exact corrected packet before NanoClaw, the operational Contador prompt, or Tandemweb production activation."
 }

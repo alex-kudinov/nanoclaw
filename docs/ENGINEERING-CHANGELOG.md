@@ -48,7 +48,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Implementation: a source-scoped v2 generated binding carries exact
   per-account product/price arrays and typed resolution profiles. It preserves
   both supervision routes, manages current ALT MCS on exact admitted price or
-  exact managed offer-key qualification, and keeps primary MCS plus
+  exact managed offer-key qualification only with no supplied price IDs, and keeps primary MCS plus
   unqualified/unlisted/retired ALT contexts on Product Map unless a known
   account or offer contradiction exists. The Tandem v2 artifact validates
   source-owned totals, installment arithmetic, cohort-context role, enrollment
@@ -83,21 +83,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Verification: focused Nano 65/65, typecheck, runtime doctor, continuity,
   email replay 13/13, email-critical 801/801, runner 45/45, Tandem publication
   19/19, regional 95/95, installment 11/11, cohort 16/16 and design gates pass.
-  Full NanoClaw is 3,670 pass / 32 skip / three failures, exactly the recorded
-  predecessor CNPC wrapper, date-sensitive Trafft, and Capacity disposable
-  reserved expected 1 / actual 0 failures.
-- Prepared release: reviewed Nano source `c56d3c24a422` is pushed. Its exact
-  immutable archive SHA-256 is `feeb53ba…68ac8`, release artifact SHA-256 is
-  `945c7054…f660`, and fresh extraction reports the exact v2 binding hash and
-  three managed / one legacy scopes. Reviewed Tandem task bytes were rebased
-  without overlap from `94effae9c88a` onto current main `5a14d5d8` as pushed
-  `8f0dcca290ef`; fresh Git-archive validation reports artifact
-  `f1a3c35c…009b4`, payload
-  `58448067…b904`, and selected checkout `5d5dcc2b…35db`. Production activation
-  remains held for Astra's exact packet acceptance.
-  These hashes are now superseded by the qualification correction and are not
-  release candidates. Replacement source/archive hashes will be appended after
-  the clean rebuild.
+  Serial full NanoClaw is 3,670 pass / 32 skip / three failures, exactly the
+  recorded predecessor CNPC wrapper, date-sensitive Trafft, and Capacity
+  disposable reserved expected 1 / actual 0 failures. Parallel full load also
+  hit the existing shadow-population disposable test's 5-second timeout; that
+  exact test passes 2/2 in 610 ms alone. Astra separately passed 216 synthetic
+  v1/v2 supervision cases after stripping only binding revision.
+- Prepared release: corrected Nano source `013b1d86d884` is pushed. Its exact
+  immutable archive SHA-256 is `2c203f62…3e927`, release artifact SHA-256 is
+  `945c7054…f660`, resolver SHA-256 is `c9a79690…2bc0f`, and fresh extraction
+  reports v2 binding `61bd302a…1e8a0` with three managed / one legacy scopes.
+  Tandem source `5ed4a462a3a1` is pushed over current main `5a14d5d8`; fresh
+  Git-archive validation reports artifact `a0730a1f…5a9b9`, payload
+  `bac4dee8…68eb`, and selected checkout `5d5dcc2b…35db`. The operational
+  Contador prompt is not supplied by the immutable code root; the exact packet
+  includes one-file hash-preconditioned backup/install/readback and rollback.
+  Production remains held for Astra's exact packet acceptance.
 
 ### NC-20260907-006 — Two-route student catalog publication
 

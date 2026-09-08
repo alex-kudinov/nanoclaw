@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | Final qualification correction reviewed; NanoClaw source/release rebuild pending; Tandemweb pushed `5ed4a462a` over current main `5a14d5d8`; Toolbox isolated `778a60e`; dirty primaries preserved | `in_progress` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Offer-key qualification now requires zero supplied price IDs. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Commit/push the reviewed Nano correction, rebuild exact artifacts, and refresh the release/rollback packet for Astra acceptance. | 2026-09-08T02:39Z |
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | Corrected Nano source `013b1d86` with verified immutable archive; Tandemweb `5ed4a462a` over current main `5a14d5d8`; Toolbox isolated `778a60e`; dirty primaries preserved | `ready_for_review` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS default-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Offer-key qualification requires zero supplied price IDs. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | Astra accepts the refreshed exact packet before NanoClaw, the one-file operational Contador prompt, or Tandemweb production activation. | 2026-09-08T02:47Z |
 
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
 
@@ -221,9 +221,11 @@ outside the current client conversation.
 - Verification: 65 focused identity/publication/payment/release tests,
   typecheck, runtime doctor, continuity, email replay 13/13, email-critical
   801/801, runner build/tests 45/45, Tandem publication 19/19, regional 95/95,
-  installment 11/11, cohort 16/16, and design asset/release gates pass. Full
-  NanoClaw is 3,670 pass / 32 skip / the same three predecessor CNPC, Trafft,
-  and Capacity failures.
+  installment 11/11, cohort 16/16, and design asset/release gates pass. Serial
+  full NanoClaw is 3,670 pass / 32 skip / the same three predecessor CNPC,
+  Trafft, and Capacity failures. Parallel full load produced one existing
+  disposable-test 5-second timeout; that exact test passes 2/2 in 610 ms alone.
+  Astra's 216-case v1/v2 supervision matrix passes after ignoring only revision.
 - Review: Sonnet/high R1 found an unsafe shared Toolbox env fallback and one
   diagnostic qualification mismatch. Both were fixed and regression-tested;
   narrow R2 returned `NO MATERIAL FINDINGS`. R1 used 13 calls / max context
@@ -234,16 +236,17 @@ outside the current client conversation.
   returns legacy; existing known-price, incomplete, retired-key, primary, scope,
   and supervision cases pass. Sonnet/high R3 found no logic-level material
   defect; its separate Tandem status concern was mechanically disproved in the
-  actual Tandem worktree with all three files present and 19/19 passing. R3 used
-  9 calls / max context 76,142.
-- Prepared release: NanoClaw source `c56d3c24a422`, immutable archive SHA-256
-  `feeb53ba…68ac8`, artifact SHA-256 `945c7054…f660`, and fresh-extraction v2
-  readback pass. Reviewed Tandem bytes were transplanted without overlap onto
-  current main `5a14d5d8` as source `8f0dcca290ef`; v2 artifact
-  `f1a3c35c…009b4` passes a fresh Git-archive validator. Exact activation and
-  rollback steps are in the NC007 release packet; production awaits Astra.
-  This packet/archive is superseded by the final qualification correction and
-  must not be activated; replacement hashes are pending the clean rebuild.
+  actual Tandem worktree with all three files present and 19/19 passing. R3
+  exceeded its diff-only read scope by three related repository files; no
+  secret or unrelated private source was read. It used 9 calls / max context
+  76,142.
+- Prepared release: corrected NanoClaw source `013b1d86d884`, immutable archive
+  SHA-256 `2c203f62…3e927`, exact resolver `c9a79690…2bc0f`, v2 binding
+  `61bd302a…1e8a0`, and fresh extraction pass. Tandem `5ed4a462a3a1` and v2
+  artifact `a0730a1f…5a9b9` pass fresh Git-archive validation. The operational
+  Contador prompt remains exact old hash `dc1629cd…b394`; the accepted packet
+  includes a one-file preconditioned backup/install/readback to target
+  `16b33986…9784` and exact rollback. Production awaits Astra.
 
 ### NC-20260907-006 — Supervision catalog publication
 
