@@ -21,6 +21,7 @@
           "product",
           "price"
         ],
+        "offer_key_requires_no_price_ids": false,
         "unknown_companion": "conflict",
         "unrecognized_offer": "conflict",
         "incomplete": "conflict",
@@ -50,6 +51,7 @@
           "product",
           "price"
         ],
+        "offer_key_requires_no_price_ids": false,
         "unknown_companion": "conflict",
         "unrecognized_offer": "conflict",
         "incomplete": "conflict",
@@ -78,6 +80,7 @@
           "offer",
           "price"
         ],
+        "offer_key_requires_no_price_ids": true,
         "unknown_companion": "conflict",
         "unrecognized_offer": "legacy",
         "incomplete": "conflict",

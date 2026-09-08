@@ -35,6 +35,7 @@
         "required": [
           "offer_key",
           "managed_signal_kinds",
+          "offer_key_requires_no_price_ids",
           "unknown_companion",
           "unrecognized_offer",
           "incomplete",
@@ -50,6 +51,7 @@
             "uniqueItems": true,
             "items": { "enum": ["offer", "product", "price"] }
           },
+          "offer_key_requires_no_price_ids": { "enum": [true, false] },
           "unknown_companion": { "const": "conflict" },
           "unrecognized_offer": { "enum": ["conflict", "legacy"] },
           "incomplete": { "const": "conflict" },

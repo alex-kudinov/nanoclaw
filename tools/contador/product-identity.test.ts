@@ -213,6 +213,20 @@ describe('source-bound product identity', () => {
         incomplete: true,
       }),
     ).toMatchObject({ status: 'conflict', code: 'product_identity_conflict' });
+    expect(
+      resolve(
+        {
+          offerKey: 'mcs-full',
+          productIds: ['prod_Uk2OvW03ZwxmAj'],
+          priceIds: ['price_historical'],
+          productName: 'MCS - Standard path',
+        },
+        [header, ['MCS - Standard path', 'MCS', 'MCS Practicum']],
+      ),
+    ).toMatchObject({
+      status: 'legacy',
+      rows: [['MCS - Standard path', 'MCS', 'MCS Practicum']],
+    });
     const retiredRow = [
       'Mentor Coach Training - September Thursday Cohort',
       'MCS',

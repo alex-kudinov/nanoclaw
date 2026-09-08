@@ -704,6 +704,8 @@ function buildScopedBindings(manifest, sources) {
       },
       resolution_profile: {
         managed_signal_kinds: [...resolutionProfile.managed_signal_kinds],
+        offer_key_requires_no_price_ids:
+          resolutionProfile.offer_key_requires_no_price_ids,
         unknown_companion: resolutionProfile.unknown_companion,
         unrecognized_offer: resolutionProfile.unrecognized_offer,
         incomplete: resolutionProfile.incomplete,

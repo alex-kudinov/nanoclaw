@@ -37,9 +37,9 @@ Publication expansion `NC-20260907-007` replaces the runtime compatibility
 consumer with `facts/generated/student-product-bindings-v2.scoped.json`. The
 three managed routes carry exact account-local product and price IDs plus typed
 resolution profiles: both supervision offers remain unchanged, and exact ALT
-`mcs-full` price with no source key or the exact managed offer key routes to
-`MCS / MCS Practicum`. ALT product-only, unlisted-price, and unknown/retired
-source-key history stays on Product Map. The known
+`mcs-full` price with no source key or the exact managed offer key without any
+price IDs routes to `MCS / MCS Practicum`. ALT product-only, unlisted-price,
+and unknown/retired source-key history stays on Product Map. The known
 primary `mcs-full` product is recorded only
 as a legacy Product Map scope, including incomplete or unlisted historical-price
 lookups without proved conflict. Known wrong-account IDs, mixed managed/legacy
