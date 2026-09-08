@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "packet_id": "NC-20260907-007-mcs-publication-release",
+  "prepared_at": "2026-09-08T02:17:47Z",
+  "state": "awaiting_astra_release_acceptance",
+  "authority": ".program/decisions/decision-mcs-catalog-publication-expansion-2026-09-07.json",
+  "sources": {
+    "nanoclaw": {
+      "branch": "codex/mcs-publication-20260907",
+      "commit": "c56d3c24a4225d43e1a356ed0de0caebd01a2ce2",
+      "source_tree": "be8d6b0fd6ad3e1e1ccb55c9f871f2d78b79985f",
+      "pushed": true,
+      "worktree_clean": true,
+      "base": "28df1ba6c51b540f91306ffb600c386055bd0339",
+      "base_relation": "docs-only descendant of live c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1"
+    },
+    "tandemweb": {
+      "branch": "codex/mcs-publication-20260907",
+      "commit": "94effae9c88a9fb83ec405dc7b93a824871a1477",
+      "pushed": true,
+      "worktree_clean": true,
+      "base": "9d708ec4d940065df5919c9306d5de285cdd52a9",
+      "base_relation": "exact live and origin/main at task start",
+      "protected_deploy_script_changed": false
+    },
+    "toolbox": {
+      "branch": "codex/stripe-get-price-20260907",
+      "commit": "778a60eebe72861b833733eeefaa455534264f86",
+      "base": "67287bec722bd297d8825b17327f596682596cc9",
+      "worktree_clean": true,
+      "remote_configured": false,
+      "installed_shared_copy_matches_scoped_helper_and_getter": true,
+      "installed_primary_unrelated_dirty_state_preserved": true,
+      "scoped_paths": [
+        "shared/stripe/lib/stripe-api.sh",
+        "shared/stripe/registry.json",
+        "shared/stripe/tools/stripe/get-price.sh"
+      ],
+      "account_selector_sha256": "25d2b1f75f2e7d2b8cb5017b79be7c2c7acaba4f176b4f577d439c88a4ef3a24",
+      "price_reader_sha256": "362495807a395bd8a85e3bc319a0d6cbc5c8c789013c67d13788b4c3e47d8cb5"
+    }
+  },
+  "artifacts": {
+    "nanoclaw_scoped_binding": {
+      "path": "facts/generated/student-product-bindings-v2.scoped.json",
+      "sha256": "7d1ddfe361065322b89de7957fac2b7c2943650f38a573b449b36299f045dcd6",
+      "managed_routes": 3,
+      "legacy_scopes": 1,
+      "prior_path": "facts/generated/student-product-bindings-v1.compat.json",
+      "prior_sha256": "95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9"
+    },
+    "tandemweb_static_publication": {
+      "path": "data/generated/student-catalog-publication-v2.json",
+      "sha256": "f1a3c35c491992853b06a1af04e4157a5c54de2e892f66384fd0dbfb647009b4",
+      "payload_sha256": "58448067c34598c711d628efc94369f75a337187363b5b142c31a77f2fc2b904",
+      "selected_checkout_sha256": "5d5dcc2b3555341ff787a08844e837d2fd25b8f453d5d5f28b79eaf50f3b35db",
+      "prior_path": "data/generated/student-catalog-publication-v1.json",
+      "prior_sha256": "9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4"
+    },
+    "nanoclaw_release": {
+      "archive": "/Users/xbohdpukc/dev/NanoClaw-mcs-publication-20260907/.release/nanoclaw-c56d3c24a422.tar.gz",
+      "archive_sha256": "feeb53ba17253da4a03a2767aeef3ef0c2edc0adb6b55a2d081de50fafd68ac8",
+      "artifact_sha256": "945c70544c489a159e78291a92dfef631d56ddb736cd2b5aed9fb020950ef660",
+      "artifact_files": 1072,
+      "node_version": "22.23.2",
+      "fresh_archive_verification": true,
+      "fresh_archive_publication_receipt": {
+        "consumer": "nanoclaw-scoped-v2",
+        "output_sha256": "7d1ddfe361065322b89de7957fac2b7c2943650f38a573b449b36299f045dcd6",
+        "routes": 3,
+        "legacy_scopes": 1
+      }
+    }
+  },
+  "actual_consumer_provenance": {
+    "tandem_alt": {
+      "configuration_slot": "STRIPE_SECRET_KEY_ALT",
+      "configuration_reader": "dist/env.js#readEnvFile",
+      "operational_host": "mini-claw.local",
+      "operational_working_directory": "/Users/xbohdpukc/dev/NanoClaw",
+      "installed_release": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+      "native_account_id": "acct_1G1wKzA7hTBWpVVq",
+      "evidence": "docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json"
+    },
+    "heartbeat_primary": {
+      "configuration_slot": "STRIPE_RESTRICTED_KEY",
+      "configuration_reader": "dist/env.js#readEnvFile",
+      "operational_host": "mini-claw.local",
+      "operational_working_directory": "/Users/xbohdpukc/dev/NanoClaw",
+      "installed_release": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+      "native_account_id": "acct_1PakRkRnZI4gH1uA",
+      "provider_reader": "stripe/whoami primary through the Nano project registry",
+      "credential_value_exposed": false,
+      "evidence": "docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json"
+    },
+    "selected_alt_price": {
+      "price_id": "price_1TkYJfA7hTBWpVVqm502swAb",
+      "product_id": "prod_Uk2OvW03ZwxmAj",
+      "active": true,
+      "currency": "usd",
+      "unit_amount_cents": 99900,
+      "recurrence": "month",
+      "installment_count_source_policy": 3,
+      "direct_full_payment_price_inferred": false,
+      "historical_nondefault_price_population_verified": false
+    }
+  },
+  "verification": {
+    "nanoclaw_focused": "65 passed",
+    "nanoclaw_typecheck": "passed",
+    "nanoclaw_runtime_doctor": "Node 22.23.2 and ABI 127 passed",
+    "nanoclaw_continuity": "passed",
+    "nanoclaw_email_replay": "13 passed",
+    "nanoclaw_email_critical": "801 passed",
+    "nanoclaw_runner": "build passed; 45 tests passed",
+    "nanoclaw_full": "3670 passed, 32 skipped, 3 predecessor failures",
+    "nanoclaw_full_failures": [
+      "CNPC wrapper contract",
+      "date-sensitive Trafft shadow status",
+      "Capacity disposable reserved expected 1 / actual 0"
+    ],
+    "tandem_publication": "19 passed plus exact CLI receipt",
+    "tandem_regional": "95 passed",
+    "tandem_installments": "11 passed",
+    "tandem_cohort": "16 passed",
+    "tandem_design": "asset and release gates passed",
+    "tandem_fresh_archive_preflight": true,
+    "toolbox": "strict registry, help, invalid-id refusal, caller-scoped exact account/price read passed"
+  },
+  "review": {
+    "r1": {
+      "model": "claude-sonnet-5",
+      "effort": "high",
+      "session_id": "8799afb9-70d4-48c1-8d64-b435dac48252",
+      "material_findings": 2,
+      "status": "fixed",
+      "unique_calls": 13,
+      "cache_create": 116353,
+      "cache_read": 1020508,
+      "output": 30925,
+      "max_context": 116355
+    },
+    "r2": {
+      "model": "claude-sonnet-5",
+      "effort": "high",
+      "session_id": "8d2b484c-8ca3-492d-8388-c35580d62485",
+      "status": "NO MATERIAL FINDINGS",
+      "unique_calls": 4,
+      "cache_create": 45302,
+      "cache_read": 117136,
+      "output": 10387,
+      "max_context": 52076
+    }
+  },
+  "activation_plan": [
+    {
+      "order": 1,
+      "consumer": "NanoClaw Contador",
+      "target": "mini-claw.local immutable release",
+      "candidate": "c56d3c24a4225d43e1a356ed0de0caebd01a2ce2",
+      "precondition": "Astra accepts this exact packet and live release still descends from c5fdf5f6 without overlapping runtime bytes",
+      "readback": [
+        "archive and installed RELEASE.json exact hashes",
+        "/health exact commit, Node 22.23.2, one listener, connected Gmail and Slack, empty queues",
+        "installed v2 binding SHA-256 and check-nanoclaw receipt",
+        "static installed resolver cases: both supervision routes unchanged; ALT exact price and exact offer qualify; retired/unqualified ALT and primary MCS stay legacy; known conflicts hold"
+      ]
+    },
+    {
+      "order": 2,
+      "consumer": "Tandemweb checkout validation",
+      "target": "origin/main standard webhook release",
+      "candidate": "94effae9c88a9fb83ec405dc7b93a824871a1477",
+      "precondition": "Astra accepts this exact packet; origin/main/live provenance remains 9d708ec4 or an accepted no-overlap fast-forward",
+      "readback": [
+        "installed Git commit and v2 artifact SHA-256",
+        "installed static validator exact payload and selected-checkout hashes",
+        "LiteSpeed purge/warm and Cloudflare HTTP 200",
+        "existing mcs-full checkout source remains active, cohort-required and unchanged"
+      ]
+    }
+  ],
+  "rollback": {
+    "nanoclaw": "reactivate prior immutable release c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1 and verify prior v1 binding SHA-256 95611db848891d67c5b30c5b34be5d11250bf00adc2b8c80312bc1722fb27ae9",
+    "tandemweb": "revert exact commit 94effae9c88a9fb83ec405dc7b93a824871a1477 through the normal main/webhook path and verify prior release 9d708ec4d940065df5919c9306d5de285cdd52a9 plus v1 artifact SHA-256 9e6946410d25be5f8801d937ab40f0e347afa7ff834c26135cc94da93ce31db4",
+    "toolbox": "restore the three scoped paths from isolated base 67287bec722bd297d8825b17327f596682596cc9; no provider or business state rollback is involved"
+  },
+  "held_boundaries": {
+    "source_sync": "paused; no Studio/Mini mirror or sync configuration edit",
+    "provider_and_business_writes": false,
+    "customer_or_student_canary": false,
+    "heartbeat_attachment_or_access_claim": false,
+    "completion_or_certificate_claim": false,
+    "product_wide_alt_price_coverage_claim": false,
+    "broader_catalog_coverage": "unfinished"
+  },
+  "remaining_blocker": "Astra must independently accept these exact commits, artifacts, archive and activation sequence before MAIN/production activation."
+}
