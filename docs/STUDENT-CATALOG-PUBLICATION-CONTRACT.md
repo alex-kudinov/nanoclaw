@@ -201,7 +201,8 @@ The `nanoclaw-source-scoped-v2` successor preserves those v1 outcomes for both
 supervision routes and adds only exact account-local identity arrays plus a
 typed resolution profile. The ALT `mcs-full` route becomes managed when the
 exact admitted price is present with no source key, or when the exact managed
-offer key is present. An unknown or retired offer key alongside the known price
+offer key is present and no price IDs were supplied. An unknown or retired
+offer key alongside the known price
 retains Product Map behavior; a known other managed offer remains a conflict. A
 qualified incomplete context or qualified context with an unknown companion
 holds. Product-only ALT context and product plus only unlisted prices retain

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "packet_id": "NC-20260907-007-mcs-publication-release",
   "prepared_at": "2026-09-08T02:17:47Z",
-  "state": "awaiting_astra_release_acceptance",
+  "state": "superseded_by_qualification_correction_rebuild_pending",
   "authority": ".program/decisions/decision-mcs-catalog-publication-expansion-2026-09-07.json",
   "sources": {
     "nanoclaw": {
@@ -195,5 +195,5 @@
     "product_wide_alt_price_coverage_claim": false,
     "broader_catalog_coverage": "unfinished"
   },
-  "remaining_blocker": "Astra must independently accept these exact commits, artifacts, archive and activation sequence before MAIN/production activation."
+  "remaining_blocker": "Do not activate the hashes in this superseded packet. Commit the reviewed offer-without-price qualification correction, rebuild both exact consumers and the Nano archive, then replace this packet before Astra acceptance."
 }

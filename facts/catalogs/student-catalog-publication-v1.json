@@ -12,6 +12,7 @@
     {
       "offer_key": "supervision-inaugural",
       "managed_signal_kinds": ["offer", "product", "price"],
+      "offer_key_requires_no_price_ids": false,
       "unknown_companion": "conflict",
       "unrecognized_offer": "conflict",
       "incomplete": "conflict",
@@ -20,6 +21,7 @@
     {
       "offer_key": "supervision-regular",
       "managed_signal_kinds": ["offer", "product", "price"],
+      "offer_key_requires_no_price_ids": false,
       "unknown_companion": "conflict",
       "unrecognized_offer": "conflict",
       "incomplete": "conflict",
@@ -28,6 +30,7 @@
     {
       "offer_key": "mcs-full",
       "managed_signal_kinds": ["offer", "price"],
+      "offer_key_requires_no_price_ids": true,
       "unknown_companion": "conflict",
       "unrecognized_offer": "legacy",
       "incomplete": "conflict",

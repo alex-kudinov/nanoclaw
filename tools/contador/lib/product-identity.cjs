@@ -60,6 +60,7 @@ function compileProductBindings(catalog, bindings) {
         ? route.resolution_profile
         : {
             managed_signal_kinds: ['offer', 'product', 'price'],
+            offer_key_requires_no_price_ids: false,
             unknown_companion: 'conflict',
             unrecognized_offer: 'conflict',
             incomplete: 'conflict',
@@ -82,6 +83,7 @@ function compileProductBindings(catalog, bindings) {
       profile.managed_signal_kinds.some(
         (kind) => !['offer', 'product', 'price'].includes(kind),
       ) ||
+      typeof profile.offer_key_requires_no_price_ids !== 'boolean' ||
       profile.unknown_companion !== 'conflict' ||
       !['conflict', 'legacy'].includes(profile.unrecognized_offer) ||
       profile.incomplete !== 'conflict' ||
@@ -159,10 +161,18 @@ function resolveProductIdentity(compiled, input, productMapRows) {
   );
   const known = matches.filter(Boolean);
   const knownLegacy = legacyMatches.filter(Boolean);
+  const hasPriceSignals = signals.some(([kind]) => kind === 'price');
   const qualifying = matches.filter(
     (route, index) =>
       route &&
-      route.resolution_profile.managed_signal_kinds.includes(signals[index][0]),
+      route.resolution_profile.managed_signal_kinds.includes(
+        signals[index][0],
+      ) &&
+      !(
+        signals[index][0] === 'offer' &&
+        route.resolution_profile.offer_key_requires_no_price_ids &&
+        hasPriceSignals
+      ),
   );
   const wrongScope = signals.some(([kind, id]) => {
     const scoped = compiled.scopes?.get(`${kind}:${id}`) ?? [];

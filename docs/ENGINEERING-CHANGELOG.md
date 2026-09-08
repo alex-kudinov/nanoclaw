@@ -69,6 +69,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   13 calls, 116,353 cache-create, 1,020,508 cache-read, 30,925 output, max
   context 116,355. R2 was 4 calls, 45,302 cache-create, 117,136 cache-read,
   10,387 output, max context 52,076.
+- Astra's final acceptance test found a third material qualification gap:
+  `mcs-full` plus only an unlisted price still qualified through the offer key.
+  The source-owned profile now declares
+  `offer_key_requires_no_price_ids=true` for MCS and the resolver evaluates all
+  normalized supplied price IDs before qualifying the offer signal. The exact
+  reported case returns legacy; known admitted price plus unknown companion and
+  key/no-price/incomplete still hold. Sonnet/high R3 found no logic-level
+  material issue. Its concern that Tandem files were absent came from viewing
+  Nano's status only; all three files are modified in the Tandem worktree and
+  the exact validator passes 19/19. R3 usage: 9 calls, 69,368 cache-create,
+  383,783 cache-read, 24,456 output, max context 76,142.
 - Verification: focused Nano 65/65, typecheck, runtime doctor, continuity,
   email replay 13/13, email-critical 801/801, runner 45/45, Tandem publication
   19/19, regional 95/95, installment 11/11, cohort 16/16 and design gates pass.
@@ -84,6 +95,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `f1a3c35c…009b4`, payload
   `58448067…b904`, and selected checkout `5d5dcc2b…35db`. Production activation
   remains held for Astra's exact packet acceptance.
+  These hashes are now superseded by the qualification correction and are not
+  release candidates. Replacement source/archive hashes will be appended after
+  the clean rebuild.
 
 ### NC-20260907-006 — Two-route student catalog publication
 
