@@ -139,6 +139,7 @@ try {
       'docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json',
       'docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json',
       'docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json',
+      'docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json',
     ],
     { cwd: root },
   )
@@ -153,13 +154,14 @@ try {
     'facts/catalogs/student-product-bindings-v1.json',
     'facts/catalogs/student-catalog-publication-v1.schema.json',
     'facts/catalogs/student-catalog-publication-v1.json',
-    'facts/generated/student-product-bindings-v1.compat.json',
+    'facts/generated/student-product-bindings-v2.scoped.json',
     'scripts/build-student-catalog-publication.mjs',
     'scripts/reconcile-supervision-checkout-source.mjs',
     'docs/reports/NC-20260907-004-B1-HEARTBEAT-MAIN-SNAPSHOT.json',
     'docs/reports/NC-20260907-004-B2-PROVIDER-CATALOG-SNAPSHOT.json',
     'docs/reports/NC-20260907-004-C-SOURCE-AUTHORITY-SNAPSHOT.json',
     'docs/reports/NC-20260907-006-STRIPE-ALIAS-ATTESTATION.json',
+    'docs/reports/NC-20260907-007-MCS-SOURCE-EVIDENCE.json',
   ];
   for (const relative of requiredTrackedRuntimeInputs) {
     if (!tracked.includes(relative)) {

@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "revision": 2,
+  "entitlement_catalog_revision": 1,
+  "authority": "Identity and legacy roster projection bindings only. Account-scoped provider identities identify managed offers; explicit legacy scopes preserve the existing Product Map fallback. Offers, bundles, prices, obligations, access, cohort assignment and completion retain their native authorities.",
+  "routes": [
+    {
+      "offer_key": "supervision-inaugural",
+      "stripe_account": "tandem",
+      "provider_identity": {
+        "product_ids": [
+          "prod_UvqkpUONPWr8Bo"
+        ],
+        "price_ids": [
+          "price_1Tvz3MA7hTBWpVVqhF708kPv"
+        ]
+      },
+      "resolution_profile": {
+        "managed_signal_kinds": [
+          "offer",
+          "product",
+          "price"
+        ],
+        "unknown_companion": "conflict",
+        "unrecognized_offer": "conflict",
+        "incomplete": "conflict",
+        "unqualified": "legacy"
+      },
+      "roster_targets": [
+        {
+          "tab": "CSS",
+          "column": "Coaching Supervision Mastery"
+        }
+      ]
+    },
+    {
+      "offer_key": "supervision-regular",
+      "stripe_account": "tandem",
+      "provider_identity": {
+        "product_ids": [
+          "prod_UvqkMSjRqR4zho"
+        ],
+        "price_ids": [
+          "price_1Tvz3MA7hTBWpVVq9gL3v49F"
+        ]
+      },
+      "resolution_profile": {
+        "managed_signal_kinds": [
+          "offer",
+          "product",
+          "price"
+        ],
+        "unknown_companion": "conflict",
+        "unrecognized_offer": "conflict",
+        "incomplete": "conflict",
+        "unqualified": "legacy"
+      },
+      "roster_targets": [
+        {
+          "tab": "CSS",
+          "column": "Coaching Supervision Mastery"
+        }
+      ]
+    },
+    {
+      "offer_key": "mcs-full",
+      "stripe_account": "tandem",
+      "provider_identity": {
+        "product_ids": [
+          "prod_Uk2OvW03ZwxmAj"
+        ],
+        "price_ids": [
+          "price_1TkYJfA7hTBWpVVqm502swAb"
+        ]
+      },
+      "resolution_profile": {
+        "managed_signal_kinds": [
+          "offer",
+          "price"
+        ],
+        "unknown_companion": "conflict",
+        "unrecognized_offer": "legacy",
+        "incomplete": "conflict",
+        "unqualified": "legacy"
+      },
+      "roster_targets": [
+        {
+          "tab": "MCS",
+          "column": "MCS Practicum"
+        }
+      ]
+    }
+  ],
+  "legacy_scopes": [
+    {
+      "offer_key": "mcs-full",
+      "stripe_account": "heartbeat",
+      "provider_identity": {
+        "product_ids": [
+          "prod_UWzqD2zowB8apy"
+        ],
+        "price_ids": []
+      },
+      "fallback": "product_map"
+    }
+  ]
+}

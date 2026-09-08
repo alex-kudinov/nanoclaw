@@ -53,7 +53,17 @@
       "legacy_consumer_account": {
         "consumer_key": "heartbeat",
         "configuration_slot": "STRIPE_RESTRICTED_KEY",
-        "native_account_id": "acct_1PakRkRnZI4gH1uA"
+        "configuration_reader": "dist/env.js#readEnvFile",
+        "consumer_source": "tools/contador/process-payment.cjs",
+        "operational_host": "mini-claw.local",
+        "operational_working_directory": "/Users/xbohdpukc/dev/NanoClaw",
+        "installed_release_commit": "c5fdf5f6d9d5e30bd11a7988383a3b9c0ee19ab1",
+        "provider_read_method": "stripe/whoami primary through the supported toolbox using the consumer working directory and STRIPE_RESTRICTED_KEY mapping",
+        "provider_reader_sha256": "b7cf26340453f06b96abf2191b6d8bef45da79b26643a541ce4f9e026a4d0331",
+        "account_selector_sha256": "25d2b1f75f2e7d2b8cb5017b79be7c2c7acaba4f176b4f577d439c88a4ef3a24",
+        "observed_at": "2026-09-08T01:01:40Z",
+        "native_account_id": "acct_1PakRkRnZI4gH1uA",
+        "credential_value_read_into_output": false
       },
       "primary_product": {
         "id": "prod_UWzqD2zowB8apy",
@@ -84,8 +94,16 @@
       },
       "price_read_tool": {
         "tool": "stripe/get-price",
-        "script_sha256": "4c86a9c01a76f3d2f06ae69f29d661d4ef381331f71c4977a59c508f293af14e",
+        "isolated_toolbox_commit": "778a60eebe72861b833733eeefaa455534264f86",
+        "validation_project_registry": "/Users/xbohdpukc/dev/NanoClaw/.toolbox/registry.json",
+        "script_sha256": "362495807a395bd8a85e3bc319a0d6cbc5c8c789013c67d13788b4c3e47d8cb5",
         "returns_customer_or_transaction_data": false
+      },
+      "price_population_limit": {
+        "bounded_product_price_listing_available": false,
+        "historical_nondefault_prices_verified": false,
+        "managed_scope": "exact_product_and_default_price_pair",
+        "product_wide_price_coverage_claimed": false
       }
     },
     "heartbeat": {
@@ -130,6 +148,8 @@
     "managed_native_namespace": "stripe:alt",
     "managed_product_id": "prod_Uk2OvW03ZwxmAj",
     "managed_price_id": "price_1TkYJfA7hTBWpVVqm502swAb",
+    "managed_qualifiers": ["exact_price", "complete_offer_key_without_price"],
+    "alt_product_only_or_unlisted_price_outcome": "legacy_product_map",
     "legacy_preserved_account": "heartbeat",
     "legacy_preserved_native_namespace": "stripe:primary",
     "legacy_preserved_product_id": "prod_UWzqD2zowB8apy",
