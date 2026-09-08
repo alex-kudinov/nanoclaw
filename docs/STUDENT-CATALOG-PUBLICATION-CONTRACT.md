@@ -1,7 +1,7 @@
 # Student catalog publication contract
 
 Status: accepted under `NC-20260907-005`; supervision v1 activated by
-`NC-20260907-006`; scoped MCS expansion in progress under `NC-20260907-007`
+`NC-20260907-006`; scoped MCS v2 activated by `NC-20260907-007`
 
 ## Purpose and boundary
 
