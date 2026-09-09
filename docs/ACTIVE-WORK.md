@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
+| `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `complete` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Commit `726f2c80` is pushed and live; exact release/Node/code-root, one listener, empty queues and active-send ledger, connected Gmail/Slack, operational prompt hashes, bundled verification, and compiled non-sending canaries passed. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Observe natural support traffic; no manufactured customer or Slack canary is required. Roll back to `013b1d86` plus the recorded prompt backup if needed. | 2026-09-09T20:03Z |
 
 | `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
 
@@ -311,8 +311,23 @@ outside the current client conversation.
 - Review: R1/R2 material findings corrected. Owner-approved R3's only concern
   was disproved by direct scope: `salesNoActionObserved` is initialized within
   each `processGroupMessages` invocation. No unresolved material findings.
-- External state: read-only incident inspection only; no customer/provider/data
-  mutation. Deployment is the exact next boundary.
+- Deployment: pushed commit and immutable live release
+  `726f2c80b3d45ccddf80bfa0fe796281f54b19b1`; archive SHA-256
+  `18810e021c135d8198c9dd77ad1264c2ef02dc5314ce61f1a55058f6243787dc`.
+  The activator changed only its three declared launchd pointers and retained
+  rollback plist `com.nanoclaw.plist.rollback-013b1d86d884-2026-09-09T20-00-21-971Z`.
+  Prior operational prompts are backed up at
+  `~/.local/share/nanoclaw-operational-backups/NC-20260908-001-20260909T145952`.
+- Live verification: health reports exact release/source/artifact and Node
+  22.23.2 with matching code root, one listener, zero active containers, empty
+  queue/waiting groups and active-send states, connected Gmail/Slack, and valid
+  18/18 capability manifests. Operational Sales prompt hashes match the release;
+  bundled verification and compiled no-network canaries passed for secret-query
+  redaction, invalid/valid support cards, exact-only no-action, and explicit
+  missing-output signaling.
+- External state: deployment and operational prompt installation only. No
+  customer/provider/business-data mutation or message was created; Pierre's
+  resolved/no-new-ask reply intentionally received no courtesy response.
 
 ### NC-20260907-002 — Selective Sales consultation
 

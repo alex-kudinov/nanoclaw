@@ -32,7 +32,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-09T20:00Z
 - Owner/client: Codex implementation; Claude Sonnet/high bounded review
-- State: ready_for_deploy
+- State: complete; committed, pushed, deployed, and live-verified
 - Base: exact live code `013b1d86d884`; isolated branch
   `codex/sales-support-thread-20260908`; dirty primary preserved
 - Change class: C3 — Sales/Slack/Gmail behavior; no customer action during work
@@ -52,8 +52,22 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   replay 13/13, typecheck/build/format/runtime doctor pass under Node 22.23.2.
   Full root is 3,675 pass / 32 skip / three unchanged failures reproduced on
   base: CNPC wrapper, date-sensitive Trafft, Capacity disposable reservation.
-- Deployment: pending immutable release activation and live non-sending proof.
-- Rollback: reactivate prior verified release and restore prior Sales prompt.
+- Deployment: commit `726f2c80b3d45ccddf80bfa0fe796281f54b19b1`
+  was pushed and activated from an immutable archive with SHA-256
+  `18810e021c135d8198c9dd77ad1264c2ef02dc5314ce61f1a55058f6243787dc`.
+  The activator changed exactly the three expected launchd pointers and retained
+  rollback plist `com.nanoclaw.plist.rollback-013b1d86d884-2026-09-09T20-00-21-971Z`.
+- Live verification: `/health` reports exact release `726f2c80`, source tree
+  `c7d3cf30`, artifact `19263ee5`, Node 22.23.2, matching code root, one
+  listener, empty queues and active-send states, zero active containers,
+  connected Gmail/Slack, and 18/18 valid capability manifests. The installed
+  Sales prompt hashes match the release. Bundled runtime verification and
+  compiled no-network canaries passed for query-token redaction, malformed-card
+  rejection, valid support-card parsing, exact-only no-action, and the explicit
+  missing-output notice.
+- Rollback: reactivate prior verified release `013b1d86d88442aed9eaf5e58343f02991bc43d3`
+  and restore the mode-0700 prompt backup at
+  `~/.local/share/nanoclaw-operational-backups/NC-20260908-001-20260909T145952`.
 - External boundary: no customer email/message, approval, provider/business
   data, migration, schedule, payment, or manufactured lead was created.
 
