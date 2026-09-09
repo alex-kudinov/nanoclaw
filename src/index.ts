@@ -362,7 +362,8 @@ export function shouldSuppressFinalText(
   // back into a second, ungated Slack producer. The explicit config flags stay
   // in the registration script as defense in depth and documentation, while
   // the authoritative registered folder fails closed here.
-  if (group?.folder === GRADER_GROUP_FOLDER) return true;
+  if (group?.folder === GRADER_GROUP_FOLDER || group?.folder === 'sales')
+    return true;
   const cfg = group?.containerConfig;
   if (!cfg?.suppressFinalText) return false;
   return !threadTs || cfg.suppressFinalTextInThreads === true;
@@ -470,6 +471,54 @@ async function deliverGraderOutputHost(
 // on its own poll, so "runAgent returned" is earlier than "everything it emitted
 // has been posted". Five polls is generous for a one-file drain and still bounded.
 const GRADER_OUTPUT_DRAIN_POLLS = 5;
+const SALES_OUTPUT_DRAIN_POLLS = 5;
+
+export const SALES_MISSING_OUTPUT_NOTICE =
+  '[BLOCKED] Sales produced no review card or operator response. Nothing was approved or sent. Please retry this thread.';
+
+export function isSalesNoActionResult(raw: string): boolean {
+  return /^\s*<internal>NO_ACTION<\/internal>\s*$/.test(raw);
+}
+
+/**
+ * Suppressing raw Sales final text is safe only when the gated tool path
+ * produced a real operator-visible item. IPC posting can finish just after the
+ * model turn, so drain briefly before emitting one fixed host-owned failure
+ * notice. Automatic error retries do not call this function.
+ */
+export async function noticeSalesRunWithNoOutput(
+  chatJid: string,
+  threadTs: string,
+  runStartedAt: string,
+  channel: Channel,
+  deps: {
+    latestResponse?: typeof getLatestGroupResponse;
+    wait?: (ms: number) => Promise<void>;
+    polls?: number;
+  } = {},
+): Promise<boolean> {
+  const latestResponse = deps.latestResponse ?? getLatestGroupResponse;
+  const wait =
+    deps.wait ??
+    ((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const polls = deps.polls ?? SALES_OUTPUT_DRAIN_POLLS;
+  for (let poll = 0; poll < polls; poll++) {
+    const latest = latestResponse(chatJid, 'sales', threadTs);
+    if (latest && latest >= runStartedAt) return false;
+    await wait(IPC_POLL_INTERVAL);
+  }
+  const latest = latestResponse(chatJid, 'sales', threadTs);
+  if (latest && latest >= runStartedAt) return false;
+  await channel.sendMessage(chatJid, SALES_MISSING_OUTPUT_NOTICE, {
+    fromGroup: 'sales',
+    threadTs,
+  });
+  logger.warn(
+    { chatJid, threadTs },
+    'Sales run produced no operator-visible output; fixed notice posted',
+  );
+  return true;
+}
 
 /**
  * Report a grader run that finished having published nothing.
@@ -529,7 +578,9 @@ export function withRequiredSalesConfig(
   if (
     group.folder !== 'sales' ||
     (group.containerConfig?.threadPerMessage === true &&
-      group.containerConfig?.processingMessage === SALES_PROCESSING_MESSAGE)
+      group.containerConfig?.processingMessage === SALES_PROCESSING_MESSAGE &&
+      group.containerConfig?.suppressFinalText === true &&
+      group.containerConfig?.suppressFinalTextInThreads === true)
   ) {
     return group;
   }
@@ -539,6 +590,8 @@ export function withRequiredSalesConfig(
       ...group.containerConfig,
       threadPerMessage: true,
       processingMessage: SALES_PROCESSING_MESSAGE,
+      suppressFinalText: true,
+      suppressFinalTextInThreads: true,
     },
   };
 }
@@ -552,10 +605,13 @@ export function threadKeyFor(
 }
 let lastAgentTimestamp: Record<string, string> = {};
 
-// Composite keys whose "[PROCESSING]" ack was already posted at dispatch time,
-// so a submission waiting for a container slot across loop ticks only acks once.
-// Cleared when the container finally spawns (processGroupMessages).
-const ackedSpawns = new Set<string>();
+// Latest input timestamp acknowledged for each work unit. Automatic retries
+// re-read the same input timestamp and must not post another visible
+// "[PROCESSING]" line. A later operator/customer message has a newer timestamp
+// and receives a fresh receipt. Successful runs clear their entry; failed runs
+// retain one bounded value until either a later input replaces it or the daemon
+// restarts.
+const processingAcknowledgments = new Map<string, string>();
 let messageLoopRunning = false;
 
 /**
@@ -570,17 +626,19 @@ export async function postDispatchProcessingAck(
   chatJid: string,
   threadTs: string | undefined,
   compositeKey: string,
-  acknowledged: Set<string> = ackedSpawns,
+  inputTimestamp: string,
+  acknowledged: Map<string, string> = processingAcknowledgments,
 ): Promise<boolean> {
   const processingMessage = group.containerConfig?.processingMessage;
-  if (!processingMessage || acknowledged.has(compositeKey)) return false;
+  if (!processingMessage || acknowledged.get(compositeKey) === inputTimestamp)
+    return false;
 
   try {
     await channel.sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
       fromGroup: group.folder,
       threadTs,
     });
-    acknowledged.add(compositeKey);
+    acknowledged.set(compositeKey, inputTimestamp);
     return true;
   } catch (err) {
     logger.error(
@@ -779,12 +837,6 @@ async function processGroupMessages(
   const isMainGroup = group.isMain === true;
   const compositeKey = `${chatJid}||${threadTs || 'root'}`;
 
-  // Consume the dispatch-ack marker up front — every spawn-check consumes it,
-  // including ones that find nothing to do. Consuming only on the spawn path
-  // (as before) leaked the key on early returns, permanently suppressing the
-  // next legitimate ack for root-bucket groups.
-  const dispatchAcked = ackedSpawns.delete(compositeKey);
-
   const sinceTimestamp = lastAgentTimestamp[compositeKey] || '';
   // Scope the fetch to THIS bucket. For a root spawn threadTs is `undefined`,
   // which getMessagesSince reads as "no thread filter — ALL messages". Since
@@ -832,6 +884,10 @@ async function processGroupMessages(
   // message carrying a from_group is a cross-group handoff and must spawn.
   if (missedMessages.every((m) => isUntaggedBotNoise(m, ASSISTANT_NAME)))
     return true;
+
+  const inputTimestamp = missedMessages[missedMessages.length - 1].timestamp;
+  const dispatchAcked =
+    processingAcknowledgments.get(compositeKey) === inputTimestamp;
 
   // For non-main groups, check if trigger is required and present.
   // Threaded replies (threadTs != null) skip the trigger requirement.
@@ -984,17 +1040,14 @@ async function processGroupMessages(
   // post it here as a fallback. Tagged fromGroup so the spawn guard drops the echo.
   const processingMessage = group.containerConfig?.processingMessage;
   if (processingMessage && !dispatchAcked) {
-    channel
-      .sendMessage(chatJid, `[PROCESSING] ${processingMessage}`, {
-        fromGroup: group.folder,
-        threadTs,
-      })
-      .catch((err) =>
-        logger.error(
-          { err, group: group.folder },
-          '[ERROR] processing-message post failed',
-        ),
-      );
+    await postDispatchProcessingAck(
+      channel,
+      group,
+      chatJid,
+      threadTs,
+      compositeKey,
+      inputTimestamp,
+    );
   }
 
   let hadError = false;
@@ -1002,8 +1055,11 @@ async function processGroupMessages(
   let companyWorkPacketAttemptFinished = false;
   let graderAgentResultObserved = false;
   let graderFinalTextObserved = false;
+  let salesNoActionObserved = false;
   const graderRunStartedAt =
     group.folder === GRADER_GROUP_FOLDER ? new Date().toISOString() : undefined;
+  const salesRunStartedAt =
+    group.folder === 'sales' ? new Date().toISOString() : undefined;
 
   const output = await runAgent(
     group,
@@ -1026,6 +1082,9 @@ async function processGroupMessages(
           typeof result.result === 'string'
             ? result.result
             : JSON.stringify(result.result);
+        if (group.folder === 'sales' && isSalesNoActionResult(raw)) {
+          salesNoActionObserved = true;
+        }
         // Strip <internal>...</internal> blocks — agent uses these for internal reasoning
         const text = raw.replace(/<internal>[\s\S]*?<\/internal>/g, '').trim();
         logger.info(
@@ -1159,6 +1218,27 @@ async function processGroupMessages(
     );
   }
 
+  if (
+    group.folder === 'sales' &&
+    threadTs &&
+    salesRunStartedAt &&
+    output !== 'error' &&
+    !hadError &&
+    !salesNoActionObserved
+  ) {
+    void noticeSalesRunWithNoOutput(
+      chatJid,
+      threadTs,
+      salesRunStartedAt,
+      channel,
+    ).catch((err) =>
+      logger.error(
+        { err, group: group.folder, threadTs },
+        'Sales missing-output notice failed',
+      ),
+    );
+  }
+
   await channel.setTyping?.(chatJid, false);
   if (idleTimer) clearTimeout(idleTimer);
 
@@ -1169,6 +1249,7 @@ async function processGroupMessages(
         { group: group.name },
         'Agent error after output was sent, skipping cursor rollback to prevent duplicates',
       );
+      processingAcknowledgments.delete(compositeKey);
       return true;
     }
     lastAgentTimestamp[compositeKey] = previousCursor;
@@ -1181,6 +1262,7 @@ async function processGroupMessages(
   }
 
   recordSuccess(group.folder);
+  processingAcknowledgments.delete(compositeKey);
   return true;
 }
 
@@ -1537,17 +1619,19 @@ async function startMessageLoop(): Promise<void> {
 
           // Post the "[PROCESSING]" ack HERE, at dispatch — not from the spawn
           // path — so it lands instantly even when every container slot is busy
-          // (posting a Slack message needs no slot). Guarded by ackedSpawns so a
-          // submission that waits across loop ticks for a slot only acks once;
-          // cleared when the container spawns. Await channel delivery so the
-          // receipt is ordered before generation; on failure the spawn fallback
-          // gets another attempt because no acknowledgment marker was recorded.
+          // (posting a Slack message needs no slot). The input timestamp keeps
+          // automatic retries quiet while allowing a later operator/customer
+          // turn in the same thread to receive its own receipt. Await channel
+          // delivery so the receipt is ordered before generation; on failure
+          // the spawn fallback gets another attempt because no acknowledgment
+          // marker was recorded.
           await postDispatchProcessingAck(
             channel,
             group,
             chatJid,
             threadTs,
             compositeKey,
+            messagesToSend[messagesToSend.length - 1].timestamp,
           );
 
           // Enqueue for a new container (thread-aware). The triggering

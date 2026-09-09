@@ -28,6 +28,36 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260908-001 — Quiet, literal Sales support threads
+
+- Date: 2026-09-09T20:00Z
+- Owner/client: Codex implementation; Claude Sonnet/high bounded review
+- State: ready_for_deploy
+- Base: exact live code `013b1d86d884`; isolated branch
+  `codex/sales-support-thread-20260908`; dirty primary preserved
+- Change class: C3 — Sales/Slack/Gmail behavior; no customer action during work
+- Outcome: operator troubleshooting imperatives are drafted as customer steps,
+  not autonomous browser work. Resolved thanks-only support replies end quietly.
+  Exact inputs get one processing receipt across retries. Rejected cards repair
+  privately while the authoring session exists, raw Sales recaps cannot claim
+  false success, and unexplained empty runs fail visibly. Inbound passwordless
+  query values redact before agent/Slack delivery; Gmail does not duplicate
+  uppercase `RE:` subjects.
+- Review: R1 found missing clean-empty-run signaling; R2 found false alarms on
+  intentional no-action turns. Both were corrected with a bounded drain and an
+  exact internal no-action result. Owner-approved R3 confirmed the approach;
+  its sole persistence concern was disproved because the flag is initialized
+  inside each `processGroupMessages` invocation. No material finding remains.
+- Verification: focused 174/174, email-critical 803/803, runner 45/45, email
+  replay 13/13, typecheck/build/format/runtime doctor pass under Node 22.23.2.
+  Full root is 3,675 pass / 32 skip / three unchanged failures reproduced on
+  base: CNPC wrapper, date-sensitive Trafft, Capacity disposable reservation.
+- Deployment: pending immutable release activation and live non-sending proof.
+- Rollback: reactivate prior verified release and restore prior Sales prompt.
+- External boundary: no customer email/message, approval, provider/business
+  data, migration, schedule, payment, or manufactured lead was created.
+
+
 ### NC-20260907-007 — Current MCS catalog publication expansion
 
 - Date: 2026-09-08T01:00Z

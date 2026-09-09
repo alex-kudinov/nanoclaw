@@ -382,6 +382,15 @@ describe('formatEmailForAgent', () => {
     expect(result).toContain('Hello there');
   });
 
+  it('redacts a passwordless-login token before agent delivery', () => {
+    const result = formatEmailForAgent(
+      headers,
+      'Open https://community.example/login?redirectTo=%2Fcourse&emailToken=live-secret',
+    );
+    expect(result).toContain('emailToken=[REDACTED]');
+    expect(result).not.toContain('live-secret');
+  });
+
   it('makes an attachment-only email visibly incomplete', () => {
     const result = formatEmailForAgent(
       headers,

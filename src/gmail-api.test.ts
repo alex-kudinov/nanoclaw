@@ -457,6 +457,25 @@ describe('replyToThread external-party addressing', () => {
     expect(to).not.toMatch(/info@tandemcoach\.co/i);
   });
 
+  it('does not duplicate an uppercase RE: prefix from the Gmail thread', async () => {
+    const send = mockGmail([
+      msg([
+        { name: 'From', value: 'Pierre <pierre@example.com>' },
+        { name: 'To', value: 'info@tandemcoach.co' },
+        { name: 'Subject', value: 'RE: Log in to the Community' },
+        { name: 'Message-ID', value: '<upper-re>' },
+      ]),
+    ]);
+
+    await replyToThread({ threadId: 'uppercase-re', body: 'Hi Pierre' });
+
+    const raw = send.mock.calls[0][0].requestBody.raw as string;
+    const subject = decodeRaw(raw)
+      .split('\r\n')
+      .find((line) => line.startsWith('Subject:'));
+    expect(subject).toBe('Subject: RE: Log in to the Community');
+  });
+
   it('falls back to the last external recipient when the whole thread is ours', async () => {
     const send = mockGmail([
       msg([

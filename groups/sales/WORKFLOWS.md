@@ -204,6 +204,12 @@ Use this only when all are true:
 4. the response can stay within route `SERVICE` without adding an unsupported
    fact, policy, promise, or action.
 
+An imperative troubleshooting instruction such as "try a different browser",
+"use an incognito/private window", or "request a fresh link" satisfies item 3
+when it answers the customer's access ask. Unless the operator explicitly asks
+Gru to perform the check, the imperative is the customer step to draft, not an
+invitation to launch a browser or investigate infrastructure.
+
 When all four hold, the next action is mechanical:
 
 1. reuse the exact Email and Thread-ID from the root;
@@ -214,14 +220,16 @@ When all four hold, the next action is mechanical:
 4. end the turn with no text.
 
 Before posting that card, make **zero** calls to psql/CRM, Gmail or attachment
-tools, Party Context, Chaos, Plutio, other minions, or any lookup. Do not read
+tools, `agent-browser`, network/browser diagnostics, Party Context, Chaos,
+Plutio, other minions, or any lookup. Do not read
 KNOWLEDGE, SCHEDULE, or LEARNED, acknowledge, narrate, re-escalate, or post a
 blocked notice. The operator just supplied the needed authority; another check
 adds latency without making the answer safer.
 
 This path never approves or sends. If any material ask remains unanswered,
 none of these shortcuts applies: use the ordinary answerability/HUMAN path and
-name the exact missing fact.
+name the exact missing fact. For pipeline-free support, the escalation header is
+`[SALES ESCALATION] Support — {short issue}` with no `Lead #` or Entry ID.
 
 ## Client Support Review (no pipeline entry)
 
@@ -230,6 +238,14 @@ thread contains other exact evidence that this is support for a client,
 student, partner, or existing engagement and route `SERVICE` is answerable.
 This is not a sales opportunity. Do not look up, create, advance, or repurpose a
 pipeline entry merely to make the response sendable.
+
+Before drafting, inspect the newest customer turn. When it confirms the issue
+is resolved/working and makes no new request, emit exactly
+`<internal>NO_ACTION</internal>` and stop. Do not create a courtesy reply merely
+to acknowledge thanks, and do not promise an investigation the customer did
+not request. This is a terminal no-response outcome, not a dropped support
+item. Any new question, requested action, or still-unresolved problem continues
+through the review-card path below.
 
 The absence of an engagement, pipeline, or client-status row does not disprove
 the person's stated enrollment. Treat absence as unknown. An exact Alex or
@@ -266,6 +282,15 @@ Subject: {exact reply subject}
 
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
+
+Copy that envelope literally. `DRAFT RESPONSE:` and both standalone `---`
+lines are required; triple-backtick code fences are never a substitute.
+`Category` is the issue slug (for an access problem, `account-access`), never
+`SERVICE`; `Route: SERVICE` is its own line. After a private
+`[approval_card REJECTED]` callback, correct and repost the full card without
+an acknowledgment or success recap. The operator sees only a valid review card
+unless the originating session is gone, in which case the host posts one fixed
+failure notice.
 
 Do not add `Lead #`, `Entry ID`, `PROGRAM MATCH`, `ESTIMATED DEAL`, or a sales
 CTA. The host already recognizes `[CLIENT SUPPORT REVIEW]`, binds its exact

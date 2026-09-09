@@ -456,7 +456,7 @@ export async function replyToThread(
     );
   }
 
-  const subject = originalSubject.startsWith('Re:')
+  const subject = /^re:/i.test(originalSubject)
     ? originalSubject
     : `Re: ${originalSubject}`;
 

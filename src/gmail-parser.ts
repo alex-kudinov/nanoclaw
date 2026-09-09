@@ -4,6 +4,8 @@
 
 import { gmail_v1 } from 'googleapis';
 
+import { redactSensitiveUrlQueryParameters } from './sensitive-url-redaction.js';
+
 const MAX_BODY_LENGTH = 10_000;
 const MAX_ATTACHMENT_MANIFEST_ITEMS = 20;
 const MAX_ATTACHMENT_FIELD_LENGTH = 180;
@@ -516,7 +518,7 @@ export function formatEmailForAgent(
   if (threadId) headerLines.push(`Thread-ID: ${threadId}`);
   if (messageId) headerLines.push(`Message-ID: ${messageId}`);
   const sections = [
-    body,
+    redactSensitiveUrlQueryParameters(body),
     formatAttachmentManifest(attachments, attachmentsProcessed),
   ].filter((section) => section.length > 0);
   return headerLines.join('\n') + '\n\n' + sections.join('\n\n');

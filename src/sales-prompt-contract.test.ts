@@ -147,6 +147,42 @@ describe('Sales request-first prompt contract', () => {
     expect(normalizedContract).toContain(
       'If the operator message does not actually answer every material ask',
     );
+    expect(normalizedContract).toContain(
+      'An imperative troubleshooting instruction such as "try another browser", "use an incognito/private window", or "request a fresh link" is normally the customer step Alex or Cherie wants drafted.',
+    );
+    expect(normalizedContract).toContain(
+      'Only perform a diagnostic yourself when the operator explicitly addresses Gru',
+    );
+    expect(normalizedContract).toContain(
+      "Sales drafts support replies; it does not operate or diagnose the customer's browser, website, DNS, login session, or infrastructure.",
+    );
+    expect(normalizedContract).toContain(
+      "do not launch `agent-browser`, open the customer's link, test a passwordless URL, or run a browser/network check.",
+    );
+    expect(normalizedContract).toContain(
+      '`DRAFT RESPONSE:` and both standalone `---` lines are required; triple-backtick code fences are never a substitute.',
+    );
+    expect(normalizedContract).toContain(
+      '`Category` is the issue slug (for an access problem, `account-access`), never `SERVICE`',
+    );
+  });
+
+  it('distinguishes intentional no-action from an empty failed turn', () => {
+    expect(role).toContain(
+      'emit exactly `<internal>NO_ACTION</internal>` and nothing else',
+    );
+    expect(role).toContain(
+      'Never use that token merely because you are unsure or failed to call the required tool.',
+    );
+    expect(normalizedContract).toContain(
+      'If the newest customer message says the issue is now resolved or access is working, contains only thanks/context about the resolved problem, and asks no new question or action',
+    );
+    expect(normalizedContract).toContain(
+      'A past inconvenience is not a new ask.',
+    );
+    expect(normalizedContract).toContain(
+      'Do not create a courtesy reply merely to acknowledge thanks',
+    );
   });
 
   it('fails closed on relationship evidence and unsupported answers', () => {

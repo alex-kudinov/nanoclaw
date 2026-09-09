@@ -3,9 +3,9 @@
  *
  * `suppressFinalText` alone only fires on a root-triggered run, which makes it a
  * no-op for every threadPerMessage group — the grader included. Widening the
- * condition to all threadPerMessage groups was rejected: Sales is registered
- * with BOTH flags, and there the in-thread echo is the agent's only progress
- * channel. Hence the narrow opt-in pinned here.
+ * condition to all threadPerMessage groups was rejected. Grader and Sales are
+ * explicit host-owned boundaries: both publish useful output through gated
+ * tools, while raw final text is only an unverified duplicate or status claim.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -21,7 +21,10 @@ vi.mock('./logger.js', () => ({
 
 import {
   _setRegisteredGroups,
+  isSalesNoActionResult,
+  noticeSalesRunWithNoOutput,
   routeAdoptedOutput,
+  SALES_MISSING_OUTPUT_NOTICE,
   shouldSuppressFinalText,
 } from './index.js';
 import type { Channel, RegisteredGroup } from './types.js';
@@ -46,7 +49,11 @@ const GRADER = grouped({
 });
 // Live production config, read read-only during the R4 preflight.
 const SALES = grouped(
-  { threadPerMessage: true, suppressFinalText: true },
+  {
+    threadPerMessage: true,
+    suppressFinalText: true,
+    suppressFinalTextInThreads: true,
+  },
   'sales',
 );
 const INBOX = grouped({ suppressFinalText: true }, 'inbox');
@@ -69,11 +76,13 @@ describe('shouldSuppressFinalText', () => {
     expect(shouldSuppressFinalText(GRADER, undefined)).toBe(true);
   });
 
-  it('leaves Sales threaded progress posts alone', () => {
-    // The regression that a generic threadPerMessage fix would have caused:
-    // Sales is threadPerMessage AND suppressFinalText, and a blanket rule once
-    // hid a stalled send for 45 minutes (Entry 938).
-    expect(shouldSuppressFinalText(SALES, 'thr-1')).toBe(false);
+  it('suppresses Sales threaded recaps and unverified status claims', () => {
+    expect(shouldSuppressFinalText(SALES, 'thr-1')).toBe(true);
+  });
+
+  it('fails Sales closed even when its persisted suppression flags are stale', () => {
+    const staleSales = grouped({ threadPerMessage: true }, 'sales');
+    expect(shouldSuppressFinalText(staleSales, 'thr-1')).toBe(true);
   });
 
   it('still suppresses Sales root recaps', () => {
@@ -147,15 +156,75 @@ describe('routeAdoptedOutput', () => {
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  it('still relays adopted output for a group that did not opt in', async () => {
+  it('suppresses adopted Sales final text in-thread', async () => {
     await routeAdoptedOutput(sidecar(SALES_JID, 'thr-2'), channel, {
       result: 'Still awaiting the Gmail search result.',
     } as never);
 
-    expect(sendMessage).toHaveBeenCalledWith(
-      SALES_JID,
-      'Still awaiting the Gmail search result.',
-      expect.objectContaining({ fromGroup: 'sales', threadTs: 'thr-2' }),
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('Sales missing-output notice', () => {
+  it('recognizes only the exact intentional no-action result', () => {
+    expect(isSalesNoActionResult('<internal>NO_ACTION</internal>')).toBe(true);
+    expect(isSalesNoActionResult(' <internal>NO_ACTION</internal>\n')).toBe(
+      true,
     );
+    expect(isSalesNoActionResult('<internal>still thinking</internal>')).toBe(
+      false,
+    );
+    expect(isSalesNoActionResult('NO_ACTION')).toBe(false);
+  });
+
+  it('posts one fixed notice after a clean run with no gated output', async () => {
+    const sendMessage = vi.fn(async () => {});
+    const channel = { sendMessage } as unknown as Channel;
+
+    await expect(
+      noticeSalesRunWithNoOutput(
+        'slack:SALES',
+        'thr-quiet',
+        '2026-09-08T18:00:00.000Z',
+        channel,
+        {
+          latestResponse: () => undefined,
+          wait: async () => {},
+          polls: 2,
+        },
+      ),
+    ).resolves.toBe(true);
+
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      SALES_MISSING_OUTPUT_NOTICE,
+      { fromGroup: 'sales', threadTs: 'thr-quiet' },
+    );
+  });
+
+  it('stays quiet when a real Sales tool post appears during the drain', async () => {
+    const sendMessage = vi.fn(async () => {});
+    const channel = { sendMessage } as unknown as Channel;
+    const latestResponse = vi
+      .fn()
+      .mockReturnValueOnce(undefined)
+      .mockReturnValue('2026-09-08T18:00:01.000Z');
+
+    await expect(
+      noticeSalesRunWithNoOutput(
+        'slack:SALES',
+        'thr-card',
+        '2026-09-08T18:00:00.000Z',
+        channel,
+        {
+          latestResponse,
+          wait: async () => {},
+          polls: 2,
+        },
+      ),
+    ).resolves.toBe(false);
+
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 });

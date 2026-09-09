@@ -69,6 +69,8 @@ describe('Sales work-unit routing', () => {
     expect(migrated.containerConfig?.processingMessage).toBe(
       SALES_PROCESSING_MESSAGE,
     );
+    expect(migrated.containerConfig?.suppressFinalText).toBe(true);
+    expect(migrated.containerConfig?.suppressFinalTextInThreads).toBe(true);
     expect(threadKeyFor(rootMessage, migrated)).toBe(rootMessage.id);
   });
 
@@ -86,6 +88,8 @@ describe('Sales work-unit routing', () => {
       timeout: 240_000,
       threadPerMessage: true,
       processingMessage: SALES_PROCESSING_MESSAGE,
+      suppressFinalText: true,
+      suppressFinalTextInThreads: true,
     });
   });
 
@@ -222,8 +226,9 @@ describe('host processing receipt', () => {
 
   it('posts and records one in-thread receipt before generation', async () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
-    const acknowledged = new Set<string>();
+    const acknowledged = new Map<string, string>();
     const key = 'slack:SALES||1785805958.497';
+    const inputTimestamp = '2026-08-04T12:00:00.000Z';
 
     await expect(
       postDispatchProcessingAck(
@@ -232,6 +237,7 @@ describe('host processing receipt', () => {
         'slack:SALES',
         '1785805958.497',
         key,
+        inputTimestamp,
         acknowledged,
       ),
     ).resolves.toBe(true);
@@ -240,7 +246,7 @@ describe('host processing receipt', () => {
       '[PROCESSING] Generating response…',
       { fromGroup: 'sales', threadTs: '1785805958.497' },
     );
-    expect(acknowledged.has(key)).toBe(true);
+    expect(acknowledged.get(key)).toBe(inputTimestamp);
 
     await expect(
       postDispatchProcessingAck(
@@ -249,15 +255,30 @@ describe('host processing receipt', () => {
         'slack:SALES',
         '1785805958.497',
         key,
+        inputTimestamp,
         acknowledged,
       ),
     ).resolves.toBe(false);
     expect(sendMessage).toHaveBeenCalledTimes(1);
+
+    await expect(
+      postDispatchProcessingAck(
+        channelWith(sendMessage),
+        sales,
+        'slack:SALES',
+        '1785805958.497',
+        key,
+        '2026-08-04T12:05:00.000Z',
+        acknowledged,
+      ),
+    ).resolves.toBe(true);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
   });
 
   it('leaves a failed receipt eligible for the spawn-path retry', async () => {
-    const acknowledged = new Set<string>();
+    const acknowledged = new Map<string, string>();
     const key = 'slack:SALES||1785805958.497';
+    const inputTimestamp = '2026-08-04T12:00:00.000Z';
     const sendMessage = vi
       .fn()
       .mockRejectedValue(new Error('Slack unavailable'));
@@ -269,6 +290,7 @@ describe('host processing receipt', () => {
         'slack:SALES',
         '1785805958.497',
         key,
+        inputTimestamp,
         acknowledged,
       ),
     ).resolves.toBe(false);

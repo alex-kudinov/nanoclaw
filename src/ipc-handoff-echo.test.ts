@@ -424,13 +424,7 @@ describe('IPC handoff routing', () => {
     startIpcWatcher(deps);
     await vi.advanceTimersByTimeAsync(50);
 
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringMatching(
-        /\[APPROVAL CARD REJECTED\].*Route: SERVICE must use \[CLIENT SUPPORT REVIEW\]/,
-      ),
-      expect.objectContaining({ fromGroup: 'sales' }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(
       sendMessage.mock.calls.some((call) =>
         String(call[1]).includes('Exact support response.'),
@@ -505,14 +499,7 @@ describe('IPC handoff routing', () => {
       malformed,
       expect.anything(),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringContaining('[APPROVAL CARD REJECTED]'),
-      expect.objectContaining({
-        threadTs: '1785765234.784429',
-        hostWorkUnitThreadTs: '1785765234.784429',
-      }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(deps.deliverSourceInput).toHaveBeenCalledWith(
       'sales',
       'nanoclaw-sales-justin',
@@ -552,17 +539,7 @@ describe('IPC handoff routing', () => {
       blocked,
       expect.anything(),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringMatching(
-        /\[APPROVAL CARD REJECTED\].*happy to help.*Sales must repost/,
-      ),
-      expect.objectContaining({
-        threadTs: '1786050675.234019',
-        hostWorkUnitThreadTs: '1786050675.234019',
-        threadKey: 'lead:marina@example.com',
-      }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(deps.deliverSourceInput).toHaveBeenCalledWith(
       'sales',
       'nanoclaw-sales-marina',
@@ -690,13 +667,7 @@ describe('IPC handoff routing', () => {
         /\[approval_card REJECTED\].*conflicts with current program authority.*future cohorts/,
       ),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringMatching(
-        /\[APPROVAL CARD REJECTED\].*conflicts with current program authority.*future cohorts/,
-      ),
-      expect.objectContaining({ threadKey: 'lead:learner@example.com' }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalledWith(
       'slack:SALES',
       stale,
@@ -732,13 +703,7 @@ describe('IPC handoff routing', () => {
       overlong,
       expect.anything(),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringMatching(
-        /\[APPROVAL CARD REJECTED\].*4000-character limit.*Sales must repost/,
-      ),
-      expect.objectContaining({ threadKey: 'lead:long@example.com' }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(deps.deliverSourceInput).toHaveBeenCalledWith(
       'sales',
       'nanoclaw-sales-overlong',
@@ -780,13 +745,7 @@ describe('IPC handoff routing', () => {
       prefixedOverlong,
       expect.anything(),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringMatching(
-        /\[APPROVAL CARD REJECTED\].*4000-character limit.*Sales must repost/,
-      ),
-      expect.objectContaining({ threadKey: 'lead:prefixed@example.com' }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(deps.deliverSourceInput).toHaveBeenCalledWith(
       'sales',
       'nanoclaw-sales-prefixed-overlong',
@@ -821,11 +780,7 @@ describe('IPC handoff routing', () => {
       malformed,
       expect.anything(),
     );
-    expect(sendMessage).toHaveBeenCalledWith(
-      'slack:SALES',
-      expect.stringContaining('[APPROVAL CARD REJECTED]'),
-      expect.objectContaining({ threadKey: 'lead:lead2@example.com' }),
-    );
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(
       fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
     ).toEqual([expect.stringMatching(/^approval-card-malformed-/)]);
@@ -856,11 +811,7 @@ describe('IPC handoff routing', () => {
         malformed,
         expect.anything(),
       );
-      expect(sendMessage).toHaveBeenCalledWith(
-        'slack:SALES',
-        expect.stringContaining('[APPROVAL CARD REJECTED]'),
-        expect.objectContaining({ threadKey: 'lead:support@example.com' }),
-      );
+      expect(sendMessage).not.toHaveBeenCalled();
       expect(
         fs.readdirSync(path.join(tmpRoot, 'ipc', 'quarantine', 'sales')),
       ).toHaveLength(1);

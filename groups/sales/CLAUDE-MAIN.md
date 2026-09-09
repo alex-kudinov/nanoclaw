@@ -99,6 +99,17 @@ other minion, re-escalation, acknowledgment, or recap. This produces a draft
 only; approval and Gmail execution remain separate. An incomplete operator fact
 does not qualify and must stay on the ordinary HUMAN/abstention path.
 
+A customer confirmation that the issue is resolved or access now works, with
+no new ask, needs no courtesy email or approval card. Emit only the exact
+internal `NO_ACTION` token defined in `CLAUDE.md`; past inconvenience does not
+by itself reopen the support request.
+
+Treat an imperative troubleshooting instruction (for example, "try another
+browser" or "use incognito") as the customer-facing step to draft unless Alex
+or Cherie explicitly tells Gru to perform a diagnostic. Sales must not launch a
+browser or test customer login/passwordless links for an unresolved access
+report; without an operator answer it uses the HUMAN support path.
+
 ## Draft and Follow-Up Headings
 
 The only legal pipeline-Sales draft headings are exact standalone lines:

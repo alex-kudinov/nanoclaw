@@ -1821,7 +1821,9 @@ Sales `threadPerMessage` and its host-owned `[PROCESSING] Generating response…
 receipt are persisted startup requirements with a fail-closed assertion. The
 host awaits that in-thread receipt before queueing a cold Sales container,
 records duplicate suppression only after successful channel delivery, and
-leaves a failed first attempt eligible for the spawn-path fallback. A bounded
+keys the receipt to the exact newest input timestamp so automatic retries do
+not add more visible processing lines. A later operator/customer input remains
+eligible for its own receipt. A bounded
 cursor migration seeds only roots already consumed by the legacy `||root`
 cursor, preventing activation from replaying the recovery window; existing
 newer per-root cursors are never rolled back.
@@ -1831,11 +1833,16 @@ deriving the same lead identity. A mismatch opens no cross-lead thread and does
 not repoint either lead's anchor. An approval card too large for one Slack row
 is refused as one visible rejection rather than split into fragments; a
 malformed pre-existing card also posts a rejection at approval while minting no
-action. Content-guard and overlong-card rejections return to the exact authoring
-container; the tool's earlier file-queue acknowledgement is never described as
-a successful Slack post, and a narrow positive model-authored
-`draft posted / awaiting approval` recap is suppressed independently of thread
-placement without hiding blocking prose. `test:email-critical` includes
+action. Approval-card rejections return privately to the exact authoring Sales
+container while it can repair them; one fixed Slack rejection appears only when
+that session is unavailable. Raw Sales final text is suppressed because it is
+not proof of a card, handoff, or send. An exact internal no-action token
+distinguishes legitimate quiet turns; an unexplained clean run with no real
+Sales tool post receives one fixed host notice after a bounded IPC drain.
+Resolved/working support confirmations with no new ask are terminal no-response
+outcomes. Inbound Gmail formatting redacts passwordless/bearer query values
+before agent/Slack delivery, and Gmail reply subjects treat existing `Re:`
+prefixes case-insensitively. `test:email-critical` includes
 malformed-card, same-group result isolation, lead-anchor, cross-lead refusal,
 overlong-card, pre-approval content parity, transactional-link/lookalike, and
 Sales cursor migration regressions.

@@ -9,6 +9,8 @@ outside the current client conversation.
 
 ## Active work
 
+| `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
+
 | `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
 
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940` over preserved educator-keyword base `636129a3`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only stale-source mirror repair, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None for publication. Future `work:tandemweb-checkout-source-sync-convergence` must reconcile the pre-existing concurrent Syncthing file versions before anyone unpauses Mini; that work is not authorized here. | 2026-09-07T23:41Z |
@@ -294,6 +296,23 @@ outside the current client conversation.
   capacity, schedule, message, migration, checkout promise, or natural business
   outcome was manufactured. Mini remains paused in Syncthing; future convergence
   of its pre-existing concurrent checkout file requires separate authority.
+
+### NC-20260908-001 — Quiet Sales support threads
+
+- Incident: Pierre's access report caused repeated processing notices, malformed
+  triple-backtick support cards, false success recaps, and an unnecessary
+  browser detour. His later resolved/thanks-only reply repeated the card loop.
+- Implementation: the host keys processing receipts by exact input, returns
+  card rejections privately when the exact Sales session is alive, suppresses
+  untrusted Sales final text, distinguishes exact intentional no-action from an
+  unexplained empty success, redacts passwordless URL query values, and avoids
+  duplicate uppercase `RE:`. Sales authority treats operator imperatives as
+  customer steps and resolved/no-new-ask support as terminal no-response.
+- Review: R1/R2 material findings corrected. Owner-approved R3's only concern
+  was disproved by direct scope: `salesNoActionObserved` is initialized within
+  each `processGroupMessages` invocation. No unresolved material findings.
+- External state: read-only incident inspection only; no customer/provider/data
+  mutation. Deployment is the exact next boundary.
 
 ### NC-20260907-002 — Selective Sales consultation
 

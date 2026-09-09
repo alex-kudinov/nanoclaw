@@ -344,7 +344,7 @@ function writeRejectedApprovalCardInput(
   sourceContainer: string | undefined,
   deliverSourceInput: IpcDeps['deliverSourceInput'],
   reason = 'The review card is missing one exact Email, fenced Subject, or body.',
-): void {
+): boolean {
   const text =
     `[approval_card REJECTED] ${reason} ` +
     'The card was not posted and is not awaiting approval. Correct the full card and repost it now; do not claim success or send it to Mailman.';
@@ -352,12 +352,13 @@ function writeRejectedApprovalCardInput(
     sourceContainer &&
     deliverSourceInput?.(sourceGroup, sourceContainer, text)
   ) {
-    return;
+    return true;
   }
   logger.error(
     { sourceGroup, sourceContainer },
     'Rejected approval card could not be returned to its originating container',
   );
+  return false;
 }
 
 /** Confirm that host validation posted the exact card for human approval. */
@@ -617,30 +618,32 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   if (sourceEntry) {
                     const semanticIssue = approvalCardSemanticIssue(data.text);
                     if (semanticIssue) {
-                      writeRejectedApprovalCardInput(
+                      const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
                         semanticIssue,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
-                      await deps.sendMessage(
-                        sourceEntry[0],
-                        approvalCardRejectedText(
-                          sourceEntry[1].name,
-                          `This draft was not posted for approval because ${semanticIssue}`,
-                        ),
-                        {
-                          fromGroup: sourceGroup,
-                          threadTs: outboundThreadTsFor(sourceEntry[0]),
-                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
-                            sourceEntry[0],
+                      if (sourceGroup !== 'sales' || !rejectionReturned) {
+                        await deps.sendMessage(
+                          sourceEntry[0],
+                          approvalCardRejectedText(
+                            sourceEntry[1].name,
+                            `This draft was not posted for approval because ${semanticIssue}`,
                           ),
-                          ...(recipient
-                            ? { threadKey: `lead:${recipient}` }
-                            : {}),
-                        },
-                      );
+                          {
+                            fromGroup: sourceGroup,
+                            threadTs: outboundThreadTsFor(sourceEntry[0]),
+                            hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                              sourceEntry[0],
+                            ),
+                            ...(recipient
+                              ? { threadKey: `lead:${recipient}` }
+                              : {}),
+                          },
+                        );
+                      }
                       const quarantinedAt = quarantineIpcFile(
                         filePath,
                         sourceGroup,
@@ -654,29 +657,31 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     }
                     const approvedHandoff = buildApprovedHandoff(data.text);
                     if (!approvedHandoff) {
-                      writeRejectedApprovalCardInput(
+                      const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
-                      await deps.sendMessage(
-                        sourceEntry[0],
-                        approvalCardRejectedText(
-                          sourceEntry[1].name,
-                          'This draft was not posted for approval because it is missing one exact Email, fenced Subject, or body.',
-                        ),
-                        {
-                          fromGroup: sourceGroup,
-                          threadTs: outboundThreadTsFor(sourceEntry[0]),
-                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
-                            sourceEntry[0],
+                      if (sourceGroup !== 'sales' || !rejectionReturned) {
+                        await deps.sendMessage(
+                          sourceEntry[0],
+                          approvalCardRejectedText(
+                            sourceEntry[1].name,
+                            'This draft was not posted for approval because it is missing one exact Email, fenced Subject, or body.',
                           ),
-                          ...(recipient
-                            ? { threadKey: `lead:${recipient}` }
-                            : {}),
-                        },
-                      );
+                          {
+                            fromGroup: sourceGroup,
+                            threadTs: outboundThreadTsFor(sourceEntry[0]),
+                            hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                              sourceEntry[0],
+                            ),
+                            ...(recipient
+                              ? { threadKey: `lead:${recipient}` }
+                              : {}),
+                          },
+                        );
+                      }
                       const quarantinedAt = quarantineIpcFile(
                         filePath,
                         sourceGroup,
@@ -692,30 +697,32 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       const rejectionReason =
                         `The complete exact card exceeds Slack's ` +
                         `${SLACK_MESSAGE_MAX_LENGTH}-character limit and would be split into unapprovable fragments.`;
-                      writeRejectedApprovalCardInput(
+                      const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
                         rejectionReason,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
-                      await deps.sendMessage(
-                        sourceEntry[0],
-                        approvalCardRejectedText(
-                          sourceEntry[1].name,
-                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
-                        ),
-                        {
-                          fromGroup: sourceGroup,
-                          threadTs: outboundThreadTsFor(sourceEntry[0]),
-                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
-                            sourceEntry[0],
+                      if (sourceGroup !== 'sales' || !rejectionReturned) {
+                        await deps.sendMessage(
+                          sourceEntry[0],
+                          approvalCardRejectedText(
+                            sourceEntry[1].name,
+                            `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
                           ),
-                          ...(recipient
-                            ? { threadKey: `lead:${recipient}` }
-                            : {}),
-                        },
-                      );
+                          {
+                            fromGroup: sourceGroup,
+                            threadTs: outboundThreadTsFor(sourceEntry[0]),
+                            hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                              sourceEntry[0],
+                            ),
+                            ...(recipient
+                              ? { threadKey: `lead:${recipient}` }
+                              : {}),
+                          },
+                        );
+                      }
                       const quarantinedAt = quarantineIpcFile(
                         filePath,
                         sourceGroup,
@@ -757,30 +764,32 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       // container. Return the failure to that exact Sales turn
                       // so it corrects and reposts instead of trusting the
                       // earlier file-queue acknowledgement.
-                      writeRejectedApprovalCardInput(
+                      const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
                         rejectionReason,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
-                      await deps.sendMessage(
-                        sourceEntry[0],
-                        approvalCardRejectedText(
-                          sourceEntry[1].name,
-                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
-                        ),
-                        {
-                          fromGroup: sourceGroup,
-                          threadTs: outboundThreadTsFor(sourceEntry[0]),
-                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
-                            sourceEntry[0],
+                      if (sourceGroup !== 'sales' || !rejectionReturned) {
+                        await deps.sendMessage(
+                          sourceEntry[0],
+                          approvalCardRejectedText(
+                            sourceEntry[1].name,
+                            `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
                           ),
-                          ...(recipient
-                            ? { threadKey: `lead:${recipient}` }
-                            : {}),
-                        },
-                      );
+                          {
+                            fromGroup: sourceGroup,
+                            threadTs: outboundThreadTsFor(sourceEntry[0]),
+                            hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                              sourceEntry[0],
+                            ),
+                            ...(recipient
+                              ? { threadKey: `lead:${recipient}` }
+                              : {}),
+                          },
+                        );
+                      }
                       const quarantinedAt = quarantineIpcFile(
                         filePath,
                         sourceGroup,
@@ -805,30 +814,32 @@ export function startIpcWatcher(deps: IpcDeps): void {
                         : undefined;
                     if (factIssue) {
                       const rejectionReason = `The exact draft conflicts with current program authority: ${factIssue}.`;
-                      writeRejectedApprovalCardInput(
+                      const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
                         rejectionReason,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
-                      await deps.sendMessage(
-                        sourceEntry[0],
-                        approvalCardRejectedText(
-                          sourceEntry[1].name,
-                          `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
-                        ),
-                        {
-                          fromGroup: sourceGroup,
-                          threadTs: outboundThreadTsFor(sourceEntry[0]),
-                          hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
-                            sourceEntry[0],
+                      if (sourceGroup !== 'sales' || !rejectionReturned) {
+                        await deps.sendMessage(
+                          sourceEntry[0],
+                          approvalCardRejectedText(
+                            sourceEntry[1].name,
+                            `This draft was not posted for approval because ${rejectionReason.charAt(0).toLowerCase()}${rejectionReason.slice(1)}`,
                           ),
-                          ...(recipient
-                            ? { threadKey: `lead:${recipient}` }
-                            : {}),
-                        },
-                      );
+                          {
+                            fromGroup: sourceGroup,
+                            threadTs: outboundThreadTsFor(sourceEntry[0]),
+                            hostWorkUnitThreadTs: hostWorkUnitThreadTsFor(
+                              sourceEntry[0],
+                            ),
+                            ...(recipient
+                              ? { threadKey: `lead:${recipient}` }
+                              : {}),
+                          },
+                        );
+                      }
                       const quarantinedAt = quarantineIpcFile(
                         filePath,
                         sourceGroup,
