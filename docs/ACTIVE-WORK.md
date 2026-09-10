@@ -195,6 +195,16 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T04:17Z continuation: owner requests no routine milestone stops.
+  Claim persistence source `src/payment-store*.ts`, disposable tests, and
+  migration/rollback 149_payment_attempt_store.sql. Refreshed all local/remote
+  refs: enrollment owns 146-148 on other branches; do not transplant them.
+  Production catalog readback has no payment-attempt store. This migration is
+  independent of those enrollment extensions; use only generated local test DBs.
+  Scope: immutable attempts/operations, encrypted request/response storage,
+  fenced leases, append-only operation receipts, crash/retry proof. Event-store
+  wiring and financial/enrollment effects remain later steps of the same plan.
+
 - 2026-09-10T03:47Z source milestone: `payment-domain.ts`, 51 behavioral tests
   and PAYMENT-DOMAIN.md implemented. Sonnet/high R1's refund-after-refusal
   finding fixed and accepted in R2. Full suite 3,746 pass / 32 skip / only
