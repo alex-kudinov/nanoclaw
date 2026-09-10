@@ -195,6 +195,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T05:13Z: admission source pushed95595f53; refreshed all refs, max
+  migration150. Reserve151_payment_event_ledger.sql and rollback. Claim
+  `payment-checkout-evidence.ts`, `payment-event-store.ts`, HMAC bridge and tests.
+  Model separate scoped PSP payments under a checkout Session, immutable event/
+  reference evidence, durable exceptions and versioned evidence projection.
+  Initial AUTHORISATION only; no capture readiness, settlement, fulfillment,
+  public route, production apply or financial operation inferred.
+
 - 2026-09-10T05:09Z: HMAC/nonce/status-capability source and migration150 accepted
   by Sonnet/high with no material findings. 25 focused tests pass; full 3,820
   pass/32 skip/three unchanged baseline failures. Full concurrency exposed a
