@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { adyenTestAttemptReference } from './adyen-payment-identifiers.js';
 
 import {
   PaymentDomainError,
@@ -68,7 +69,7 @@ export function buildAdyenTestSessionRequest(
   return JSON.stringify({
     merchantAccount: scope.merchant,
     store: scope.store,
-    reference: `tandem-poc-tsv1-${attempt.attemptId}`,
+    reference: adyenTestAttemptReference(attempt.attemptId),
     amount: {
       value: attempt.quote.finalAmount,
       currency: attempt.quote.currency,

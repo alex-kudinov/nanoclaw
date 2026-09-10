@@ -195,6 +195,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T05:48Z: event ledger151 accepted by Sonnet/high, no material
+  findings. Codex added redundant scope checks to evidence rebuild/read queries
+  as defense in depth and reran tests. 101 focused pass; full3834 pass/32skip/
+  three baseline failures. Continue `payment-api-controller.ts` plus tests,
+  `PaymentStore.readAttempt` and `PaymentSessionService.validateStart` for the
+  signed-body/action binding and capability-protected resume/status composition.
+  Controller is still unwired; no additional provider calls or production apply.
+
 - 2026-09-10T05:13Z: admission source pushed95595f53; refreshed all refs, max
   migration150. Reserve151_payment_event_ledger.sql and rollback. Claim
   `payment-checkout-evidence.ts`, `payment-event-store.ts`, HMAC bridge and tests.

@@ -27,7 +27,7 @@ const config = {
   ssl: false as const,
   options: '-c search_path=pg_catalog',
   connectionTimeoutMillis: 2000,
-  max: 30,
+  max: 8,
 };
 const maintenance = new Pool({ ...config, database: 'postgres' });
 let pool: Pool;

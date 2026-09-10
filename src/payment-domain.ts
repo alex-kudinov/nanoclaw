@@ -116,6 +116,10 @@ export function paymentQuoteFingerprint(input: unknown): string {
   return hash(validatePaymentQuote(input));
 }
 
+export function paymentScopeFingerprint(input: unknown): string {
+  return hash(parse(scopeSchema, input));
+}
+
 const attemptSchema = z
   .object({
     schemaVersion: z.literal(1),

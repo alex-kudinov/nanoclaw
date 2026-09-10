@@ -30,6 +30,23 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T05:48Z addendum — scoped PSP event ledger
+
+- Migration151 and HMAC-only TEST entrypoint persist immutable scoped PSP-to-
+  checkout bindings and events, append-only review exceptions and atomic evidence
+  projections. Failed sibling retries cannot erase authorization; contradictory
+  same-PSP facts or multiple successes hold, never auto-refund or fulfill.
+- 14 real Postgres ledger tests + prior HMAC9/adapter27/domain51 =101 focused
+  pass. Full suite at this slice:3834 pass/32skip/three existing baseline failures.
+  Typecheck/build/continuity pass. Tests include 25-way dedup, crossed-reference
+  concurrency, foreign/LIVE non-mutation, batch HMAC/key rotation, changed amount,
+  atomic rollback, bounded evidence, grants and guarded cleanup/reapply.
+- Sonnet/high review accepted without material findings. Codex independently
+  added redundant scope restrictions in projection rebuild as suggested defense
+  in depth; focused tests rerun. No contract or source-authority expansion.
+- No production migration, daemon/browser wiring, real payment/webhook proof,
+  settlement or fulfillment. The locked-Mac Node22 network gate is still pending.
+
 #### 2026-09-10T05:09Z addendum — request replay and scoped status capabilities
 
 - Migration150 + host helpers add signed caller/path/body/timestamp/nonce/operation
