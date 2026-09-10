@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; inert receiver live at `02073e66`; stable n8n workflow identity correction `d3c390ce`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build and deploy the reviewed stable-ID correction, import the workflow inactive, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:55Z |
+| `NC-20260909-003` | Build the reusable Adyen payment foundation for the first MCS Foundations pilot | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909`; exact live/current base `00d66184`; dirty primary preserved | `in_progress` | C5 | Receiver and stable n8n identity are live/inactive respectively. Continue with unwired `src/payment-domain.ts`, behavioral tests and domain contract: immutable quotes, pinned provider operations, unknown-outcome recovery and scoped facts. No provider call, migration, live charge, enrollment, customer message or production activation in this slice. | Implement domain slice from converged Peri MCS plan; narrow/full tests and bounded Sonnet/high review. Durable persistence and configured TEST webhook remain prerequisites for wiring. | 2026-09-10T03:34Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
@@ -194,6 +194,15 @@ outside the current client conversation.
 ## Task details
 
 ### NC-20260909-003
+
+- 2026-09-10T03:34Z pickup: exact Mini release and branch HEAD are now
+  `00d66184`; stable-ID workflow imported inactive, receiver unconfigured.
+  The owner requested a detailed MCS Foundations plan, Claude convergence,
+  then implementation. Peri `docs/MCS-FOUNDATIONS-IMPLEMENTATION-PLAN.md`
+  accepted after Sonnet/high R1/R2. Begin the side-effect-free domain module
+  under this foundation task. Publication/source-admission, financial-record,
+  runtime-policy and deployment gates remain required before paid fulfillment.
+  Older deployment/next-action bullets below are historical, superseded here.
 
 - Exact-live integration: the reviewed receiver commits were transplanted onto
   verified production release `726f2c80` with the live side authoritative for
