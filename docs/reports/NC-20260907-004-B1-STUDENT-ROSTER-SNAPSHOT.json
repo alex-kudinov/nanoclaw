@@ -1,0 +1,1257 @@
+{
+  "snapshot_id": "NC-20260907-004-b1-student-roster",
+  "captured_at_utc": "2026-09-07T18:05:35.318Z",
+  "source": {
+    "spreadsheet_id": "1bX0hvMgXyoVQXuHRjYfwmVrv9mN5W08jF4iB8LiZI70",
+    "title": "Tandem - Student Roster",
+    "mime_type": "application/vnd.google-apps.spreadsheet",
+    "modified_time_before": "2026-09-07T17:58:01.434Z",
+    "modified_time_after": "2026-09-07T17:58:01.434Z",
+    "stable_during_bounded_read": true,
+    "source_visibility_status": "access_not_verified",
+    "read_surface": "Google Drive native spreadsheet metadata and bounded values"
+  },
+  "privacy_boundary": {
+    "student_rows_read": 0,
+    "values_retained": "sheet metadata, structural headers, and Product Map columns A:C only",
+    "excluded": "all populated roster rows, names, emails, progress, payment, and membership data"
+  },
+  "counts": {
+    "native_tabs": 14,
+    "roster_header_tabs": 8,
+    "product_map_rows": 156,
+    "distinct_product_labels": 136,
+    "multi_destination_product_labels": 17,
+    "non_student_sentinel_rows": 7,
+    "invalid_target_rows": 0
+  },
+  "native_tabs": [
+    {
+      "sheet_id": 690286021,
+      "title": "ACC",
+      "index": 0,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1062,
+        "columnCount": 26,
+        "frozenRowCount": 1,
+        "frozenColumnCount": 2
+      }
+    },
+    {
+      "sheet_id": 313041664,
+      "title": "PCC",
+      "index": 1,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1037,
+        "columnCount": 26,
+        "frozenRowCount": 1,
+        "frozenColumnCount": 2
+      }
+    },
+    {
+      "sheet_id": 1882505750,
+      "title": "ACTC",
+      "index": 2,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1015,
+        "columnCount": 26,
+        "frozenRowCount": 1,
+        "frozenColumnCount": 2
+      }
+    },
+    {
+      "sheet_id": 1989449097,
+      "title": "Mentor Coaching",
+      "index": 3,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1006, "columnCount": 26 }
+    },
+    {
+      "sheet_id": 1886737117,
+      "title": "MCS",
+      "index": 4,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1193, "columnCount": 30, "frozenRowCount": 1 }
+    },
+    {
+      "sheet_id": 1796552584,
+      "title": "CSS",
+      "index": 5,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1007, "columnCount": 26 }
+    },
+    {
+      "sheet_id": 1862116459,
+      "title": "Practitioner Series",
+      "index": 6,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1009, "columnCount": 26, "frozenRowCount": 1 }
+    },
+    {
+      "sheet_id": 975747032,
+      "title": "Prep Exam",
+      "index": 7,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1056,
+        "columnCount": 25,
+        "frozenRowCount": 1,
+        "frozenColumnCount": 2
+      }
+    },
+    {
+      "sheet_id": 1466349502,
+      "title": "Attendance",
+      "index": 8,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1010,
+        "columnCount": 34,
+        "frozenRowCount": 2,
+        "frozenColumnCount": 2
+      }
+    },
+    {
+      "sheet_id": 1158354214,
+      "title": "Feedback",
+      "index": 9,
+      "sheet_type": "GRID",
+      "grid": {
+        "rowCount": 1134,
+        "columnCount": 26,
+        "frozenRowCount": 1,
+        "frozenColumnCount": 6
+      }
+    },
+    {
+      "sheet_id": 1279595993,
+      "title": "Sales",
+      "index": 10,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1015, "columnCount": 26, "frozenRowCount": 1 }
+    },
+    {
+      "sheet_id": 348080292,
+      "title": "Name Map",
+      "index": 11,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1001, "columnCount": 26 }
+    },
+    {
+      "sheet_id": 1755355115,
+      "title": "Product Map",
+      "index": 12,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1199, "columnCount": 26, "frozenRowCount": 2 }
+    },
+    {
+      "sheet_id": 781519822,
+      "title": "Quiz Attempts",
+      "index": 13,
+      "sheet_type": "GRID",
+      "grid": { "rowCount": 1008, "columnCount": 26 }
+    }
+  ],
+  "roster_headers": {
+    "ACC": {
+      "range": "ACC!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "Full Program",
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "Group Supervision",
+        "Group Mentoring",
+        "Individual Mentoring",
+        "Exam Prep",
+        "Refunded",
+        "Joined",
+        "Cohort"
+      ]
+    },
+    "PCC": {
+      "range": "PCC!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "Full Program",
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "Group Supervision",
+        "Group Mentoring",
+        "Individual Mentoring",
+        "Exam Prep (Indiv)",
+        "Exam Prep (Team)",
+        "Refunded",
+        "Joined",
+        "Cohort"
+      ]
+    },
+    "ACTC": {
+      "range": "ACTC!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "Full Program",
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "Group Supervision",
+        "Recording Review",
+        "Test Prep",
+        "Refunded",
+        "Joined",
+        "Cohort"
+      ]
+    },
+    "Mentor Coaching": {
+      "range": "'Mentor Coaching'!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "ACC Renewal",
+        "PCC Credential",
+        "MCC Credential",
+        "Refunded",
+        "Joined"
+      ]
+    },
+    "MCS": {
+      "range": "MCS!A1:AD1",
+      "headers": [
+        "Email",
+        "Name",
+        "MC Foundation",
+        "ACC Evaluation",
+        "PCC Evaluation",
+        "MCC Evaluation",
+        "MCS Practicum",
+        "Refunded",
+        "Joined",
+        "Cohort"
+      ]
+    },
+    "CSS": {
+      "range": "CSS!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "Coaching Supervision Mastery",
+        "Refunded",
+        "Joined"
+      ]
+    },
+    "Practitioner Series": {
+      "range": "'Practitioner Series'!A1:Z1",
+      "headers": [
+        "Email",
+        "Name",
+        "All Access",
+        "Bundle",
+        "Setting Up Practice",
+        "Running a Business",
+        "Coaching Tools",
+        "AI for Coaches",
+        "Career & Transition",
+        "ADHD Coaching",
+        "Systemic Teams",
+        "Refunded",
+        "Joined"
+      ]
+    },
+    "Prep Exam": {
+      "range": "'Prep Exam'!A1:Y1",
+      "headers": [
+        "Email",
+        "Name",
+        "ACC Exam Prep",
+        "PCC Exam Prep (Indiv)",
+        "ACTC Test Prep",
+        "Refunded"
+      ]
+    }
+  },
+  "product_map": {
+    "range": "'Product Map'!A1:C200",
+    "header": ["Product Name", "Roster Tab", "Column"],
+    "rows": [
+      {
+        "product_label": "ICF Level 1: Module 1 Coaching Fundamentals",
+        "roster_tab": "ACC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ICF Level 1: Module 2: Critical Coaching Skills",
+        "roster_tab": "ACC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "ICF Level 1: Module 3 Coaching Client Mindsets and Beliefs",
+        "roster_tab": "ACC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "ICF Level 1: Module 4 Advanced Coaching Techniques",
+        "roster_tab": "ACC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "Level 1: Full Course",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Full ACC Level 1 Program",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACC Full Program",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACC Module 1",
+        "roster_tab": "ACC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ACC Module 2",
+        "roster_tab": "ACC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "ACC Module 3",
+        "roster_tab": "ACC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "ACC Module 4",
+        "roster_tab": "ACC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "ACC Group Supervision",
+        "roster_tab": "ACC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "Group Supervision (ACC)",
+        "roster_tab": "ACC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "ACC Group Mentoring",
+        "roster_tab": "ACC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "Group Mentoring (ACC)",
+        "roster_tab": "ACC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "ACC Individual Mentoring",
+        "roster_tab": "ACC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "Individual Mentoring (ACC)",
+        "roster_tab": "ACC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "ACC Exam Prep",
+        "roster_tab": "ACC",
+        "roster_column": "Exam Prep"
+      },
+      {
+        "product_label": "ICF Exam Prep Course",
+        "roster_tab": "ACC",
+        "roster_column": "Exam Prep"
+      },
+      {
+        "product_label": "ICF Coach Knowledge Assessment Prep",
+        "roster_tab": "ACC",
+        "roster_column": "Exam Prep"
+      },
+      {
+        "product_label": "ACC-Level Coaching Practice Test",
+        "roster_tab": "ACC",
+        "roster_column": "Exam Prep"
+      },
+      {
+        "product_label": "Coaching Foundations: ICF Competencies & Ethics Asynchronous Learning Modules",
+        "roster_tab": "ACC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "Non Accredited - Self-paced Professional Coaching Learning",
+        "roster_tab": "ACC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ICF Level 2 - Full Program",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Level 2 Full Course",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Full PCC + ACTC Level 2 Program",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "PCC Full Program",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "PCC + ACTC Full Program",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Level 2: Module 1 System Coaching Mindset and Focus",
+        "roster_tab": "PCC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "PCC Module 1",
+        "roster_tab": "PCC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "Level 2: Module 2: Coaching Organizational and Team Systems",
+        "roster_tab": "PCC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "PCC Module 2",
+        "roster_tab": "PCC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "Level 2: Module 3: System Perception and Framing",
+        "roster_tab": "PCC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "PCC Module 3",
+        "roster_tab": "PCC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "Level 2: Module 4: System Awareness",
+        "roster_tab": "PCC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "PCC Module 4",
+        "roster_tab": "PCC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "PCC Group Supervision",
+        "roster_tab": "PCC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "Group Supervision (PCC)",
+        "roster_tab": "PCC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "Group Supervision",
+        "roster_tab": "PCC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "PCC Group Mentoring",
+        "roster_tab": "PCC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "Group Mentoring (PCC)",
+        "roster_tab": "PCC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "PCC Individual Mentoring",
+        "roster_tab": "PCC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "Individual Mentoring (PCC)",
+        "roster_tab": "PCC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "ICF Individual Coaching Exam Prep",
+        "roster_tab": "PCC",
+        "roster_column": "Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "ICF Core Competencies PCC Practice Test: Master Coaching Skills with Confidence",
+        "roster_tab": "PCC",
+        "roster_column": "Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "ICF Team Coaching Exam Prep",
+        "roster_tab": "PCC",
+        "roster_column": "Exam Prep (Team)"
+      },
+      {
+        "product_label": "Level 2: Foundations - ICF Competencies & Ethics Asynchronous Learning Modules",
+        "roster_tab": "PCC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "Full ACTC Program",
+        "roster_tab": "ACTC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACTC Full Program",
+        "roster_tab": "ACTC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACTC Module 1",
+        "roster_tab": "ACTC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ACTC Module 2",
+        "roster_tab": "ACTC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "ACTC Module 3",
+        "roster_tab": "ACTC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "ACTC Module 4",
+        "roster_tab": "ACTC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "ACTC Group Supervision",
+        "roster_tab": "ACTC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "Group Supervision (ACTC)",
+        "roster_tab": "ACTC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "Recording Review",
+        "roster_tab": "ACTC",
+        "roster_column": "Recording Review"
+      },
+      {
+        "product_label": "ACTC Recording Review",
+        "roster_tab": "ACTC",
+        "roster_column": "Recording Review"
+      },
+      {
+        "product_label": "ACTC ONLY: Team Coaching Assessment and Feedback - Single Recording",
+        "roster_tab": "ACTC",
+        "roster_column": "Recording Review"
+      },
+      {
+        "product_label": "ICF Team Coaching Test Prep",
+        "roster_tab": "ACTC",
+        "roster_column": "Test Prep"
+      },
+      {
+        "product_label": "ACTC Test Prep",
+        "roster_tab": "ACTC",
+        "roster_column": "Test Prep"
+      },
+      {
+        "product_label": "Mastering the ICF ACTC Team Coaching Exam: Your Path to Certification",
+        "roster_tab": "ACTC",
+        "roster_column": "Test Prep"
+      },
+      {
+        "product_label": "2026 ICF Level 2 Full Course (ACC + PCC + ACTC)",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "2026 ICF Level 2 Full Course (ACC + PCC + ACTC)",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "PCC Bridge (with ACTC)",
+        "roster_tab": "ACTC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACTC: Full Course",
+        "roster_tab": "ACTC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACC Level 1 Full Program",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACC Module 1: Coaching Fundamentals",
+        "roster_tab": "ACC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ACC Module 2: Deepening Practice",
+        "roster_tab": "ACC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "ACC Module 3: Coaching Mastery",
+        "roster_tab": "ACC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "ACC Module 4: Advanced Coaching Techniques",
+        "roster_tab": "ACC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "ACC Group Coaching Supervision",
+        "roster_tab": "ACC",
+        "roster_column": "Group Supervision"
+      },
+      {
+        "product_label": "ACC Group Mentor Coaching",
+        "roster_tab": "ACC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "ACC Individual Mentor Coaching",
+        "roster_tab": "ACC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "ACC ICF Exam Prep",
+        "roster_tab": "ACC",
+        "roster_column": "Exam Prep"
+      },
+      {
+        "product_label": "PCC Module 1: System Coaching Mindset",
+        "roster_tab": "PCC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "PCC Module 2: Coaching Systems",
+        "roster_tab": "PCC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "PCC Module 3: System Perception",
+        "roster_tab": "PCC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "PCC Module 4: System Awareness",
+        "roster_tab": "PCC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "PCC Individual Exam Prep",
+        "roster_tab": "PCC",
+        "roster_column": "Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "PCC Team Exam Prep",
+        "roster_tab": "PCC",
+        "roster_column": "Exam Prep (Team)"
+      },
+      {
+        "product_label": "ACTC Module 1: System Coaching Mindset",
+        "roster_tab": "ACTC",
+        "roster_column": "M1"
+      },
+      {
+        "product_label": "ACTC Module 2: Coaching Systems",
+        "roster_tab": "ACTC",
+        "roster_column": "M2"
+      },
+      {
+        "product_label": "ACTC Module 3: System Perception",
+        "roster_tab": "ACTC",
+        "roster_column": "M3"
+      },
+      {
+        "product_label": "ACTC Module 4: System Awareness",
+        "roster_tab": "ACTC",
+        "roster_column": "M4"
+      },
+      {
+        "product_label": "ACTC Exam Prep",
+        "roster_tab": "ACTC",
+        "roster_column": "Test Prep"
+      },
+      {
+        "product_label": "Professional Coach Program (ACC + PCC + ACTC)",
+        "roster_tab": "ACC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Professional Coach Program (ACC + PCC + ACTC)",
+        "roster_tab": "PCC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "Professional Coach Program (ACC + PCC + ACTC)",
+        "roster_tab": "ACTC",
+        "roster_column": "Full Program"
+      },
+      {
+        "product_label": "ACC Exam Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACC Exam Prep"
+      },
+      {
+        "product_label": "ICF Exam Prep Course",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACC Exam Prep"
+      },
+      {
+        "product_label": "ICF Coach Knowledge Assessment Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACC Exam Prep"
+      },
+      {
+        "product_label": "ACC-Level Coaching Practice Test",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACC Exam Prep"
+      },
+      {
+        "product_label": "ACC ICF Exam Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACC Exam Prep"
+      },
+      {
+        "product_label": "ICF Individual Coaching Exam Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "PCC Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "ICF Core Competencies PCC Practice Test: Master Coaching Skills with Confidence",
+        "roster_tab": "Prep Exam",
+        "roster_column": "PCC Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "PCC Individual Exam Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "PCC Exam Prep (Indiv)"
+      },
+      {
+        "product_label": "ICF Team Coaching Test Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACTC Test Prep"
+      },
+      {
+        "product_label": "ACTC Test Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACTC Test Prep"
+      },
+      {
+        "product_label": "Mastering the ICF ACTC Team Coaching Exam: Your Path to Certification",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACTC Test Prep"
+      },
+      {
+        "product_label": "ACTC Exam Prep",
+        "roster_tab": "Prep Exam",
+        "roster_column": "ACTC Test Prep"
+      },
+      {
+        "product_label": "Mentor Coaching Foundation",
+        "roster_tab": "MCS",
+        "roster_column": "MC Foundation"
+      },
+      {
+        "product_label": "Mentor Coaching Foundations",
+        "roster_tab": "MCS",
+        "roster_column": "MC Foundation"
+      },
+      {
+        "product_label": "Mentor Coaching Foundations (Program A)",
+        "roster_tab": "MCS",
+        "roster_column": "MC Foundation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: ACC BARS",
+        "roster_tab": "MCS",
+        "roster_column": "ACC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: PCC Markers",
+        "roster_tab": "MCS",
+        "roster_column": "PCC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: MCC BARS",
+        "roster_tab": "MCS",
+        "roster_column": "MCC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "ACC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "PCC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "MCC Evaluation"
+      },
+      {
+        "product_label": "MCQ Program A - Mentor Coaching Foundations",
+        "roster_tab": "MCS",
+        "roster_column": "MC Foundation"
+      },
+      {
+        "product_label": "MCS Evaluation Training: ACC BARS",
+        "roster_tab": "MCS",
+        "roster_column": "ACC Evaluation"
+      },
+      {
+        "product_label": "MCQ Evaluation Training: MCC BARS",
+        "roster_tab": "MCS",
+        "roster_column": "MCC Evaluation"
+      },
+      {
+        "product_label": "MCS Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "ACC Evaluation"
+      },
+      {
+        "product_label": "MCS Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "PCC Evaluation"
+      },
+      {
+        "product_label": "MCS Evaluation Training: Complete Bundle",
+        "roster_tab": "MCS",
+        "roster_column": "MCC Evaluation"
+      },
+      {
+        "product_label": "MCS - Standard path",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "MCS Practicum",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "PCC Credential Mentoring",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "PCC Credential"
+      },
+      {
+        "product_label": "MCC Credential Mentoring",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "MCC Credential"
+      },
+      {
+        "product_label": "Mentor Coach Training - September Thursday Cohort",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "Mentor Coach Training - September Friday Cohort",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "The Practitioner Series - All Access",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "All Access"
+      },
+      {
+        "product_label": "The Practitioner Series - Bundle",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Bundle"
+      },
+      {
+        "product_label": "Setting Up Your Coaching Practice: Coach as Founder",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Setting Up Practice"
+      },
+      {
+        "product_label": "The Practitioner Series: Running a Coaching Business",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Running a Business"
+      },
+      {
+        "product_label": "Running a Coaching Business: Working ON the Business",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Running a Business"
+      },
+      {
+        "product_label": "The Practitioner Series: Coaching Tools Mastery",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Coaching Tools"
+      },
+      {
+        "product_label": "Coaching Tool Mastery: Right Tool, Right Mind",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Coaching Tools"
+      },
+      {
+        "product_label": "AI for Coaches",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "AI for Coaches"
+      },
+      {
+        "product_label": "Career & Transition Coaching: Coach the Transition",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Career & Transition"
+      },
+      {
+        "product_label": "Practitioner Series: ADHD Coaching",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "ADHD Coaching"
+      },
+      {
+        "product_label": "ADHD Coaching: Work with the Brain, Not Against It",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "ADHD Coaching"
+      },
+      {
+        "product_label": "Systemic Coaching for Executive Teams - Coaching the Collision",
+        "roster_tab": "Practitioner Series",
+        "roster_column": "Systemic Teams"
+      },
+      {
+        "product_label": "ICF Mentor Coaching — ACC Renewal (Installment $500/mo)",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "ACC Renewal"
+      },
+      {
+        "product_label": "ICF Mentor Coaching — Earn PCC (Installment $600/mo)",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "PCC Credential"
+      },
+      {
+        "product_label": "ICF Mentor Coaching — Earn MCC (Installment $1,333/mo)",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "MCC Credential"
+      },
+      {
+        "product_label": "Coaching Supervision Mastery — Inaugural Installment ($999/mo ×4)",
+        "roster_tab": "CSS",
+        "roster_column": "Coaching Supervision Mastery"
+      },
+      {
+        "product_label": "Coaching Supervision Mastery — Regular Installment ($1,199/mo ×4)",
+        "roster_tab": "CSS",
+        "roster_column": "Coaching Supervision Mastery"
+      },
+      {
+        "product_label": "MCS Advanced Accreditation Mentor Coaching — Installment (/mo)",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "ACC Renewal Mentoring",
+        "roster_tab": "Mentor Coaching",
+        "roster_column": "ACC Renewal"
+      },
+      {
+        "product_label": "ICF Level 1: Group Mentoring",
+        "roster_tab": "ACC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "Level 1: Group Mentoring",
+        "roster_tab": "ACC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "Level 1: Individual Mentor Coaching and Coaching Assessments",
+        "roster_tab": "ACC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "Level 2: Group Mentoring",
+        "roster_tab": "PCC",
+        "roster_column": "Group Mentoring"
+      },
+      {
+        "product_label": "Level 2: Individual Mentor Coaching and Coaching Assessments",
+        "roster_tab": "PCC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "Individual Supervision - Single Session",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Group Supervision - Single Session",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Public Group Supervision",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Public Group Coaching Supervision",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Group Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Bronze Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Gold Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Mentor Coach Training (AAMC)",
+        "roster_tab": "MCS",
+        "roster_column": "MCS Practicum"
+      },
+      {
+        "product_label": "Fondamentaux du mentor coaching",
+        "roster_tab": "MCS",
+        "roster_column": "MC Foundation"
+      },
+      {
+        "product_label": "ICF Level 1: Individual Mentor Coaching and Coaching Assessments",
+        "roster_tab": "ACC",
+        "roster_column": "Individual Mentoring"
+      },
+      {
+        "product_label": "Coaching Supervision Mastery - Inaugural Cohort",
+        "roster_tab": "CSS",
+        "roster_column": "Coaching Supervision Mastery"
+      }
+    ],
+    "rows_by_target": {
+      "ACC": 38,
+      "PCC": 34,
+      "ACTC": 22,
+      "Prep Exam": 12,
+      "MCS": 22,
+      "Mentor Coaching": 6,
+      "Practitioner Series": 12,
+      "CSS": 3,
+      "(not a student)": 7
+    },
+    "multi_destination_labels": [
+      {
+        "product_label": "ACC Exam Prep",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Exam Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACC Exam Prep" }
+        ]
+      },
+      {
+        "product_label": "ICF Exam Prep Course",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Exam Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACC Exam Prep" }
+        ]
+      },
+      {
+        "product_label": "ICF Coach Knowledge Assessment Prep",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Exam Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACC Exam Prep" }
+        ]
+      },
+      {
+        "product_label": "ACC-Level Coaching Practice Test",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Exam Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACC Exam Prep" }
+        ]
+      },
+      {
+        "product_label": "ICF Individual Coaching Exam Prep",
+        "destinations": [
+          { "roster_tab": "PCC", "roster_column": "Exam Prep (Indiv)" },
+          {
+            "roster_tab": "Prep Exam",
+            "roster_column": "PCC Exam Prep (Indiv)"
+          }
+        ]
+      },
+      {
+        "product_label": "ICF Core Competencies PCC Practice Test: Master Coaching Skills with Confidence",
+        "destinations": [
+          { "roster_tab": "PCC", "roster_column": "Exam Prep (Indiv)" },
+          {
+            "roster_tab": "Prep Exam",
+            "roster_column": "PCC Exam Prep (Indiv)"
+          }
+        ]
+      },
+      {
+        "product_label": "ICF Team Coaching Test Prep",
+        "destinations": [
+          { "roster_tab": "ACTC", "roster_column": "Test Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACTC Test Prep" }
+        ]
+      },
+      {
+        "product_label": "ACTC Test Prep",
+        "destinations": [
+          { "roster_tab": "ACTC", "roster_column": "Test Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACTC Test Prep" }
+        ]
+      },
+      {
+        "product_label": "Mastering the ICF ACTC Team Coaching Exam: Your Path to Certification",
+        "destinations": [
+          { "roster_tab": "ACTC", "roster_column": "Test Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACTC Test Prep" }
+        ]
+      },
+      {
+        "product_label": "2026 ICF Level 2 Full Course (ACC + PCC + ACTC)",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Full Program" },
+          { "roster_tab": "PCC", "roster_column": "Full Program" }
+        ]
+      },
+      {
+        "product_label": "ACC ICF Exam Prep",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Exam Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACC Exam Prep" }
+        ]
+      },
+      {
+        "product_label": "PCC Individual Exam Prep",
+        "destinations": [
+          { "roster_tab": "PCC", "roster_column": "Exam Prep (Indiv)" },
+          {
+            "roster_tab": "Prep Exam",
+            "roster_column": "PCC Exam Prep (Indiv)"
+          }
+        ]
+      },
+      {
+        "product_label": "ACTC Exam Prep",
+        "destinations": [
+          { "roster_tab": "ACTC", "roster_column": "Test Prep" },
+          { "roster_tab": "Prep Exam", "roster_column": "ACTC Test Prep" }
+        ]
+      },
+      {
+        "product_label": "Professional Coach Program (ACC + PCC + ACTC)",
+        "destinations": [
+          { "roster_tab": "ACC", "roster_column": "Full Program" },
+          { "roster_tab": "PCC", "roster_column": "Full Program" },
+          { "roster_tab": "ACTC", "roster_column": "Full Program" }
+        ]
+      },
+      {
+        "product_label": "MCQ Evaluation Training: MCC BARS",
+        "destinations": [
+          { "roster_tab": "MCS", "roster_column": "MCC Evaluation" },
+          { "roster_tab": "MCS", "roster_column": "MCC Evaluation" }
+        ]
+      },
+      {
+        "product_label": "MCQ Evaluation Training: Complete Bundle",
+        "destinations": [
+          { "roster_tab": "MCS", "roster_column": "ACC Evaluation" },
+          { "roster_tab": "MCS", "roster_column": "PCC Evaluation" },
+          { "roster_tab": "MCS", "roster_column": "MCC Evaluation" }
+        ]
+      },
+      {
+        "product_label": "MCS Evaluation Training: Complete Bundle",
+        "destinations": [
+          { "roster_tab": "MCS", "roster_column": "ACC Evaluation" },
+          { "roster_tab": "MCS", "roster_column": "PCC Evaluation" },
+          { "roster_tab": "MCS", "roster_column": "MCC Evaluation" }
+        ]
+      }
+    ],
+    "non_student_sentinels": [
+      {
+        "product_label": "Individual Supervision - Single Session",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Group Supervision - Single Session",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Public Group Supervision",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Public Group Coaching Supervision",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Group Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Bronze Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      },
+      {
+        "product_label": "Gold Supervision Subscription",
+        "roster_tab": "(not a student)",
+        "roster_column": "n/a"
+      }
+    ],
+    "invalid_targets": [],
+    "relationship_evidence": "Each retained row is an explicit native Product Map product-label to roster-tab and roster-column declaration. Header presence verifies only that the target structure exists."
+  },
+  "unsupported_relationships": [
+    "Product Map labels do not prove exact checkout offer identity.",
+    "Target columns do not prove payment, enrollment, entitlement, provider access, dated class assignment, or current roster population.",
+    "Non-student sentinels are source declarations and do not classify any unlisted product."
+  ]
+}

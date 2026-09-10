@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-004` | Release and prove one bounded student-enrollment production pilot | Astra owner + Sol High writer + Claude reviewer | `codex/student-enrollment-production-pilot-20260909` from exact live `00d66184`; integrate reviewed enrollment/projection `d9e29856` and packet `44098313`; dirty primary preserved | `in_progress` | C5/C4 | Capacity 15; one future natural undiscounted USD 3,996 fully settled self-purchased `supervision-inaugural` v1 event for 2026-10-07. Migrations 146-148, one-writer gate, accounting continuity, CSS F:M plus one event-owned row, exact Heartbeat marker hierarchy plus one participant's two memberships, immediate canonical/projection readback and bounded rollback. No historical/repaired/synthetic or second event, broad cutover, extra payment families, Encharge/Plutio action, communication, certificate, or unrelated mutation. | Revalidate ten preflights; implement and review exact integration; back up, migrate, establish/read back capacity/Roster/Heartbeat structures, deploy and arm one-event selector; verify the natural event end to end or leave an explicit monitored waiting state without manufacturing activity. | 2026-09-10T02:45Z |
+| `NC-20260909-004` | Release and prove one bounded student-enrollment production pilot | Astra owner + Codex implementation + Claude reviewer | `codex/student-enrollment-production-pilot-20260909` from exact live `00d66184`; reviewed enrollment/projection sources restored over registration `3b8ac46b`; dirty primary preserved | `validating` | C5/C4 | Local integration now adds the release/epoch/preflight-bound exact event selector, current direct-PaymentIntent plus optional Checkout Session native evidence, production-only serializable facade and one-event/legacy writer claims, post-activation direct-CLI writer enforcement, accounting-only mode after enrollment/uncertainty, assignment-version roster/Heartbeat outboxes, exact provider readback, fsynced receipt-owned preimages, guarded compensation, and health status. Focused 143/143 plus typecheck/build/continuity pass; final Sonnet/high R3 returned no material findings. No migration, backup, deployment, config, Sheet/group/membership, payment, writer, student, or provider mutation ran. | Commit and push the exact reviewed candidate, then freshly rerun P01-P10 including zero-work/live ancestry and CSS/Heartbeat capability checks before the first external mutation. | 2026-09-10T11:38Z |
 | `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; inert receiver live at `02073e66`; stable n8n workflow identity correction `d3c390ce`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build and deploy the reviewed stable-ID correction, import the workflow inactive, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:55Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
@@ -193,6 +193,31 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260909-004
+
+- Program binding: `work:student-enrollment-production-admission-pilot` at
+  Company OS revision 281; accepted decision
+  `.program/decisions/decision-student-enrollment-production-admission-pilot-2026-09-09.json`.
+- Local boundary: exact reviewed migration/admission/store/projection sources
+  are restored over current-live descendant registration `3b8ac46b`. The new
+  runtime candidate stays default-off and refuses startup unless immutable
+  release, activation epoch, P01-P09 receipt, marker UUID, and three distinct
+  host issuer keys are bound.
+- Implementation: both real Stripe paths retain the shared host orchestrator;
+  one exact future event may claim `writer=enrollment` and the atomic policy
+  budget. Contador then performs accounting only. Assignment-version roster and
+  Heartbeat delivery follows exact accounting readback, with private preimages,
+  exact target readback, uncertain-acceptance hold, and receipt-owned rollback.
+- Evidence: focused 143/143, typecheck and build pass under Node 22.23.2. Full
+  suite is 3,846 pass / 32 skip / three failures reproduced unchanged on exact
+  live `00d66184`: the CNPC wrapper assertion, date-sensitive Trafft fixture,
+  and Academy Capacity disposable reservation expectation.
+- External state: unchanged. No production backup/migration/release/config,
+  Sheet, Heartbeat, payment, writer, student, or communication mutation ran.
+- Next: stage task-owned migration authority, pass continuity, obtain bounded
+  Sonnet/high review, correct and re-review material findings, then rerun all
+  ten live preflights before crossing the first external mutation.
 
 ### NC-20260909-003
 

@@ -189,6 +189,8 @@ import {
   runContadorStripeIngressParity,
 } from './contador-stripe-ingress-parity.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
+import { configureStripeEnrollmentPilot } from './stripe-payment-host.js';
+import { createStudentEnrollmentPilotRuntime } from './student-enrollment-pilot-runtime.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
@@ -2136,6 +2138,10 @@ async function main(): Promise<void> {
   // Production must run an untampered artifact from the expected commit under
   // the exact Node version pinned in the release manifest.
   const releaseIdentity = verifyRuntimeRelease();
+  const studentEnrollmentPilot = createStudentEnrollmentPilotRuntime({
+    release: releaseIdentity,
+  });
+  configureStripeEnrollmentPilot(studentEnrollmentPilot);
   logger.info({ release: releaseIdentity }, 'Release integrity verified');
   logger.info(
     { procurementPolicy: procurementPolicyDiagnostic() },
@@ -2325,6 +2331,7 @@ async function main(): Promise<void> {
           circle: false,
           store: studentLifecycleHealth.getStatus(),
         },
+        studentEnrollmentPilot: studentEnrollmentPilot.status(),
         checkoutRecovery: {
           enabled: CHECKOUT_RECOVERY_ENABLED,
           mode: 'shadow',

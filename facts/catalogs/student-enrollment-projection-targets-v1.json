@@ -1,0 +1,74 @@
+{
+  "revision": 1,
+  "mode": "local_unwired",
+  "pilot": {
+    "offer_key": "supervision-inaugural",
+    "offer_version": 1,
+    "funding_status": "settled",
+    "payer_relationship": "self_purchase_explicit",
+    "delivery_block_key": "supervision:2026-10-07",
+    "source_admission_required": true
+  },
+  "targets": [
+    {
+      "target": "student_roster",
+      "disposition": "required",
+      "reviewed_adapter": true,
+      "destination": {
+        "spreadsheet_id": "1bX0hvMgXyoVQXuHRjYfwmVrv9mN5W08jF4iB8LiZI70",
+        "sheet_id": 1796552584,
+        "sheet_title": "CSS"
+      },
+      "apply_path": "google_sheets.values.update exact assignment-owned row",
+      "readback_path": "google_sheets.values.get exact row then target normalizer",
+      "rollback_semantics": "restore the exact preimage captured for this projection version",
+      "reconciliation_semantics": "compare the normalized assignment-owned row to expected_readback_sha256",
+      "permission_ready": false,
+      "activation_ready": false,
+      "readiness_reason": "No production credential, permission preflight, or activation is authorized in this local slice."
+    },
+    {
+      "target": "heartbeat",
+      "disposition": "required",
+      "reviewed_adapter": true,
+      "destination": {
+        "workspace": "main",
+        "course_access_group_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+        "delivery_marker_group_id": null
+      },
+      "apply_path": "documented server API membership writes for two exact groups",
+      "readback_path": "documented server API exact membership reads for both groups",
+      "rollback_semantics": "remove only memberships added by this projection receipt; never delete groups or content access",
+      "reconciliation_semantics": "verify access and hidden zero-content marker independently; neither is canonical truth",
+      "permission_ready": false,
+      "activation_ready": false,
+      "readiness_reason": "The delivery marker does not exist and provider permission/apply/readback compatibility is unverified; rollout must fail closed."
+    },
+    {
+      "target": "encharge",
+      "disposition": "not_applicable",
+      "reviewed_adapter": false,
+      "destination": null,
+      "apply_path": null,
+      "readback_path": null,
+      "rollback_semantics": null,
+      "reconciliation_semantics": null,
+      "permission_ready": false,
+      "activation_ready": false,
+      "readiness_reason": "Explicitly not applicable to pilot offer version 1; no inference from other offers."
+    },
+    {
+      "target": "plutio",
+      "disposition": "not_applicable",
+      "reviewed_adapter": false,
+      "destination": null,
+      "apply_path": null,
+      "readback_path": null,
+      "rollback_semantics": null,
+      "reconciliation_semantics": null,
+      "permission_ready": false,
+      "activation_ready": false,
+      "readiness_reason": "Explicitly not applicable to pilot offer version 1; Plutio remains an operator-facing projection, not student truth."
+    }
+  ]
+}

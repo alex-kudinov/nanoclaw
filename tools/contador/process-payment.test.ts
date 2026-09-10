@@ -13,7 +13,55 @@ const {
   resolveRosterTargets,
   isPlutioInvoiceDescription,
   formatRosterSummary,
+  enrollmentRegistrationMode,
 } = require('./process-payment.cjs');
+
+describe('production enrollment writer enforcement', () => {
+  const base = {
+    accountingOnlyRequested: false,
+    pilotEnabled: true,
+    activationEpoch: '2026-09-10T04:00:00.000Z',
+    eventCreated: '1789012801',
+    stripeAccount: 'tandem',
+    offerKey: 'supervision-inaugural',
+    writer: null,
+  };
+
+  it('allows only a persisted legacy claim to keep the post-activation roster path', () => {
+    expect(enrollmentRegistrationMode({ ...base, writer: 'legacy' })).toBe(
+      'legacy',
+    );
+    expect(enrollmentRegistrationMode(base)).toBe('accounting_only');
+    expect(enrollmentRegistrationMode({ ...base, writer: 'enrollment' })).toBe(
+      'accounting_only',
+    );
+  });
+
+  it('preserves pre-activation and non-pilot legacy processing', () => {
+    expect(
+      enrollmentRegistrationMode({ ...base, eventCreated: '1789000000' }),
+    ).toBe('legacy');
+    expect(enrollmentRegistrationMode({ ...base, pilotEnabled: false })).toBe(
+      'legacy',
+    );
+    expect(enrollmentRegistrationMode({ ...base, offerKey: 'mcs-full' })).toBe(
+      'legacy',
+    );
+  });
+
+  it('fails a direct or malformed pilot invocation to accounting-only', () => {
+    expect(enrollmentRegistrationMode({ ...base, eventCreated: '' })).toBe(
+      'accounting_only',
+    );
+    expect(
+      enrollmentRegistrationMode({
+        ...base,
+        writer: 'legacy',
+        accountingOnlyRequested: true,
+      }),
+    ).toBe('accounting_only');
+  });
+});
 
 describe('Sheets retry and truthful roster classification', () => {
   it('retries only safe reads for transient timeout/5xx failures', () => {
@@ -27,7 +75,10 @@ describe('Sheets retry and truthful roster classification', () => {
       shouldRetrySheetsRequest('GET', new Error('Sheets API 503: unavailable')),
     ).toBe(true);
     expect(
-      shouldRetrySheetsRequest('POST', new Error('Sheets API 503: unavailable')),
+      shouldRetrySheetsRequest(
+        'POST',
+        new Error('Sheets API 503: unavailable'),
+      ),
     ).toBe(false);
     expect(
       shouldRetrySheetsRequest('GET', new Error('Sheets API 403: denied')),
@@ -42,9 +93,7 @@ describe('Sheets retry and truthful roster classification', () => {
         rosterMode: 'write_failed',
         studentRosterResult: 'ERROR: Sheets request timed out after 20000ms',
       }),
-    ).toBe(
-      'not classified — ERROR: Sheets request timed out after 20000ms',
-    );
+    ).toBe('not classified — ERROR: Sheets request timed out after 20000ms');
   });
 
   it('keeps renamed program tabs eligible for exam routing', () => {
@@ -151,7 +200,10 @@ describe('formatPaymentSummary', () => {
 
 describe('cohort persistence contract', () => {
   it('fills a missing Postgres cohort without overwriting an existing operator value', () => {
-    const source = readFileSync(new URL('./process-payment.cjs', import.meta.url), 'utf8');
+    const source = readFileSync(
+      new URL('./process-payment.cjs', import.meta.url),
+      'utf8',
+    );
     expect(source).toContain(
       "cohort = COALESCE(NULLIF(BTRIM(payments.cohort), ''), EXCLUDED.cohort)",
     );
@@ -347,6 +399,23 @@ describe('derivePaymentFulfillmentOutcome', () => {
       stage: 'student_roster',
       outcome: 'not_applicable',
       resultCode: 'student_roster_not_applicable',
+    });
+  });
+
+  it('keeps accounting verified while the enrollment-owned roster projection is pending', () => {
+    const result = derivePaymentFulfillmentOutcome({
+      paymentLogVerified: true,
+      postgresVerified: true,
+      rosterMode: 'enrollment_owned',
+    });
+    expect(result).toMatchObject({
+      state: 'needs_review',
+      errorCode: 'student_roster_enrollment_pending',
+    });
+    expect(result.receipts).toContainEqual({
+      stage: 'student_roster',
+      outcome: 'exception',
+      resultCode: 'student_roster_enrollment_pending',
     });
   });
 

@@ -41,6 +41,7 @@ import {
   resolveStripePaymentSource,
   type ResolvedStripePaymentSource,
 } from './stripe-payment-source.js';
+import type { StudentEnrollmentPilotRuntime } from './student-enrollment-pilot-runtime.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -57,6 +58,13 @@ const SA_JSON = path.join(
 );
 /** psql is not on the launchd PATH; process-payment.cjs shells `psql -c`. */
 const PSQL_DIR = '/opt/homebrew/opt/postgresql@16/bin';
+let configuredEnrollmentPilot: StudentEnrollmentPilotRuntime | null = null;
+
+export function configureStripeEnrollmentPilot(
+  runtime: StudentEnrollmentPilotRuntime | null,
+): void {
+  configuredEnrollmentPilot = runtime;
+}
 
 /**
  * Stripe refund event types n8n forwards. For these, the deterministic
@@ -102,6 +110,9 @@ export interface StripePaymentResult {
   retryable: boolean;
   duplicateComplete: boolean;
   capacityCommitmentState?: string | null;
+  enrollmentWriter?: 'legacy' | 'enrollment' | 'uncertain';
+  enrollmentOrderKey?: string | null;
+  enrollmentProjectionComplete?: boolean;
 }
 
 const RETRYABLE_FULFILLMENT_ERROR_CODES = new Set([
@@ -134,6 +145,7 @@ export interface StripePaymentHostDeps {
   beginFulfillment?: typeof beginContadorFulfillment;
   finalizeFulfillment?: typeof finalizeContadorFulfillment;
   recordCapacitySale?: typeof recordAcademyCapacityWebsiteSale;
+  enrollmentPilot?: StudentEnrollmentPilotRuntime;
 }
 
 interface ProcessorFulfillmentResult {
@@ -425,6 +437,7 @@ export async function handleStripePayment(
   deps: StripePaymentHostDeps = {},
 ): Promise<StripePaymentResult> {
   const stripeId = parseStripePayload(payload);
+  const enrollmentPilot = deps.enrollmentPilot ?? configuredEnrollmentPilot;
   const eventType = parseEventType(payload);
   const isRefund = REFUND_EVENT_TYPES.has(eventType);
   if (!eventType || (!isRefund && !PAYMENT_EVENT_TYPES.has(eventType))) {
@@ -437,6 +450,11 @@ export async function handleStripePayment(
     );
   }
   const providerEventId = optionalProviderId(payload, 'event_id', 'evt');
+  const eventCreated = Number(
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>).event_created
+      : Number.NaN,
+  );
   const refundId = optionalProviderId(payload, 'refund_id', 're');
   if (refundId && !isRefund) {
     throw new StripePayloadError('refund_id requires a refund event_type');
@@ -492,6 +510,25 @@ export async function handleStripePayment(
   if (admission.inFlight || !admission.leaseToken) {
     throw new StripeFulfillmentInFlightError(admission.item.id);
   }
+  let enrollmentRoute: Awaited<
+    ReturnType<StudentEnrollmentPilotRuntime['route']>
+  >;
+  try {
+    enrollmentRoute =
+      !isRefund && enrollmentPilot
+        ? await enrollmentPilot.route({ payload, source })
+        : ({ writer: 'legacy', code: 'pilot_disabled' } as const);
+  } catch (error) {
+    logger.error(
+      { stripeId, caseId: admission.item.id, err: error },
+      'Enrollment route failed; accounting will continue without legacy registration',
+    );
+    enrollmentRoute = {
+      writer: 'uncertain' as const,
+      code: 'enrollment_commit_or_readback_uncertain' as const,
+      orderKey: null,
+    };
+  }
   // Refund events run mark-refunds.cjs in single-id mode (status → "refunded",
   // records the re_ id). Payment events run the full process-payment pipeline.
   const args = isRefund
@@ -504,7 +541,16 @@ export async function handleStripePayment(
         account,
         ...(refundId ? ['--refund-id', refundId] : []),
       ]
-    : [SCRIPT, stripeId, '--account', account];
+    : [
+        SCRIPT,
+        stripeId,
+        '--account',
+        account,
+        ...(Number.isSafeInteger(eventCreated) && eventCreated >= 0
+          ? ['--event-created', String(eventCreated)]
+          : []),
+        ...(enrollmentRoute.writer !== 'legacy' ? ['--accounting-only'] : []),
+      ];
   let parsed: ReturnType<typeof parseLifecycleSentinel>;
   let fulfillment: ProcessorFulfillmentResult;
   try {
@@ -543,6 +589,102 @@ export async function handleStripePayment(
         'Stripe processor failed and durable fulfillment exception could not be persisted',
         { cause: err },
       );
+    }
+  }
+  let enrollmentProjectionComplete = false;
+  if (enrollmentRoute.writer === 'uncertain') {
+    fulfillment = {
+      ...fulfillment,
+      state: 'needs_review',
+      errorCode: 'enrollment_admission_uncertain',
+      receipts: [
+        ...fulfillment.receipts.filter(
+          (receipt) => receipt.stage !== 'student_roster',
+        ),
+        {
+          stage: 'student_roster',
+          outcome: 'exception',
+          resultCode: 'enrollment_admission_uncertain',
+        },
+      ],
+    };
+  } else if (enrollmentRoute.writer === 'enrollment') {
+    const replaceRosterReceipt = (
+      outcome: 'verified' | 'exception',
+      resultCode: string,
+    ) => [
+      ...fulfillment.receipts.filter(
+        (receipt) => receipt.stage !== 'student_roster',
+      ),
+      { stage: 'student_roster' as const, outcome, resultCode },
+    ];
+    const accountingVerified = ['payment_log', 'postgres_payment'].every(
+      (stage) =>
+        fulfillment.receipts.some(
+          (receipt) =>
+            receipt.stage === stage && receipt.outcome === 'verified',
+        ),
+    );
+    if (!accountingVerified) {
+      fulfillment = {
+        ...fulfillment,
+        receipts: replaceRosterReceipt(
+          'exception',
+          'enrollment_projection_waiting_for_accounting',
+        ),
+      };
+    } else if (enrollmentRoute.admission.disposition === 'held') {
+      fulfillment = {
+        ...fulfillment,
+        state: 'needs_review',
+        errorCode: 'enrollment_admission_held',
+        receipts: replaceRosterReceipt(
+          'exception',
+          'enrollment_admission_held',
+        ),
+      };
+    } else {
+      try {
+        const delivery = await enrollmentPilot!.deliver(enrollmentRoute);
+        enrollmentProjectionComplete = delivery.complete;
+        fulfillment = delivery.complete
+          ? {
+              ...fulfillment,
+              state: 'complete',
+              errorCode: null,
+              receipts: replaceRosterReceipt(
+                'verified',
+                'student_roster_enrollment_readback_verified',
+              ),
+            }
+          : {
+              ...fulfillment,
+              state: 'needs_review',
+              errorCode: 'enrollment_projection_incomplete',
+              receipts: replaceRosterReceipt(
+                delivery.studentRoster === 'verified'
+                  ? 'verified'
+                  : 'exception',
+                delivery.studentRoster === 'verified'
+                  ? 'student_roster_enrollment_readback_verified'
+                  : 'enrollment_projection_incomplete',
+              ),
+            };
+      } catch (error) {
+        logger.warn(
+          { stripeId, caseId: admission.item.id, err: error },
+          'Enrollment projection held after accounting readback',
+        );
+        fulfillment = {
+          ...fulfillment,
+          state: 'needs_review',
+          errorCode: 'enrollment_projection_incomplete',
+          receipts: replaceRosterReceipt(
+            'exception',
+            'enrollment_projection_incomplete',
+          ),
+        };
+      }
     }
   }
   const finalCase: DurableContadorFulfillmentCase = await (
@@ -584,7 +726,11 @@ export async function handleStripePayment(
   }
   let capacityCommitmentState: string | null = null;
   let capacitySummary = '';
-  if (finalCase.state === 'complete' && parsed.capacityFact?.eligible) {
+  if (
+    enrollmentRoute.writer === 'legacy' &&
+    finalCase.state === 'complete' &&
+    parsed.capacityFact?.eligible
+  ) {
     try {
       const result = await (
         deps.recordCapacitySale ?? recordAcademyCapacityWebsiteSale
@@ -627,5 +773,13 @@ export async function handleStripePayment(
     retryable: isRetryableFulfillmentErrorCode(finalCase.lastErrorCode),
     duplicateComplete: false,
     capacityCommitmentState,
+    enrollmentWriter: enrollmentRoute.writer,
+    enrollmentOrderKey:
+      enrollmentRoute.writer === 'enrollment'
+        ? enrollmentRoute.admission.orderKey
+        : enrollmentRoute.writer === 'uncertain'
+          ? enrollmentRoute.orderKey
+          : null,
+    enrollmentProjectionComplete,
   };
 }

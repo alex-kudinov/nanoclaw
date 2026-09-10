@@ -804,8 +804,8 @@ export function attachEnrollmentEvidence(
   next.evidence[input.evidenceKey] = input;
   next.history.push(
     history({
-      subjectType: input.subjectType,
-      subjectKey: input.subjectKey,
+      subjectType: 'evidence',
+      subjectKey: input.evidenceKey,
       previousVersion: null,
       commandKey: 'attach_evidence',
       reasonCode: input.evidenceType,
@@ -1663,6 +1663,49 @@ export function requestProjection(
       commandKey: 'request_projection',
       reasonCode: 'outbox_queued',
       evidenceSha256: input.payloadSha256,
+      actor: input.actor,
+      occurredAt: input.occurredAt,
+    }),
+  );
+  return next;
+}
+
+export function supersedeProjection(
+  state: EnrollmentFoundationState,
+  input: {
+    projectionKey: string;
+    evidenceSha256: string;
+    reasonCode: string;
+    actor: string;
+    occurredAt: string;
+  },
+): EnrollmentFoundationState {
+  const current = state.projections[input.projectionKey];
+  if (!current)
+    throw new EnrollmentCommandError(
+      'projection_not_found',
+      'projection not found',
+    );
+  if (current.state === 'superseded') return state;
+  assertSha(input.evidenceSha256, 'evidenceSha256');
+  assertLowerSnake(input.reasonCode, 'reasonCode');
+  assertActor(input.actor);
+  assertTime(input.occurredAt, 'occurredAt');
+  const next = copy(state);
+  next.projections[input.projectionKey] = {
+    ...current,
+    state: 'superseded',
+    version: current.version + 1,
+    updatedAt: input.occurredAt,
+  };
+  next.history.push(
+    history({
+      subjectType: 'projection',
+      subjectKey: input.projectionKey,
+      previousVersion: current.version,
+      commandKey: 'supersede_projection',
+      reasonCode: input.reasonCode,
+      evidenceSha256: input.evidenceSha256,
       actor: input.actor,
       occurredAt: input.occurredAt,
     }),

@@ -135,6 +135,7 @@ export interface HealthPayload {
     actionConsumers: false;
     circle: false;
   };
+  studentEnrollmentPilot?: Record<string, unknown>;
   checkoutRecovery?: {
     enabled: boolean;
     mode: 'shadow';

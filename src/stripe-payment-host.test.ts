@@ -304,6 +304,100 @@ describe('parseLifecycleSentinel', () => {
 });
 
 describe('handleStripePayment', () => {
+  it('routes one claimed enrollment event through accounting-only mode and immediate projections', async () => {
+    const { execFile } = await import('child_process');
+    const enrollmentPilot = {
+      route: vi.fn(async () => ({
+        writer: 'enrollment' as const,
+        admission: {
+          disposition: 'accepted' as const,
+          orderKey: 'bookkeeper:pilot',
+        },
+        evidence: {},
+        projections: { assignmentKey: 'assignment:pilot' },
+      })),
+      deliver: vi.fn(async () => ({
+        studentRoster: 'verified' as const,
+        heartbeat: 'verified' as const,
+        complete: true,
+      })),
+      status: vi.fn(() => ({})),
+    };
+    const result = await handleStripePayment(
+      {
+        stripe_id: 'pi_pilot',
+        event_type: 'payment_intent.succeeded',
+        account: 'tandem',
+        event_id: 'evt_pilot',
+        event_created: 1789010000,
+        payment_intent_id: 'pi_pilot',
+      },
+      { enrollmentPilot: enrollmentPilot as any },
+    );
+    const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
+    expect(args).toContain('--accounting-only');
+    expect(enrollmentPilot.deliver).toHaveBeenCalledOnce();
+    expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'complete',
+        errorCode: null,
+        receipts: expect.arrayContaining([
+          expect.objectContaining({
+            stage: 'student_roster',
+            outcome: 'verified',
+          }),
+        ]),
+      }),
+    );
+    expect(result).toMatchObject({
+      enrollmentWriter: 'enrollment',
+      enrollmentOrderKey: 'bookkeeper:pilot',
+      enrollmentProjectionComplete: true,
+    });
+  });
+
+  it('finalizes accounting as needs-review when enrollment commit status is uncertain', async () => {
+    const { execFile } = await import('child_process');
+    const enrollmentPilot = {
+      route: vi.fn(async () => {
+        throw new Error('second commit acknowledgement lost');
+      }),
+      deliver: vi.fn(),
+      status: vi.fn(() => ({})),
+    };
+    const result = await handleStripePayment(
+      {
+        stripe_id: 'pi_uncertain',
+        event_type: 'payment_intent.succeeded',
+        account: 'tandem',
+        event_id: 'evt_uncertain',
+        event_created: 1789010000,
+        payment_intent_id: 'pi_uncertain',
+      },
+      { enrollmentPilot: enrollmentPilot as any },
+    );
+    const args = vi.mocked(execFile).mock.calls.at(-1)![1] as string[];
+    expect(args).toContain('--accounting-only');
+    expect(enrollmentPilot.deliver).not.toHaveBeenCalled();
+    expect(mockFinalizeFulfillment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        state: 'needs_review',
+        errorCode: 'enrollment_admission_uncertain',
+        receipts: expect.arrayContaining([
+          expect.objectContaining({
+            stage: 'student_roster',
+            outcome: 'exception',
+          }),
+        ]),
+      }),
+    );
+    expect(result).toMatchObject({
+      enrollmentWriter: 'uncertain',
+      enrollmentProjectionComplete: false,
+      fulfillmentState: 'needs_review',
+    });
+  });
+
   it('runs the script and returns the verbatim summary', async () => {
     const r = await handleStripePayment({
       stripe_id: 'pi_3TYdEFRnZI4gH1uA1dVO93l7',

@@ -40,6 +40,11 @@ const ACCOUNT_ARG = (() => {
   const i = process.argv.indexOf('--account');
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].trim() : '';
 })();
+const ACCOUNTING_ONLY = process.argv.includes('--accounting-only');
+const EVENT_CREATED_ARG = (() => {
+  const i = process.argv.indexOf('--event-created');
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].trim() : '';
+})();
 if (ACCOUNT_ARG && !['heartbeat', 'tandem'].includes(ACCOUNT_ARG)) {
   console.error('ERROR: --account must be heartbeat or tandem');
   process.exit(1);
@@ -55,9 +60,7 @@ const STRIPE_ACCOUNTS = [
     key: process.env.STRIPE_SECRET_KEY_ALT,
   },
 ].filter((account) => account.key);
-const STRIPE_KEYS = ACCOUNT_ARG
-  ? STRIPE_ACCOUNTS.filter((account) => account.label === ACCOUNT_ARG)
-  : STRIPE_ACCOUNTS;
+const STRIPE_KEYS = ACCOUNT_ARG ? STRIPE_ACCOUNTS.filter((account) => account.label === ACCOUNT_ARG) : STRIPE_ACCOUNTS;
 if (STRIPE_KEYS.length === 0 && require.main === module) {
   console.error(
     ACCOUNT_ARG
@@ -71,9 +74,7 @@ let STRIPE_ACCOUNT = STRIPE_KEYS[0]?.label;
 
 const SHEETS_PAYMENTS_ID = process.env.SHEETS_PAYMENTS_ID;
 const SHEETS_ROSTER_ID = process.env.SHEETS_ROSTER_ID;
-const SA_PATH =
-  process.env.SHEETS_SA_JSON ||
-  '/workspace/extra/service-accounts/sheets-service-account.json';
+const SA_PATH = process.env.SHEETS_SA_JSON || '/workspace/extra/service-accounts/sheets-service-account.json';
 
 // Product Map sentinel (column B, compared lowercased). A delivered service is
 // still a payment, but buying it does not make the payer a student. This rule
@@ -138,9 +139,7 @@ async function getAccessToken() {
   const sa = JSON.parse(fs.readFileSync(SA_PATH, 'utf-8'));
   const now = Math.floor(Date.now() / 1000);
 
-  const header = Buffer.from(
-    JSON.stringify({ alg: 'RS256', typ: 'JWT' }),
-  ).toString('base64url');
+  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
   const claims = Buffer.from(
     JSON.stringify({
       iss: sa.client_email,
@@ -150,9 +149,7 @@ async function getAccessToken() {
       iat: now,
     }),
   ).toString('base64url');
-  const signature = crypto
-    .sign('RSA-SHA256', Buffer.from(`${header}.${claims}`), sa.private_key)
-    .toString('base64url');
+  const signature = crypto.sign('RSA-SHA256', Buffer.from(`${header}.${claims}`), sa.private_key).toString('base64url');
   const jwt = `${header}.${claims}.${signature}`;
 
   return new Promise((resolve, reject) => {
@@ -198,9 +195,7 @@ async function getAccessToken() {
 function shouldRetrySheetsRequest(method, error) {
   if (method !== 'GET') return false;
   const message = String(error?.message || error || '');
-  return /timed out|ECONNRESET|EPIPE|EAI_AGAIN|socket hang up|Sheets API (408|429|5\d\d):/i.test(
-    message,
-  );
+  return /timed out|ECONNRESET|EPIPE|EAI_AGAIN|socket hang up|Sheets API (408|429|5\d\d):/i.test(message);
 }
 
 function sheetsRequestOnce(token, sheetId, method, path, body) {
@@ -257,28 +252,15 @@ function sheetsGet(sheetId, range) {
 }
 
 function sheetsAppend(sheetId, range, values) {
-  return sheetsRequest(sheetId,
-    'POST',
-    `values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
-    { values },
-  );
+  return sheetsRequest(sheetId, 'POST', `values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { values });
 }
 
 function sheetsUpdate(sheetId, range, values) {
-  return sheetsRequest(sheetId,
-    'PUT',
-    `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
-    { values },
-  );
+  return sheetsRequest(sheetId, 'PUT', `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { values });
 }
 
 function sheetsClear(sheetId, range) {
-  return sheetsRequest(
-    sheetId,
-    'POST',
-    `values/${encodeURIComponent(range)}:clear`,
-    {},
-  );
+  return sheetsRequest(sheetId, 'POST', `values/${encodeURIComponent(range)}:clear`, {});
 }
 
 function sheetsBatchUpdate(spreadsheetId, requests) {
@@ -300,8 +282,7 @@ function sheetsBatchUpdate(spreadsheetId, requests) {
             let data = '';
             res.on('data', (chunk) => (data += chunk));
             res.on('end', () => {
-              if (res.statusCode >= 400)
-                reject(new Error(`Sheets batchUpdate ${res.statusCode}: ${data}`));
+              if (res.statusCode >= 400) reject(new Error(`Sheets batchUpdate ${res.statusCode}: ${data}`));
               else resolve(JSON.parse(data));
             });
           },
@@ -328,8 +309,7 @@ function getSheetMetadata(spreadsheetId) {
             let data = '';
             res.on('data', (chunk) => (data += chunk));
             res.on('end', () => {
-              if (res.statusCode >= 400)
-                reject(new Error(`Sheets metadata ${res.statusCode}: ${data}`));
+              if (res.statusCode >= 400) reject(new Error(`Sheets metadata ${res.statusCode}: ${data}`));
               else resolve(JSON.parse(data));
             });
           },
@@ -386,6 +366,56 @@ function buildPsqlVarArgs(params) {
   return Object.entries(params).flatMap(([k, v]) => ['-v', `${k}=${v ?? ''}`]);
 }
 
+function enrollmentRegistrationMode({
+  accountingOnlyRequested,
+  pilotEnabled,
+  activationEpoch,
+  eventCreated,
+  stripeAccount,
+  offerKey,
+  writer,
+}) {
+  if (!pilotEnabled || stripeAccount !== 'tandem' || offerKey !== 'supervision-inaugural') {
+    return accountingOnlyRequested ? 'accounting_only' : 'legacy';
+  }
+  const activationMs = Date.parse(String(activationEpoch || ''));
+  const eventSeconds = Number(eventCreated);
+  if (
+    Number.isFinite(activationMs) &&
+    /^\d{10}$/.test(String(eventCreated || '')) &&
+    Number.isSafeInteger(eventSeconds) &&
+    eventSeconds * 1000 < activationMs
+  ) {
+    return accountingOnlyRequested ? 'accounting_only' : 'legacy';
+  }
+  return accountingOnlyRequested || writer !== 'legacy'
+    ? 'accounting_only'
+    : 'legacy';
+}
+
+function readEnrollmentWriterClaim(paymentIntentId) {
+  try {
+    const args = buildPsqlVarArgs({ pi: paymentIntentId });
+    const sql = `SELECT writer
+      FROM business_v2.student_enrollment_writer_claims
+      WHERE source_scope='stripe:tandem'
+        AND source_object_type='payment_intent'
+        AND source_object_id=:'pi';`;
+    const output = execFileSync(
+      'psql',
+      [...args, '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'],
+      {
+        input: sql,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        encoding: 'utf8',
+      },
+    ).trim();
+    return output === 'legacy' || output === 'enrollment' ? output : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Which product name survives when both halves of one purchase (Checkout's
  * cs_ event and its PaymentIntent's pi_ event) write the same accounting row.
@@ -406,15 +436,13 @@ function preferredProductName(incoming, existing, eventType) {
 
 function resolveRosterTargets(productRows) {
   const notAStudent = productRows.some(
-    (row) => String(row[1] || '').trim().toLowerCase() === NOT_A_STUDENT,
+    (row) =>
+      String(row[1] || '')
+        .trim()
+        .toLowerCase() === NOT_A_STUDENT,
   );
   const rosterMatches = productRows
-    .filter(
-      (row) =>
-        row[1] &&
-        row[2] &&
-        String(row[1]).trim().toLowerCase() !== NOT_A_STUDENT,
-    )
+    .filter((row) => row[1] && row[2] && String(row[1]).trim().toLowerCase() !== NOT_A_STUDENT)
     .map((row) => ({ tab: row[1], column: row[2] }));
   return {
     notAStudent,
@@ -427,17 +455,10 @@ function resolveRosterTargets(productRows) {
 }
 
 function isPlutioInvoiceDescription(productName) {
-  return /^Invoice #tca-\d+-pl from Tandem Coaching Partners LLC \([A-Za-z0-9]+\)$/.test(
-    String(productName || '').trim(),
-  );
+  return /^Invoice #tca-\d+-pl from Tandem Coaching Partners LLC \([A-Za-z0-9]+\)$/.test(String(productName || '').trim());
 }
 
-function formatRosterSummary({
-  productName,
-  rosterMatches,
-  rosterMode,
-  studentRosterResult,
-}) {
+function formatRosterSummary({ productName, rosterMatches, rosterMode, studentRosterResult }) {
   if (rosterMode === 'not_student') {
     return 'nowhere (not a student — delivered service)';
   }
@@ -445,9 +466,10 @@ function formatRosterSummary({
     return 'Sales tab (unmapped product)';
   }
   if (rosterMode === 'missing_student') {
-    return isPlutioInvoiceDescription(productName)
-      ? 'not filed — Plutio invoice participant identity required'
-      : 'not filed — student identity required';
+    return isPlutioInvoiceDescription(productName) ? 'not filed — Plutio invoice participant identity required' : 'not filed — student identity required';
+  }
+  if (rosterMode === 'enrollment_owned') {
+    return 'Company OS projection pending';
   }
   if (rosterMatches.length > 0) {
     return rosterMatches.map((match) => `${match.tab} → ${match.column}`).join(', ');
@@ -458,9 +480,7 @@ function formatRosterSummary({
 async function clearSalesCatchAll(accountingStripeId, receivedStripeId) {
   const ids = await sheetsGet(SHEETS_ROSTER_ID, 'Sales!F:F');
   const candidateIds = new Set([accountingStripeId, receivedStripeId]);
-  const rows = (ids.values || [])
-    .map((row, index) => ({ id: row[0], sheetRow: index + 1 }))
-    .filter(({ id, sheetRow }) => sheetRow > 1 && candidateIds.has(id));
+  const rows = (ids.values || []).map((row, index) => ({ id: row[0], sheetRow: index + 1 })).filter(({ id, sheetRow }) => sheetRow > 1 && candidateIds.has(id));
   for (const { sheetRow } of rows) {
     await sheetsClear(SHEETS_ROSTER_ID, `Sales!A${sheetRow}:F${sheetRow}`);
     const readback = await sheetsGet(SHEETS_ROSTER_ID, `Sales!F${sheetRow}`);
@@ -478,16 +498,12 @@ async function fillCohortCell(tab, headerRow, sheetRow, cohort) {
     throw new Error(`cohort column missing on ${tab}`);
   }
   const cell = `${tab}!${colIndexToLetter(colIndex)}${sheetRow}`;
-  const before = String(
-    (await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '',
-  ).trim();
+  const before = String((await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '').trim();
   const expected = before || cohort;
   if (!before) {
     await sheetsUpdate(SHEETS_ROSTER_ID, cell, [[cohort]]);
   }
-  const after = String(
-    (await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '',
-  ).trim();
+  const after = String((await sheetsGet(SHEETS_ROSTER_ID, cell)).values?.[0]?.[0] || '').trim();
   return {
     verified: after === expected,
     changed: !before,
@@ -512,7 +528,9 @@ async function fetchCustomerWithName(customerId) {
   for (let attempt = 0; attempt < NAME_RETRY_ATTEMPTS; attempt++) {
     try {
       last = await stripeGet(`/v1/customers/${customerId}`);
-    } catch { /* non-fatal — keep prior result, retry */ }
+    } catch {
+      /* non-fatal — keep prior result, retry */
+    }
     if ((last.name || '').trim()) break;
     if (attempt < NAME_RETRY_ATTEMPTS - 1) await sleep(NAME_RETRY_DELAY_MS);
   }
@@ -569,9 +587,7 @@ async function fetchPaymentData() {
   };
 
   if (ID_TYPE === 'checkout') {
-    const session = await stripeGet(
-      `/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`,
-    );
+    const session = await stripeGet(`/v1/checkout/sessions/${STRIPE_ID}?expand[]=line_items.data.price.product&expand[]=customer_details`);
     lineItems = session.line_items?.data || [];
     identityIncomplete = Boolean(session.line_items?.has_more);
     lineItems.forEach(addLineIdentity);
@@ -588,10 +604,7 @@ async function fetchPaymentData() {
     eventType = 'checkout.session.completed';
     stripeCreatedAt = session.created || 0;
     if (session.payment_intent) {
-      canonicalTransactionId =
-        typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : session.payment_intent.id || '';
+      canonicalTransactionId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id || '';
       try {
         const pi = await stripeGet(`/v1/payment_intents/${canonicalTransactionId}`);
         // Same underlying PaymentIntent the pi_ half of this purchase will
@@ -634,10 +647,7 @@ async function fetchPaymentData() {
         (inv.lines?.data || []).forEach(addLineIdentity);
         identityIncomplete = Boolean(inv.lines?.has_more);
         const line = (inv.lines && inv.lines.data && inv.lines.data[0]) || {};
-        const prodId =
-          (line.pricing && line.pricing.price_details && line.pricing.price_details.product) ||
-          (line.price && line.price.product) ||
-          '';
+        const prodId = (line.pricing && line.pricing.price_details && line.pricing.price_details.product) || (line.price && line.price.product) || '';
         if (prodId) {
           const prod = await stripeGet(`/v1/products/${prodId}`);
           if (prod.name) {
@@ -684,12 +694,27 @@ async function fetchPaymentData() {
   }
 
   return {
-    productName, productId, customerEmail, customerName,
-    amountCents, currency, paymentStatus, eventType,
-    feeCents, refundedCents, lineItems, stripeCreatedAt,
-    canonicalTransactionId, canonicalProductSlug, chargeId, invoiceId,
-    chargeDescription, chargeMetadata,
-    identityProductIds, identityPriceIds, identityIncomplete,
+    productName,
+    productId,
+    customerEmail,
+    customerName,
+    amountCents,
+    currency,
+    paymentStatus,
+    eventType,
+    feeCents,
+    refundedCents,
+    lineItems,
+    stripeCreatedAt,
+    canonicalTransactionId,
+    canonicalProductSlug,
+    chargeId,
+    invoiceId,
+    chargeDescription,
+    chargeMetadata,
+    identityProductIds,
+    identityPriceIds,
+    identityIncomplete,
   };
 }
 
@@ -735,11 +760,7 @@ async function resolveExamRouting(allMatches, programTabs, email) {
  * exit is intentionally absent from this decision: only exact source readback
  * or an explicit owned exception is terminal.
  */
-function derivePaymentFulfillmentOutcome({
-  paymentLogVerified,
-  postgresVerified,
-  rosterMode,
-}) {
+function derivePaymentFulfillmentOutcome({ paymentLogVerified, postgresVerified, rosterMode }) {
   const receipts = [
     {
       stage: 'stripe_source',
@@ -749,16 +770,12 @@ function derivePaymentFulfillmentOutcome({
     {
       stage: 'payment_log',
       outcome: paymentLogVerified ? 'verified' : 'failed',
-      resultCode: paymentLogVerified
-        ? 'payment_log_readback_verified'
-        : 'payment_log_readback_failed',
+      resultCode: paymentLogVerified ? 'payment_log_readback_verified' : 'payment_log_readback_failed',
     },
     {
       stage: 'postgres_payment',
       outcome: postgresVerified ? 'verified' : 'failed',
-      resultCode: postgresVerified
-        ? 'postgres_payment_readback_verified'
-        : 'postgres_payment_readback_failed',
+      resultCode: postgresVerified ? 'postgres_payment_readback_verified' : 'postgres_payment_readback_failed',
     },
   ];
   let state;
@@ -778,6 +795,9 @@ function derivePaymentFulfillmentOutcome({
   } else if (rosterMode === 'identity_conflict') {
     state = 'needs_review';
     errorCode = 'product_identity_conflict';
+  } else if (rosterMode === 'enrollment_owned') {
+    state = 'needs_review';
+    errorCode = 'student_roster_enrollment_pending';
   } else if (rosterMode === 'mapped_verified' || rosterMode === 'not_student') {
     state = 'complete';
   } else {
@@ -791,41 +811,56 @@ function derivePaymentFulfillmentOutcome({
         ? 'verified'
         : rosterMode === 'not_student'
           ? 'not_applicable'
-        : ['missing_student', 'unmapped_product', 'identity_conflict'].includes(rosterMode)
-          ? 'exception'
-          : 'failed',
+          : rosterMode === 'enrollment_owned'
+            ? 'exception'
+            : ['missing_student', 'unmapped_product', 'identity_conflict'].includes(rosterMode)
+              ? 'exception'
+              : 'failed',
     resultCode:
       rosterMode === 'mapped_verified'
         ? 'student_roster_readback_verified'
         : rosterMode === 'not_student'
           ? 'student_roster_not_applicable'
-        : rosterMode === 'missing_student'
-          ? 'student_identity_missing'
-          : rosterMode === 'unmapped_product'
-            ? 'product_mapping_missing'
-          : rosterMode === 'identity_conflict'
-            ? 'product_identity_conflict'
-            : 'student_roster_readback_failed',
+          : rosterMode === 'enrollment_owned'
+            ? 'student_roster_enrollment_pending'
+            : rosterMode === 'missing_student'
+              ? 'student_identity_missing'
+              : rosterMode === 'unmapped_product'
+                ? 'product_mapping_missing'
+                : rosterMode === 'identity_conflict'
+                  ? 'product_identity_conflict'
+                  : 'student_roster_readback_failed',
   });
   return { state, errorCode, receipts };
 }
 
 function emitFulfillmentResult(result) {
-  console.log(
-    `__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(result)).toString('base64url')}`,
-  );
+  console.log(`__CONTADOR_FULFILLMENT__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
 }
 
 function formatPaymentSummary({
-  customerName, customerEmail, productName, amountDollars, currency,
-  feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
-  accountingStripeId, idType, receivedStripeId, rosterSummary,
-  paymentLogResult, studentRosterResult, dbResult, debug, lineItemCount,
+  customerName,
+  customerEmail,
+  productName,
+  amountDollars,
+  currency,
+  feeDollars,
+  netDollars,
+  refundedCents,
+  transactionDate,
+  recordedDate,
+  accountingStripeId,
+  idType,
+  receivedStripeId,
+  rosterSummary,
+  paymentLogResult,
+  studentRosterResult,
+  dbResult,
+  debug,
+  lineItemCount,
   cohort,
 }) {
-  const refundNote = refundedCents > 0
-    ? `; $${(refundedCents / 100).toFixed(2)} refunded`
-    : '';
+  const refundNote = refundedCents > 0 ? `; $${(refundedCents / 100).toFixed(2)} refunded` : '';
   const lines = [
     `Payment received: ${customerName} — ${productName} — $${amountDollars} ${currency}${refundNote}`,
     `Customer: ${customerEmail}`,
@@ -847,14 +882,46 @@ async function main() {
   // 1. Fetch payment data from Stripe (tries each key until one works)
   const fetchResult = await fetchPaymentWithKeyFallback();
   const {
-    productName, productId, customerEmail, customerName,
-    amountCents, currency, paymentStatus, eventType,
-    feeCents, refundedCents, lineItems, stripeCreatedAt,
-    canonicalTransactionId, stripeAccount, canonicalProductSlug,
-    chargeId, invoiceId, chargeDescription, chargeMetadata,
-    identityProductIds, identityPriceIds, identityIncomplete,
+    productName,
+    productId,
+    customerEmail,
+    customerName,
+    amountCents,
+    currency,
+    paymentStatus,
+    eventType,
+    feeCents,
+    refundedCents,
+    lineItems,
+    stripeCreatedAt,
+    canonicalTransactionId,
+    stripeAccount,
+    canonicalProductSlug,
+    chargeId,
+    invoiceId,
+    chargeDescription,
+    chargeMetadata,
+    identityProductIds,
+    identityPriceIds,
+    identityIncomplete,
   } = fetchResult;
   const accountingStripeId = canonicalTransactionId || STRIPE_ID;
+  const pilotEnabled = process.env.STUDENT_ENROLLMENT_PILOT_ENABLED === '1';
+  const writer =
+    pilotEnabled &&
+    stripeAccount === 'tandem' &&
+    canonicalProductSlug === 'supervision-inaugural'
+      ? readEnrollmentWriterClaim(accountingStripeId)
+      : null;
+  const registrationMode = enrollmentRegistrationMode({
+    accountingOnlyRequested: ACCOUNTING_ONLY,
+    pilotEnabled,
+    activationEpoch: process.env.STUDENT_ENROLLMENT_PILOT_ACTIVATION_EPOCH,
+    eventCreated: EVENT_CREATED_ARG,
+    stripeAccount,
+    offerKey: canonicalProductSlug,
+    writer,
+  });
 
   const fmtDate = (d) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   const fmtISO = (d) => d.toISOString().split('T')[0];
@@ -908,9 +975,7 @@ async function main() {
       const existingIds = await sheetsGet(SHEETS_PAYMENTS_ID, 'Payment Log!J:J');
       const idCol = existingIds.values || [];
       const candidateIds = new Set([accountingStripeId, STRIPE_ID]);
-      const existingRow = idCol.findIndex(
-        (r, i) => i > 0 && candidateIds.has(r[0]),
-      );
+      const existingRow = idCol.findIndex((r, i) => i > 0 && candidateIds.has(r[0]));
       if (existingRow >= 0) {
         const sheetRow = existingRow + 1;
         paymentLogRow = sheetRow;
@@ -949,34 +1014,32 @@ async function main() {
             const meta = await getSheetMetadata(SHEETS_PAYMENTS_ID);
             const tab = meta.sheets?.find((s) => s.properties.title === 'Payment Log');
             if (tab) {
-              await sheetsBatchUpdate(SHEETS_PAYMENTS_ID, [{
-                setBasicFilter: {
-                  filter: {
-                    range: {
-                      sheetId: tab.properties.sheetId,
-                      startRowIndex: 0,
-                      startColumnIndex: 0,
-                      endRowIndex: newRow,
-                      endColumnIndex: 15,
+              await sheetsBatchUpdate(SHEETS_PAYMENTS_ID, [
+                {
+                  setBasicFilter: {
+                    filter: {
+                      range: {
+                        sheetId: tab.properties.sheetId,
+                        startRowIndex: 0,
+                        startColumnIndex: 0,
+                        endRowIndex: newRow,
+                        endColumnIndex: 15,
+                      },
                     },
                   },
                 },
-              }]);
+              ]);
             }
           }
-        } catch { /* non-fatal — filter update is nice-to-have */ }
+        } catch {
+          /* non-fatal — filter update is nice-to-have */
+        }
       }
       if (paymentLogRow !== null) {
-        const readback = await sheetsGet(
-          SHEETS_PAYMENTS_ID,
-          `Payment Log!J${paymentLogRow}:K${paymentLogRow}`,
-        );
+        const readback = await sheetsGet(SHEETS_PAYMENTS_ID, `Payment Log!J${paymentLogRow}:K${paymentLogRow}`);
         const [readbackId, readbackStatus] = readback.values?.[0] || [];
-        paymentLogVerified =
-          readbackId === accountingStripeId && readbackStatus === paymentStatus;
-        results.sheets_log = paymentLogVerified
-          ? `${results.sheets_log} (readback verified)`
-          : 'ERROR: payment log readback mismatch';
+        paymentLogVerified = readbackId === accountingStripeId && readbackStatus === paymentStatus;
+        results.sheets_log = paymentLogVerified ? `${results.sheets_log} (readback verified)` : 'ERROR: payment log readback mismatch';
       } else {
         results.sheets_log = 'ERROR: payment log row identity unavailable';
       }
@@ -992,20 +1055,27 @@ async function main() {
 
   // 2b. Student Roster (shared sheet — tabs per credential: ACC/PCC/ACTC Roster)
   // Combo products (e.g. Professional Coach Program) can map to multiple tabs
-  if (SHEETS_ROSTER_ID && hasSaCreds) {
+  if (registrationMode === 'accounting_only') {
+    results.sheets_roster = 'deferred to Company OS enrollment projection after persisted writer claim';
+    rosterMode = 'enrollment_owned';
+  } else if (SHEETS_ROSTER_ID && hasSaCreds) {
     try {
       // Read Product Map (3 columns: product name, tab name, column header)
       // Combo products have multiple rows — one per roster tab
       const mapping = await sheetsGet(SHEETS_ROSTER_ID, 'Product Map!A:C');
       const rows = mapping.values || [];
-      const identity = resolveProductIdentity(loadProductBindings(), {
-        account: stripeAccount,
-        offerKey: canonicalProductSlug,
-        productIds: identityProductIds,
-        priceIds: identityPriceIds,
-        incomplete: identityIncomplete,
-        productName,
-      }, rows);
+      const identity = resolveProductIdentity(
+        loadProductBindings(),
+        {
+          account: stripeAccount,
+          offerKey: canonicalProductSlug,
+          productIds: identityProductIds,
+          priceIds: identityPriceIds,
+          incomplete: identityIncomplete,
+          productName,
+        },
+        rows,
+      );
       const productRows = identity.rows;
       const targets = resolveRosterTargets(productRows);
       ({ notAStudent, rosterMatches } = targets);
@@ -1043,12 +1113,7 @@ async function main() {
             if (colIndex >= 0) {
               const emails = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!A:A`);
               const emailCol = emails.values || [];
-              const rowIndex = emailCol.findIndex(
-                (r, i) =>
-                  i > 0 &&
-                  r[0] &&
-                  r[0].toLowerCase() === customerEmail.toLowerCase(),
-              );
+              const rowIndex = emailCol.findIndex((r, i) => i > 0 && r[0] && r[0].toLowerCase() === customerEmail.toLowerCase());
 
               let writtenRow;
               if (rowIndex < 0) {
@@ -1060,63 +1125,41 @@ async function main() {
                   const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
                   if (refundColIndex >= 0) newRow[refundColIndex] = transactionDate;
                 }
-                const appendResult = await sheetsAppend(
-                  SHEETS_ROSTER_ID,
-                  `${tab}!A:A`,
-                  [newRow],
-                );
-                const rowMatch = (appendResult.updates?.updatedRange || '').match(
-                  /:.*?(\d+)$/,
-                );
+                const appendResult = await sheetsAppend(SHEETS_ROSTER_ID, `${tab}!A:A`, [newRow]);
+                const rowMatch = (appendResult.updates?.updatedRange || '').match(/:.*?(\d+)$/);
                 writtenRow = rowMatch ? parseInt(rowMatch[1], 10) : null;
               } else {
                 const sheetRow = rowIndex + 1;
                 writtenRow = sheetRow;
                 const colLetter = colIndexToLetter(colIndex);
-                await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${colLetter}${sheetRow}`, [
-                  [transactionDate],
-                ]);
+                await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${colLetter}${sheetRow}`, [[transactionDate]]);
                 try {
                   // Fill the name when the cell is blank OR a stale "Unknown"
                   // (a prior webhook lost the customer.name race and a replay
                   // would otherwise leave it stuck forever). Never clobber a
                   // real name, and only write a real name ourselves.
-                  const existingName = (
-                    (await sheetsGet(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`)).values?.[0]?.[0] || ''
-                  ).trim();
+                  const existingName = ((await sheetsGet(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`)).values?.[0]?.[0] || '').trim();
                   const fillable = !existingName || existingName.toLowerCase() === 'unknown';
                   if (fillable && customerName && customerName !== 'Unknown') {
-                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`, [
-                      [customerName],
-                    ]);
+                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!B${sheetRow}`, [[customerName]]);
                   }
-                } catch { /* non-fatal */ }
+                } catch {
+                  /* non-fatal */
+                }
                 if (refundedCents > 0) {
                   const refundColIndex = headerRow.findIndex((h) => h === 'Refunded');
                   if (refundColIndex >= 0) {
                     const refundLetter = colIndexToLetter(refundColIndex);
-                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${refundLetter}${sheetRow}`, [
-                      [transactionDate],
-                    ]);
+                    await sheetsUpdate(SHEETS_ROSTER_ID, `${tab}!${refundLetter}${sheetRow}`, [[transactionDate]]);
                   }
                 }
               }
               if (writtenRow) {
-                const cohortReadback = await fillCohortCell(
-                  tab,
-                  headerRow,
-                  writtenRow,
-                  cohort,
-                );
+                const cohortReadback = await fillCohortCell(tab, headerRow, writtenRow, cohort);
                 const colLetter = colIndexToLetter(colIndex);
-                const readback = await sheetsGet(
-                  SHEETS_ROSTER_ID,
-                  `${tab}!A${writtenRow}:${colLetter}${writtenRow}`,
-                );
+                const readback = await sheetsGet(SHEETS_ROSTER_ID, `${tab}!A${writtenRow}:${colLetter}${writtenRow}`);
                 const row = readback.values?.[0] || [];
-                const emailMatches =
-                  String(row[0] || '').toLowerCase() ===
-                  customerEmail.toLowerCase();
+                const emailMatches = String(row[0] || '').toLowerCase() === customerEmail.toLowerCase();
                 const targetPresent = Boolean(String(row[colIndex] || '').trim());
                 if (emailMatches && targetPresent && cohortReadback.verified) {
                   verifiedTargets++;
@@ -1136,10 +1179,7 @@ async function main() {
             rosterResults.push(`${tab}: ERROR: ${e.message.slice(0, 80)}`);
           }
         }
-        rosterMode =
-          verifiedTargets === rosterMatches.length
-            ? 'mapped_verified'
-            : 'write_failed';
+        rosterMode = verifiedTargets === rosterMatches.length ? 'mapped_verified' : 'write_failed';
         if (rosterMode === 'mapped_verified') {
           try {
             const cleared = await clearSalesCatchAll(accountingStripeId, STRIPE_ID);
@@ -1153,8 +1193,7 @@ async function main() {
       } else if (isPlutioInvoiceDescription(productName)) {
         // A Plutio invoice description identifies the bill, not its participant.
         // Filing the payer/company as a student is worse than holding the case.
-        results.sheets_roster =
-          'not written (Plutio invoice participant identity required)';
+        results.sheets_roster = 'not written (Plutio invoice participant identity required)';
         rosterMode = 'missing_student';
       } else if (rosterMatches.length === 0) {
         // Unrecognized product — no exact Product Map row. This is the case for
@@ -1168,20 +1207,11 @@ async function main() {
         // re-runs don't duplicate the row (mirrors the Payment Log upsert).
         if (customerEmail) {
           try {
-            const salesRow = [
-              customerEmail,
-              customerName,
-              productName,
-              amountDollars,
-              transactionDate,
-              accountingStripeId,
-            ];
+            const salesRow = [customerEmail, customerName, productName, amountDollars, transactionDate, accountingStripeId];
             const salesIds = await sheetsGet(SHEETS_ROSTER_ID, 'Sales!F:F');
             const salesIdCol = salesIds.values || [];
             const candidateIds = new Set([accountingStripeId, STRIPE_ID]);
-            const existingSales = salesIdCol.findIndex(
-              (r, i) => i > 0 && candidateIds.has(r[0]),
-            );
+            const existingSales = salesIdCol.findIndex((r, i) => i > 0 && candidateIds.has(r[0]));
             if (existingSales >= 0) {
               const sheetRow = existingSales + 1;
               await sheetsUpdate(SHEETS_ROSTER_ID, `Sales!A${sheetRow}:F${sheetRow}`, [salesRow]);
@@ -1193,9 +1223,7 @@ async function main() {
           } catch (e) {
             results.sheets_roster = `Sales tab ERROR: ${e.message.slice(0, 100)}`;
           }
-          rosterMode = results.sheets_roster.startsWith('Sales tab: OK')
-            ? 'unmapped_product'
-            : 'write_failed';
+          rosterMode = results.sheets_roster.startsWith('Sales tab: OK') ? 'unmapped_product' : 'write_failed';
         } else {
           results.sheets_roster = 'unrecognized product, no email — skipped';
           rosterMode = 'missing_student';
@@ -1226,10 +1254,18 @@ async function main() {
   // removes the shell entirely — there is no metacharacter surface at all.
   try {
     const params = {
-      email: customerEmail, name: customerName, product: productName,
-      prodid: productId, amount: String(amountCents), currency,
-      sid: accountingStripeId, status: paymentStatus, evt: eventType,
-      paid: transactionDateISO, legacy: STRIPE_ID, cohort,
+      email: customerEmail,
+      name: customerName,
+      product: productName,
+      prodid: productId,
+      amount: String(amountCents),
+      currency,
+      sid: accountingStripeId,
+      status: paymentStatus,
+      evt: eventType,
+      paid: transactionDateISO,
+      legacy: STRIPE_ID,
+      cohort,
     };
     const args = buildPsqlVarArgs(params);
     const sql = `
@@ -1270,46 +1306,52 @@ async function main() {
     // Fed on stdin via -f -, not -c: psql performs :'var' interpolation only
     // when reading a script, never for -c strings (where :'sid' would reach
     // the server verbatim and fail with a syntax error).
-    const dbReadback = execFileSync(
-      'psql',
-      [...args, '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'],
-      {
-        input: sql,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        encoding: 'utf8',
-      },
-    );
+    const dbReadback = execFileSync('psql', [...args, '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'], {
+      input: sql,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
     const dbRow = dbReadback
       .split('\n')
       .map((line) => line.trim())
       .find((line) => line.startsWith(`${accountingStripeId}|`));
     const dbCohort = dbRow?.slice(accountingStripeId.length + 1).trim() || '';
     postgresVerified = Boolean(dbRow) && (!cohort || Boolean(dbCohort));
-    results.db = postgresVerified
-      ? 'OK (readback verified)'
-      : 'ERROR: Postgres payment readback missing';
+    results.db = postgresVerified ? 'OK (readback verified)' : 'ERROR: Postgres payment readback missing';
   } catch (e) {
     results.db = `ERROR: ${e.stderr?.toString().trim() || e.message}`;
   }
 
   // 4. Output summary
-  console.log(formatPaymentSummary({
-    customerName, customerEmail, productName, amountDollars, currency,
-    feeDollars, netDollars, refundedCents, transactionDate, recordedDate,
-    accountingStripeId, idType: ID_TYPE, receivedStripeId: STRIPE_ID,
-    rosterSummary: formatRosterSummary({
+  console.log(
+    formatPaymentSummary({
+      customerName,
+      customerEmail,
       productName,
-      rosterMatches,
-      rosterMode,
+      amountDollars,
+      currency,
+      feeDollars,
+      netDollars,
+      refundedCents,
+      transactionDate,
+      recordedDate,
+      accountingStripeId,
+      idType: ID_TYPE,
+      receivedStripeId: STRIPE_ID,
+      rosterSummary: formatRosterSummary({
+        productName,
+        rosterMatches,
+        rosterMode,
+        studentRosterResult: results.sheets_roster,
+      }),
+      paymentLogResult: results.sheets_log,
       studentRosterResult: results.sheets_roster,
+      dbResult: results.db,
+      debug: fetchResult._debug,
+      lineItemCount: lineItems.length,
+      cohort,
     }),
-    paymentLogResult: results.sheets_log,
-    studentRosterResult: results.sheets_roster,
-    dbResult: results.db,
-    debug: fetchResult._debug,
-    lineItemCount: lineItems.length,
-    cohort,
-  }));
+  );
 
   const fulfillment = derivePaymentFulfillmentOutcome({
     paymentLogVerified,
@@ -1318,9 +1360,7 @@ async function main() {
   });
   const aliases = [
     { kind: 'payment_intent', id: accountingStripeId },
-    ...(STRIPE_ID.startsWith('cs_')
-      ? [{ kind: 'checkout_session', id: STRIPE_ID }]
-      : []),
+    ...(STRIPE_ID.startsWith('cs_') ? [{ kind: 'checkout_session', id: STRIPE_ID }] : []),
     ...(chargeId ? [{ kind: 'charge', id: chargeId }] : []),
     ...(invoiceId ? [{ kind: 'invoice', id: invoiceId }] : []),
   ];
@@ -1351,9 +1391,7 @@ async function main() {
     currency,
     payment_status: paymentStatus,
   };
-  console.log(
-    `__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`,
-  );
+  console.log(`__CHAOS_LIFECYCLE__${Buffer.from(JSON.stringify(lifecycle)).toString('base64url')}`);
   const capacitySale = {
     version: 1,
     eligible:
@@ -1367,9 +1405,7 @@ async function main() {
     cohort_program: chargeMetadata.cohort_program || null,
     cohort_start: chargeMetadata.cohort_start || null,
   };
-  console.log(
-    `__ACADEMY_CAPACITY_SALE__${Buffer.from(JSON.stringify(capacitySale)).toString('base64url')}`,
-  );
+  console.log(`__ACADEMY_CAPACITY_SALE__${Buffer.from(JSON.stringify(capacitySale)).toString('base64url')}`);
 }
 
 // Only run when executed directly. Without this guard, importing the file to
@@ -1385,6 +1421,7 @@ module.exports = {
   resolveRosterTargets,
   isPlutioInvoiceDescription,
   formatRosterSummary,
+  enrollmentRegistrationMode,
   NOT_A_STUDENT,
 };
 

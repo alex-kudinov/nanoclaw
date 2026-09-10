@@ -28,6 +28,57 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260909-004 — Integrate the bounded enrollment production pilot
+
+- Date: 2026-09-10T03:45Z
+- Owner/client: Codex implementation; Claude Sonnet/high review pending
+- State: validating
+- Commit/PR: uncommitted candidate on
+  `codex/student-enrollment-production-pilot-20260909` from registration
+  `3b8ac46b` over exact live `00d66184`; reviewed enrollment/projection source
+  restored from `d9e29856` and its pinned predecessors.
+- Change class: C5 identity/provider boundary; highest operational class C4.
+- Outcome: the shared Stripe host now contains a default-off, immutable-release,
+  activation-epoch and preflight-receipt-bound selector for one exact future
+  Tandem `supervision-inaugural` paid-in-full event. It reloads native Stripe
+  evidence, resolves one canonical Party, atomically owns the source and
+  one-event budget with canonical materialization/target identities, preserves
+  Payment Log/PostgreSQL accounting in an enrollment-owned no-roster mode, and
+  immediately delivers exact Student Roster and Heartbeat projections only
+  after accounting readback.
+- Safety/rollback: required targets capture mode-0600 preimages before their
+  first effect; uncertain acceptance holds without retry. Compensation restores
+  only an unchanged receipt-owned A:M row or memberships absent in the preimage,
+  never groups, sibling memberships, pre-existing access, accounting, or
+  canonical evidence. The original disposable store/admission guards remain.
+- Review: the first broad Sonnet/high pass was stopped without a response after
+  exceeding the bounded-review context/cycle limit. Narrow R1B found an
+  unfinalized Contador lease after repeated commit uncertainty and an append-
+  locator crash gap. Both were fixed; focused R2 returned
+  `NO MATERIAL FINDINGS`. A subsequent Codex source audit corrected two
+  additional load-bearing facts before release: Tandem's paid-in-full checkout
+  is a direct Payment Intent rather than an invented Checkout Session/price,
+  and existing roster rows must write only C/F:M plus conditionally B rather
+  than rewriting A:M. Owner-approved final Sonnet/high R3 reviewed only those
+  corrections and returned `NO MATERIAL FINDINGS`; no material review issue
+  remains open.
+- Verification: dependency install completed under Node 22.23.2; exact rollout
+  validator passed; focused admission/store/projection/selector/native-evidence/
+  provider-driver/Stripe-host/Contador coverage is 143/143. Typecheck and build
+  pass. The latest full root is 3,846 pass / 32 skip / three
+  failures reproduced unchanged on exact live `00d66184`: CNPC's stale wrapper
+  assertion, the date-sensitive Trafft fixture, and the Academy Capacity
+  disposable reservation expectation; one parallel-load-only disposable
+  timeout passed immediately in isolation. Final continuity and independent
+  review of the post-R2 source corrections remain pending.
+- Deployment/migration: none. No backup, migration, release, configuration,
+  Sheet/group/membership, payment, writer, student, provider, or communication
+  mutation ran.
+- Documentation: authenticated-admission and projection authorities, project
+  map, environment contract, active work, and this changelog.
+- Follow-up: complete full verification and bounded review, then rerun P01-P10
+  against current live/provider authority before the first external mutation.
+
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
 - Date: 2026-09-10T01:34Z
