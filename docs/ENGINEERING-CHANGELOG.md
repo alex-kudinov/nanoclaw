@@ -32,6 +32,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 #### 2026-09-10T12:05Z addendum — approved shared TEST feed filtering
 
+- 2026-09-10T12:22Z release checkpoint: reviewed source75d5b6c1 clean/pushed;
+  immutable archive SHA2560f87f8dd275e5d5fc69c96689e9c2467605b6d943ddd904694590fd062a660ed
+  fresh-verified locally/on Mini (1124 files). An executing container prevented
+  safe activation, and new-key action-time confirmation remains unanswered.
+  Executor stopped at staged boundary; no activator process running. Independent
+  live health remains00d66184, verified code root, connected Gmail/Slack and TEST
+  receiver unconfigured. No service/env/provider/n8n/migration mutation occurred.
+
 - State: validating. Node22 network gate is resolved. The reviewed real MCS
   USD299 TEST Session/store proof returned one201 and reused the exact encrypted
   Session after pool reopen. No SDK/payment authorization or enrollment occurred.
