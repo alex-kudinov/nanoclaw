@@ -15,6 +15,18 @@ const integer = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 const timestamp = integer;
 const currency = z.string().regex(/^[A-Z]{3}$/);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
+export const PAYMENT_METHOD_CAPABILITIES = [
+  'card',
+  'ach_direct_debit',
+] as const;
+const paymentMethodCapabilitySchema = z.enum(PAYMENT_METHOD_CAPABILITIES);
+const paymentMethodCapabilitiesSchema = z
+  .array(paymentMethodCapabilitySchema)
+  .min(1)
+  .max(PAYMENT_METHOD_CAPABILITIES.length);
+export type PaymentMethodCapability = z.infer<
+  typeof paymentMethodCapabilitySchema
+>;
 const scopeSchema = z
   .object({
     provider: z.enum(['adyen', 'stripe']),
@@ -35,7 +47,7 @@ const quoteSchema = z
     catalogVersion: ref,
     bundleVersion: ref,
     deliveryVersion: ref,
-    locale: z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/),
+    locale: z.string().regex(/^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$/),
     country: z.string().regex(/^[A-Z]{2}$/),
     payerReference: ref.nullable(),
     participantReference: ref.nullable(),
@@ -127,19 +139,54 @@ const attemptSchema = z
     quote: quoteSchema,
     quoteFingerprint: digest,
     scope: scopeSchema,
+    paymentMethodCapabilities: paymentMethodCapabilitiesSchema.optional(),
     createdAt: timestamp,
   })
   .strict();
 export type PaymentAttempt = Readonly<
-  Omit<z.infer<typeof attemptSchema>, 'quote' | 'scope'> & {
+  Omit<
+    z.infer<typeof attemptSchema>,
+    'quote' | 'scope' | 'paymentMethodCapabilities'
+  > & {
     quote: PaymentQuote;
     scope: PaymentScope;
+    /** Absent on legacy v1 attempts, which are explicitly card-only. */
+    paymentMethodCapabilities?: readonly PaymentMethodCapability[];
   }
 >;
+
+export function validatePaymentMethodCapabilities(
+  input: unknown,
+): readonly PaymentMethodCapability[] {
+  const capabilities = parse(paymentMethodCapabilitiesSchema, input);
+  const order = capabilities.map((value) =>
+    PAYMENT_METHOD_CAPABILITIES.indexOf(value),
+  );
+  check(
+    new Set(capabilities).size === capabilities.length &&
+      order.every((value, index) => index === 0 || order[index - 1] < value),
+    'invalid_payment_method_capabilities',
+  );
+  return Object.freeze([...capabilities]);
+}
+
+/** Legacy v1 attempts predate the field and remain card-only. */
+export function paymentMethodCapabilitiesForAttempt(
+  input: unknown,
+): readonly PaymentMethodCapability[] {
+  const attempt = validateAttempt(input);
+  return (
+    attempt.paymentMethodCapabilities ??
+    (Object.freeze(['card']) as readonly PaymentMethodCapability[])
+  );
+}
 
 export function validateAttempt(input: unknown): PaymentAttempt {
   const attempt = parse(attemptSchema, input);
   const quote = validatePaymentQuote(attempt.quote);
+  const methodCapabilities = attempt.paymentMethodCapabilities
+    ? validatePaymentMethodCapabilities(attempt.paymentMethodCapabilities)
+    : undefined;
   check(hash(quote) === attempt.quoteFingerprint, 'quote_fingerprint_mismatch');
   check(quote.finalAmount > 0, 'free_order_requires_separate_admission');
   check(
@@ -150,6 +197,9 @@ export function validateAttempt(input: unknown): PaymentAttempt {
     ...attempt,
     quote,
     scope: Object.freeze(attempt.scope),
+    ...(methodCapabilities
+      ? { paymentMethodCapabilities: methodCapabilities }
+      : {}),
   });
 }
 
@@ -157,6 +207,7 @@ export function createPaymentAttempt(input: {
   attemptId: string;
   quote: unknown;
   scope: unknown;
+  paymentMethodCapabilities?: unknown;
   now: number;
 }): PaymentAttempt {
   const quote = validatePaymentQuote(input.quote);
@@ -166,6 +217,9 @@ export function createPaymentAttempt(input: {
     quote,
     quoteFingerprint: hash(quote),
     scope: input.scope,
+    ...(input.paymentMethodCapabilities === undefined
+      ? {}
+      : { paymentMethodCapabilities: input.paymentMethodCapabilities }),
     createdAt: input.now,
   });
 }

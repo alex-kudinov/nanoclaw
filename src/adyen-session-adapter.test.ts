@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AdyenTestSessionAdapter,
   buildAdyenTestSessionRequest,
+  resolveAdyenTestPaymentMethodCapabilities,
 } from './adyen-session-adapter.js';
 import { createPaymentAttempt } from './payment-domain.js';
 
@@ -19,12 +20,22 @@ const routing = {
   allowedOrigin: 'http://localhost:3000',
   returnPath: '/',
 };
-function attempt() {
+function attempt(
+  changes: {
+    country?: string;
+    currency?: string;
+    locale?: string;
+    paymentMethodCapabilities?: unknown;
+  } = {},
+) {
   const now = Date.now();
   return createPaymentAttempt({
     attemptId: randomUUID(),
     now,
     scope,
+    ...(changes.paymentMethodCapabilities === undefined
+      ? {}
+      : { paymentMethodCapabilities: changes.paymentMethodCapabilities }),
     quote: {
       schemaVersion: 1,
       quoteId: randomUUID(),
@@ -33,11 +44,11 @@ function attempt() {
       catalogVersion: 'fixture',
       bundleVersion: 'fixture',
       deliveryVersion: 'fixture',
-      locale: 'en',
-      country: 'US',
+      locale: changes.locale ?? 'en',
+      country: changes.country ?? 'US',
       payerReference: null,
       participantReference: null,
-      currency: 'USD',
+      currency: changes.currency ?? 'USD',
       originalAmount: 29900,
       discountAmount: 0,
       finalAmount: 29900,
@@ -75,6 +86,78 @@ describe('Adyen TEST Sessions adapter', () => {
     expect(JSON.parse(request).returnUrl).toBe(
       `http://localhost:3000/?attempt=${a.attemptId}`,
     );
+  });
+  it('maps only the immutable public card and ACH capabilities to provider codes', () => {
+    const a = attempt({
+      paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+    });
+    expect(
+      JSON.parse(
+        buildAdyenTestSessionRequest(a, routing, ['card', 'ach_direct_debit']),
+      ).allowedPaymentMethods,
+    ).toEqual(['scheme', 'ach']);
+    expect(
+      resolveAdyenTestPaymentMethodCapabilities(a, [
+        'card',
+        'ach_direct_debit',
+      ]),
+    ).toEqual(['card', 'ach_direct_debit']);
+  });
+  it.each([
+    { country: 'CA', currency: 'USD' },
+    { country: 'US', currency: 'CAD' },
+  ])(
+    'rejects ACH outside its supported country/currency scope %o',
+    (change) => {
+      expect(() =>
+        buildAdyenTestSessionRequest(
+          attempt({
+            ...change,
+            paymentMethodCapabilities: ['ach_direct_debit'],
+          }),
+          routing,
+          ['card', 'ach_direct_debit'],
+        ),
+      ).toThrow('payment_method_scope_mismatch');
+    },
+  );
+  it('accepts ACH for the supported PR/USD scope', () => {
+    expect(
+      JSON.parse(
+        buildAdyenTestSessionRequest(
+          attempt({
+            country: 'PR',
+            paymentMethodCapabilities: ['ach_direct_debit'],
+          }),
+          routing,
+          ['card', 'ach_direct_debit'],
+        ),
+      ).allowedPaymentMethods,
+    ).toEqual(['ach']);
+  });
+  it('rejects a durable capability that is disabled in runtime configuration', () => {
+    expect(() =>
+      buildAdyenTestSessionRequest(
+        attempt({ paymentMethodCapabilities: ['ach_direct_debit'] }),
+        routing,
+        ['card'],
+      ),
+    ).toThrow('payment_method_not_enabled');
+  });
+  it('preserves es-419 quote identity while requiring an explicit provider locale mapping', () => {
+    const a = attempt({ locale: 'es-419' });
+    expect(a.quote.locale).toBe('es-419');
+    expect(() => buildAdyenTestSessionRequest(a, routing)).toThrow(
+      'provider_locale_mapping_required',
+    );
+    const request = JSON.parse(
+      buildAdyenTestSessionRequest(a, {
+        ...routing,
+        providerLocaleByQuoteLocale: { 'es-419': 'es-MX' },
+      }),
+    );
+    expect(request.shopperLocale).toBe('es-MX');
+    expect(a.quote.locale).toBe('es-419');
   });
   it.each([
     { environment: 'live' },

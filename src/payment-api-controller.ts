@@ -201,7 +201,7 @@ export class PaymentApiController {
       if (!attempt || !this.permits(this.caller, attempt))
         return this.response(401, { error: 'status_access_denied' });
       if (path === '/internal/payments/attempts') {
-        const result = await this.deps.sessions.resume(attempt);
+        const result = await this.deps.sessions.resume(attempt.attemptId);
         return this.response(200, { ...result, attemptId: attempt.attemptId });
       }
       const evidence = await this.deps.events.readInternalEvidence(
@@ -240,6 +240,7 @@ export class PaymentApiController {
           'quote_not_current_at_attempt_creation',
           'invalid_attempt_identity',
           'invalid_capability_request',
+          'invalid_payment_method_capabilities',
         ].includes(code)
       )
         return this.response(400, { error: 'invalid_request' });
@@ -249,6 +250,11 @@ export class PaymentApiController {
           'payment_scope_denied',
           'capability_scope_denied',
           'adyen_test_scope_mismatch',
+          'payment_method_not_enabled',
+          'payment_method_scope_mismatch',
+          'provider_locale_mapping_required',
+          'invalid_provider_locale',
+          'payment_dispatch_disabled',
         ].includes(code)
       )
         return this.response(403, { error: 'checkout_unavailable' });

@@ -4,32 +4,63 @@ import {
   type AdyenSession,
   type AdyenSessionRouting,
 } from './adyen-session-adapter.js';
-import { PaymentDomainError, validateAttempt } from './payment-domain.js';
+import {
+  paymentMethodCapabilitiesForAttempt,
+  PaymentDomainError,
+  validateAttempt,
+  validatePaymentMethodCapabilities,
+  type PaymentMethodCapability,
+} from './payment-domain.js';
 import type { PaymentStore } from './payment-store.js';
 
 type SessionStore = Pick<
   PaymentStore,
-  'acceptAttempt' | 'prepareSession' | 'acquireDispatch' | 'finishDispatch'
+  | 'acceptAttempt'
+  | 'readAttempt'
+  | 'prepareSession'
+  | 'acquireDispatch'
+  | 'finishDispatch'
 >;
 export type CheckoutPreparation =
-  | { state: 'pending' | 'reconciliation_required' | 'failed' }
-  | { state: 'checkout_ready'; session: AdyenSession };
+  | {
+      state: 'pending' | 'reconciliation_required' | 'failed';
+      paymentMethodCapabilities: readonly PaymentMethodCapability[];
+    }
+  | {
+      state: 'checkout_ready';
+      session: AdyenSession;
+      paymentMethodCapabilities: readonly PaymentMethodCapability[];
+    };
 
 /** Internal host service only. Caller authentication/capabilities precede this API. */
 export class PaymentSessionService {
   private readonly allowedOffers: ReadonlySet<string>;
+  private readonly configuredPaymentMethods: readonly PaymentMethodCapability[];
   constructor(
     private readonly store: SessionStore,
     private readonly adapter: Pick<AdyenTestSessionAdapter, 'create'>,
     private readonly routing: AdyenSessionRouting,
     allowedOffers: Iterable<string>,
+    configuredPaymentMethods: unknown = ['card'],
+    private readonly recoveryMode: 'dispatch' | 'reconcile_only' = 'dispatch',
   ) {
     this.allowedOffers = new Set(allowedOffers);
+    this.configuredPaymentMethods = validatePaymentMethodCapabilities(
+      configuredPaymentMethods,
+    );
+    if (recoveryMode !== 'dispatch' && recoveryMode !== 'reconcile_only')
+      throw new PaymentDomainError('invalid_dispatch_mode');
   }
 
   async start(input: unknown): Promise<CheckoutPreparation> {
+    if (this.recoveryMode !== 'dispatch')
+      throw new PaymentDomainError('payment_dispatch_disabled');
     const attempt = this.validateStart(input);
-    const request = buildAdyenTestSessionRequest(attempt, this.routing);
+    const request = buildAdyenTestSessionRequest(
+      attempt,
+      this.routing,
+      this.configuredPaymentMethods,
+    );
     await this.store.acceptAttempt(attempt);
     await this.store.prepareSession({
       attemptId: attempt.attemptId,
@@ -38,7 +69,7 @@ export class PaymentSessionService {
       request,
       retryWindowMs: 24 * 60 * 60 * 1000,
     });
-    return this.resume(attempt);
+    return this.recover(attempt);
   }
 
   validateStart(input: unknown) {
@@ -49,30 +80,44 @@ export class PaymentSessionService {
       )
     )
       throw new PaymentDomainError('offer_not_enabled');
-    buildAdyenTestSessionRequest(attempt, this.routing);
+    buildAdyenTestSessionRequest(
+      attempt,
+      this.routing,
+      this.configuredPaymentMethods,
+    );
     return attempt;
   }
 
-  /** Existing attempts retain their provider even if new-offer routing is disabled. */
-  async resume(input: unknown): Promise<CheckoutPreparation> {
+  /** Existing attempts recover only from the original persisted contract/request. */
+  async resume(attemptId: string): Promise<CheckoutPreparation> {
+    const stored = await this.store.readAttempt(attemptId);
+    if (!stored) throw new PaymentDomainError('attempt_not_found');
+    return this.recover(stored);
+  }
+
+  private async recover(input: unknown): Promise<CheckoutPreparation> {
     const attempt = validateAttempt(input);
-    const expectedRequest = buildAdyenTestSessionRequest(attempt, this.routing);
-    // Exact immutable contract readback prevents using an ID with a forged quote.
-    await this.store.acceptAttempt(attempt);
-    const lease = await this.store.acquireDispatch(attempt.attemptId);
-    if (lease.decision === 'busy') return { state: 'pending' };
+    const paymentMethodCapabilities =
+      paymentMethodCapabilitiesForAttempt(attempt);
+    const lease = await this.store.acquireDispatch(
+      attempt.attemptId,
+      30000,
+      this.recoveryMode === 'dispatch' ? 'allow' : 'reconcile_only',
+    );
+    if (lease.decision === 'busy')
+      return { state: 'pending', paymentMethodCapabilities };
     if (lease.decision === 'reconcile')
-      return { state: 'reconciliation_required' };
-    if (lease.decision === 'stop') return { state: 'failed' };
+      return { state: 'reconciliation_required', paymentMethodCapabilities };
+    if (lease.decision === 'stop')
+      return { state: 'failed', paymentMethodCapabilities };
     if (lease.decision === 'reuse_session')
       return {
         state: 'checkout_ready',
         session: JSON.parse(lease.response) as AdyenSession,
+        paymentMethodCapabilities,
       };
     if (lease.decision !== 'dispatch')
       throw new PaymentDomainError('invalid_dispatch_decision');
-    if (lease.request !== expectedRequest)
-      throw new PaymentDomainError('stored_session_request_conflict');
     let session: AdyenSession;
     try {
       session = await this.adapter.create(
@@ -93,7 +138,7 @@ export class PaymentSessionService {
         version: lease.version,
         result: 'unknown',
       });
-      return { state: 'pending' };
+      return { state: 'pending', paymentMethodCapabilities };
     }
     // Do not report checkout-ready until encrypted response and receipt commit.
     await this.store.finishDispatch({
@@ -104,6 +149,6 @@ export class PaymentSessionService {
       response: JSON.stringify(session),
       sessionExpiresAt: Date.parse(session.expiresAt),
     });
-    return { state: 'checkout_ready', session };
+    return { state: 'checkout_ready', session, paymentMethodCapabilities };
   }
 }

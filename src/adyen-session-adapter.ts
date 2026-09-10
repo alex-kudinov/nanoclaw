@@ -2,8 +2,11 @@ import { z } from 'zod';
 import { adyenTestAttemptReference } from './adyen-payment-identifiers.js';
 
 import {
+  paymentMethodCapabilitiesForAttempt,
   PaymentDomainError,
+  validatePaymentMethodCapabilities,
   validateAttempt,
+  type PaymentMethodCapability,
   type PaymentScope,
 } from './payment-domain.js';
 
@@ -18,12 +21,53 @@ export interface AdyenSessionRouting {
   scope: PaymentScope;
   allowedOrigin: string;
   returnPath: string;
+  /** Explicit presentation-only mapping; never changes quote/product identity. */
+  providerLocaleByQuoteLocale?: Readonly<Record<string, string>>;
+}
+
+const ADYEN_METHOD_TYPES: Readonly<
+  Record<PaymentMethodCapability, 'scheme' | 'ach'>
+> = Object.freeze({
+  card: 'scheme',
+  ach_direct_debit: 'ach',
+});
+
+export function resolveAdyenTestPaymentMethodCapabilities(
+  input: unknown,
+  configured: unknown = ['card'],
+): readonly PaymentMethodCapability[] {
+  const attempt = validateAttempt(input);
+  const requested = paymentMethodCapabilitiesForAttempt(attempt);
+  const enabled = new Set(validatePaymentMethodCapabilities(configured));
+  if (requested.some((capability) => !enabled.has(capability)))
+    throw new PaymentDomainError('payment_method_not_enabled');
+  if (
+    requested.includes('ach_direct_debit') &&
+    (attempt.quote.currency !== 'USD' ||
+      !['US', 'PR'].includes(attempt.quote.country))
+  )
+    throw new PaymentDomainError('payment_method_scope_mismatch');
+  return requested;
+}
+
+function resolveProviderShopperLocale(
+  quoteLocale: string,
+  configured: AdyenSessionRouting['providerLocaleByQuoteLocale'],
+): string {
+  const mapped = configured?.[quoteLocale];
+  if (/^[a-z]{2}-[0-9]{3}$/.test(quoteLocale) && mapped === undefined)
+    throw new PaymentDomainError('provider_locale_mapping_required');
+  const providerLocale = mapped ?? quoteLocale;
+  if (!/^[a-z]{2}(?:-[A-Z]{2})?$/.test(providerLocale))
+    throw new PaymentDomainError('invalid_provider_locale');
+  return providerLocale;
 }
 
 /** The request contains no API key or raw card/bank data. All money is authoritative. */
 export function buildAdyenTestSessionRequest(
   input: unknown,
   routing: AdyenSessionRouting,
+  configuredPaymentMethods: unknown = ['card'],
 ): string {
   const attempt = validateAttempt(input);
   const scope = attempt.scope;
@@ -65,6 +109,14 @@ export function buildAdyenTestSessionRequest(
   }
   if (attempt.quote.expiresAt - attempt.createdAt > 24 * 60 * 60 * 1000)
     throw new PaymentDomainError('invalid_provider_session_expiry');
+  const capabilities = resolveAdyenTestPaymentMethodCapabilities(
+    attempt,
+    configuredPaymentMethods,
+  );
+  const shopperLocale = resolveProviderShopperLocale(
+    attempt.quote.locale,
+    routing.providerLocaleByQuoteLocale,
+  );
   returnUrl.searchParams.set('attempt', attempt.attemptId); // Identifier, not a status capability.
   return JSON.stringify({
     merchantAccount: scope.merchant,
@@ -76,12 +128,14 @@ export function buildAdyenTestSessionRequest(
     },
     returnUrl: returnUrl.href,
     countryCode: attempt.quote.country,
-    shopperLocale: attempt.quote.locale,
+    shopperLocale,
     channel: 'Web',
     shopperInteraction: 'Ecommerce',
     shopperReference: `tandem-test-${attempt.attemptId}`,
     expiresAt: new Date(attempt.quote.expiresAt).toISOString(),
-    allowedPaymentMethods: ['scheme'],
+    allowedPaymentMethods: capabilities.map(
+      (capability) => ADYEN_METHOD_TYPES[capability],
+    ),
   });
 }
 

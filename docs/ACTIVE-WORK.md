@@ -195,6 +195,18 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T19:20Z: HTTP/TEST composition and immutable method snapshot slice
+  accepted after separate Sonnet/high R1/R2 reviews. Fixed request error/abort
+  paths and recovery after new-offer/method disablement; recovery reads the
+  persisted attempt/request and has an explicit reconciliation-only stop.
+  246 focused payment tests pass; Codex reran133 changed-boundary tests and
+  typecheck. Default full parallel run retains three established failures and
+  exposes a PG fixture timeout that passes isolated; bounded full verification
+  remains due. Next integrate reviewed enrollment foundation dependency and
+  implement authenticated Session-result method evidence/events, then WP quote/
+  private preview. Owner policy: ACH grants provisional access after verified
+  acceptance; certification waits for confirmed received funds. No live change.
+
 - 2026-09-10T06:11Z checkpoint: controller R1 accepted; Codex independently
   hardened authenticated-rate-budget ordering and null-evidence error handling;
   Sonnet/high R2 accepted both. Full3848 pass/32skip/three known baseline failures,

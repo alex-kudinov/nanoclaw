@@ -65,6 +65,7 @@ function setup(limiter = new PaymentRequestLimiter(100, 32, 60000)) {
   const token = `pcap_${'x'.repeat(43)}`;
   const ready = {
     state: 'checkout_ready' as const,
+    paymentMethodCapabilities: ['card'] as const,
     session: {
       id: 'fixture-session',
       sessionData: 'private-session-fixture',
@@ -359,7 +360,7 @@ describe('unwired signed payment HTTP controller', () => {
       }),
     );
     expect(response.status).toBe(200);
-    expect(s.deps.sessions.resume).toHaveBeenCalledWith(s.attempt);
+    expect(s.deps.sessions.resume).toHaveBeenCalledWith(s.attempt.attemptId);
   });
   it('minimizes status and never claims paid or fulfillment from authorization', async () => {
     const s = setup(),

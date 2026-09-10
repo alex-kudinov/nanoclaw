@@ -12,7 +12,10 @@ import {
 } from './payment-domain.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { PaymentStore, type PaymentTransaction } from './payment-store.js';
-import { AdyenTestSessionAdapter } from './adyen-session-adapter.js';
+import {
+  AdyenTestSessionAdapter,
+  buildAdyenTestSessionRequest,
+} from './adyen-session-adapter.js';
 import { PaymentSessionService } from './payment-session-service.js';
 
 // Explicit local socket and generated database only. No production env/config read.
@@ -70,7 +73,9 @@ function transaction(connectionPool: Pool): PaymentTransaction {
   };
 }
 
-function attempt(): PaymentAttempt {
+function attempt(
+  paymentMethodCapabilities?: readonly ('card' | 'ach_direct_debit')[],
+): PaymentAttempt {
   const now = Date.now() - 1000;
   return createPaymentAttempt({
     attemptId: randomUUID(),
@@ -83,6 +88,7 @@ function attempt(): PaymentAttempt {
       store: 'fixture',
       endpointRegion: 'eu',
     },
+    ...(paymentMethodCapabilities ? { paymentMethodCapabilities } : {}),
     quote: {
       schemaVersion: 1,
       quoteId: randomUUID(),
@@ -587,20 +593,14 @@ describe('payment store on isolated real Postgres', () => {
       true,
     );
     const repeated = await Promise.all(
-      Array.from({ length: 25 }, () => service.resume(a)),
+      Array.from({ length: 25 }, () => service.resume(a.attemptId)),
     );
     expect(repeated.every((result) => result.state === 'checkout_ready')).toBe(
       true,
     );
     expect(calls).toBe(1);
-    const forged = createPaymentAttempt({
-      attemptId: a.attemptId,
-      now: a.createdAt,
-      scope: a.scope,
-      quote: { ...a.quote, originalAmount: 19900, finalAmount: 19900 },
-    });
-    await expect(service.resume(forged)).rejects.toThrow(
-      'attempt_identity_conflict',
+    await expect(service.resume(randomUUID())).rejects.toThrow(
+      'attempt_not_found',
     );
     const paused = new PaymentSessionService(
       store,
@@ -613,8 +613,38 @@ describe('payment store on isolated real Postgres', () => {
       [],
     );
     await expect(paused.start(a)).rejects.toThrow('offer_not_enabled');
-    expect((await paused.resume(a)).state).toBe('checkout_ready');
+    expect((await paused.resume(a.attemptId)).state).toBe('checkout_ready');
     expect(calls).toBe(1);
+
+    const both = attempt(['card', 'ach_direct_debit']);
+    const enabled = new PaymentSessionService(
+      store,
+      adapter,
+      {
+        scope: both.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      ['mcq-program-a-foundations:en'],
+      ['card', 'ach_direct_debit'],
+    );
+    expect((await enabled.start(both)).state).toBe('checkout_ready');
+    const cardOnly = new PaymentSessionService(
+      store,
+      adapter,
+      {
+        scope: both.scope,
+        allowedOrigin: 'https://changed.example.test',
+        returnPath: '/changed',
+      },
+      [],
+      ['card'],
+    );
+    expect(await cardOnly.resume(both.attemptId)).toMatchObject({
+      state: 'checkout_ready',
+      paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+    });
+    expect(calls).toBe(2);
   });
   it('recovers a lost provider response using the same key with one logical session', async () => {
     const a = attempt();
@@ -650,10 +680,62 @@ describe('payment store on isolated real Postgres', () => {
       },
       ['mcq-program-a-foundations:en'],
     );
-    expect(await service.start(a)).toEqual({ state: 'pending' });
-    expect((await service.resume(a)).state).toBe('checkout_ready');
+    expect(await service.start(a)).toEqual({
+      state: 'pending',
+      paymentMethodCapabilities: ['card'],
+    });
+    expect((await service.resume(a.attemptId)).state).toBe('checkout_ready');
     expect(keys).toEqual([a.attemptId, a.attemptId]);
     expect(providerSessions.size).toBe(1);
+  });
+  it('separates new-attempt disablement from an explicit reconcile-only recovery stop', async () => {
+    const a = attempt();
+    await store.acceptAttempt(a);
+    await store.prepareSession({
+      attemptId: a.attemptId,
+      operationId: a.attemptId,
+      idempotencyKey: a.attemptId,
+      request: buildAdyenTestSessionRequest(a, {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      }),
+      retryWindowMs: 60000,
+    });
+    let providerCalls = 0;
+    const service = new PaymentSessionService(
+      store,
+      {
+        create: async () => {
+          providerCalls++;
+          throw new Error('must not dispatch');
+        },
+      },
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      ['mcq-program-a-foundations:en'],
+      ['card'],
+      'reconcile_only',
+    );
+    await expect(service.start(attempt())).rejects.toThrow(
+      'payment_dispatch_disabled',
+    );
+    expect(await service.resume(a.attemptId)).toEqual({
+      state: 'reconciliation_required',
+      paymentMethodCapabilities: ['card'],
+    });
+    expect(providerCalls).toBe(0);
+    expect(
+      (
+        await pool.query(
+          'SELECT state,lease_token FROM business_v2.payment_operations WHERE operation_id=$1',
+          [a.attemptId],
+        )
+      ).rows[0],
+    ).toEqual({ state: 'dispatching', lease_token: null });
   });
   it('does not report ready after a result-persistence failure and safely recovers later', async () => {
     const a = attempt();
@@ -676,6 +758,7 @@ describe('payment store on isolated real Postgres', () => {
     }) as typeof fetch);
     const failing = {
       acceptAttempt: store.acceptAttempt.bind(store),
+      readAttempt: store.readAttempt.bind(store),
       prepareSession: store.prepareSession.bind(store),
       acquireDispatch: (id: string) => store.acquireDispatch(id, 20),
       finishDispatch: async (
@@ -702,7 +785,7 @@ describe('payment store on isolated real Postgres', () => {
       'injected database unavailable',
     );
     await delay(30);
-    expect((await service.resume(a)).state).toBe('checkout_ready');
+    expect((await service.resume(a.attemptId)).state).toBe('checkout_ready');
     expect(calls).toBe(2);
     expect(keys.size).toBe(1);
   });

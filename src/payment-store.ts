@@ -216,11 +216,16 @@ export class PaymentStore {
   async acquireDispatch(
     operationId: string,
     leaseMs = 30000,
+    dispatchMode: 'allow' | 'reconcile_only' = 'allow',
   ): Promise<PaymentDispatch> {
     uuid(operationId);
     ensure(
       Number.isSafeInteger(leaseMs) && leaseMs >= 1 && leaseMs <= 60000,
       'invalid_lease_duration',
+    );
+    ensure(
+      dispatchMode === 'allow' || dispatchMode === 'reconcile_only',
+      'invalid_dispatch_mode',
     );
     return this.transaction(async (client) => {
       const result = await client.query<OperationRow>(
@@ -252,6 +257,7 @@ export class PaymentStore {
         };
       }
       if (decision === 'stop' || decision === 'reconcile') return { decision };
+      if (dispatchMode === 'reconcile_only') return { decision: 'reconcile' };
       if (row.lease_until !== null && Number(row.lease_until) > now)
         return { decision: 'busy' };
       // Authentication of stored bytes happens before granting/committing a lease.

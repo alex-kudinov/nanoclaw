@@ -185,7 +185,7 @@ try {
     routing,
     [],
   );
-  const resumed = await service.resume(attempt);
+  const resumed = await service.resume(attempt.attemptId);
   if (
     resumed.state !== 'checkout_ready' ||
     JSON.stringify(resumed.session) !== JSON.stringify(started.session) ||

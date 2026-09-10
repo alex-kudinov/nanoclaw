@@ -4,10 +4,12 @@ import {
   assertPaymentAttemptReuse,
   createPaymentAttempt,
   decidePaymentOperationRecovery,
+  paymentMethodCapabilitiesForAttempt,
   paymentQuoteFingerprint,
   preparePaymentOperation,
   projectPaymentEvidence,
   recordPaymentOperationResult,
+  validatePaymentMethodCapabilities,
   validatePaymentQuote,
   type PaymentFact,
   type PaymentQuote,
@@ -200,6 +202,45 @@ describe('immutable authoritative quote', () => {
     expect(Object.isFrozen(a.scope)).toBe(true);
     expect(a.quote).not.toBe(q);
   });
+  it('preserves legacy v1 attempts as card-only and snapshots new capabilities', () => {
+    expect(paymentMethodCapabilitiesForAttempt(attempt())).toEqual(['card']);
+    const methods = ['card', 'ach_direct_debit'] as const;
+    const next = createPaymentAttempt({
+      attemptId: ID,
+      quote: quote(),
+      scope,
+      paymentMethodCapabilities: methods,
+      now: NOW,
+    });
+    expect(next.paymentMethodCapabilities).toEqual(methods);
+    expect(Object.isFrozen(next.paymentMethodCapabilities)).toBe(true);
+    expect(next.paymentMethodCapabilities).not.toBe(methods);
+  });
+  it.each(
+    [
+      [],
+      ['card', 'card'],
+      ['ach_direct_debit', 'card'],
+      ['scheme'],
+      ['ach'],
+      ['plaid'],
+      ['apple_pay'],
+    ].map((methods) => ({ methods })),
+  )(
+    'rejects invalid or noncanonical capability snapshots $methods',
+    ({ methods }) => {
+      expect(() => validatePaymentMethodCapabilities(methods)).toThrow();
+      expect(() =>
+        createPaymentAttempt({
+          attemptId: ID,
+          quote: quote(),
+          scope,
+          paymentMethodCapabilities: methods,
+          now: NOW,
+        }),
+      ).toThrow();
+    },
+  );
   it('rejects stale/not-yet-valid quotes at attempt creation and dispatch', () => {
     for (const now of [NOW - 1, quote().expiresAt]) {
       expect(() =>
@@ -258,6 +299,11 @@ describe('immutable authoritative quote', () => {
     const q = quote({ ...fixture, originalAmount: fixture.finalAmount });
     expect(attempt(q).quote.offerKey).toBe(fixture.offerKey);
   });
+  it('preserves the configured es-419 product locale identity', () => {
+    expect(attempt(quote({ locale: 'es-419' })).quote.locale).toBe('es-419');
+    for (const locale of ['es-41', 'es-latam', 'ES-419', 'es_419'])
+      expect(() => attempt(quote({ locale }))).toThrow('invalid_contract');
+  });
 });
 
 describe('durable-operation recovery decisions (not locks)', () => {
@@ -295,6 +341,17 @@ describe('durable-operation recovery decisions (not locks)', () => {
     ).toThrow('operation_attempt_conflict');
     expect(() =>
       recover({ operation: { ...operation(), attemptId: OP } }),
+    ).toThrow('operation_attempt_conflict');
+    expect(() =>
+      recover({
+        attempt: createPaymentAttempt({
+          attemptId: ID,
+          quote: quote(),
+          scope,
+          paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+          now: NOW,
+        }),
+      }),
     ).toThrow('operation_attempt_conflict');
   });
   it('rejects clock rollback and invalid original dispatch time', () => {

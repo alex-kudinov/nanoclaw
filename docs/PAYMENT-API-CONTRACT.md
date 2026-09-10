@@ -1,8 +1,12 @@
-# Internal TEST payment API contract — unwired
+# Internal TEST payment API contract — injectable, not mounted
 
 NC-20260909-003. `PaymentApiController` composes the reviewed store, Sessions,
-request-admission and event-ledger helpers. It does not listen on a port, load
-credentials, create production connections or register a daemon/WordPress route.
+request-admission and event-ledger helpers. `PaymentHttpAdapter` adds bounded
+streaming Node HTTP adaptation, and `createPaymentTestRuntime` composes the
+kernels over an explicitly supplied transaction/configuration. Neither listens
+on a port, reads environment files, discovers a database, permits LIVE scope or
+registers a daemon/WordPress route. The exact caller contract is in
+`PAYMENT-WORDPRESS-ADAPTER-CONTRACT.md`.
 
 ## Transport and authority
 
@@ -37,9 +41,26 @@ bound streaming input before allocation; this controller also checks final size.
   fresh signed nonce but the same logical requestId and immutable attempt. The
   response includes pending/checkout_ready/reconciliation state and the capability;
   Session data is returned only when durable response persistence succeeded.
+  The immutable attempt can snapshot the canonical public capabilities `card`
+  and `ach_direct_debit`; legacy attempts without the field remain card-only.
+  New-attempt admission requires the entire snapshot to be a subset of explicit
+  runtime configuration; it never silently narrows or rewrites the attempt. The
+  server maps only those names to Adyen `scheme`/`ach`. ACH additionally
+  requires USD and quote country US or PR. Every preparation response echoes the immutable
+  public capability list. No mutable per-request method selection is accepted.
+  Numeric-region product locales such as `es-419` remain unchanged in the
+  persisted quote. They require an explicit TEST runtime mapping to the verified
+  Adyen presentation locale; that mapping affects only `shopperLocale`.
 - POST `/internal/payments/attempts`: `{requestId,attemptId,capability}`. Verifies
   the bearer, reloads the ORIGINAL immutable attempt from PostgreSQL, rechecks
-  caller policy, and resumes it without inventing a new provider/key or quote.
+  caller policy, and resumes it from the exact stored provider request without
+  inventing a new provider/key or quote. Disabling an offer/method for new
+  attempts or changing presentation-locale routing does not rewrite/orphan an
+  accepted attempt. A separate explicit `reconcile_only` runtime mode blocks
+  new starts and new provider dispatch while retaining durable reconciliation.
+  Runtime configuration keeps the stable recovery offer registry separate from
+  the reversible new-attempt offer allowlist; new entries must be a subset of
+  registered recovery identities.
 - POST `/internal/payments/status`: same read command. Verifies the bearer and
   policy before reading evidence; returns only attemptId and a minimal state.
   Authorization maps to `confirming_payment`, never paid/access eligibility.
@@ -58,9 +79,14 @@ preserve request IDs, sign fresh nonces on transport retry, enforce guest owners
 and public abuse controls, and never switch to Stripe after an ambiguous Adyen
 outcome. Provider/session/status capabilities stay out of URLs and logs. The
 gateway must preserve payloadBase64, propagate no-store headers, disable execution
-payload retention and expose only intended TEST routes. Migrations149-151, secret
-installation, actual provider/HMAC proof and scoped activation remain required.
+payload retention and expose only intended TEST routes. The source HTTP adapter
+requires JSON, bounds streaming bytes before allocation and sanitizes failures;
+its explicit body-read deadline returns a no-store 408 and closes keep-alive.
+It still must be explicitly mounted behind the protected route, whose listener
+must set connection/header/request/keep-alive limits. Migrations149-151,
+secret installation, actual provider/HMAC proof and scoped activation remain required.
 
 No first-customer launch, coupon parity, fulfillment or revenue migration is
-claimed by this controller. Financial/source/identity/readiness gates from the
-accepted MCS plan remain intact.
+claimed by this controller. The event ledger remains AUTHORISATION-only and is
+not ACH lifecycle/readiness support. Financial/source/identity/readiness gates
+from the accepted MCS plan remain intact.

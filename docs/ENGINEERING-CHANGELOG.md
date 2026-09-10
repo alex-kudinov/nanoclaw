@@ -11604,3 +11604,27 @@ scripts/check-doc-continuity.mjs`, `npm run docs:continuity-check`,
 Add committed/released entries here without rewriting their historical
 evidence. Include commit, deployment, migration, and live-verification details
 only after each boundary is actually crossed.
+
+## 2026-09-10 — NC-20260909-003 bounded HTTP and immutable recovery
+
+- Added an explicit injected TEST runtime and Node HTTP adapter with bounded
+  body/deadline handling and no default listener, pool, environment discovery or
+  LIVE path. Added canonical card/ACH attempt capabilities and es-419 quote
+  identity support with explicit provider presentation mapping.
+- Independent Sonnet/high method and HTTP reviews each found a material issue:
+  current configuration could block existing recovery, and early stream error
+  paths could escape request handling. Fixed both; each narrow R2 accepted the
+  correction with no material findings. Original operation bytes and provider
+  identity survive new-attempt disablement; reconciliation-only stops dispatch.
+- Verification: 246 payment-focused tests pass; Codex independently reran133
+  changed-boundary tests and typecheck. Real disposable PostgreSQL and HTTP
+  cover concurrency, immutable recovery, configuration rollback, size/deadline/
+  abort and late errors. Default full suite: three established baseline failures
+  plus a DB-contention timeout that passes isolated; bounded full rerun required
+  after dependency integration. No claim of a clean full suite yet.
+- Deployment: none. Live Stripe and existing inert TEST receiver unchanged;
+  this source is only one slice of the MCS deploy-ready build. No production
+  migration, student action, payment, message or certificate issued.
+- Evidence: Peri output/mcs-ready/backend-method-review/ and
+  backend-http-review/ contain exact requests/responses; Peri program revision54
+  tracks remaining source/provider/preview/fulfillment gates separately.
