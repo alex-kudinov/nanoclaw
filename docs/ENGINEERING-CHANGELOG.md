@@ -30,6 +30,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T12:40Z addendum — receiver live; private credential-entry gate
+
+- State: blocked on manual key entry, not authorization. Owner explicitly
+  confirmed all needed TEST setup including key generation/private installation,
+  save and delivery enablement. No LIVE authority inferred.
+- Exact immutable75d5b6c1 was deployed after natural drain and private SQLite/
+  plist backup, using verified three-pointer dry-run/apply. Independent root
+  health confirms exact release/root/Node22.23.2, connected Gmail/Slack and
+  receiver configured=false. One listener; inbox0->0; route503. Pure compiled
+  fixture verifies foreign discard and invalid-HMAC401, with no database effect.
+- Full release/backup/rollback receipt lives in Peri output/shared-test-webhook/
+  RELEASE-EVIDENCE.md. The reviewed helper is exact-hash staged privately on Mini
+  and actual local/remote env dry-runs pass without values or mutation.
+- New TEST HMAC generated/copied only within Adyen UI; draft remains unsaved and
+  disabled. Native Terminal control was denied; no bypass attempted. Tool PTY
+  could not attach to visible app terminal and was cancelled before key entry.
+  User was warned not to paste a key at a shell prompt. Both private installs,
+  receiver reload, provider save/activation and n8n enablement remain pending.
+- No production migrations149-151, charge, enrollment, customer communication,
+  live provider or Stripe traffic change. The same-scope TEST authorization is
+  settled; resume after manual hidden-input installation, not another permission
+  round. Source API/WordPress and MCS launch gates remain open.
+
 #### 2026-09-10T12:05Z addendum — approved shared TEST feed filtering
 
 - 2026-09-10T12:22Z release checkpoint: reviewed source75d5b6c1 clean/pushed;
