@@ -5,6 +5,14 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { PaymentEventStore } from './payment-event-store.js';
+import { PaymentAdmissionStore } from './payment-admission-store.js';
+import { PaymentRequestAuthenticator } from './payment-request-auth.js';
+import {
+  PaymentApiController,
+  PaymentRequestLimiter,
+} from './payment-api-controller.js';
+import { PaymentSessionService } from './payment-session-service.js';
+import { AdyenTestSessionAdapter } from './adyen-session-adapter.js';
 import { PaymentStore, type PaymentTransaction } from './payment-store.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { createPaymentAttempt, type PaymentScope } from './payment-domain.js';
@@ -69,7 +77,7 @@ const transaction: PaymentTransaction = async (work) => {
     client.release();
   }
 };
-async function attempt(overrides: Partial<PaymentScope> = {}) {
+async function attempt(overrides: Partial<PaymentScope> = {}, persist = true) {
   const now = Date.now() - 1000;
   const a = createPaymentAttempt({
     attemptId: randomUUID(),
@@ -101,7 +109,7 @@ async function attempt(overrides: Partial<PaymentScope> = {}) {
       expiresAt: now + 60000,
     },
   });
-  return store.acceptAttempt(a);
+  return persist ? store.acceptAttempt(a) : a;
 }
 function notification(
   attemptId: string,
@@ -156,6 +164,7 @@ beforeAll(async () => {
   pool = new Pool({ ...pgConfig, database });
   await pool.query('CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin');
   await pool.query(sql('149_payment_attempt_store.sql'));
+  await pool.query(sql('150_payment_request_admission.sql'));
   await pool.query(migration);
   store = new PaymentStore(
     transaction,
@@ -535,6 +544,175 @@ describe('HMAC-admitted durable provider payment events', () => {
         )
       ).rows[0].count,
     ).toBe('0');
+  });
+  it('composes signed start, durable Session reuse, capability status and HMAC event confirmation', async () => {
+    const a = await attempt({}, false);
+    const caller = 'wordpress-test';
+    const auth = new PaymentRequestAuthenticator(
+      new Map([['fixture-internal', { caller, secret: randomBytes(32) }]]),
+    );
+    const policy = (who: string, value: typeof a) =>
+      who === caller &&
+      value.quote.authority === 'wordpress:test' &&
+      JSON.stringify(value.scope) === JSON.stringify(scope);
+    const admission = new PaymentAdmissionStore(
+      transaction,
+      auth,
+      new PaymentPayloadVault(
+        'cap-fixture',
+        new Map([['cap-fixture', randomBytes(32)]]),
+      ),
+      policy,
+    );
+    let providerCalls = 0;
+    const adapter = new AdyenTestSessionAdapter('fixture-api-key', (async (
+      _url,
+      options,
+    ) => {
+      providerCalls++;
+      expect(
+        (
+          await pool.query(
+            'SELECT count(*) FROM business_v2.payment_status_capabilities WHERE attempt_id=$1',
+            [a.attemptId],
+          )
+        ).rows[0].count,
+      ).toBe('1');
+      return new Response(
+        JSON.stringify({
+          id: 'fixture-adyen-session',
+          sessionData: 'fixture-private-session',
+          expiresAt: JSON.parse(String(options?.body)).expiresAt,
+        }),
+        { status: 201 },
+      );
+    }) as typeof fetch);
+    const routing = {
+      scope,
+      allowedOrigin: 'http://localhost:3000',
+      returnPath: '/',
+    };
+    const sessions = new PaymentSessionService(store, adapter, routing, [
+      'mcq-program-a-foundations:en',
+    ]);
+    const api = new PaymentApiController(
+      caller,
+      policy,
+      new PaymentRequestLimiter(100, 8, 60000),
+      { admission, store, sessions, events },
+    );
+    function wire(
+      path:
+        | '/internal/payments/sessions'
+        | '/internal/payments/attempts'
+        | '/internal/payments/status',
+      command: Record<string, unknown>,
+    ) {
+      const body = Buffer.from(JSON.stringify(command));
+      const envelope = auth.sign(
+        {
+          version: 1,
+          keyId: 'fixture-internal',
+          caller,
+          method: 'POST',
+          path,
+          timestamp: Date.now(),
+          nonce: randomUUID(),
+          operationId: String(command.requestId),
+        },
+        body,
+      );
+      return Buffer.from(
+        JSON.stringify({
+          auth: envelope,
+          payloadBase64: body.toString('base64'),
+        }),
+      );
+    }
+    const start = { requestId: randomUUID(), attempt: a };
+    const transport = wire('/internal/payments/sessions', start);
+    const first = await api.handle(
+      'POST',
+      '/internal/payments/sessions',
+      transport,
+    );
+    expect(first.status).toBe(200);
+    expect(first.body.state).toBe('checkout_ready');
+    expect(first.headers['Cache-Control']).toBe('no-store');
+    expect(
+      (await api.handle('POST', '/internal/payments/sessions', transport))
+        .status,
+    ).toBe(409);
+    const repeated = await api.handle(
+      'POST',
+      '/internal/payments/sessions',
+      wire('/internal/payments/sessions', start),
+    );
+    expect(repeated.body.capability).toBe(first.body.capability);
+    expect(providerCalls).toBe(1);
+    const status = {
+      requestId: randomUUID(),
+      attemptId: a.attemptId,
+      capability: first.body.capability,
+    };
+    expect(
+      (
+        await api.handle(
+          'POST',
+          '/internal/payments/status',
+          wire('/internal/payments/status', status),
+        )
+      ).body.state,
+    ).toBe('awaiting_payment');
+    await events.recordWebhook(payload(notification(a.attemptId)));
+    const confirmed = await api.handle(
+      'POST',
+      '/internal/payments/status',
+      wire('/internal/payments/status', { ...status, requestId: randomUUID() }),
+    );
+    expect(confirmed.body).toEqual({
+      attemptId: a.attemptId,
+      state: 'confirming_payment',
+    });
+    expect(JSON.stringify(confirmed)).not.toContain('paymentReference');
+    expect(JSON.stringify(confirmed)).not.toContain('fixture-private-session');
+    const paused = new PaymentSessionService(store, adapter, routing, []);
+    const freshApi = new PaymentApiController(
+      caller,
+      policy,
+      new PaymentRequestLimiter(100, 8, 60000),
+      { admission, store, sessions: paused, events },
+    );
+    const resumed = await freshApi.handle(
+      'POST',
+      '/internal/payments/attempts',
+      wire('/internal/payments/attempts', {
+        ...status,
+        requestId: randomUUID(),
+      }),
+    );
+    expect(resumed.status).toBe(200);
+    expect(resumed.body.state).toBe('checkout_ready');
+    expect(providerCalls).toBe(1);
+    const foreign = await attempt();
+    const denied = await api.handle(
+      'POST',
+      '/internal/payments/status',
+      wire('/internal/payments/status', {
+        ...status,
+        requestId: randomUUID(),
+        attemptId: foreign.attemptId,
+      }),
+    );
+    expect(denied.status).toBe(401);
+    expect(
+      (
+        await pool.query(
+          'SELECT count(*) FROM business_v2.payment_operations WHERE attempt_id=$1',
+          [a.attemptId],
+        )
+      ).rows[0].count,
+    ).toBe('1');
   });
   it('refuses populated rollback then proves exact empty rollback/reapply', async () => {
     const client = await pool.connect();

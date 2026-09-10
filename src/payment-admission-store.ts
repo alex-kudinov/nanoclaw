@@ -45,6 +45,15 @@ export class PaymentAdmissionStore {
     );
   }
 
+  /** Cheap signature check only, NOT admission or permission for effects. */
+  preflightSignature(
+    envelope: unknown,
+    body: Buffer,
+    expected: { caller: string; method: string; path: string },
+  ): void {
+    this.auth.verify(envelope, body, expected);
+  }
+
   /** Signature verification and unique nonce insertion share the DB clock/transaction. */
   async admit(
     envelope: unknown,

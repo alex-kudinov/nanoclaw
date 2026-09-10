@@ -39,16 +39,14 @@ export function projectCheckoutPaymentEvidence(input: {
       fact,
     ]);
   }
-  const payments = [...groups.keys()]
-    .sort()
-    .map((paymentReference) => ({
+  const payments = [...groups.keys()].sort().map((paymentReference) => ({
+    paymentReference,
+    evidence: projectPaymentEvidence({
+      attempt,
       paymentReference,
-      evidence: projectPaymentEvidence({
-        attempt,
-        paymentReference,
-        facts: groups.get(paymentReference)!,
-      }),
-    }));
+      facts: groups.get(paymentReference)!,
+    }),
+  }));
   const exceptions = new Set<string>();
   for (const payment of payments)
     for (const reason of payment.evidence.exceptions) exceptions.add(reason);

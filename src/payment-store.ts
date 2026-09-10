@@ -78,6 +78,18 @@ export class PaymentStore {
     return Number(result.rows[0].now);
   }
 
+  /** Internal recovery only; public callers require a capability and caller policy. */
+  async readAttempt(attemptId: string): Promise<PaymentAttempt | null> {
+    uuid(attemptId);
+    return this.transaction(async (client) => {
+      const result = await client.query(
+        'SELECT contract FROM business_v2.payment_attempts WHERE attempt_id=$1',
+        [attemptId],
+      );
+      return result.rowCount ? validateAttempt(result.rows[0].contract) : null;
+    });
+  }
+
   async acceptAttempt(input: unknown): Promise<PaymentAttempt> {
     const attempt = validateAttempt(input);
     const scopeHash = paymentPayloadFingerprint(JSON.stringify(attempt.scope));

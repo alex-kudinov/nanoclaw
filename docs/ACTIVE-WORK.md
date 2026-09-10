@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-003` | Build the reusable Adyen payment foundation for the first MCS Foundations pilot | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909`; exact live/current base `00d66184`; dirty primary preserved | `in_progress` | C5 | Receiver and stable n8n identity are live/inactive respectively. Continue with unwired `src/payment-domain.ts`, behavioral tests and domain contract: immutable quotes, pinned provider operations, unknown-outcome recovery and scoped facts. No provider call, migration, live charge, enrollment, customer message or production activation in this slice. | Implement domain slice from converged Peri MCS plan; narrow/full tests and bounded Sonnet/high review. Durable persistence and configured TEST webhook remain prerequisites for wiring. | 2026-09-10T03:34Z |
+| `NC-20260909-003` | Build the reusable Adyen payment foundation for the first MCS Foundations pilot | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `00d66184`; reviewed source milestones through `c1f7c519` plus controller in this commit; dirty primaries preserved | `blocked` | C5 | Reviewed domain, encrypted/fenced durable operations (149), signed request and status-capability admission (150), scoped PSP/HMAC evidence ledger (151), and composed internal API. Full3848 pass/32skip/three unchanged baseline failures. Unwired: no new production migration, route, credentials, charge, enrollment or Stripe cutover. | Owner must unlock/check pinned Node22 outbound HTTPS to checkout-test.adyen.com:443. Then run the reviewed real TEST Session/store proof, complete gateway/listener/WordPress integration and actual HMAC round trip under the existing activation gates. | 2026-09-10T06:11Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
@@ -194,6 +194,16 @@ outside the current client conversation.
 ## Task details
 
 ### NC-20260909-003
+
+- 2026-09-10T06:11Z checkpoint: controller R1 accepted; Codex independently
+  hardened authenticated-rate-budget ordering and null-evidence error handling;
+  Sonnet/high R2 accepted both. Full3848 pass/32skip/three known baseline failures,
+  no unhandled errors; root/standalone CLI strict types, build and continuity pass.
+  Composed real-DB test covers signed start, one Session, replay/token reuse,
+  HMAC event, minimized confirmation status, stored-attempt resume and wrong-order
+  rejection. Source ready at this verified boundary, but real-provider proof is
+  blocked by the locked-Mac Node22 HTTPS gate. Existing Mini remains verified
+  00d66184 and receiver unconfigured; no new deployment or real payment claimed.
 
 - 2026-09-10T05:48Z: event ledger151 accepted by Sonnet/high, no material
   findings. Codex added redundant scope checks to evidence rebuild/read queries

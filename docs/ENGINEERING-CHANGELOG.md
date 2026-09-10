@@ -30,6 +30,33 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T06:11Z addendum — signed command composition and critical gate
+
+- State: blocked — reviewed source is complete at the internal API boundary;
+  actual provider proof awaits owner network-rule access. No routine owner code
+  review is requested. No gateway/listener, WordPress route, migration or secret
+  installation is enabled by this source.
+- Controller binds exact signed bytes/caller/path/operation to strict commands,
+  validates offer/scope before acceptance, issues a scoped capability before
+  provider dispatch, reloads stored attempts for permitted resume, and minimizes
+  no-store status. No paid/access claim is made from authorization.
+- R1 Sonnet/high accepted. Codex's final check then moved in-memory signature
+  preflight ahead of authenticated quota (still before DB nonce admission), and
+  made missing scoped evidence503 rather than misleading awaiting_payment.
+  R2 accepted both corrections. Raw gateway flood control remains a deployment
+  requirement; preflight alone never authorizes an effect.
+- Final full suite:3848 pass/32skip/three exact-baseline failures, zero unhandled
+  errors. All153 payment-focused cases pass; the 13 controller cases and actual
+  PostgreSQL composed flow exercise all kernel layers together. Root and separate
+  CLI strict typecheck, build and continuity pass. Minor formatter-only carryover
+  in payment-checkout-evidence.ts is included without semantic change.
+- Read-only production health still verifies00d66184 / Node22.23.2 with the TEST
+  receiver unconfigured. All generated payment fixture databases are removed.
+  One unused real TEST Session attempt timed out before HTTP; no SDK payment,
+  enrollment, live configuration or production database change occurred.
+- Exact continuation and review/usage receipts are maintained in Peri's program
+  evidence and handoff; resume only after the critical network gate is cleared.
+
 #### 2026-09-10T05:48Z addendum — scoped PSP event ledger
 
 - Migration151 and HMAC-only TEST entrypoint persist immutable scoped PSP-to-

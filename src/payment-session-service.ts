@@ -28,13 +28,7 @@ export class PaymentSessionService {
   }
 
   async start(input: unknown): Promise<CheckoutPreparation> {
-    const attempt = validateAttempt(input);
-    if (
-      !this.allowedOffers.has(
-        `${attempt.quote.offerKey}:${attempt.quote.locale}`,
-      )
-    )
-      throw new PaymentDomainError('offer_not_enabled');
+    const attempt = this.validateStart(input);
     const request = buildAdyenTestSessionRequest(attempt, this.routing);
     await this.store.acceptAttempt(attempt);
     await this.store.prepareSession({
@@ -45,6 +39,18 @@ export class PaymentSessionService {
       retryWindowMs: 24 * 60 * 60 * 1000,
     });
     return this.resume(attempt);
+  }
+
+  validateStart(input: unknown) {
+    const attempt = validateAttempt(input);
+    if (
+      !this.allowedOffers.has(
+        `${attempt.quote.offerKey}:${attempt.quote.locale}`,
+      )
+    )
+      throw new PaymentDomainError('offer_not_enabled');
+    buildAdyenTestSessionRequest(attempt, this.routing);
+    return attempt;
   }
 
   /** Existing attempts retain their provider even if new-offer routing is disabled. */
