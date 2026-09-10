@@ -2,6 +2,12 @@
 
 Status: foundation revision 2, design and local dark implementation contract
 
+Scope of status: this document preserves the foundation-phase design and gates.
+Later tracked Academy capacity deployment receipts record migration/pilot
+progress; see `docs/ACADEMY-CAPACITY-CONTROL-PLANE.md` and the dated engineering
+changelog. Earlier phase statements below do not assert current live migration
+state. `NC-20260906-006` adds only the unwired local Bookkeeper composition.
+
 Task: `NC-20260905-002`
 
 Machine-readable authority:
@@ -118,6 +124,11 @@ Consequences:
 - a refund/dispute creates a policy hold, not an automatic silent revocation.
 
 ## Ingress contract
+
+The local Bookkeeper composition is specified in
+`docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md` (`NC-20260906-006`). It accepts
+host-attested settled funding or owner grants and creates synthetic canonical
+state/roster previews only; production admission and persistence remain unwired.
 
 Every channel invokes the same commands. No channel writes Student Roster or
 Heartbeat directly.

@@ -2,6 +2,28 @@
 
 Generated: 2026-09-06T21:30:24.628Z
 
+Additional local/unapplied source extension (NC-20260909-001): migration 148
+adds target-scoped idempotency, exact destination identity, provider operation,
+exact readback hash, uncertain-acceptance hold, and supersession references to
+`business_v2.student_projection_outbox`. It adds no rows, grants, runtime
+wiring, or provider access and is tested only in uniquely generated disposable
+PostgreSQL. The production snapshot below is unchanged.
+
+Additional local/unapplied source extension (NC-20260906-009): migration 147
+creates `business_v2.student_enrollment_authenticated_receipts` (issuer/receipt
+identity, source/body hashes, actor/role/purpose/transport and times) and
+`business_v2.student_enrollment_writer_claims` (canonical source, writer/policy,
+evidence and actor/time). Both are append-only, admin-owned and tested only in
+disposable PostgreSQL. This is not a production schema refresh or apply receipt.
+
+Local source extension, not part of the live snapshot below: migration 146
+(`146_student_enrollment_store_contract.sql`, NC-20260906-008) adds
+`business_v2.student_projection_outbox.version integer NOT NULL DEFAULT 0`
+with a nonnegative check, and adds `evidence` to the enrollment-history subject
+check. It is tested only in disposable databases and remains unapplied to
+production. Existing live schema descriptions below are not rewritten as proof
+of a production change.
+
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
 business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.

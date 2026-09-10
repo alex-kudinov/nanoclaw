@@ -1,0 +1,453 @@
+{
+  "sourceRevision": "d9e298567ae87f48ae5b36152b3322fbbe9b73f6",
+  "paymentBase": "57d86497",
+  "sourceCommits": [
+    "6952442c",
+    "86141afa",
+    "ef52b51d",
+    "a46ecfe2",
+    "deaab99c"
+  ],
+  "exactPaths": [
+    {
+      "path": "agent_docs/nanoclaw-business-pg-schema.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "2995f92e29bc942e20a1dcde5359805b3853a448"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/146_student_enrollment_store_contract.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "236daee4389f65c84073b336f4a67043910367b3"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/147_student_enrollment_writer_claims.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "2429ed6b6984d07d8e63ab00aec34cecccdc87b1"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/148_student_enrollment_projection_foundation.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "e33d530a0b94c02561b25ba45fba3bae1f306230"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/rollback_146_student_enrollment_store_contract.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "4e32bde779196d6eec91f8a5c3eb1d06b35201e4"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/rollback_147_student_enrollment_writer_claims.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "3d6198830a427e0e88b8e2b2c6d37d595983c288"
+    },
+    {
+      "path": "data/business/migrations/nanoclaw-v2/rollback_148_student_enrollment_projection_foundation.sql",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "85d9dcc6d8d95fa5cc5db39e2ed21bb827faca17"
+    },
+    {
+      "path": "docs/ACADEMY-CAPACITY-CONTROL-PLANE.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "de2b15d58b9ff662b7545978333e319096be3016"
+    },
+    {
+      "path": "docs/BOOKKEEPER-ENROLLMENT-CONTRACT.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "ab2a855c6ed819da82ddf430e6becf039759a2db"
+    },
+    {
+      "path": "docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "37a7a50a5cb3d4c8af71488f734631a47c7e0b2f"
+    },
+    {
+      "path": "docs/STUDENT-ENROLLMENT-FOUNDATION.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "6470aca520e09493a7d905b536a4629ffce945e3"
+    },
+    {
+      "path": "docs/STUDENT-ENROLLMENT-INGRESS-ADAPTERS.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "fcb1f85c233f53b126737b63241a8632c637b4e6"
+    },
+    {
+      "path": "docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "f942610c4f9ac67f85e44477d8e1884b1943248c"
+    },
+    {
+      "path": "docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "4e4a01f5a304ebd84179e0d769a43272b0117755"
+    },
+    {
+      "path": "docs/programs/company-os/evidence/NC-20260906-006-bookkeeper-enrollment-contract.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "f92f9b56f9a56a82342adfb4a211e601d085e56e"
+    },
+    {
+      "path": "docs/programs/company-os/evidence/NC-20260906-007-enrollment-ingress-adapters.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "3fcecc698b1d92eb62cca22608e57e24f726476b"
+    },
+    {
+      "path": "docs/programs/company-os/evidence/NC-20260906-008-enrollment-transactional-store.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "cbe3a1be27c16908fb2b4100ff60ba57fa22c9b3"
+    },
+    {
+      "path": "docs/programs/company-os/evidence/NC-20260906-009-local-authenticated-admission.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "5330affff2a14f0a45411e6eb2f74e89e8a9367c"
+    },
+    {
+      "path": "docs/programs/company-os/evidence/NC-20260909-001-student-enrollment-projection-foundation.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "da9ba677fb418c207e16395ed68cb14432e3463c"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-REQUEST-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "509376d418ccb48304a8a3407049d9a512ada43d"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-REQUEST-R1B.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "fff3f94d9826a4bfec8c6a578e417e8b89df46a4"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-REQUEST-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "1c981e815cd4ed506b52ad04c7d416511c54a85b"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-REQUEST-R3.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "984654938efa2264dd3b9d24ee7c7e223d9e2246"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-RESPONSE-R1B.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "ed26f13db740cf90bf3314f3888f873697cb425a"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-RESPONSE-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "55bf70499613e5125396643bb4d11f740cdefc04"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CLAUDE-RESPONSE-R3.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "265f9bf2f0c5a14dca5a032fc0ceca5f368b69cf"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-CORRECTIONS-R2.diff",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "58fc935ad77838d5fd7eb20f27169e8901ee61f8"
+    },
+    {
+      "path": "docs/reports/NC-20260906-006-REPLAY-EVIDENCE-R3.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "3298726fb3901df28bbfa977c99ebfa858233ff2"
+    },
+    {
+      "path": "docs/reports/NC-20260906-007-CLAUDE-REQUEST-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "da674817fdac905a4bfcfb052b725cb0ca682732"
+    },
+    {
+      "path": "docs/reports/NC-20260906-007-CLAUDE-REQUEST-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "20036fbbd736c9c8d8cf74ceb4ff2a0814a23e98"
+    },
+    {
+      "path": "docs/reports/NC-20260906-007-CLAUDE-RESPONSE-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "e38a013d0cfa3b3aac801d5f2ad76bfacad90388"
+    },
+    {
+      "path": "docs/reports/NC-20260906-007-CLAUDE-RESPONSE-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "390004dba352048229910ed1691b576b7fae8089"
+    },
+    {
+      "path": "docs/reports/NC-20260906-007-PARTICIPANT-PROOF-EVIDENCE.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "c6a19d9e1c2d92dc0e346fb2a944dc2e2d44e25c"
+    },
+    {
+      "path": "docs/reports/NC-20260906-008-CLAUDE-REQUEST-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "fcd3694fbe8331ad5c810d166601eb6a06ff33dd"
+    },
+    {
+      "path": "docs/reports/NC-20260906-008-CLAUDE-RESPONSE-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "63d0fe756070e074edfe59b96553f4478e5bd20b"
+    },
+    {
+      "path": "docs/reports/NC-20260906-008-CRITICAL-SCHEMA-EVIDENCE.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "3420dce49d4ec4102f6fbce1314444bcd0f9c186"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CLAUDE-REQUEST-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "6cf11bff753275a1dfb6081ea242e9ea1a16ca14"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CLAUDE-REQUEST-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "35b54c8424c01bf78c844503fa11443dff0fbc2f"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CLAUDE-RESPONSE-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "9fea48d05db2f90dce9e10914a8c8ffbd9954cf8"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CLAUDE-RESPONSE-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "211b7d0397c3dfd4dc72b60fe7a43a2d416ecdbb"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CORRECTION-EVIDENCE-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "130f06648c703bcd518f084b3afabb2ab5644780"
+    },
+    {
+      "path": "docs/reports/NC-20260906-009-CRITICAL-DIFF.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "c538991eb775d71eade1d7df04f8b2de7e99038f"
+    },
+    {
+      "path": "docs/reports/NC-20260909-001-CLAUDE-CORRECTION-REQUEST-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "4007aae44d56b988f3c5c22f447802ef8b1582c9"
+    },
+    {
+      "path": "docs/reports/NC-20260909-001-CLAUDE-REVIEW-REQUEST-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "033fa5c658318759c5e090aae498979855345999"
+    },
+    {
+      "path": "docs/reports/NC-20260909-001-CLAUDE-REVIEW-RESPONSE-R1.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "586c6a46429287439ed82ecc0f799e1d90a5fa75"
+    },
+    {
+      "path": "docs/reports/NC-20260909-001-CLAUDE-REVIEW-RESPONSE-R2.md",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "af1cb645d3f261984f1f0b18ea339c2325935a16"
+    },
+    {
+      "path": "facts/catalogs/student-enrollment-projection-targets-v1.json",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "4e35fc0f8748643899a57cef7fc84443f1c0a673"
+    },
+    {
+      "path": "facts/catalogs/student-enrollment-projection-targets-v1.schema.json",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "89620bda98f2133041b4be751c892c6cf8da677c"
+    },
+    {
+      "path": "scripts/enrollment-admission-fixtures.d.mts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "69f9f9e072581c5e6b636f5ddf08af3263af92e7"
+    },
+    {
+      "path": "scripts/enrollment-admission-fixtures.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "b540ffcf1f53cd81ca96dce94d0ffb0a222375ff"
+    },
+    {
+      "path": "scripts/student-enrollment-admission-disposable-worker.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "d42ec514687839a9ce73bed4ff1994085fadd73d"
+    },
+    {
+      "path": "scripts/student-enrollment-projection-disposable-worker.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "ae39a3a7c3acdc309c6123fa31926cd846804c8b"
+    },
+    {
+      "path": "scripts/student-enrollment-store-disposable-worker.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "b7681feb5d4947de0e7d5ae3ae98258f4f5a40f6"
+    },
+    {
+      "path": "scripts/verify-student-enrollment-projection-disposable.d.mts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "fed3f6c871f51ea6c429d632a1c1e4f770359141"
+    },
+    {
+      "path": "scripts/verify-student-enrollment-projection-disposable.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "6e6a7c44317184596f3bb76e78d552e294fc01ee"
+    },
+    {
+      "path": "scripts/verify-student-enrollment-store-disposable.d.mts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "fadd3b2037c1c235ed9567de8eadcc456f03bd38"
+    },
+    {
+      "path": "scripts/verify-student-enrollment-store-disposable.mjs",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "f1e4aaa7479453e4404838e3be8dd91885538572"
+    },
+    {
+      "path": "src/bookkeeper-enrollment-contract.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "7fda283938d52f65dd1a1a2b8d53a1e64e4929f8"
+    },
+    {
+      "path": "src/bookkeeper-enrollment-contract.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "328d44e99ebe346bca63ca2b186e5f644d8acd0e"
+    },
+    {
+      "path": "src/student-enrollment-admission.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "01da8c375b53ec2786585ccc3d3cc4ac14ce0d44"
+    },
+    {
+      "path": "src/student-enrollment-admission.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "1974bb75aff8f4846efdf8a7718a9e5a251af318"
+    },
+    {
+      "path": "src/student-enrollment-foundation.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "effc1caa358cf3c903e2f9efa6a678841d9f91c9"
+    },
+    {
+      "path": "src/student-enrollment-ingress.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "0b12ce15fc36c1c375758b01c60f56282cf0b483"
+    },
+    {
+      "path": "src/student-enrollment-ingress.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "ae45df7360fd98da6f68f752a9bd235146a5ef7d"
+    },
+    {
+      "path": "src/student-enrollment-projection-catalog.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "e0cbc29939e2bcf0bc8deaf218f167e065bd548f"
+    },
+    {
+      "path": "src/student-enrollment-projection-disposable.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "d6e3caa03154cd23155691af35f359a217f73c14"
+    },
+    {
+      "path": "src/student-enrollment-projection-migration.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "2d0491e86e2b42018e57a33e868d1ea731c420d4"
+    },
+    {
+      "path": "src/student-enrollment-projection-store.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "40e504777bac23a30d6dd4945bd7067e5b54262a"
+    },
+    {
+      "path": "src/student-enrollment-projection.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "0632908bd4bd27c99a91b0427fd2bf7ab7fe44a6"
+    },
+    {
+      "path": "src/student-enrollment-projection.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "de6bfd0870109ac143762a633cd709cb25cbb7ab"
+    },
+    {
+      "path": "src/student-enrollment-store-mapping.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "5fc6400125573f89fccbd8244f26beca3118221b"
+    },
+    {
+      "path": "src/student-enrollment-store.test.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "7f56d09dec5e4595ac4cfafe3f836e0c063a1ed8"
+    },
+    {
+      "path": "src/student-enrollment-store.ts",
+      "mode": "100644",
+      "type": "blob",
+      "blob": "d359fa50ae25ffccb759028bf8dad9d0bd2765ed"
+    }
+  ],
+  "verified": "git diff --quiet against source after staging: exit 0",
+  "excluded": "Shared continuity reconciled separately; business instructions additive; no full-branch config/audit/production-pilot import."
+}

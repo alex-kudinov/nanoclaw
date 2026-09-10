@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["revision", "mode", "pilot", "targets"],
+  "properties": {
+    "revision": { "const": 1 },
+    "mode": { "const": "local_unwired" },
+    "pilot": {
+      "type": "object",
+      "required": ["offer_key", "offer_version", "funding_status", "payer_relationship", "delivery_block_key", "source_admission_required"]
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["target", "disposition", "reviewed_adapter", "destination", "apply_path", "readback_path", "rollback_semantics", "reconciliation_semantics", "permission_ready", "activation_ready", "readiness_reason"],
+        "properties": {
+          "target": { "enum": ["student_roster", "heartbeat", "encharge", "plutio"] },
+          "disposition": { "enum": ["required", "not_applicable"] }
+        }
+      }
+    }
+  }
+}

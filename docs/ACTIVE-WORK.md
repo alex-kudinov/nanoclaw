@@ -195,6 +195,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T19:26Z: imported the exact reviewed enrollment dependency at
+  d9e29856 (73 source/helper/contract/evidence paths), preserving payment149-151
+  and excluding unrelated branch configuration/audit and production-pilot
+  changes. All73 paths compare equal to the source snapshot.120 focused
+  enrollment tests and typecheck pass; no real data/provider effects. See
+  `docs/MCS-ENROLLMENT-DEPENDENCY-INTEGRATION.md`. New Adyen source registration,
+  standalone offer publication and dual access/certification gates remain work.
+
 - 2026-09-10T19:20Z: HTTP/TEST composition and immutable method snapshot slice
   accepted after separate Sonnet/high R1/R2 reviews. Fixed request error/abort
   paths and recovery after new-offer/method disablement; recovery reads the

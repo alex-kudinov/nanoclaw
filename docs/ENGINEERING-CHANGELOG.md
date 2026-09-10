@@ -11628,3 +11628,18 @@ only after each boundary is actually crossed.
 - Evidence: Peri output/mcs-ready/backend-method-review/ and
   backend-http-review/ contain exact requests/responses; Peri program revision54
   tracks remaining source/provider/preview/fulfillment gates separately.
+
+## 2026-09-10 — NC-20260909-003 reviewed enrollment source dependency
+
+- Imported73 exact reviewed dependency paths at d9e29856 from source commits
+  6952442c,86141afa,ef52b51d,a46ecfe2,deaab99c; included canonical store/admission/
+  projection contracts and migrations146-148. Source hash comparison passes.
+- Preserved current payment149-151, continuity and business instructions.
+  Full-branch merge was safely aborted in favor of this narrow source import;
+  unrelated configuration/catalog-audit and Supervision production pilot were
+  not imported. Worker-owned new Session-result files remained untouched.
+- 120 focused enrollment tests and typecheck pass, including disposable PG
+  concurrency/readback. Full suite with maxWorkers=2:4035 pass/32 skip/exactly
+  three established baseline failures, no extra PG timeout. No production
+  migration, live source enablement, provider call or student action occurred.
+- Integration scope/provenance: `docs/MCS-ENROLLMENT-DEPENDENCY-INTEGRATION.md`.

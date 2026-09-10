@@ -4,6 +4,17 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Local/unapplied enrollment dependency migrations146-148 are now included for
+the MCS deployment-readiness source integration. They add transactional store
+versions/evidence identity, authenticated issuer receipts/shared writer claims,
+and exact-destination projection/readback state respectively. These are reviewed
+source contracts, not a production migration or source-activation receipt.
+See `docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md`,
+`docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md`, and
+`docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md`. Only generated disposable
+databases and synthetic drivers are authorized for their current verification;
+no minion grants, real provider action or population rollout is inferred.
+
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
 Migration151 adds the source-only TEST payment-event ledger over149: immutable
