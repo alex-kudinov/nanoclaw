@@ -114,13 +114,16 @@ describe('Adyen Standard webhook HMAC', () => {
     ['invalid event date', { eventDate: 'not-a-date' }, 400],
   ])('rejects %s before admission', (_name, mutation, status) => {
     let payload: Record<string, any> = envelope();
-    if ('live' in mutation) payload = { ...payload, live: mutation.live as boolean };
+    if ('live' in mutation)
+      payload = { ...payload, live: mutation.live as boolean };
     if ('signature' in mutation) {
       payload.notificationItems[0].NotificationRequestItem.additionalData.hmacSignature =
         String(mutation.signature);
     }
     if ('merchantAccountCode' in mutation) {
-      payload = envelope(sign(item({ merchantAccountCode: mutation.merchantAccountCode })));
+      payload = envelope(
+        sign(item({ merchantAccountCode: mutation.merchantAccountCode })),
+      );
     }
     if ('store' in mutation) {
       const notification = item();
@@ -128,7 +131,9 @@ describe('Adyen Standard webhook HMAC', () => {
       payload = envelope(sign(notification));
     }
     if ('merchantReference' in mutation) {
-      payload = envelope(sign(item({ merchantReference: mutation.merchantReference })));
+      payload = envelope(
+        sign(item({ merchantReference: mutation.merchantReference })),
+      );
     }
     if ('eventCode' in mutation) {
       payload = envelope(sign(item({ eventCode: mutation.eventCode })));
