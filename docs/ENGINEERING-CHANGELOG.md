@@ -40,6 +40,64 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260909-002 — Exact production-admission pilot preparation
+
+- Date: 2026-09-10T02:08:00Z
+- Owner/client: Astra owner; Sol High execution writer; independent Claude
+  Sonnet/high review complete.
+- State: ready_for_review; preparation, review and verification complete;
+  commit/push pending; execution remains unauthorized.
+- Branch/base: `codex/student-enrollment-pilot-preparation-20260909` from
+  reviewed projection closure `d9e29856`; registration `d849c091` was pushed
+  before source work. Dirty primary remains untouched.
+- Change class: C2 documentation and validation; the described future rollout
+  is C5/C4 and requires explicit owner acceptance.
+- Outcome: exact one-event packet for a future natural, undiscounted, fully
+  settled self-purchased `supervision-inaugural` v1 episode assigned to
+  `supervision:2026-10-07`. It pins current/live and reviewed source lineages,
+  native evidence/aliases, both real Stripe ingress paths, one atomic writer
+  gate, independent accounting, Student Roster/Heartbeat targets, migrations
+  146-148, preflight/activation/monitoring/uncertainty/abort/rollback and the
+  smallest remaining owner decisions.
+- Live read-only evidence: Mini health verified release `726f2c80`, Node
+  22.23.2, matching code root, connected Gmail/Slack and zero active work.
+  PostgreSQL metadata only proved 142-145 structure present, 146-148 absent,
+  and inspected targets admin-owned with zero non-admin table grants. Current
+  roster row-1 header and Heartbeat group/course metadata were read without any
+  student/member row; the marker parent/child are absent.
+- Current blockers to activation: no owner acceptance; no numeric capacity;
+  reviewed projection source not integrated with the current live release;
+  no production migrations/facade/writer gate; no roster operational columns or
+  write proof; no Heartbeat marker parent/child or complete invariant/read/remove
+  capability. Encharge and Plutio are explicitly not applicable.
+- Review: Sonnet/high R1 found one material validator gap: same-length safety
+  control substitution could pass. The fix canonically hash-pins all thirteen
+  operational safety families in both packet and validator, with twelve
+  representative weakened-content regressions. Bounded R2 returned `NO
+  MATERIAL FINDINGS`. R1 usage: 7 model calls, 82,642 cache-create, 331,740
+  cache-read, 16,133 output, max context 92,529. R2 usage: 11 Sonnet calls plus
+  two synthetic records across interrupted-session recovery, 162,522
+  cache-create, 517,509 cache-read, 37,565 output, max context 82,024. Both
+  remained below review warning thresholds.
+- Verification: validator passes 186 omission paths / 10 preflights / three
+  migrations / nine external mutations; focused 1 file / 4 tests passes,
+  including twelve same-length safety substitutions; pinned Node 22.23.2
+  typecheck, format and documentation continuity pass. Full root with four
+  workers: 3,778 pass / 32 skip / three failures, all exact unchanged
+  predecessor baselines (CNPC wrapper assertion, date-stale Trafft projection,
+  and expired Capacity operator reservation). The three files plus their
+  implementation sources are byte-unchanged from `d9e29856` and an isolated
+  rerun reproduced 8 pass / 3 fail. No production migration, database row, provider/Sheet
+  write, group/membership, deploy/restart, event diversion, writer cutover,
+  financial action, or customer/student communication occurred.
+- Rollback/recovery: delete the preparation-only artifacts before commit. The
+  future packet permits SQL rollback only before event evidence and preserves
+  all accounting/canonical history after an admitted event.
+- Documentation: Project Map, Active Work, owner/machine packet, schema,
+  validator/tests, and privacy-safe evidence.
+- Follow-up: commit/push and Astra acceptance; the consequential pilot remains
+  owner-gated.
+
 ### NC-20260909-001 — Local student enrollment provider-projection foundation
 
 - Date: 2026-09-10T00:44:00Z

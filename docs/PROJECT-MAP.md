@@ -46,6 +46,19 @@ explicitly not applicable. Production readiness remains false because provider
 permissions/activation and the separate hidden zero-content Heartbeat marker
 identity are not verified. See `docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md`.
 
+Production-admission preparation `NC-20260909-002` pins the current live
+release separately from the reviewed projection line and defines one future
+natural, undiscounted, fully settled self-purchased `supervision-inaugural` v1
+episode for `supervision:2026-10-07`. The validated packet requires migrations
+146-148, one atomic registration-writer gate across the request-time and retry
+paths, independent accounting continuity, exact Student Roster and two-layer
+Heartbeat readback, and immediate canonical then projection milestones. Current
+readiness is false: numeric capacity, roster operational columns/write proof,
+the zero-content marker parent/child, full Heartbeat invariant/read/remove
+capability, owner acceptance, integration release and production activation are
+all explicit gates. See
+`docs/work-packets/NC-20260909-002-PRODUCTION-ADMISSION-ROLLOUT.md`.
+
 Publication expansion `NC-20260907-007` replaces the runtime compatibility
 consumer with `facts/generated/student-product-bindings-v2.scoped.json`. The
 three managed routes carry exact account-local product and price IDs plus typed

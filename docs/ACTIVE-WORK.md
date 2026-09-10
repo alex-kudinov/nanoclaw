@@ -11,9 +11,29 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260909-002` | Prepare the exact bounded student-enrollment production-admission pilot packet | Astra owner + Sol High writer + Claude reviewer | `codex/student-enrollment-pilot-preparation-20260909` from reviewed projection closure `d9e29856`; dirty primary preserved | `in_progress` | C2 | Pin exact release, migration, provider, writer, accounting, eligibility, readback, and rollback evidence for one future fully settled self-purchased `supervision-inaugural` v1 event mapped to 2026-10-07. Produce an owner-reviewable packet only. No historical student-population reads, provider or Sheet writes, group creation, migration, deployment, event diversion, cutover, financial action, or communication. | Verify current source and destination capabilities read-only, assemble and independently review the exact packet, commit and push, then return the consequential production pilot for explicit owner acceptance. | 2026-09-10T01:19Z |
+| `NC-20260909-002` | Prepare the exact bounded student-enrollment production-admission pilot packet | Astra owner + Sol High writer + Claude reviewer | `codex/student-enrollment-pilot-preparation-20260909` from reviewed projection closure `d9e29856`; dirty primary preserved | `ready_for_review` | C2 | Reviewed machine/owner packet, schema, validator, omission/substitution tests and privacy-safe live metadata evidence for one future natural `supervision-inaugural` v1 event. Readiness remains false; no historical student-population read, provider/Sheet write, group creation, migration, deployment, event diversion, cutover, financial action, or communication. | Commit and push the reviewed preparation, verify clean remote, then Astra accepts or rejects the four consequential owner decisions; no pilot execution is authorized here. | 2026-09-10T02:24Z |
 | `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No provider/product/payment/customer/student/roster/access/capacity/schedule/message/migration/source-sync mutation or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
 | `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only source-mirror correction, focused/full checks, bounded review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None. Source-sync convergence remains separately unauthorized and paused. | 2026-09-07T23:41Z |
+
+### NC-20260909-002 — Production-admission pilot preparation
+
+- Current read-only production release is `726f2c80`; the reviewed projection
+  closure `d9e29856` is a separate lineage, so a future candidate must begin at
+  the then-current live release and deliberately integrate the reviewed source.
+- Production metadata proves 142-145 structurally present and 146-148 absent.
+  Inspected enrollment/capacity targets are `nanoclaw_admin` owned with zero
+  non-admin table grants. No business rows were selected.
+- Current Student Roster CSS header is exactly five fields; write permission and
+  the proposed F:M canonical projection columns remain later authorized
+  preflights. Heartbeat's exact access group/course exist, but neither the
+  `Student Markers` parent nor the exact October 7 delivery marker exists.
+- The machine packet has 186 omission-guarded paths, ten preflights, two
+  sequential same-rollout milestones, exact migration/source/rollback hashes,
+  and explicit abort/post-event recovery. Execution remains unauthorized.
+- Claude Sonnet/high R1 found one material validator weakness: same-length
+  safety-text substitution was not detected. The correction pins one canonical
+  SHA-256 over all thirteen operational safety families and adds twelve
+  substitution regressions; bounded R2 returned `NO MATERIAL FINDINGS`.
 
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
 

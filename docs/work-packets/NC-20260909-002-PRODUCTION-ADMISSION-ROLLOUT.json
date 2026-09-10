@@ -1,0 +1,473 @@
+{
+  "schema_version": "1.0",
+  "packet_id": "NC-20260909-002",
+  "status": "prepared_not_authorized",
+  "prepared_at_utc": "2026-09-10T01:45:49Z",
+  "safety_contract_sha256": "e5b3a931707700810772e0354e5fda71d40d7abd1b7fc8baafc4e529fb4682e4",
+  "objective": "Prepare, but do not execute, one future natural fully settled self-purchased supervision-inaugural v1 enrollment and its immediate Student Roster plus Heartbeat projections for supervision:2026-10-07.",
+  "authority": {
+    "work_item": "work:student-enrollment-production-admission-preparation",
+    "change_class": "C2_preparation_future_C5_provider_and_identity_effect",
+    "owner_acceptance_required": true,
+    "execution_authorized": false,
+    "production_or_provider_writes_authorized": false,
+    "program_state_owner": "Astra",
+    "execution_writer": "one_designated_Sol_High_worker",
+    "independent_reviewer": "Claude_Code_Sonnet_high",
+    "natural_event_only": true,
+    "historical_population_reads_allowed": false
+  },
+  "lineage": {
+    "registration_commit": "d849c091df387b896a18c5be971c28e50dff4f1c",
+    "reviewed_projection_closure": "d9e298567ae87f48ae5b36152b3322fbbe9b73f6",
+    "reviewed_projection_implementation": "deaab99ca4c756f54d22d8c6e6f9b2d4a91daf69",
+    "reviewed_admission_closure": "8b1ffbb9902b5fd3f7df245142d54db3de92dcee",
+    "reviewed_admission_implementation": "a46ecfe2c81e5aa624ee29472301e3d025a41d83",
+    "reviewed_store_closure": "a382e21556c621c80202ee2a9cd072489f6ab295",
+    "reviewed_store_implementation": "ef52b51d7d77d9f129608dd05f3d0d28de1e81e8",
+    "reviewed_publication_closure": "55c068d2c39b9295b0a79ebe65369a3cc68172dc",
+    "current_production_release": "726f2c80b3d45ccddf80bfa0fe796281f54b19b1",
+    "current_production_parent": "55c068d2c39b9295b0a79ebe65369a3cc68172dc",
+    "current_production_source_tree": "c7d3cf30170303eef0545e5d4603389d25ce6616",
+    "current_production_artifact_sha256": "19263ee5b693f204e9dc647c006df0f5c05c2eb6d8c5f84fe184e926a11e3544",
+    "current_production_node": "22.23.2",
+    "integration_rule": "Build the pilot candidate from the then-current verified production release or a confirmed descendant, integrate the exact reviewed admission/store/projection source, and reconcile shared authorities by meaning. Never deploy d9e29856 directly over production.",
+    "release_revalidation_required": true
+  },
+  "current_read_only_evidence": {
+    "observed_at_utc": "2026-09-10T01:45:49Z",
+    "production_host": "mini-claw.local",
+    "release_verified": true,
+    "code_root_matches_release": true,
+    "gmail_connected": true,
+    "slack_connected": true,
+    "active_work_count": 0,
+    "postgres_database": "nanoclaw_business",
+    "postgres_version": "16.13",
+    "schema_observation": "Migrations 142 through 145 are structurally present and admin-owned. Migration 146 version/evidence-history changes, migration 147 receipt/claim tables, and migration 148 delivery columns/indexes are absent.",
+    "schema_query_boundary": "PostgreSQL catalog and information_schema metadata only; no business rows selected.",
+    "provider_query_boundary": "Heartbeat group/course metadata and Student Roster row-1 header only; no users, memberships, or student rows selected."
+  },
+  "population": {
+    "maximum_natural_events": 1,
+    "offer_key": "supervision-inaugural",
+    "offer_version": 1,
+    "bundle_key": "coaching-supervision-mastery:v1",
+    "catalog_revision": 1,
+    "stripe_account": "tandem",
+    "canonical_source_object_type": "payment_intent",
+    "funding_state": "settled",
+    "agreement_type": "paid_in_full",
+    "currency": "usd",
+    "gross_amount_minor": 399600,
+    "discount_policy": "none_for_this_pilot",
+    "payer_relationship": "self_purchase_explicit",
+    "seat_count": 1,
+    "delivery_block_key": "supervision:2026-10-07",
+    "delivery_program": "supervision",
+    "delivery_start_date": "2026-10-07",
+    "event_must_be_received_after_activation": true,
+    "known_historical_episode_replay_forbidden": true
+  },
+  "eligibility": {
+    "all_required": [
+      "The event is a future provider-authenticated payment_intent.succeeded or checkout.session.completed from the fixed Tandem Stripe trigger and carries one valid evt_ identity.",
+      "The canonical Payment Intent is succeeded and fully settled as one undiscounted USD 399600-minor-unit paid-in-full agreement; installment, coupon/discount, invoice, sponsor, grant, refund, dispute, arrears, and partial-payment semantics are excluded.",
+      "Account-scoped offer evidence resolves exactly to supervision-inaugural v1. Any supplied offer, product, price, checkout, charge, and event aliases agree with that route.",
+      "Checkout metadata supplies cohort_program=supervision and cohort_start=2026-10-07; no name, amount, date, or email inference substitutes for either value.",
+      "The purchase path explicitly attests one self-purchasing participant and the exact Party/participant proof is authenticated independently of payer email similarity.",
+      "The delivery block, one seat pool, supervision-inaugural v1 offer mapping, numeric capacity, and positive availability are read back from accepted production authority before claim.",
+      "There is no open or acknowledged exception for source, offer, terms, participant, relationship, capacity, assignment, writer, or projection readiness.",
+      "Both required targets have exact destination identity, reviewed production adapters, apply/readback/uncertain/rollback paths, and current permission preflights before the writer claim.",
+      "The persistent rollout budget has zero prior enrollment-owned writer claims for policy student_enrollment_supervision_inaugural_v1_one_event."
+    ],
+    "refuse_or_preserve_legacy": [
+      "Any event received before the activation epoch or after the one-event budget is consumed.",
+      "Any historical, manually pasted, synthetic, repaired, backfilled, or operator-selected payment.",
+      "Any account other than tandem; any missing or invalid provider event identity; or any alias collision with another Contador or enrollment case.",
+      "Any supervision-regular, mcs-full, unknown, unqualified, wrong-account, mixed-line, multi-seat, invoice, sponsor, grant, transfer, refund, dispute, payment-plan, or active-terms episode.",
+      "Any absent/conflicting participant, self-purchase, cohort, schedule, delivery-block, capacity, offer, bundle, permission, marker, or destination evidence.",
+      "Any target preflight drift, active writer claim, unclean release lineage, queue activity, migration mismatch, or backup failure."
+    ],
+    "refusal_behavior_before_writer_claim": "Do not divert the event. Leave the established Contador accounting and registration route intact, create no enrollment writer claim, and keep the pilot budget open unless the owner explicitly closes it.",
+    "refusal_behavior_after_writer_claim": "Do not fall through to legacy registration. Preserve accounting and canonical evidence, open a durable owner or projection exception, hold uncertain effects, and close the one-event activation window."
+  },
+  "authenticated_native_proof": {
+    "perimeter": "The live n8n stripe-payment workflow has separate Stripe Trigger credentials for heartbeat and tandem; each code node fixes its own account label and forwards a minimized authenticated envelope to NanoClaw.",
+    "required_envelope_fields": [
+      "account",
+      "event_type",
+      "event_id",
+      "event_created",
+      "stripe_id",
+      "payment_intent_id"
+    ],
+    "native_read_requirement": "The host reloads the exact Payment Intent and, when applicable, Checkout Session, charge, line item, product, and price from the fixed Tandem account before constructing signed enrollment statements.",
+    "production_issuer_requirement": "Replace synthetic issuer fixtures with host-owned provider-event and provider-read issuers whose keys are provisioned privately, purpose-scoped, distinct, time-bounded, and never persisted or exposed.",
+    "required_purposes": ["funding", "commercial", "participant", "assignment"],
+    "canonical_writer_identity": "stripe:tandem/payment_intent/<pi_id>",
+    "accepted_alias_types": [
+      "event",
+      "checkout_session",
+      "payment_intent",
+      "charge"
+    ],
+    "alias_rule": "All observed aliases bind to the same account-scoped Payment Intent and one enrollment order; replay of any alias cannot create another writer claim, order, seat, enrollment, assignment, roster row, or Heartbeat membership.",
+    "correction_rule": "migration_or_correction remains review-only and cannot enter this pilot."
+  },
+  "writer_ownership": {
+    "actual_ingress_paths": [
+      {
+        "path": "src/webhook-server.ts",
+        "entry": "stripe-payment request-time host handler",
+        "required_call": "handleStripePayment"
+      },
+      {
+        "path": "src/webhook-inbox-reaper.ts",
+        "entry": "stripe-payment durable retry handler",
+        "required_call": "handleStripePayment"
+      }
+    ],
+    "shared_orchestrator": "src/stripe-payment-host.ts#handleStripePayment",
+    "atomic_gate": "src/student-enrollment-admission.ts#claimEnrollmentWriter",
+    "gate_transaction": "The canonical source claim, authenticated receipts, canonical enrollment decision, outbox requests, and exact readback commit in one SERIALIZABLE transaction under the fixed enrollment table locks.",
+    "one_event_budget_rule": "Under the same writer-claim table lock, refuse an enrollment claim when any row already has policy_key=student_enrollment_supervision_inaugural_v1_one_event and writer=enrollment; exact aliases of the same source remain no-op replays.",
+    "legacy_writer_rule": "Refactor tools/contador/process-payment.cjs so accounting-only work can continue, but an in-scope supervision-inaugural/2026-10-07 roster effect requires the persisted writer decision. writer=enrollment skips legacy roster mutation; writer=legacy is the only permission to retain the established roster write.",
+    "canonical_writer_rule": "Only the production admission facade may use writer=enrollment, and it must authenticate all four purposes before materialization and projection request creation.",
+    "raw_store_bypass_controls": [
+      "Keep the existing disposable-only persistEnrollmentIngress and persistEnrollmentDecision guards unchanged.",
+      "Add a separately named production facade with exact database, host, release, policy, and activation-epoch checks; do not weaken assertEnrollmentStoreDatabase.",
+      "No runtime composition may import raw mapping persistence or invoke persistEnrollmentDecision except through the authenticated production facade.",
+      "The in-scope direct process-payment.cjs CLI must refuse roster mutation without a matching persisted writer claim; the Contador prompt already forbids manual retries that bypass the durable case.",
+      "Both request-time and reaper paths must share the same durable Contador case, canonical Payment Intent, writer gate, and exact event aliases."
+    ]
+  },
+  "accounting_continuity": {
+    "always_runs_for_authenticated_settled_payment": true,
+    "independent_of_enrollment_acceptance": true,
+    "stages": [
+      {
+        "system": "Student Payment Log",
+        "identity": "canonical Payment Intent in the Payment Log Stripe ID column",
+        "completion": "exact Payment Intent plus payment-status readback"
+      },
+      {
+        "system": "PostgreSQL public.payments",
+        "identity": "stripe_session_id equals canonical Payment Intent",
+        "completion": "exact Payment Intent plus cohort readback when cohort is supplied"
+      },
+      {
+        "system": "Contador fulfillment ledger",
+        "identity": "one (stripe_account,payment_intent_id) case with append-only aliases and stage receipts",
+        "completion": "payment_log and postgres_payment stay verified even when student registration is held; final complete still requires the enrollment-owned roster readback"
+      }
+    ],
+    "failure_rule": "A canonical, capacity, roster, or Heartbeat failure never deletes, downgrades, or relabels a verified payment/accounting receipt."
+  },
+  "destinations": {
+    "student_roster": {
+      "disposition": "required",
+      "spreadsheet_id": "1bX0hvMgXyoVQXuHRjYfwmVrv9mN5W08jF4iB8LiZI70",
+      "spreadsheet_title": "Tandem - Student Roster",
+      "sheet_id": 1796552584,
+      "sheet_title": "CSS",
+      "current_header": [
+        "Email",
+        "Name",
+        "Coaching Supervision Mastery",
+        "Refunded",
+        "Joined"
+      ],
+      "required_operational_headers_f_through_m": [
+        "Company OS Projection Key",
+        "Company OS Projection Version",
+        "Company OS Enrollment Key",
+        "Company OS Assignment Key",
+        "Company OS Participant Key",
+        "Company OS Offer",
+        "Company OS Delivery Block",
+        "Company OS Delivery Starts At"
+      ],
+      "apply_contract": "Capture the exact A:M preimage for the unique normalized participant email. If no row exists, append one row; if exactly one exists, update only C and F:M plus B only when blank or Unknown. Refuse duplicate emails. Write the supervision start date in C and the exact canonical fields in F:M.",
+      "readback_contract": "Re-resolve the unique row by normalized email, read A:M, normalize exact strings/date/version, and require equality to the assignment-version expected_readback_sha256 before recording verified.",
+      "idempotency_contract": "Find the exact Company OS Projection Key before apply. Exact matching F:M plus A:C is a no-op; any mismatch is held and never overwritten blindly.",
+      "uncertain_contract": "After any ambiguous update/append response, perform no second write. Re-resolve by Projection Key and normalized email; verify exactly once or hold student_roster_acceptance_uncertain.",
+      "rollback_contract": "Restore only the captured A:M preimage after confirming the current A:M hash still equals this receipt's postimage. For a receipt-owned appended row whose preimage was empty, clear only A:M without shifting rows. Never alter another row or Payment Log.",
+      "current_read_permission": "verified_by_exact_header_GET",
+      "current_write_permission": "unverified_without_write",
+      "authorized_rollout_permission_preflight": "Write and read back the accepted F1:M1 operational headers after capturing their blank preimage. Abort and restore the header preimage before event activation on any mismatch.",
+      "activation_ready_now": false
+    },
+    "heartbeat": {
+      "disposition": "required",
+      "workspace": "main",
+      "course_access_group_id": "fa5f5f09-a10e-4dfd-8bf2-0451f7cffa83",
+      "course_access_group_name": "Coaching Supervision Mastery",
+      "course_id": "1f2febfe-eb34-463a-818e-ce7d0cac1251",
+      "current_access_group_observation": "Exact group and same-named content-bearing course exist through the documented server API.",
+      "marker_parent_name": "Student Markers",
+      "marker_parent_current_state": "absent_by_exact_name_read",
+      "delivery_marker_name": "class:supervision:live-practicum:2026-10-07:inaugural",
+      "delivery_marker_current_state": "absent_by_exact_name_read",
+      "marker_invariants": {
+        "hidden": true,
+        "admin_controlled": true,
+        "joinable": false,
+        "paid_offer_attached": false,
+        "course_attached": false,
+        "channel_attached": false,
+        "event_attached": false,
+        "resource_attached": false,
+        "workflow_attached": false,
+        "proves_payment": false,
+        "proves_entitlement": false
+      },
+      "creation_contract": "After owner authorization, create the exact Student Markers parent if still absent, then create the exact delivery marker beneath its read-back UUID using the documented dry-run-first group operation with non-joinable/admin-controlled isolation settings and empty description/members. Never delete either group during rollback.",
+      "group_readback_contract": "Read each exact UUID through the documented server API and require exact name, parent relationship, active state, non-joinable/admin-controlled visibility, and explicit empty offer/course/channel/event/resource/workflow attachments. If the documented API cannot expose every invariant, do not activate the pilot.",
+      "membership_apply_contract": "Resolve the exact authenticated participant, capture pre-membership for both exact group UUIDs, add to the course-access group only if absent, then add to the marker only if absent; never remove siblings.",
+      "membership_readback_contract": "Reload the exact user through a documented exact-user API that returns group UUIDs and require both exact group IDs once. Name-only or whole-population membership reads are not acceptance evidence.",
+      "uncertain_contract": "An ambiguous membership response causes no blind retry. Reload the exact user and group UUIDs; record verified only on exact membership, otherwise hold heartbeat_acceptance_uncertain.",
+      "rollback_contract": "Use the reviewed exact-user/exact-group removal contract at toolbox commit 8d996ddd8dc2a24ab056b0ee1f26db18e0f38570. Remove only memberships this projection added and read each absent; preserve pre-existing access and never delete groups.",
+      "current_read_permission": "verified_for_group_and_course_metadata_only",
+      "current_write_permission": "unverified_without_write",
+      "current_remove_capability": "reviewed_local_commit_not_installed_in_shared_toolbox",
+      "current_full_invariant_readback": "unavailable_in_installed_group_tools",
+      "authorized_rollout_permission_preflight": "Before event activation, install/review exact-ID group and user readback plus guarded removal, create/read back the two empty marker groups, and prove one reversible operator-owned membership add/remove canary or another provider-supported permission introspection. No student may be used for this preflight.",
+      "activation_ready_now": false
+    },
+    "encharge": {
+      "disposition": "not_applicable",
+      "offer_key": "supervision-inaugural",
+      "offer_version": 1,
+      "reason": "No Encharge projection is part of the accepted v1 pilot; no behavior may be inferred from another offer."
+    },
+    "plutio": {
+      "disposition": "not_applicable",
+      "offer_key": "supervision-inaugural",
+      "offer_version": 1,
+      "reason": "Plutio is an operator-facing projection and is not part of the accepted v1 pilot."
+    }
+  },
+  "migrations": [
+    {
+      "number": 146,
+      "file": "data/business/migrations/nanoclaw-v2/146_student_enrollment_store_contract.sql",
+      "source_sha256": "3162275b7b91bfeb443b1cdbf5baea2030634cffdc9c8d7c52bd5b6716315f9e",
+      "rollback_file": "data/business/migrations/nanoclaw-v2/rollback_146_student_enrollment_store_contract.sql",
+      "rollback_sha256": "2dee44c805f5f92e4bfa382bfd507222740a44becfff12b5d0d06b0cf5ace35b",
+      "current_production_state": "unapplied",
+      "post_apply_readback": "student_projection_outbox.version exists as non-null nonnegative integer; student_enrollment_history subject check admits evidence; existing owners and grants remain unchanged."
+    },
+    {
+      "number": 147,
+      "file": "data/business/migrations/nanoclaw-v2/147_student_enrollment_writer_claims.sql",
+      "source_sha256": "b0ace8499f9548fd6695ea6a5e0fd922d7e607d5a7d4e23c3d7b5f9bbe608a81",
+      "rollback_file": "data/business/migrations/nanoclaw-v2/rollback_147_student_enrollment_writer_claims.sql",
+      "rollback_sha256": "be7400d2c7811b33e944a2e492f66ce702a54856a636546c2dd301a0b4c3f121",
+      "current_production_state": "unapplied",
+      "post_apply_readback": "Both receipt and writer-claim tables, primary/unique keys, append-only triggers, and exact columns exist; owner and only grantee are nanoclaw_admin; both tables start empty."
+    },
+    {
+      "number": 148,
+      "file": "data/business/migrations/nanoclaw-v2/148_student_enrollment_projection_foundation.sql",
+      "source_sha256": "274eafeef352fb06fafd9a7613ac8aab565b3b8a57b610a5a456c67740036881",
+      "rollback_file": "data/business/migrations/nanoclaw-v2/rollback_148_student_enrollment_projection_foundation.sql",
+      "rollback_sha256": "3539f2289a5fa7548f7c07ccae10f84aaa804ad5421c353b96da5a58fcb49278",
+      "current_production_state": "unapplied",
+      "post_apply_readback": "Six delivery columns, target/version uniqueness, subject-version index, foreign key, checks, existing nanoclaw_admin ownership, and zero non-admin grants are exact."
+    }
+  ],
+  "migration_runbook": {
+    "required_order": [146, 147, 148],
+    "prerequisite_shape": "Migrations 142 through 145 must match the reviewed structure, ownership, constraints, indexes, views, and zero non-admin target grants before apply.",
+    "backup": "After a natural zero-work drain, create a mode-0600 custom-format PostgreSQL backup containing the complete business_v2 schema and data in private storage outside the repository; verify restore-list readability, size, SHA-256, owner, mode, database identity, and capture the exact pre-migration catalog fingerprint.",
+    "apply": "From the exact verified candidate release root, re-hash each source file and invoke psql -X -v ON_ERROR_STOP=1 -f separately in numeric order. Do not use the replay-all run_migration.sh against the populated production schema.",
+    "ownership_and_grants": "Every affected table, view, sequence, index, constraint, and trigger remains owned by nanoclaw_admin. PUBLIC and every non-admin role have zero privileges on the enrollment, capacity, receipt, writer-claim, and projection targets.",
+    "readback": "Use pg_catalog/information_schema only for structure, constraint validity, triggers, indexes, owners, grants, and extension columns; then run the release-bound no-provider migration contract tests. Do not select student rows for migration acceptance.",
+    "pre_event_rollback_order": [148, 147, 146],
+    "guarded_rollback": "SQL rollback is allowed only before writer claims, authenticated receipts, enrollment evidence/history, or delivery evidence exist and after every rollback guard passes. Restore the backup only for a failed schema transaction or corrupted pre-event structure, never to erase an admitted payment or student.",
+    "post_event_rule": "After the natural event creates evidence, do not run SQL rollback 146, 147, or 148. Disable future pilot selection, retain schema and audit history, and reconcile the one event."
+  },
+  "rollout": {
+    "preflight": [
+      {
+        "id": "P01_owner_authority",
+        "required_evidence": "One accepted owner decision authorizes the exact release, migrations, two marker group creations, roster header/write, one natural-event diversion, writer cutover, provider memberships, and bounded compensation.",
+        "abort_code": "owner_authority_missing"
+      },
+      {
+        "id": "P02_current_lineage",
+        "required_evidence": "Current production health and Git show the candidate is based on the exact live release or reviewed descendant and includes the pinned admission/store/projection implementations without regressing intervening runtime changes.",
+        "abort_code": "release_lineage_drift"
+      },
+      {
+        "id": "P03_zero_work_and_backups",
+        "required_evidence": "No active/waiting/outgoing payment work, one healthy listener, required channels connected, private PostgreSQL/SQLite/plist/release backups verified, and rollback release retained.",
+        "abort_code": "unsafe_activation_state"
+      },
+      {
+        "id": "P04_schema_and_permissions",
+        "required_evidence": "Reviewed 142-145 prerequisite shape, exact 146-148 hashes/order, current admin authority, and post-apply zero non-admin grants all pass.",
+        "abort_code": "schema_or_grant_mismatch"
+      },
+      {
+        "id": "P05_writer_exclusion",
+        "required_evidence": "Focused tests and installed source inspection prove both webhook paths use the same host orchestrator, direct eligible roster execution requires the persisted claim, production persistence has no raw-store import, and the one-event budget is atomic.",
+        "abort_code": "writer_bypass_possible"
+      },
+      {
+        "id": "P06_capacity_and_assignment",
+        "required_evidence": "The accepted supervision:2026-10-07 delivery block, exact schedule digest, one pool, supervision-inaugural v1 mapping, owner-confirmed numeric capacity, and current availability are read back without selecting a student population.",
+        "abort_code": "delivery_or_capacity_unready"
+      },
+      {
+        "id": "P07_roster_target",
+        "required_evidence": "Exact workbook/tab IDs and A1:E1 header match, F1:M1 is blank or equals the accepted operational header, Editor capability is proven by the authorized header write/readback, and exact-row rollback is rehearsed without student data.",
+        "abort_code": "student_roster_unready"
+      },
+      {
+        "id": "P08_heartbeat_targets",
+        "required_evidence": "Access group/course IDs match, parent and marker are created/read back with every zero-content invariant, exact-ID user/group readback and guarded removal are installed, and write/remove permission is proven with an operator-owned non-student canary or provider permission introspection.",
+        "abort_code": "heartbeat_unready"
+      },
+      {
+        "id": "P09_event_filter",
+        "required_evidence": "Positive and negative tests cover every eligibility/refusal rule, all aliases, duplicate request/reaper races, one-event budget, accounting-on-hold, and uncertain target acceptance.",
+        "abort_code": "event_filter_unproved"
+      },
+      {
+        "id": "P10_activation_epoch",
+        "required_evidence": "A release-bound activation epoch and policy key are durably armed only after P01-P09 pass; source state before the epoch is refused as historical.",
+        "abort_code": "activation_epoch_unbound"
+      }
+    ],
+    "activation": {
+      "mode": "one_future_natural_event",
+      "policy_key": "student_enrollment_supervision_inaugural_v1_one_event",
+      "route": "Only the shared host orchestrator evaluates the exact future event, records accounting, and atomically selects one registration owner. No event is manually injected, replayed, paused, or diverted upstream.",
+      "automatic_close": "Close selection immediately after the first enrollment writer claim, whether the downstream result verifies or holds."
+    },
+    "milestones": [
+      {
+        "order": 1,
+        "id": "canonical_admission",
+        "acceptance": "One authenticated agreement/order, one seat, one exact participant enrollment, frozen bundle entitlements, one dated class assignment/commitment, independent accounting receipts, one projection request per required target, and exact duplicate/alias suppression are read back.",
+        "failure_state": "Accounting remains; no legacy registration fallthrough; canonical or owner exception is durable."
+      },
+      {
+        "order": 2,
+        "id": "immediate_provider_projection",
+        "acceptance": "Without an unrelated phase or event between milestones, Student Roster A:M and both Heartbeat memberships are applied or found idempotently, exact-ID/readback hashes are verified, and the Contador roster stage is closed from the same receipt.",
+        "failure_state": "The funded promise, seat commitment, enrollment, and assignment remain; each unmet target has one owned recoverable exception and uncertain acceptance blocks retry."
+      }
+    ],
+    "monitoring": {
+      "window": "From activation through canonical plus immediate projection terminal state for the one event; unresolved uncertainty remains monitored until reconciled, not until an arbitrary timeout.",
+      "checks": [
+        "one Contador case and one canonical writer claim for the Payment Intent",
+        "one order, seat, enrollment, assignment, and current projection version per target",
+        "all event/checkout/charge aliases point to the same Payment Intent and order",
+        "Payment Log and public.payments exact readback remain verified",
+        "Student Roster unique exact row and projection/version fields match",
+        "Heartbeat exact user contains both exact group UUIDs and no sibling removal occurred",
+        "zero second order, enrollment, roster row, target effect, or membership from request/reaper/alias replay",
+        "zero open unowned exceptions and no pilot-eligible event accepted after the budget closes"
+      ],
+      "notification": "Internal owner-facing status only if action is required; no customer or student communication."
+    },
+    "abort_triggers": [
+      "Any failed preflight or drift after preflight and before claim.",
+      "A second eligible source races before the budget closes.",
+      "An identity, alias, offer, participant, relationship, schedule, capacity, or permission conflict.",
+      "A legacy roster effect occurs after writer=enrollment or a canonical effect occurs after writer=legacy.",
+      "Accounting readback fails or is changed by registration handling.",
+      "Roster duplicate email/projection key, header drift, or non-owned cell change.",
+      "Heartbeat marker attachment/visibility drift, missing exact-ID readback, sibling removal, or ambiguous provider acceptance.",
+      "Migration owner/grant/constraint/index/trigger drift, release mismatch, unhealthy service, queue growth, or missing durable exception."
+    ]
+  },
+  "duplicate_and_alias_assertions": [
+    "Request-time and reaper delivery of the same evt_ identity converge on one webhook inbox/case path.",
+    "payment_intent.succeeded and checkout.session.completed aliases converge on one tandem Payment Intent writer claim and order.",
+    "Charge and checkout aliases cannot claim writer ownership independently.",
+    "Exact replay after canonical commit returns the same order/enrollment/assignment and enqueues no duplicate target version.",
+    "Exact replay after verified projections finds the existing target effects and writes nothing.",
+    "Changed facts under a used receipt, proof, source, alias, projection, or policy identity hold as conflict.",
+    "A second distinct Payment Intent that otherwise matches the population is refused by the one-event policy budget."
+  ],
+  "uncertain_acceptance": {
+    "canonical_commit": "On COMMIT acknowledgement loss, discard the connection and retry only the exact immutable intake. Read back the receipt, writer claim, order, and aliases before any further action.",
+    "student_roster": "Do not repeat append/update. Re-resolve unique Projection Key plus normalized email and compare A:M to the expected postimage; verified or held only.",
+    "heartbeat": "Do not repeat membership write. Reload the exact user and group UUIDs; verified membership or held only.",
+    "reconciliation_owner": "projection_worker for target ambiguity; owner_admin for identity, policy, writer, or compensation decisions",
+    "acceptance_rule": "The rollout is not end-to-end accepted while any required target is held, failed, mismatched, or lacks exact readback."
+  },
+  "rollback": {
+    "before_event": "Disarm the activation epoch, restore roster header preimage and operator canary membership, roll back the candidate release, then run guarded SQL rollback 148, 147, 146 only while all evidence guards are empty; otherwise stop and reconcile.",
+    "after_event": "Disarm future selection and roll back software/config only. Preserve migrations, accounting, writer claims, authenticated receipts, canonical records, outbox, receipts, and exceptions. Never restore a database backup over the admitted event.",
+    "provider_compensation": "Do not compensate a verified target merely because software is rolled back. If the owner explicitly aborts the one episode before service use, restore the exact roster preimage and remove only receipt-owned Heartbeat memberships after postimage/preimage checks; preserve any pre-existing course access and never delete groups.",
+    "post_rollback_verification": [
+      "Production health reports the retained or rollback release and exact code root.",
+      "Pilot selection is disabled and a second matching event cannot enter the enrollment writer.",
+      "Payment Log, public.payments, Contador case, canonical order/enrollment/assignment, writer claim, and audit receipts remain readable and mutually consistent.",
+      "Student Roster equals the chosen retained postimage or exact restored preimage, with no other row/cell change.",
+      "Heartbeat exact user memberships equal the chosen retained postimage or exact preimage; groups and pre-existing access remain.",
+      "Every unresolved target has one durable owned exception and no blind retry is queued."
+    ]
+  },
+  "external_mutations": [
+    "Apply production PostgreSQL migrations 146, 147, and 148 in order after private verified backup.",
+    "Install and activate one immutable NanoClaw release integrating the then-current live lineage with production admission, writer-gate, accounting-only legacy mode, target adapters, and one-event activation controls.",
+    "Install exact-ID Heartbeat group/user readback and the reviewed guarded remove-membership capability.",
+    "Create and read back the accepted supervision:2026-10-07 delivery block, its single seat pool, and the supervision-inaugural v1 offer mapping through a reviewed host-admin capacity path if exact preflight still proves them absent.",
+    "Write and verify Student Roster CSS F1:M1 operational headers; later write or append exactly one event-owned CSS row projection.",
+    "Create Heartbeat groups Student Markers and class:supervision:live-practicum:2026-10-07:inaugural only if exact-name preflight still proves both absent.",
+    "Add the one exact future participant to the existing course-access group and the new delivery marker, with exact readback and no sibling removal.",
+    "Persist one enrollment writer claim, authenticated receipts, canonical agreement/order/seat/enrollment/entitlements/assignment, capacity commitment, target outbox versions, readback receipts, and any owned exceptions for the one event.",
+    "Disarm the one-event selector immediately after claim; perform only receipt-owned compensation if the accepted rollback conditions are met."
+  ],
+  "owner_decisions": [
+    {
+      "id": "D01_authorize_exact_rollout",
+      "decision": "Authorize the exact future C5/C4 one-event rollout and all external mutations listed in this packet, or keep preparation-only state.",
+      "safe_hold": "No migration, release, marker, roster, provider, writer, payment, or student change."
+    },
+    {
+      "id": "D02_numeric_capacity",
+      "decision": "Confirm the single numeric seat-pool capacity for supervision:2026-10-07 and the accepted schedule evidence; the current 9-12 program range is not a capacity value.",
+      "safe_hold": "Do not arm event selection; established fulfillment remains active."
+    },
+    {
+      "id": "D03_roster_operational_columns",
+      "decision": "Accept CSS F1:M1 as the eight named Company OS operational columns and allow exact receipt-owned row/preimage updates.",
+      "safe_hold": "Student Roster target remains not ready and no event is diverted."
+    },
+    {
+      "id": "D04_heartbeat_marker_identity",
+      "decision": "Accept Student Markers and class:supervision:live-practicum:2026-10-07:inaugural as the exact zero-content parent/marker identities and authorize their creation plus membership compensation contract.",
+      "safe_hold": "Heartbeat target remains not ready and no event is diverted."
+    }
+  ],
+  "forbidden_actions": [
+    "Select or inspect any current or historical student population during preparation.",
+    "Create a synthetic, manual, repaired, replayed, backfilled, or test payment.",
+    "Divert, delay, disable, refund, dispute, or otherwise alter a paid event outside the accepted future selector.",
+    "Create a provider group, add/remove membership, write a Sheet, apply a migration, deploy/restart, cut over a writer, or change production configuration before owner authorization and all preflights.",
+    "Use browser automation, private Heartbeat routes, UI exports, CSVs, secret inspection, name/amount inference, or unsupported provider claims.",
+    "Send any customer/student communication or perform a Plutio, Encharge, certificate, or other financial action."
+  ],
+  "evidence_sources": {
+    "projection_contract": "docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md",
+    "admission_contract": "docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md",
+    "store_contract": "docs/STUDENT-ENROLLMENT-TRANSACTIONAL-STORE.md",
+    "lifecycle_strategy": "docs/STUDENT-LIFECYCLE-STRATEGY.md",
+    "product_identity": "docs/STUDENT-PRODUCT-IDENTITY.md",
+    "target_catalog": "facts/catalogs/student-enrollment-projection-targets-v1.json",
+    "target_catalog_sha256": "8ed3a0122e2e7d39f6b328039691eebb1d3e3ebcdb2c952a6ad4a7e155586664",
+    "entitlement_catalog": "facts/catalogs/student-entitlements-v1.json",
+    "entitlement_catalog_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+    "live_schema_snapshot": "agent_docs/nanoclaw-business-pg-schema.md",
+    "roster_metadata_snapshot": "docs/reports/NC-20260907-004-B1-STUDENT-ROSTER-SNAPSHOT.json",
+    "provider_metadata_receipt": "docs/programs/company-os/evidence/NC-20260909-002-student-enrollment-production-admission-preparation.md"
+  }
+}
