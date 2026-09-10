@@ -168,10 +168,8 @@ const adyenTestHmacKeys = (
   .filter(Boolean);
 export const ADYEN_TEST_WEBHOOK_CONFIG = {
   hmacKeys: adyenTestHmacKeys,
-  merchantAccount:
-    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT || '',
-  storeReference:
-    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_STORE_REFERENCE || '',
+  merchantAccount: adyenTestWebhookEnv.TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT || '',
+  storeReference: adyenTestWebhookEnv.TANDEM_ADYEN_TEST_STORE_REFERENCE || '',
   referencePrefix:
     adyenTestWebhookEnv.TANDEM_ADYEN_TEST_REFERENCE_PREFIX ||
     'tandem-poc-tsv1-',

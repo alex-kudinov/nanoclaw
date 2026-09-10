@@ -56,7 +56,11 @@ function requiredString(
   maxLength = 256,
 ): string {
   const value = source[key];
-  if (typeof value !== 'string' || value.length === 0 || value.length > maxLength) {
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    value.length > maxLength
+  ) {
     throw new AdyenWebhookAdmissionError(`Invalid ${key}`, 400);
   }
   return value;
@@ -83,7 +87,11 @@ function normalizeSuccess(value: unknown): string {
 
 function parseAmount(value: unknown): AdyenAmount {
   const amount = record(value);
-  if (!amount || !Number.isSafeInteger(amount.value) || Number(amount.value) < 0) {
+  if (
+    !amount ||
+    !Number.isSafeInteger(amount.value) ||
+    Number(amount.value) < 0
+  ) {
     throw new AdyenWebhookAdmissionError('Invalid amount', 400);
   }
   const currency = requiredString(amount, 'currency', 3);
@@ -126,7 +134,9 @@ function parseItem(value: unknown): AdyenNotificationItem {
   };
 }
 
-export function standardWebhookSigningPayload(item: AdyenNotificationItem): string {
+export function standardWebhookSigningPayload(
+  item: AdyenNotificationItem,
+): string {
   return [
     item.pspReference,
     item.originalReference,
@@ -140,11 +150,14 @@ export function standardWebhookSigningPayload(item: AdyenNotificationItem): stri
 }
 
 function validHexKey(value: string): boolean {
-  return value.length >= 64 && value.length % 2 === 0 && /^[0-9a-f]+$/i.test(value);
+  return (
+    value.length >= 64 && value.length % 2 === 0 && /^[0-9a-f]+$/i.test(value)
+  );
 }
 
 function validBase64Signature(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length < 40 || value.length > 128) return false;
+  if (typeof value !== 'string' || value.length < 40 || value.length > 128)
+    return false;
   if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return false;
   try {
     return Buffer.from(value, 'base64').toString('base64') === value;
@@ -178,11 +191,11 @@ export function isAdyenTestWebhookConfigured(
 ): boolean {
   return Boolean(
     config &&
-      config.hmacKeys.some(validHexKey) &&
-      config.merchantAccount &&
-      config.storeReference &&
-      config.referencePrefix &&
-      config.allowedEventCodes.length > 0,
+    config.hmacKeys.some(validHexKey) &&
+    config.merchantAccount &&
+    config.storeReference &&
+    config.referencePrefix &&
+    config.allowedEventCodes.length > 0,
   );
 }
 
@@ -191,13 +204,22 @@ export function admitAdyenTestWebhook(
   config: AdyenTestWebhookConfig,
 ): AdyenAdmittedNotification[] {
   if (!isAdyenTestWebhookConfigured(config)) {
-    throw new AdyenWebhookAdmissionError('Adyen TEST webhook is not configured', 503);
+    throw new AdyenWebhookAdmissionError(
+      'Adyen TEST webhook is not configured',
+      503,
+    );
   }
   const envelope = record(payload);
   if (!envelope || (envelope.live !== false && envelope.live !== 'false')) {
-    throw new AdyenWebhookAdmissionError('Live Adyen events are not admitted here', 403);
+    throw new AdyenWebhookAdmissionError(
+      'Live Adyen events are not admitted here',
+      403,
+    );
   }
-  if (!Array.isArray(envelope.notificationItems) || envelope.notificationItems.length === 0) {
+  if (
+    !Array.isArray(envelope.notificationItems) ||
+    envelope.notificationItems.length === 0
+  ) {
     throw new AdyenWebhookAdmissionError('Missing notificationItems', 400);
   }
   if (envelope.notificationItems.length > 20) {
@@ -219,7 +241,10 @@ export function admitAdyenTestWebhook(
       throw new AdyenWebhookAdmissionError('Reference is not allowlisted', 403);
     }
     if (!config.allowedEventCodes.includes(item.eventCode)) {
-      throw new AdyenWebhookAdmissionError('Event code is not allowlisted', 403);
+      throw new AdyenWebhookAdmissionError(
+        'Event code is not allowlisted',
+        403,
+      );
     }
   }
 

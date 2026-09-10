@@ -94,7 +94,10 @@ function adyenPayload() {
     .createHmac('sha256', Buffer.from(adyenKey, 'hex'))
     .update(standardWebhookSigningPayload(notification as never), 'utf8')
     .digest('base64');
-  return { live: 'false', notificationItems: [{ NotificationRequestItem: notification }] };
+  return {
+    live: 'false',
+    notificationItems: [{ NotificationRequestItem: notification }],
+  };
 }
 
 const adyenConfig = {
@@ -174,7 +177,10 @@ describe('WebhookServer', () => {
   it('HMAC-verifies and durably terminates an Adyen TEST notification without agent dispatch', async () => {
     const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
     const markWebhookHandled = vi.fn(async () => {});
-    const runAgent = vi.fn(async () => ({ status: 'success' as const, result: null }));
+    const runAgent = vi.fn(async () => ({
+      status: 'success' as const,
+      result: null,
+    }));
     const d = makeDeps({
       adyenTestWebhook: adyenConfig,
       archiveWebhook,

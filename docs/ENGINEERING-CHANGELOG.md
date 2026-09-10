@@ -12,10 +12,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-10T01:29Z
 - Owner/client: Codex + Claude reviewer
-- State: ready_for_review — implementation and independent correction review
-  complete; commit, deployment, provider configuration, and live verification
+- State: ready_for_deploy — implementation, commit, and independent correction
+  review complete; deployment, provider configuration, and live verification
   remain pending.
-- Commit/PR: pending on `codex/adyen-webhook-20260909`.
+- Commit/PR: implementation `569170bd` on
+  `codex/adyen-webhook-20260909`; continuity/formatting receipt follows.
 - Change class: C5 security boundary; highest affected operational class is C4
   payment admission. The route itself performs no financial or fulfillment
   action.

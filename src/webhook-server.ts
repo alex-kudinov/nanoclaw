@@ -570,7 +570,11 @@ export class WebhookServer {
         res.writeHead(tooLarge ? 413 : 400, {
           'Content-Type': 'application/json',
         });
-        res.end(JSON.stringify({ error: tooLarge ? 'Body too large' : 'Invalid body' }));
+        res.end(
+          JSON.stringify({
+            error: tooLarge ? 'Body too large' : 'Invalid body',
+          }),
+        );
         return;
       }
 
@@ -592,10 +596,7 @@ export class WebhookServer {
       } catch (err) {
         const status =
           err instanceof AdyenWebhookAdmissionError ? err.status : 400;
-        logger.warn(
-          { status },
-          'Adyen TEST webhook rejected before archive',
-        );
+        logger.warn({ status }, 'Adyen TEST webhook rejected before archive');
         res.writeHead(status, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Webhook rejected' }));
         return;
