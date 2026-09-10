@@ -1,4 +1,5 @@
 {
+  "id": "adyen-test-payments",
   "name": "Adyen TEST Payments to NanoClaw",
   "nodes": [
     {
