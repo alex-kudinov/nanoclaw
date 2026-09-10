@@ -28,6 +28,32 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
+
+- Date: 2026-09-10T01:34Z
+- Owner/client: Codex + Claude reviewer
+- State: ready_for_deploy — reviewed source is integrated onto exact live
+  `726f2c80`; exact-lineage verification and release remain pending.
+- Commit/PR: reviewed source `569170bd` + `3b618b41`; exact-live integration on
+  `codex/adyen-webhook-live-20260909`.
+- Change class: C5 security boundary; highest affected operational class C4.
+- Outcome: a dedicated Standard webhook path verifies TEST-only HMAC and signed
+  merchant/reference/event identity, treats reported store only as defense in
+  depth, minimizes the terminal inbox receipt, and performs no agent,
+  fulfillment, messaging, accounting, refund, transfer, or payout action.
+- Verification: exact-live Node 22.23.2 typecheck/build; 64/64 focused receiver
+  and route tests; documentation continuity; n8n JSON; official Adyen HMAC
+  vector; 3,692 passing full-suite tests. The other three tests fail identically
+  on untouched production commit `726f2c80` and are unrelated baseline drift.
+- Review: R1 found unauthenticated store semantics and n8n error retention.
+  Signed integration prefix, `reported_store`, honest boundary documentation,
+  and no success/error retention close both; R2 found no material remainder.
+- Deployment/migration: none yet; existing inbox schema is sufficient.
+- Rollback: leave configuration absent for 503; after rollout deactivate n8n
+  and provider TEST endpoints and clear TEST configuration.
+- Documentation: `docs/ADYEN-TEST-WEBHOOK.md`, architecture, project map,
+  security, active work, and bounded review artifacts.
+
 ### NC-20260908-001 — Quiet, literal Sales support threads
 
 - Date: 2026-09-09T20:00Z

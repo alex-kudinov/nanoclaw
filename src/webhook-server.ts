@@ -86,6 +86,12 @@ import {
   type CheckoutIdentityResolveRequest,
   type CheckoutIdentityResolveResult,
 } from './checkout-customer-identity.js';
+import {
+  admitAdyenTestWebhook,
+  AdyenWebhookAdmissionError,
+  isAdyenTestWebhookConfigured,
+  type AdyenTestWebhookConfig,
+} from './adyen-webhook.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -300,24 +306,8 @@ function describeFormSubmission(subtype: string | null): string {
 function readBody(req: http.IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    let size = 0;
-    let overflow = false;
-    req.on('data', (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > maxBytes) {
-        overflow = true;
-        chunks.length = 0;
-        return;
-      }
-      if (!overflow) chunks.push(chunk);
-    });
-    req.on('end', () => {
-      if (overflow) {
-        reject(new Error('Request body too large'));
-        return;
-      }
-      resolve(Buffer.concat(chunks));
-    });
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
@@ -748,10 +738,9 @@ export class WebhookServer {
 
       let body: Buffer;
       try {
-        body = await readBody(req, 256 * 1024);
+        body = await readBodyBounded(req, 256 * 1024);
       } catch (err) {
-        const tooLarge =
-          err instanceof Error && err.message === 'Request body too large';
+        const tooLarge = err instanceof RequestBodyTooLargeError;
         res.writeHead(tooLarge ? 413 : 400, {
           'Content-Type': 'application/json',
         });

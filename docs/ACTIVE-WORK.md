@@ -9,6 +9,8 @@ outside the current client conversation.
 
 ## Active work
 
+| `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build an exact immutable receiver release, deploy it unconfigured, verify inert health/503 behavior, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:34Z |
+
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
 | `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No flat-array cross-account projection, payment, customer/student row, roster/access/capacity/schedule/message/migration/provider-product mutation, source-sync convergence, or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
@@ -190,6 +192,23 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260909-003
+
+- Exact-live integration: the reviewed receiver commits were transplanted onto
+  verified production release `726f2c80` with the live side authoritative for
+  all webhook, lifecycle, checkout-recovery, and release controls.
+- Source status: TEST-only HMAC admission, signed merchant/reference/event
+  allowlists, defense-in-depth reported-store match, minimized durable terminal
+  receipt, health visibility, n8n relay source, and rollback runbook are ready.
+- Exact-live verification: Node 22.23.2 typecheck/build, 64/64 focused receiver
+  and route tests, documentation continuity, workflow JSON, and 3,692 passing
+  full-suite tests. The remaining three full-suite failures reproduce unchanged
+  on untouched production commit `726f2c80` and are not Adyen regressions.
+- Review: Sonnet/high found two material boundary issues. Both were corrected;
+  the load-bearing R2 accepted the fixes with no unresolved material finding.
+- Next: exact-lineage verification, commit/push, immutable release build,
+  unconfigured deployment, then n8n and Adyen TEST configuration/readback.
 
 ### NC-20260907-007 — Current MCS catalog publication expansion
 
