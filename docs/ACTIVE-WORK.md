@@ -9,6 +9,23 @@ outside the current client conversation.
 
 ## Active work
 
+### NC-20260909-001 — Local student enrollment provider-projection foundation
+
+| Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `NC-20260909-001` | Build an unwired, deterministic provider-projection foundation with fail-closed pilot readiness | Codex | `codex/student-enrollment-projection-foundation-20260909` @ authenticated-admission closure `8b1ffbb9`; isolated `/Users/xbohdpukc/dev/NanoClaw-enrollment-projection-20260909` | `in_progress` | C2 (future provider activation C5) | Reconcile reviewed admission/store and current lifecycle/catalog/publication lineages; local source, tests, synthetic provider doubles, disposable PostgreSQL, authoritative docs, review/evidence only. No production migration/runtime wiring/provider access or writes, live/historical student data, credentials, deployment, finance, or communication. | Push this cross-machine claim, integrate the exact reviewed source-authority lineage semantically, then implement and prove the local projection contract. | 2026-09-10T00:22Z |
+
+- The accepted pilot is the first fully settled self-purchased dated Supervision
+  offer/version only. `student_roster` and `heartbeat` are required; `encharge`
+  and `plutio` must be explicitly required or `not_applicable` per offer/version.
+- Heartbeat preserves stable content-access groups separately from hidden,
+  admin-controlled, zero-content cohort/delivery markers. Neither provider
+  layer is canonical truth, and marker membership proves neither payment nor
+  entitlement.
+- Readiness fails closed until every required target has a reviewed adapter,
+  exact destination identity, apply path, exact readback verification,
+  rollback/reconciliation semantics, and permission/activation readiness.
+
 ### NC-20260906-009 — Local authenticated source admission
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
