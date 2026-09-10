@@ -30,6 +30,41 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+- State: in_progress — reviewed unwired payment-domain source milestone; durable
+  caller/adapter and configured TEST event proof remain incomplete.
+
+#### 2026-09-10T03:46Z addendum — MCS reusable payment-domain source slice
+
+- Date: 2026-09-10T03:46Z. Owner/client: Codex with independent Sonnet/high review.
+- Scope: first unwired slice of the owner-requested, converged MCS Foundations
+  implementation plan. Strict immutable quotes, provider-pinned one-time attempts,
+  bounded same-key recovery and deterministic scoped financial evidence. No
+  database, provider, UI or enrollment consumer; no schema or service activation.
+- Verification: Node 22.23.2, 51/51 focused domain tests; typecheck and build pass.
+  Final full suite with four workers: 3,746 pass / 32 skip / 3 fail. Exact untouched
+  release 00d66184: 3,695 pass / 32 skip / the same 3 failures (capacity operator
+  disposable expectation, CNPC prompt contract, Trafft shadow freshness). An
+  initial unbounded run additionally timed out the capacity shadow disposable
+  fixture; it passed on both bounded full runs and untouched baseline.
+- Review: implementation R1 identified refund-after-refusal evidence incorrectly
+  pending. Codex verified and corrected it to an owned conflict with suppressed
+  totals; regression tests cover both orders plus failed-refund non-movement.
+  Narrow Sonnet/high R2 accepted the correction with no remaining material
+  findings in scope. No source changes followed that review.
+- Documentation: PAYMENT-DOMAIN.md, PROJECT-MAP.md, ACTIVE-WORK.md. Durable plan,
+  bounded review packets/responses and exact test logs are in Peri output.
+- Release boundary: source-only library milestone. It has no runtime entrypoint
+  to put into service; release with its reviewed durable caller/adapter slice.
+  Existing live receiver is 00d66184 and remains unconfigured. Stripe unchanged.
+- Live readback 2026-09-10T03:47Z: verified release identity 00d66184, matching
+  code root, Node 22.23.2 and adyenTestWebhook.configured=false. No deployment
+  or production mutation occurred in this slice.
+- Next: durable payment repository with immutable constraints, unique operation
+  keys and CAS/lease/crash tests on disposable Postgres before authenticated
+  TEST Sessions wiring. Refund/charge/enrollment authority is not granted here.
+
+#### Earlier receiver release evidence (superseded by dated addenda above)
+
 - Date: 2026-09-10T01:34Z
 - Owner/client: Codex + Claude reviewer
 - State: ready_for_deploy — receiver release `02073e66` is live and inert;

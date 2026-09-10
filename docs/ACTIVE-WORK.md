@@ -195,6 +195,15 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T03:47Z source milestone: `payment-domain.ts`, 51 behavioral tests
+  and PAYMENT-DOMAIN.md implemented. Sonnet/high R1's refund-after-refusal
+  finding fixed and accepted in R2. Full suite 3,746 pass / 32 skip / only
+  three exact-release baseline failures (baseline 3,695 pass / 32 skip / 3 fail).
+  Typecheck/build/continuity pass. No runtime imports, schema or deploy.
+  Production remains independently verified at 00d66184, receiver unconfigured.
+  Next: payment repository and disposable Postgres uniqueness/CAS/crash proof,
+  then authenticated TEST Sessions wiring. Do not call this a working live pilot.
+
 - 2026-09-10T03:34Z pickup: exact Mini release and branch HEAD are now
   `00d66184`; stable-ID workflow imported inactive, receiver unconfigured.
   The owner requested a detailed MCS Foundations plan, Claude convergence,
