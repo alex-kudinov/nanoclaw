@@ -17,6 +17,14 @@ no minion grants, real provider action or population rollout is inferred.
 
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
+Source-only migration152 adds encrypted TEST Session-result operations/receipts,
+verified method bindings, scoped child-event lineage and hash-only owned-event
+exceptions. Reconciliation and webhook writers share provider-reference and
+attempt-row fences. No production apply, minion access, provider dispatch,
+enrollment or certificate issuance follows from schema presence. The pure ACH
+readiness gate separates provisional access from received-funds certificate
+clearance; real settlement admission and all certificate wiring remain gated.
+
 Migration151 adds the source-only TEST payment-event ledger over149: immutable
 scoped PSP/checkout bindings and event facts, append-only exceptions, and a
 versioned evidence projection. It accepts AUTHORISATION only through the HMAC

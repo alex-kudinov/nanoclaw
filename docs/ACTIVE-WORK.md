@@ -195,6 +195,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T20:39Z:152 evidence/reconciliation slice accepted by bounded
+  Sonnet/high reviews. Controller and event intake R1 had no findings; corrected
+  crossed-reference races, reversal-history clearance and sticky conflict status
+  passed narrow R2. Codex reran113 final boundary tests/typecheck. Lost-first-ACK
+  retries recover the exact stored attempt/capability despite disabled new
+  routing; unprepared attempts do not invent a provider operation. Edge filter
+  remains a separate new-file slice, not part of this acceptance or deployment.
+
 - 2026-09-10T19:44Z: standalone Session-result verifier accepted after
   Sonnet/high R1/R2 and Codex39-test readback. R1 corrected native-reference/
   Authorised-result binding and whole-response deadline proof. Raw official

@@ -385,7 +385,19 @@ const factSchema = z
     scope: scopeSchema,
     attemptId: z.uuid(),
     paymentReference: ref,
-    kind: z.enum(['authorization', 'capture', 'refund']),
+    kind: z.enum([
+      'pending',
+      'authorization',
+      'capture',
+      'capture_failed',
+      'cancellation',
+      'expire',
+      'refund',
+      'refund_failed',
+      'refund_reversed',
+      'chargeback',
+      'chargeback_reversed',
+    ]),
     operationReference: ref,
     success: z.boolean(),
     amount: integer.refine((value) => value > 0),
@@ -394,9 +406,17 @@ const factSchema = z
   .strict();
 export type PaymentFact = z.infer<typeof factSchema>;
 export interface PaymentEvidenceProjection {
+  pending: boolean;
   authorization: 'unknown' | 'authorized' | 'refused' | 'conflict';
   capturedAmount: number;
+  captureFailed: boolean;
   refundedAmount: number;
+  refundFailed: boolean;
+  refundReversedAmount: number;
+  chargebackAmount: number;
+  chargebackReversedAmount: number;
+  canceled: boolean;
+  expired: boolean;
   evidenceState: 'consistent' | 'awaiting_prior_evidence' | 'conflict';
   exceptions: string[];
   // Provider authorization/capture is never represented as settlement or access.
@@ -459,9 +479,17 @@ export function projectPaymentEvidence(input: {
   }
   const authorizationFact = operations.get('authorization');
   const conflictProjection = (): PaymentEvidenceProjection => ({
+    pending: false,
     authorization: 'conflict',
     capturedAmount: 0,
+    captureFailed: false,
     refundedAmount: 0,
+    refundFailed: false,
+    refundReversedAmount: 0,
+    chargebackAmount: 0,
+    chargebackReversedAmount: 0,
+    canceled: false,
+    expired: false,
     evidenceState: 'conflict',
     exceptions: [...exceptions].sort(),
     settlement: 'unproven',
@@ -470,15 +498,68 @@ export function projectPaymentEvidence(input: {
   if (exceptions.size > 0) return conflictProjection();
   let captured = 0n;
   let refunded = 0n;
+  let refundReversed = 0n;
+  let chargeback = 0n;
+  let chargebackReversed = 0n;
+  let captureFailed = false;
+  let refundFailed = false;
+  let canceled = false;
+  let expired = false;
+  const failedCaptures = new Set<string>();
+  const failedRefunds = new Set<string>();
+  const reversedRefunds = new Set<string>();
+  const reversedChargebacks = new Set<string>();
   for (const fact of operations.values()) {
-    if (fact.kind === 'capture' && fact.success)
+    if (fact.kind === 'capture_failed' && fact.success)
+      failedCaptures.add(fact.operationReference);
+    if (fact.kind === 'refund_failed' && fact.success)
+      failedRefunds.add(fact.operationReference);
+    if (fact.kind === 'refund_reversed' && fact.success)
+      reversedRefunds.add(fact.operationReference);
+    if (fact.kind === 'chargeback_reversed' && fact.success)
+      reversedChargebacks.add(fact.operationReference);
+  }
+  for (const fact of operations.values()) {
+    if (
+      fact.kind === 'capture' &&
+      fact.success &&
+      !failedCaptures.has(fact.operationReference)
+    )
       captured += BigInt(fact.amount);
-    if (fact.kind === 'refund' && fact.success) refunded += BigInt(fact.amount);
+    if (
+      fact.kind === 'refund' &&
+      fact.success &&
+      !failedRefunds.has(fact.operationReference) &&
+      !reversedRefunds.has(fact.operationReference)
+    )
+      refunded += BigInt(fact.amount);
+    if (fact.kind === 'refund_reversed' && fact.success)
+      refundReversed += BigInt(fact.amount);
+    if (
+      fact.kind === 'chargeback' &&
+      fact.success &&
+      !reversedChargebacks.has(fact.operationReference)
+    )
+      chargeback += BigInt(fact.amount);
+    if (fact.kind === 'chargeback_reversed' && fact.success)
+      chargebackReversed += BigInt(fact.amount);
+    if (fact.kind === 'capture_failed' && fact.success) captureFailed = true;
+    if (fact.kind === 'capture' && !fact.success) captureFailed = true;
+    if (fact.kind === 'refund_failed' && fact.success) refundFailed = true;
+    if (fact.kind === 'refund' && !fact.success) refundFailed = true;
+    if (fact.kind === 'cancellation' && fact.success) canceled = true;
+    if (fact.kind === 'expire' && fact.success) expired = true;
   }
   if (captured > BigInt(attempt.quote.finalAmount))
     exceptions.add('capture_exceeds_payment');
   if (refunded > BigInt(attempt.quote.finalAmount))
     exceptions.add('refund_exceeds_payment');
+  if (refundReversed > BigInt(attempt.quote.finalAmount))
+    exceptions.add('refund_reversal_exceeds_payment');
+  if (chargeback > BigInt(attempt.quote.finalAmount))
+    exceptions.add('chargeback_exceeds_payment');
+  if (chargebackReversed > BigInt(attempt.quote.finalAmount))
+    exceptions.add('chargeback_reversal_exceeds_payment');
   if (authorizationFact?.success === false && captured > 0n)
     exceptions.add('capture_after_refusal');
   if (authorizationFact?.success === false && refunded > 0n)
@@ -487,6 +568,9 @@ export function projectPaymentEvidence(input: {
   if (conflict) return conflictProjection();
   // Suppress ambiguous totals, so processing order cannot affect a usable result.
   return {
+    pending: [...operations.values()].some(
+      (fact) => fact.kind === 'pending' && fact.success,
+    ),
     authorization: conflict
       ? 'conflict'
       : !authorizationFact
@@ -495,7 +579,14 @@ export function projectPaymentEvidence(input: {
           ? 'authorized'
           : 'refused',
     capturedAmount: conflict ? 0 : Number(captured),
+    captureFailed,
     refundedAmount: conflict ? 0 : Number(refunded),
+    refundFailed,
+    refundReversedAmount: conflict ? 0 : Number(refundReversed),
+    chargebackAmount: conflict ? 0 : Number(chargeback),
+    chargebackReversedAmount: conflict ? 0 : Number(chargebackReversed),
+    canceled,
+    expired,
     evidenceState: conflict
       ? 'conflict'
       : (captured > 0n && !authorizationFact) || refunded > captured

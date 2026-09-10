@@ -48,9 +48,16 @@ bound streaming input before allocation; this controller also checks final size.
   server maps only those names to Adyen `scheme`/`ach`. ACH additionally
   requires USD and quote country US or PR. Every preparation response echoes the immutable
   public capability list. No mutable per-request method selection is accepted.
+  New one-time Sessions pin `captureDelayHours: 0`; this makes the requested
+  automatic-capture behavior auditable but is not evidence of capture or settlement.
   Numeric-region product locales such as `es-419` remain unchanged in the
   persisted quote. They require an explicit TEST runtime mapping to the verified
   Adyen presentation locale; that mapping affects only `shopperLocale`.
+  If the first HTTP response is lost, an authenticated retry with the exact
+  persisted attempt bypasses current new-start enablement, recovers the same
+  capability, and resumes only the stored provider operation. A same-ID changed
+  attempt conflicts; an accepted attempt with no prepared operation is not
+  allowed to invent one on this recovery path.
 - POST `/internal/payments/attempts`: `{requestId,attemptId,capability}`. Verifies
   the bearer, reloads the ORIGINAL immutable attempt from PostgreSQL, rechecks
   caller policy, and resumes it from the exact stored provider request without
@@ -66,6 +73,12 @@ bound streaming input before allocation; this controller also checks final size.
   Authorization maps to `confirming_payment`, never paid/access eligibility.
   Refused/no-evidence remains `awaiting_payment` because a Session can retry;
   conflicts map to `needs_review`. SDK attempt-level decline UX remains separate.
+- POST `/internal/payments/returns`: `{requestId,attemptId,capability,sessionResult}`.
+  The capability/caller/attempt checks precede durable encrypted acceptance.
+  The trusted Session ID is loaded only from the committed provider response;
+  the browser supplies no Session identity. One bounded static provider GET
+  verifies completed/Authorised reference, PSP, money and method. The minimized
+  response never contains the opaque result, Session/PSP or method.
 
 Missing scoped evidence is service-unavailable, not a misleading awaiting-payment
 state. All replies, including errors, are no-store. Database/provider exceptions are

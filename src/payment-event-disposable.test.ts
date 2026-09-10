@@ -166,6 +166,7 @@ beforeAll(async () => {
   await pool.query(sql('149_payment_attempt_store.sql'));
   await pool.query(sql('150_payment_request_admission.sql'));
   await pool.query(migration);
+  await pool.query(sql('152_payment_method_reconciliation.sql'));
   store = new PaymentStore(
     transaction,
     new PaymentPayloadVault('fixture', new Map([['fixture', randomBytes(32)]])),
@@ -724,6 +725,7 @@ describe('HMAC-admitted durable provider payment events', () => {
       await client.query('ROLLBACK');
       client.release();
     }
+    await pool.query(sql('rollback_152_payment_method_reconciliation.sql'));
     await pool.query(
       'TRUNCATE business_v2.payment_checkout_evidence,business_v2.payment_event_exceptions,business_v2.payment_events,business_v2.payment_provider_references',
     );

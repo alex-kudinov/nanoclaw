@@ -12,6 +12,8 @@ export interface AdyenTestWebhookConfig {
    * acknowledged and discarded after the whole batch passes HMAC verification.
    */
   discardVerifiedForeignReferences?: boolean;
+  /** Admit verified owned unknown event codes for hash-only durable review. */
+  retainVerifiedOwnedUnsupported?: boolean;
 }
 
 interface AdyenAmount {
@@ -293,10 +295,11 @@ export function admitAdyenTestWebhook(
       throw new AdyenWebhookAdmissionError('Store is not allowlisted', 403);
     }
     if (!config.allowedEventCodes.includes(item.eventCode)) {
-      throw new AdyenWebhookAdmissionError(
-        'Event code is not allowlisted',
-        403,
-      );
+      if (config.retainVerifiedOwnedUnsupported !== true)
+        throw new AdyenWebhookAdmissionError(
+          'Event code is not allowlisted',
+          403,
+        );
     }
     items.push(item);
   }

@@ -125,6 +125,10 @@ Use a fresh nonce and timestamp for every HTTP transmission. Keep the same
 `operationId`/inner `requestId`, attempt and exact immutable attempt contract
 when retrying the same logical command. A duplicate nonce returns `409`; a fresh
 nonce can safely recover the existing capability and durable Session operation.
+That exact persisted-attempt retry remains available after new-attempt
+offer/method/presentation configuration is disabled or changed; it never rebuilds
+the provider request. A changed attempt with the same ID is rejected, and a
+recovery-only path cannot create a missing provider operation.
 Do not generate a new attempt or switch to Stripe after an ambiguous Adyen call.
 
 ## Commands and responses
@@ -185,6 +189,25 @@ registered for recovery. Removing it from new-attempt enablement stops new
 Sessions without removing authenticated resume/status authority for accepted
 attempts.
 
+### Verify a browser return
+
+Path: `POST /internal/payments/returns`
+
+Signed inner body:
+
+```json
+{"requestId":"UUID","attemptId":"UUID","capability":"pcap_...","sessionResult":"opaque browser return"}
+```
+
+WordPress sends the opaque `sessionResult` once through this protected signed
+body; it never sends or chooses a Session ID. NanoClaw retrieves the trusted ID
+from the attempt's encrypted durable Session response, persists the encrypted
+result operation before the provider GET, and binds method/PSP/money only from a
+completed provider-authenticated result. The response is minimized to the
+attempt ID and `confirming_payment` or `needs_review`. No method, PSP reference,
+Session ID/result or provider response is returned or logged. This endpoint is
+static return verification, not status polling.
+
 ### Read minimized status
 
 Path: `POST /internal/payments/status`
@@ -195,7 +218,9 @@ The signed inner body matches resume. The response contains only:
 {"attemptId":"UUID","state":"awaiting_payment"}
 ```
 
-Current states are `awaiting_payment`, `confirming_payment`, and `needs_review`.
+Current states include `awaiting_payment`, `payment_pending`,
+`confirming_payment`, `payment_failed`, `payment_reversed`, `refund_pending`,
+and `needs_review`.
 `confirming_payment` means admitted authorization evidence exists; it does not
 mean settled, paid or access-ready. WordPress must keep the capability out of
 URLs and logs and associate it with the guest's server-side checkout state.

@@ -1,4 +1,5 @@
 import type { AdyenTestWebhookConfig } from './adyen-webhook.js';
+import { AdyenTestSessionResultAdapter } from './adyen-session-result-adapter.js';
 import {
   AdyenTestSessionAdapter,
   type AdyenSessionRouting,
@@ -20,6 +21,7 @@ import {
 } from './payment-domain.js';
 import { PaymentEventStore } from './payment-event-store.js';
 import { PaymentHttpAdapter } from './payment-http-adapter.js';
+import { PaymentMethodReconciliationStore } from './payment-method-reconciliation-store.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import {
   PaymentRequestAuthenticator,
@@ -200,6 +202,17 @@ export function createPaymentTestRuntime(
     config.scope,
     config.webhook,
   );
+  const reconciliation = new PaymentMethodReconciliationStore(
+    dependencies.transaction,
+    vault,
+    store,
+    new AdyenTestSessionResultAdapter(
+      config.adyenApiKey,
+      config.scope,
+      dependencies.providerTransport,
+    ),
+    config.scope,
+  );
   const controller = new PaymentApiController(
     config.caller,
     permits,
@@ -208,7 +221,7 @@ export function createPaymentTestRuntime(
       config.limits.maxActive,
       config.limits.windowMs,
     ),
-    { admission, store, sessions, events },
+    { admission, store, sessions, events, reconciliation },
   );
   const http = new PaymentHttpAdapter(
     controller,

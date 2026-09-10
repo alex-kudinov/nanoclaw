@@ -41,6 +41,15 @@ let runtime: ReturnType<typeof createPaymentTestRuntime>;
 let runtimeConfig: PaymentTestRuntimeConfig;
 let created = false;
 let providerCalls = 0;
+let resultCalls = 0;
+const providerSessions = new Map<
+  string,
+  {
+    reference: string;
+    paymentReference: string;
+    amount: { value: number; currency: string };
+  }
+>();
 const caller = 'wordpress-test';
 const scope: PaymentScope = {
   provider: 'adyen',
@@ -114,10 +123,13 @@ function attempt(changes: { country?: string; capabilities?: unknown } = {}) {
     },
   });
 }
+const pspForAttempt = (attemptId: string) =>
+  attemptId.replaceAll('-', '').slice(0, 16);
 
 type Path =
   | '/internal/payments/sessions'
   | '/internal/payments/attempts'
+  | '/internal/payments/returns'
   | '/internal/payments/status';
 
 function wire(path: Path, command: Record<string, unknown>): string {
@@ -153,9 +165,9 @@ async function post(
   return { response, body: (await response.json()) as Record<string, unknown> };
 }
 
-function webhook(attemptId: string) {
+function webhook(attemptId: string, pspReference?: string) {
   const item = {
-    pspReference: randomUUID().replaceAll('-', '').slice(0, 16),
+    pspReference: pspReference ?? randomUUID().replaceAll('-', '').slice(0, 16),
     originalReference: '',
     merchantAccountCode: scope.merchant,
     merchantReference: adyenTestAttemptReference(attemptId),
@@ -205,6 +217,7 @@ beforeAll(async () => {
     '149_payment_attempt_store.sql',
     '150_payment_request_admission.sql',
     '151_payment_event_ledger.sql',
+    '152_payment_method_reconciliation.sql',
   ])
     await pool.query(sql(migration));
   runtimeConfig = {
@@ -241,13 +254,47 @@ beforeAll(async () => {
   };
   runtime = createPaymentTestRuntime(runtimeConfig, {
     transaction,
-    providerTransport: (async (_url, init) => {
+    providerTransport: (async (url, init) => {
+      if (init?.method === 'GET') {
+        resultCalls++;
+        const parsed = new URL(url);
+        const sessionId = decodeURIComponent(
+          parsed.pathname.slice(parsed.pathname.lastIndexOf('/') + 1),
+        );
+        const stored = providerSessions.get(sessionId);
+        return new Response(
+          JSON.stringify({
+            id: sessionId,
+            status: 'completed',
+            reference: stored?.reference,
+            payments: stored
+              ? [
+                  {
+                    pspReference: stored.paymentReference,
+                    reference: stored.reference,
+                    resultCode: 'Authorised',
+                    amount: stored.amount,
+                    paymentMethod: { type: 'ach' },
+                  },
+                ]
+              : [],
+          }),
+        );
+      }
       providerCalls++;
       const request = JSON.parse(String(init?.body));
       expect(request.allowedPaymentMethods).toEqual(['scheme', 'ach']);
+      const sessionId = `fixture-session-${providerCalls}`;
+      providerSessions.set(sessionId, {
+        reference: request.reference,
+        paymentReference: pspForAttempt(
+          String(request.reference).slice(ADYEN_TEST_REFERENCE_PREFIX.length),
+        ),
+        amount: request.amount,
+      });
       return new Response(
         JSON.stringify({
-          id: 'fixture-session',
+          id: sessionId,
           sessionData: 'fixture-private-session',
           expiresAt: request.expiresAt,
         }),
@@ -355,9 +402,32 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
     expect(
       (await post('/internal/payments/status', statusCommand)).body,
     ).toEqual({ attemptId: a.attemptId, state: 'awaiting_payment' });
-    expect(await runtime.recordWebhook(webhook(a.attemptId))).toEqual([
-      { result: 'recorded', attemptId: a.attemptId },
-    ]);
+    const returned = await post('/internal/payments/returns', {
+      ...statusCommand,
+      requestId: randomUUID(),
+      sessionResult: 'private-browser-result',
+    });
+    expect(returned.body).toEqual({
+      attemptId: a.attemptId,
+      state: 'confirming_payment',
+    });
+    expect(resultCalls).toBe(1);
+    expect(
+      (
+        await pool.query(
+          'SELECT method,payment_reference FROM business_v2.payment_method_bindings WHERE attempt_id=$1',
+          [a.attemptId],
+        )
+      ).rows[0],
+    ).toEqual({
+      method: 'ach_direct_debit',
+      payment_reference: pspForAttempt(a.attemptId),
+    });
+    expect(
+      await runtime.recordWebhook(
+        webhook(a.attemptId, pspForAttempt(a.attemptId)),
+      ),
+    ).toEqual([{ result: 'recorded', attemptId: a.attemptId }]);
     const confirmed = await post('/internal/payments/status', {
       ...statusCommand,
       requestId: randomUUID(),
@@ -397,6 +467,17 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
       throw new Error('no rollback address');
     const rollbackBase = `http://127.0.0.1:${rollbackAddress.port}`;
     try {
+      const lostAckRecovery = await post(
+        '/internal/payments/sessions',
+        { requestId, attempt: a },
+        rollbackBase,
+      );
+      expect(lostAckRecovery.body).toMatchObject({
+        state: 'checkout_ready',
+        capability: first.body.capability,
+        paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+      });
+      expect(providerCalls).toBe(1);
       const resumed = await post(
         '/internal/payments/attempts',
         {
@@ -430,6 +511,35 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
         rollbackServer.close((error) => (error ? reject(error) : resolve())),
       );
     }
+  });
+
+  it('keeps an event-first different-PSP reconciliation conflict sticky in status', async () => {
+    const a = attempt();
+    const started = await post('/internal/payments/sessions', {
+      requestId: randomUUID(),
+      attempt: a,
+    });
+    expect(started.response.status).toBe(200);
+    await runtime.recordWebhook(webhook(a.attemptId, 'DIFFERENTPSP001'));
+    const returned = await post('/internal/payments/returns', {
+      requestId: randomUUID(),
+      attemptId: a.attemptId,
+      capability: started.body.capability,
+      sessionResult: 'different-psp-result',
+    });
+    expect(returned.body).toEqual({
+      attemptId: a.attemptId,
+      state: 'needs_review',
+    });
+    const status = await post('/internal/payments/status', {
+      requestId: randomUUID(),
+      attemptId: a.attemptId,
+      capability: started.body.capability,
+    });
+    expect(status.body).toEqual({
+      attemptId: a.attemptId,
+      state: 'needs_review',
+    });
   });
 
   it('rejects ACH outside US/PR before persisting an attempt', async () => {

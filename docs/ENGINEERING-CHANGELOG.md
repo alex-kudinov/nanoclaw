@@ -11657,3 +11657,22 @@ only after each boundary is actually crossed.
 - No native call, DB write, listener, enrollment or certificate action. The
   separate152 durable reconciliation/event slice is not claimed complete here.
 - Review artifacts: Peri output/mcs-ready/session-result-review/.
+
+## 2026-09-10 — NC-20260909-003 durable method/event evidence
+
+- Added source-only152 encrypted reconciliation, scoped method/child-operation
+  bindings and owned exceptions; expanded pending/failure/refund/return history
+  with order-independent projection and minimized private status.
+- Added signature/capability-protected return admission, immutable lost-first-ACK
+  retry, auditable new-session immediate-capture request and pure no-action ACH
+  access/certificate financial gates. Authorization is never called settlement.
+- Four bounded Sonnet/high R1 reviews; controller/intake had no material findings.
+  Corrected shared-reference/attempt races, sanitized repository failures, sticky
+  method-conflict status and chargeback reversal history. Two narrow R2s accepted
+  those corrections. Codex113-test/typecheck recheck passes; full bounded run:
+ 4075 pass/32 skip and exactly the three established baseline failures (includes
+  the separate uncommitted edge tests). Continuity/capability checks pass.
+- No production migration, live provider call, public route, course grant,
+  certificate issuance, customer message or cutover. Pre-workflow edge filtering,
+  protected BFF, canonical fulfillment and genuine TEST proof remain separate.
+- Review artifacts: Peri output/mcs-ready/*152-review/.

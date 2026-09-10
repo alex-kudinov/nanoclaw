@@ -11,6 +11,10 @@ export interface CheckoutPaymentEvidence {
     | 'no_payment_evidence'
     | 'authorization_recorded'
     | 'refused'
+    | 'payment_pending'
+    | 'payment_failed'
+    | 'payment_reversed'
+    | 'refund_pending'
     | 'awaiting_prior_evidence'
     | 'needs_review';
   payments: Array<{
@@ -62,16 +66,35 @@ export function projectCheckoutPaymentEvidence(input: {
       p.evidence.evidenceState === 'awaiting_prior_evidence' ||
       p.evidence.authorization === 'unknown',
   );
+  const reversed = payments.some((p) => p.evidence.chargebackAmount > 0);
+  const refundPending = payments.some((p) => p.evidence.refundedAmount > 0);
+  const failed = payments.some(
+    (p) =>
+      p.evidence.captureFailed ||
+      p.evidence.canceled ||
+      p.evidence.expired ||
+      p.evidence.refundFailed ||
+      p.evidence.refundReversedAmount > 0,
+  );
+  const providerPending = payments.some((p) => p.evidence.pending);
   return {
     state: exceptions.size
       ? 'needs_review'
-      : pending
-        ? 'awaiting_prior_evidence'
-        : exposed.length === 1
-          ? 'authorization_recorded'
-          : payments.length
-            ? 'refused'
-            : 'no_payment_evidence',
+      : reversed
+        ? 'payment_reversed'
+        : refundPending
+          ? 'refund_pending'
+          : failed
+            ? 'payment_failed'
+            : pending
+              ? 'awaiting_prior_evidence'
+              : providerPending
+                ? 'payment_pending'
+                : exposed.length === 1
+                  ? 'authorization_recorded'
+                  : payments.length
+                    ? 'refused'
+                    : 'no_payment_evidence',
     payments,
     exceptions: [...exceptions].sort(),
     settlement: 'unproven',

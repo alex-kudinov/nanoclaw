@@ -131,6 +131,9 @@ export function buildAdyenTestSessionRequest(
     shopperLocale,
     channel: 'Web',
     shopperInteraction: 'Ecommerce',
+    // Pin new one-time Sessions; never infer mutable merchant-default capture.
+    // This requests immediate capture but does not prove capture or settlement.
+    captureDelayHours: 0,
     shopperReference: `tandem-test-${attempt.attemptId}`,
     expiresAt: new Date(attempt.quote.expiresAt).toISOString(),
     allowedPaymentMethods: capabilities.map(

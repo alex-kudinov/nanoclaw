@@ -23,7 +23,10 @@ const scope = {
   store: 'fixture',
   endpointRegion: 'eu',
 } as const;
-function setup(limiter = new PaymentRequestLimiter(100, 32, 60000)) {
+function setup(
+  limiter = new PaymentRequestLimiter(100, 32, 60000),
+  existingAttempt = false,
+) {
   const now = Date.now() - 1000;
   const attempt = createPaymentAttempt({
     attemptId: randomUUID(),
@@ -108,7 +111,7 @@ function setup(limiter = new PaymentRequestLimiter(100, 32, 60000)) {
     },
     store: {
       acceptAttempt: vi.fn(async () => attempt),
-      readAttempt: vi.fn(async () => attempt),
+      readAttempt: vi.fn(async () => (existingAttempt ? attempt : null)),
     },
     sessions: {
       validateStart: vi.fn(validateAttempt),
@@ -123,9 +126,17 @@ function setup(limiter = new PaymentRequestLimiter(100, 32, 60000)) {
             {
               paymentReference: 'must-not-expose-psp',
               evidence: {
+                pending: false,
                 authorization: 'authorized',
                 capturedAmount: 29900,
+                captureFailed: false,
                 refundedAmount: 0,
+                refundFailed: false,
+                refundReversedAmount: 0,
+                chargebackAmount: 0,
+                chargebackReversedAmount: 0,
+                canceled: false,
+                expired: false,
                 evidenceState: 'consistent',
                 exceptions: [],
                 settlement: 'unproven',
@@ -138,6 +149,22 @@ function setup(limiter = new PaymentRequestLimiter(100, 32, 60000)) {
           fulfillment: 'not_evaluated',
         }),
       ),
+    },
+    reconciliation: {
+      readState: vi.fn(
+        async (): Promise<
+          'not_started' | 'pending' | 'verified' | 'needs_review'
+        > => 'verified',
+      ),
+      verify: vi.fn(async () => ({
+        state: 'verified' as const,
+        binding: {
+          attemptId: attempt.attemptId,
+          paymentReference: 'must-not-expose-psp',
+          paymentMethod: 'card' as const,
+          evidenceSha256: 'a'.repeat(64),
+        },
+      })),
     },
   };
   const controller = new PaymentApiController(
@@ -216,6 +243,46 @@ describe('unwired signed payment HTTP controller', () => {
         .status,
     ).toBe(409);
     expect(s.deps.sessions.start).toHaveBeenCalledTimes(1);
+  });
+  it('recovers a lost first response from the exact persisted attempt despite new-start disablement', async () => {
+    const s = setup(undefined, true);
+    s.deps.sessions.validateStart.mockImplementation(() => {
+      throw new PaymentDomainError('offer_not_enabled');
+    });
+    const requestId = randomUUID();
+    const response = await s.controller.handle(
+      'POST',
+      '/internal/payments/sessions',
+      s.signed('/internal/payments/sessions', {
+        requestId,
+        attempt: s.attempt,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      state: 'checkout_ready',
+      capability: s.token,
+    });
+    expect(s.deps.sessions.validateStart).not.toHaveBeenCalled();
+    expect(s.deps.store.acceptAttempt).not.toHaveBeenCalled();
+    expect(s.deps.sessions.start).not.toHaveBeenCalled();
+    expect(s.deps.sessions.resume).toHaveBeenCalledWith(s.attempt.attemptId);
+    const changed = {
+      ...s.attempt,
+      paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+    };
+    expect(
+      (
+        await s.controller.handle(
+          'POST',
+          '/internal/payments/sessions',
+          s.signed('/internal/payments/sessions', {
+            requestId: randomUUID(),
+            attempt: changed,
+          }),
+        )
+      ).status,
+    ).toBe(409);
   });
   it('rejects header/body operation mismatch and unknown actions before payment effects', async () => {
     const s = setup();
@@ -347,8 +414,33 @@ describe('unwired signed payment HTTP controller', () => {
     expect(s.deps.events.readInternalEvidence).not.toHaveBeenCalled();
     expect(s.deps.sessions.resume).not.toHaveBeenCalled();
   });
+  it('authenticates a returned Session result and exposes no method/provider detail', async () => {
+    const s = setup(undefined, true);
+    const command = {
+      requestId: randomUUID(),
+      attemptId: s.attempt.attemptId,
+      capability: s.token,
+      sessionResult: 'private-browser-result',
+    };
+    const response = await s.controller.handle(
+      'POST',
+      '/internal/payments/returns',
+      s.signed('/internal/payments/returns', command),
+    );
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      attemptId: s.attempt.attemptId,
+      state: 'confirming_payment',
+    });
+    expect(s.deps.reconciliation.verify).toHaveBeenCalledWith({
+      operationId: command.requestId,
+      attemptId: s.attempt.attemptId,
+      sessionResult: command.sessionResult,
+    });
+    expect(JSON.stringify(response)).not.toContain(command.sessionResult);
+  });
   it('loads the immutable original attempt for a permitted resume', async () => {
-    const s = setup(),
+    const s = setup(undefined, true),
       path = '/internal/payments/attempts';
     const response = await s.controller.handle(
       'POST',
@@ -363,7 +455,7 @@ describe('unwired signed payment HTTP controller', () => {
     expect(s.deps.sessions.resume).toHaveBeenCalledWith(s.attempt.attemptId);
   });
   it('minimizes status and never claims paid or fulfillment from authorization', async () => {
-    const s = setup(),
+    const s = setup(undefined, true),
       path = '/internal/payments/status';
     const response = await s.controller.handle(
       'POST',
@@ -380,6 +472,52 @@ describe('unwired signed payment HTTP controller', () => {
     });
     expect(JSON.stringify(response)).not.toContain('must-not-expose');
     expect(JSON.stringify(response)).not.toContain('private-session');
+  });
+  it('keeps a durable reconciliation conflict sticky in later status reads', async () => {
+    const s = setup(undefined, true);
+    s.deps.reconciliation.readState.mockResolvedValue('needs_review');
+    const command = {
+      requestId: randomUUID(),
+      attemptId: s.attempt.attemptId,
+      capability: s.token,
+    };
+    expect(
+      (
+        await s.controller.handle(
+          'POST',
+          '/internal/payments/status',
+          s.signed('/internal/payments/status', command),
+        )
+      ).body,
+    ).toEqual({ attemptId: s.attempt.attemptId, state: 'needs_review' });
+    expect(s.deps.events.readInternalEvidence).not.toHaveBeenCalled();
+  });
+  it.each([
+    ['payment_pending', 'payment_pending'],
+    ['payment_failed', 'payment_failed'],
+    ['payment_reversed', 'payment_reversed'],
+    ['refund_pending', 'refund_pending'],
+  ] as const)('maps internal %s to minimized %s', async (internal, exposed) => {
+    const s = setup(undefined, true);
+    const current = await s.deps.events.readInternalEvidence();
+    s.deps.events.readInternalEvidence.mockResolvedValue({
+      ...current!,
+      state: internal,
+    });
+    const command = {
+      requestId: randomUUID(),
+      attemptId: s.attempt.attemptId,
+      capability: s.token,
+    };
+    expect(
+      (
+        await s.controller.handle(
+          'POST',
+          '/internal/payments/status',
+          s.signed('/internal/payments/status', command),
+        )
+      ).body,
+    ).toEqual({ attemptId: s.attempt.attemptId, state: exposed });
   });
   it('sanitizes dependency and PostgreSQL errors without losing concurrency permits', async () => {
     const s = setup(new PaymentRequestLimiter(10, 1, 60000));
@@ -402,7 +540,7 @@ describe('unwired signed payment HTTP controller', () => {
     }
   });
   it('treats missing scoped evidence as unavailable, not a false awaiting-payment state', async () => {
-    const s = setup(),
+    const s = setup(undefined, true),
       path = '/internal/payments/status';
     s.deps.events.readInternalEvidence.mockResolvedValueOnce(null);
     const result = await s.controller.handle(

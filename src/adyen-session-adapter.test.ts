@@ -80,6 +80,7 @@ describe('Adyen TEST Sessions adapter', () => {
       store: scope.store,
       reference: `tandem-poc-tsv1-${a.attemptId}`,
       allowedPaymentMethods: ['scheme'],
+      captureDelayHours: 0,
       expiresAt: new Date(a.quote.expiresAt).toISOString(),
     });
     expect(request).not.toContain('apiKey');

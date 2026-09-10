@@ -90,6 +90,34 @@ export class PaymentStore {
     });
   }
 
+  /** Internal reconciliation only; caller authentication/capability precedes it. */
+  async readPersistedSession(
+    attemptId: string,
+  ): Promise<{ attempt: PaymentAttempt; session: string } | null> {
+    uuid(attemptId);
+    return this.transaction(async (client) => {
+      const result = await client.query<{
+        contract: unknown;
+        operation_id: string;
+        encrypted_response: string;
+      }>(
+        `SELECT a.contract,o.operation_id,o.encrypted_response
+        FROM business_v2.payment_attempts a JOIN business_v2.payment_operations o ON o.attempt_id=a.attempt_id
+        WHERE a.attempt_id=$1 AND o.state='session_available' AND o.encrypted_response IS NOT NULL`,
+        [attemptId],
+      );
+      if (!result.rowCount) return null;
+      const row = result.rows[0];
+      return {
+        attempt: validateAttempt(row.contract),
+        session: this.vault.open(
+          row.encrypted_response,
+          `${row.operation_id}:response`,
+        ),
+      };
+    });
+  }
+
   async acceptAttempt(input: unknown): Promise<PaymentAttempt> {
     const attempt = validateAttempt(input);
     const scopeHash = paymentPayloadFingerprint(JSON.stringify(attempt.scope));

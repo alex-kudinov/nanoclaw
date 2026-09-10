@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PaymentDomainError } from './payment-domain.js';
+import { PaymentDomainError, validateAttempt } from './payment-domain.js';
 import type {
   PaymentAdmissionStore,
   PaymentCallerPolicy,
@@ -7,6 +7,7 @@ import type {
 import type { PaymentStore } from './payment-store.js';
 import type { PaymentSessionService } from './payment-session-service.js';
 import type { PaymentEventStore } from './payment-event-store.js';
+import type { PaymentMethodReconciliationStore } from './payment-method-reconciliation-store.js';
 
 export interface PaymentApiResponse {
   status: number;
@@ -26,10 +27,14 @@ const readSchema = z
     capability: z.string().max(64),
   })
   .strict();
+const returnSchema = readSchema
+  .extend({ sessionResult: z.string().min(1).max(65536) })
+  .strict();
 const paths = new Set([
   '/internal/payments/sessions',
   '/internal/payments/attempts',
   '/internal/payments/status',
+  '/internal/payments/returns',
 ]);
 
 /** One bounded bucket per configured caller/controller, not attacker-chosen IDs. */
@@ -82,6 +87,10 @@ type Dependencies = {
   store: Pick<PaymentStore, 'acceptAttempt' | 'readAttempt'>;
   sessions: Pick<PaymentSessionService, 'validateStart' | 'start' | 'resume'>;
   events: Pick<PaymentEventStore, 'readInternalEvidence'>;
+  reconciliation?: Pick<
+    PaymentMethodReconciliationStore,
+    'verify' | 'readState'
+  >;
 };
 
 /** Unwired HTTP adapter. Caller/path come from server routing, never the envelope. */
@@ -168,10 +177,14 @@ export class PaymentApiController {
         const start = startSchema.safeParse(command);
         if (!start.success || start.data.requestId !== receipt.operationId)
           return this.response(400, { error: 'invalid_request' });
-        const attempt = this.deps.sessions.validateStart(start.data.attempt);
+        const proposed = validateAttempt(start.data.attempt);
+        const existing = await this.deps.store.readAttempt(proposed.attemptId);
+        if (existing && JSON.stringify(existing) !== JSON.stringify(proposed))
+          throw new PaymentDomainError('attempt_identity_conflict');
+        const attempt = existing ?? this.deps.sessions.validateStart(proposed);
         if (!this.permits(this.caller, attempt))
           throw new PaymentDomainError('payment_scope_denied');
-        await this.deps.store.acceptAttempt(attempt);
+        if (!existing) await this.deps.store.acceptAttempt(attempt);
         // Capability exists before a provider call, and exact-operation retry
         // returns the same encrypted token if the first HTTP response is lost.
         const capability = await this.deps.admission.issueStatusCapability(
@@ -179,7 +192,9 @@ export class PaymentApiController {
           attempt.attemptId,
           86400000,
         );
-        const result = await this.deps.sessions.start(attempt);
+        const result = existing
+          ? await this.deps.sessions.resume(attempt.attemptId)
+          : await this.deps.sessions.start(attempt);
         return this.response(200, {
           ...result,
           attemptId: attempt.attemptId,
@@ -187,7 +202,9 @@ export class PaymentApiController {
           capabilityExpiresAt: capability.expiresAt,
         });
       }
-      const read = readSchema.safeParse(command);
+      const read = (
+        path === '/internal/payments/returns' ? returnSchema : readSchema
+      ).safeParse(command);
       if (!read.success || read.data.requestId !== receipt.operationId)
         return this.response(400, { error: 'invalid_request' });
       if (
@@ -204,6 +221,31 @@ export class PaymentApiController {
         const result = await this.deps.sessions.resume(attempt.attemptId);
         return this.response(200, { ...result, attemptId: attempt.attemptId });
       }
+      if (path === '/internal/payments/returns') {
+        if (!this.deps.reconciliation)
+          return this.response(503, { error: 'payment_service_unavailable' });
+        const returned = returnSchema.parse(command);
+        const result = await this.deps.reconciliation.verify({
+          operationId: receipt.operationId,
+          attemptId: attempt.attemptId,
+          sessionResult: returned.sessionResult,
+        });
+        return this.response(200, {
+          attemptId: attempt.attemptId,
+          state:
+            result.state === 'needs_review'
+              ? 'needs_review'
+              : 'confirming_payment',
+        });
+      }
+      const reconciliationState = await this.deps.reconciliation?.readState(
+        attempt.attemptId,
+      );
+      if (reconciliationState === 'needs_review')
+        return this.response(200, {
+          attemptId: attempt.attemptId,
+          state: 'needs_review',
+        });
       const evidence = await this.deps.events.readInternalEvidence(
         attempt.attemptId,
       );
@@ -212,10 +254,18 @@ export class PaymentApiController {
       const state =
         evidence?.state === 'needs_review'
           ? 'needs_review'
-          : evidence?.state === 'authorization_recorded' ||
-              evidence?.state === 'awaiting_prior_evidence'
-            ? 'confirming_payment'
-            : 'awaiting_payment';
+          : evidence?.state === 'payment_pending'
+            ? 'payment_pending'
+            : evidence?.state === 'payment_failed'
+              ? 'payment_failed'
+              : evidence?.state === 'payment_reversed'
+                ? 'payment_reversed'
+                : evidence?.state === 'refund_pending'
+                  ? 'refund_pending'
+                  : evidence?.state === 'authorization_recorded' ||
+                      evidence?.state === 'awaiting_prior_evidence'
+                    ? 'confirming_payment'
+                    : 'awaiting_payment';
       // No PSP refs, reasons, identities or session tokens in a status response.
       // No paid/access claim until the separately governed fulfillment adapter exists.
       return this.response(200, { attemptId: attempt.attemptId, state });
@@ -241,6 +291,7 @@ export class PaymentApiController {
           'invalid_attempt_identity',
           'invalid_capability_request',
           'invalid_payment_method_capabilities',
+          'invalid_session_result_request',
         ].includes(code)
       )
         return this.response(400, { error: 'invalid_request' });

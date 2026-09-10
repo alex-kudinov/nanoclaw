@@ -737,6 +737,31 @@ describe('payment store on isolated real Postgres', () => {
       ).rows[0],
     ).toEqual({ state: 'dispatching', lease_token: null });
   });
+  it('does not invent a provider operation when an accepted attempt lacks preparation', async () => {
+    const a = attempt();
+    await store.acceptAttempt(a);
+    const service = new PaymentSessionService(
+      store,
+      { create: async () => Promise.reject(new Error('must not dispatch')) },
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      [],
+    );
+    await expect(service.resume(a.attemptId)).rejects.toThrow(
+      'operation_not_found',
+    );
+    expect(
+      (
+        await pool.query(
+          'SELECT count(*) FROM business_v2.payment_operations WHERE attempt_id=$1',
+          [a.attemptId],
+        )
+      ).rows[0].count,
+    ).toBe('0');
+  });
   it('does not report ready after a result-persistence failure and safely recovers later', async () => {
     const a = attempt();
     let calls = 0,

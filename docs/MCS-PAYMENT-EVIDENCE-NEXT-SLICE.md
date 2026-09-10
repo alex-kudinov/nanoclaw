@@ -50,6 +50,11 @@ Course access and certificate financial clearance are separate gates.
 - ACH certificate financial clearance: blocked until confirmed received-funds
   evidence exists. Authorization and capture alone do not satisfy it. All
   existing academic and explicit operator certificate gates still apply.
+  The current pure gate accepts only an opaque host-branded value; its structural
+  settlement-report fixture is not authentication. Actual certificate-clearance
+  wiring stays disabled until a separately reviewed host-only report repository
+  and admission boundary establishes provenance. No public JSON body may create
+  this trusted value.
 - Later ACH return/chargeback: remove financial clearance, block any pending
   certification and open an owned financial exception. Do not automatically
   revoke course access, recharge, refund, message the customer or issue/revoke a

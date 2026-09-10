@@ -3,10 +3,10 @@
 Status: source/disposable only; migration151 is not applied to production and
 the class is not daemon/public wired. No settlement, access or financial action.
 
-`PaymentEventStore.recordWebhook` is the only event-write entrypoint. It calls
+`PaymentEventStore.recordWebhook` is the only webhook event-write entrypoint. It calls
 the reviewed Adyen TEST HMAC parser for the entire batch before any write,
 requires the exact signed integration reference prefix and UUID, and accepts
-AUTHORISATION only. Signed merchant/reference are primary identity; reported
+the configured bounded card/ACH event set. Signed merchant/reference are primary identity; reported
 store remains unsigned defense in depth. No HMAC key/signature, shopper data,
 free-text reason or event date enters persisted facts. Event date is not signed
 and does not determine ordering. HMAC keys are in a private class field.
@@ -48,3 +48,12 @@ The distinct-payment model follows the v72 Session result's payments array and
 the documented per-attempt webhook behavior:
 - https://docs.adyen.com/api-explorer/Checkout/72/get/sessions/(sessionId)
 - https://docs.adyen.com/standard/integration/hosted-checkout
+
+Migration152 adds authenticated Session-result method binding and immutable
+child-operation lineage. Webhook `paymentMethod`, `additionalData`, and
+`eventDate` are unsigned and never choose method, aging, settlement or access.
+Verified owned unsupported/malformed-correlation events can be acknowledged only
+after whole-batch HMAC/merchant/namespace admission and are retained as bounded
+hash-only owned exceptions; signed foreign namespaces retain zero persistence.
+Capture/refund acceptance can later fail or reverse, and ACH returns are modeled
+as chargeback evidence rather than overwriting authorization.

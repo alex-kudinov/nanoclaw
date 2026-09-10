@@ -395,9 +395,17 @@ describe('durable-operation recovery decisions (not locks)', () => {
 describe('scoped immutable financial evidence', () => {
   it('does not invent settlement or fulfillment from authorization', () => {
     expect(project([fact()])).toEqual({
+      pending: false,
       authorization: 'authorized',
       capturedAmount: 0,
+      captureFailed: false,
       refundedAmount: 0,
+      refundFailed: false,
+      refundReversedAmount: 0,
+      chargebackAmount: 0,
+      chargebackReversedAmount: 0,
+      canceled: false,
+      expired: false,
       evidenceState: 'consistent',
       exceptions: [],
       settlement: 'unproven',
@@ -457,7 +465,7 @@ describe('scoped immutable financial evidence', () => {
     { amount: 29901 },
     { amount: 0 },
     { success: 'true' },
-    { kind: 'chargeback' },
+    { kind: 'dispute' },
   ])('rejects bad scope/amount/type instead of admitting it %o', (changes) => {
     expect(() => project([{ ...fact(), ...changes }])).toThrow();
   });
@@ -513,6 +521,19 @@ describe('scoped immutable financial evidence', () => {
         ],
       }).capturedAmount,
     ).toBe(0);
+    expect(
+      project([
+        fact({
+          kind: 'chargeback_reversed',
+          operationReference: 'dispute:1',
+        }),
+        fact({
+          kind: 'chargeback_reversed',
+          operationReference: 'dispute:2',
+          deliveryId: 'chargeback-reversed:2',
+        }),
+      ]).exceptions,
+    ).toContain('chargeback_reversal_exceeds_payment');
   });
   it('holds a capture after refusal as an owned conflict', () => {
     expect(project([fact({ success: false }), capture()]).exceptions).toEqual([
@@ -536,6 +557,49 @@ describe('scoped immutable financial evidence', () => {
       authorization: 'refused',
       evidenceState: 'consistent',
       exceptions: [],
+    });
+  });
+  it('projects pending, late capture/refund failures and chargeback returns without last-event-wins', () => {
+    const lifecycle = (kind: PaymentFact['kind'], operationReference: string) =>
+      fact({
+        deliveryId: `delivery:${kind}`,
+        kind,
+        operationReference,
+      });
+    const facts = [
+      lifecycle('pending', 'psp:test'),
+      fact(),
+      lifecycle('capture', 'capture:2'),
+      lifecycle('capture_failed', 'capture:2'),
+      lifecycle('refund', 'refund:2'),
+      lifecycle('refund_failed', 'refund:2'),
+      lifecycle('refund_reversed', 'refund:3'),
+      lifecycle('chargeback', 'dispute:1'),
+    ];
+    const expected = project(facts);
+    expect(expected).toMatchObject({
+      pending: true,
+      authorization: 'authorized',
+      capturedAmount: 0,
+      captureFailed: true,
+      refundedAmount: 0,
+      refundFailed: true,
+      refundReversedAmount: 29900,
+      chargebackAmount: 29900,
+      chargebackReversedAmount: 0,
+      settlement: 'unproven',
+      fulfillment: 'not_evaluated',
+    });
+    expect(project([...facts].reverse())).toEqual(expected);
+    expect(
+      project([
+        fact(),
+        lifecycle('chargeback', 'dispute:1'),
+        lifecycle('chargeback_reversed', 'dispute:1'),
+      ]),
+    ).toMatchObject({
+      chargebackAmount: 0,
+      chargebackReversedAmount: 29900,
     });
   });
   it('is deterministic for every permutation, including conflicting evidence', () => {
