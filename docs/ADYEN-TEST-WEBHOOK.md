@@ -121,7 +121,12 @@ response exposes only `adyenTestWebhook.configured`.
 `scripts/configure-adyen-test-webhook.py` is an operator-only first-install
 helper, not a daemon dependency. Invoke its dry-run against the exact private
 Peri or Mini env path first. Applied mode requires `--apply --confirm-host`
-matching that host and a native TTY; it reads the key without echo. Never put a
+matching that host. The default reads without echo from a native TTY; explicit
+`--key-stdin` accepts a bounded64-hex key from a non-TTY encrypted SSH pipe, with
+at most one LF or CRLF terminator. Dry-run never consumes input in either mode.
+Documented Studio/Mini SSH access removes any need for native Terminal UI control.
+Only use the freshly copied, specifically authorized TEST key; reject missing
+or malformed input rather than guessing or printing clipboard contents. Never put a
 key in command arguments, chat, review files, or logs. It refuses existing
 plural/legacy HMAC assignments rather than rotating a credential, preserves
 unrelated bytes and matching quoted fixed settings, and creates a private

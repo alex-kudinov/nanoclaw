@@ -30,6 +30,24 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T14:36Z addendum — supported SSH key provisioning
+
+- Owner correctly challenged the unnecessary manual Terminal handoff. Existing
+  Home Assistant SSH mesh and ecosystem registry confirm Studio/Mini access;
+  both exact hosts answer over SSH. The prior UI restriction is not a backend
+  access restriction. No security control or Terminal UI bypass is needed.
+- The private installer now exposes explicit --key-stdin for bounded64hex input
+  over a non-TTY encrypted SSH pipe. Hidden-TTY default remains; dry-run does not
+  read; host/path/config guards still precede input and existing keys are not
+  rotated. Malformed/overlong/nonASCII/NUL input is rejected without echo.
+- All10 Python fixture tests and py_compile pass. Fresh bounded Sonnet/high
+  review with Read,Write and strict empty MCP found no material issue. Usage:
+  4calls, input8/cache creation44610/cache reads109423/output8461, maxcontext49451,
+  reported cost0.2849506, no warnings. No daemon/source schema change.
+- Existing live75d5b6c1 remains verified/unconfigured. Adyen session expired and
+  normal login was opened; browser clipboard is empty, so no key was installed.
+  Only Adyen sign-in is pending; no key-pasting or terminal-command handoff.
+
 #### 2026-09-10T12:40Z addendum — receiver live; private credential-entry gate
 
 - State: blocked on manual key entry, not authorization. Owner explicitly

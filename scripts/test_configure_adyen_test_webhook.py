@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import os
 import stat
 import tempfile
@@ -144,6 +145,44 @@ class ConfigureAdyenTestWebhookTest(unittest.TestCase):
         self.assertEqual(paths[-1], self.root)
         self.assertIn(self.backups, paths[:-1])
         self.assertTrue(any(p.parent == self.backups for p in paths[:-1]))
+
+    def test_stdin_mode_selection_and_validation_order(self):
+        with mock.patch.object(installer, "_terminal_secret", return_value="a" * 64) as terminal:
+            with mock.patch.object(installer, "_stdin_secret", return_value="f" * 64) as read:
+                installer.configure(**self.args, apply=True)
+                terminal.assert_called_once_with()
+                read.assert_not_called()
+        self.env.write_bytes(self.original)
+        with mock.patch.object(installer, "_stdin_secret", return_value="f" * 64) as read:
+            installer.configure(**self.args, apply=False, key_stdin=True)
+            with self.assertRaisesRegex(installer.InstallError, "^host_mismatch$"):
+                installer.configure(
+                    **{**self.args, "actual_host": "other"}, apply=True, key_stdin=True
+                )
+            with self.assertRaisesRegex(installer.InstallError, "^env_file_not_allowed$"):
+                installer.configure(
+                    **{**self.args, "allowed_paths": set()}, apply=True, key_stdin=True
+                )
+            read.assert_not_called()
+
+    def test_stdin_secret_accepts_only_bounded_hex_and_optional_newline(self):
+        class Stdin:
+            def __init__(self, data, tty=False):
+                self.buffer = io.BytesIO(data)
+                self.tty = tty
+
+            def isatty(self):
+                return self.tty
+
+        for suffix in (b"", b"\n", b"\r\n"):
+            self.assertEqual(installer._stdin_secret(Stdin(b"a1" * 32 + suffix)), "a1" * 32)
+        invalid = (b"a" * 63, b"a" * 64 + b"\r", b"a" * 63 + b"\0", b"a" * 63 + b"\xff", b"a" * 67)
+        for raw in invalid:
+            with self.subTest(length=len(raw)):
+                with self.assertRaisesRegex(installer.InstallError, "^invalid_credential$"):
+                    installer._stdin_secret(Stdin(raw))
+        with self.assertRaisesRegex(installer.InstallError, "^piped_stdin_required$"):
+            installer._stdin_secret(Stdin(b"a" * 64, tty=True))
 
 
 if __name__ == "__main__":

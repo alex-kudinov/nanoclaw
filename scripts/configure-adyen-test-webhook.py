@@ -184,6 +184,7 @@ def configure(
     allowed_paths: Iterable[str] = ALLOWED_ENV_FILES,
     uid: Optional[int] = None,
     prompt: Optional[Callable[[], str]] = None,
+    key_stdin: bool = False,
     before_cas: Optional[Callable[[], None]] = None,
 ) -> tuple[str, list[str]]:
     if env_file not in set(allowed_paths):
@@ -220,7 +221,7 @@ def configure(
             _fail("lock_busy")
         original, signature = _read_secure(env_file, owner)
         inspect_config(original)
-        secret = (prompt or _terminal_secret)()
+        secret = (prompt or (_stdin_secret if key_stdin else _terminal_secret))()
         updated, changed = build_update(original, secret)
         _backup(backup_root, env_file, original, owner)
         if before_cas:
@@ -266,11 +267,28 @@ def _terminal_secret() -> str:
             _fail("tty_required")
 
 
+def _stdin_secret(stream=None) -> str:
+    source = sys.stdin if stream is None else stream
+    if source.isatty():
+        _fail("piped_stdin_required")
+    raw = source.buffer.read(67)
+    if not isinstance(raw, bytes) or len(raw) > 66:
+        _fail("invalid_credential")
+    if raw.endswith(b"\r\n"):
+        raw = raw[:-2]
+    elif raw.endswith(b"\n"):
+        raw = raw[:-1]
+    if re.fullmatch(rb"[0-9A-Fa-f]{64}", raw) is None:
+        _fail("invalid_credential")
+    return raw.decode("ascii")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Install Adyen TEST webhook configuration safely")
     parser.add_argument("--env-file", required=True)
     parser.add_argument("--confirm-host")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--key-stdin", action="store_true")
     args = parser.parse_args()
     backup_root = os.path.expanduser("~/.local/share/nanoclaw-deploy-backups")
     try:
@@ -280,6 +298,7 @@ def main() -> int:
             confirm_host=args.confirm_host,
             actual_host=os.uname().nodename,
             backup_root=backup_root,
+            key_stdin=args.key_stdin,
         )
     except InstallError as error:
         print(f"refused: {error}", file=sys.stderr)
