@@ -195,6 +195,13 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T04:54Z: Sessions source pushed as 12f22c35. All-ref refresh shows
+  149 as highest reserved migration; reserve 150_payment_request_admission.sql
+  and rollback for durable authenticated-request nonces, hashed/encrypted status
+  capabilities and append-only revocations. Claim `payment-request-auth.ts`,
+  `payment-admission-store.ts` and focused/disposable tests. No production apply,
+  public route, network policy change or broader financial/fulfillment action.
+
 - 2026-09-10T04:55Z: TEST Sessions adapter/service source accepted in Sonnet/high
   R1/R2; absolute DB-clock retry expiry correction closes R1. 96 focused tests
   (18 DB/service, 27 adapter, 51 domain) pass, root/CLI strict types and build pass.
