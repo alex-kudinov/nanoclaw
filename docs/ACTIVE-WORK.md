@@ -195,6 +195,17 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T05:09Z: HMAC/nonce/status-capability source and migration150 accepted
+  by Sonnet/high with no material findings. 25 focused tests pass; full 3,820
+  pass/32 skip/three unchanged baseline failures. Full concurrency exposed a
+  fixture cleanup race in pg-pool.end (server sockets still closing); bounded
+  server-side connection drain plus non-FORCE drop removes both unhandled errors.
+  No error suppression or dependency edit. Apply the same test cleanup to the
+  store suite/TEST proof command; no runtime payment behavior changed.
+  Next: scoped provider-payment event ledger (one Session may have failed retries
+  plus a successful PSP reference), then authenticated route composition. Network
+  gate still awaits the owner; no routine stop or production mutation.
+
 - 2026-09-10T04:54Z: Sessions source pushed as 12f22c35. All-ref refresh shows
   149 as highest reserved migration; reserve 150_payment_request_admission.sql
   and rollback for durable authenticated-request nonces, hashed/encrypted status

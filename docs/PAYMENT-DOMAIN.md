@@ -63,6 +63,43 @@ Unknown parent evidence must not trigger fulfillment. A capture is not settlemen
 
 ## Verification and remaining work
 
+### Internal request and guest-status admission (migration 150, unwired)
+
+`payment-request-auth.ts` defines the v1 internal POST signing contract: HMAC-SHA256
+over newline-separated version marker, key ID, caller, method, exact allowlisted
+path, epoch-millisecond timestamp, nonce UUID, operation UUID and SHA-256 of the
+exact transmitted body bytes. Header fields are strictly parsed; key IDs bind
+to one configured caller. Signature comparison is constant-time. A five-minute
+past/future skew window is accepted; keys rotate through an explicit key ring.
+No signature key belongs in browser code or a public response.
+
+`payment-admission-store.ts` verifies using the database clock and atomically
+inserts the nonce before the host may perform effects. Duplicate nonces refuse;
+an HTTP retry signs a fresh nonce while retaining the same logical operation ID.
+Nonce retention includes the entire validity window of future-dated requests.
+These helpers alone are NOT a public endpoint. The host handler must derive the
+expected caller/method/path from its own configuration, parse the signed body
+into its route-specific command, bind operation/attempt/action parameters to that
+command, and sanitize errors before dispatch. Never take expected identity or
+operation authority from browser fields or use a receipt for an unrelated action.
+
+The capability store requires a committed unexpired admission receipt and an
+explicit host caller policy binding quote authority plus complete provider scope.
+It issues a random 256-bit bearer for exactly one attempt, stores only its SHA-256
+plus an AES-GCM-encrypted copy for identical-operation response replay, and never
+extends expiry on replay. An existing revoked/expired capability cannot be replayed
+as usable. Public status checks return only a boolean and require exact token +
+attempt + DB-clock expiry + no revocation. A UUID alone grants no read. Tokens
+must travel in a header or POST body, never URLs/logs. The final public response
+must be no-store and minimized; rate limiting and route wiring remain pending.
+
+Revocation is append-only and requires a fresh admitted request by the capability's
+own issuing caller; it grants no payment or enrollment action. Migration 150's
+three tables are admin-only and immutable, reference 149's attempt store, and
+refuse populated rollback. Retention cleanup requires a separate reviewed policy;
+there is no pruning job or production application here. Local tests create and
+remove only generated `nc_payment_admission_disposable_*` databases on `/tmp:5432`.
+
 ### Durable attempt store (migration 149; source/disposable only)
 
 `payment-store.ts` now accepts an injected host transaction function (the existing

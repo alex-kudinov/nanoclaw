@@ -2,6 +2,7 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { userInfo } from 'node:os';
+import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 
 import { AdyenTestSessionAdapter } from '../src/adyen-session-adapter.js';
@@ -241,7 +242,20 @@ try {
   await pool?.end();
   try {
     if (created) {
-      await maintenance.query(`DROP DATABASE "${database}" WITH (FORCE)`);
+      const deadline = Date.now() + 5000;
+      while (
+        (
+          await maintenance.query(
+            'SELECT count(*) FROM pg_stat_activity WHERE datname=$1',
+            [database],
+          )
+        ).rows[0].count !== '0'
+      ) {
+        if (Date.now() >= deadline)
+          throw new Error('disposable connection drain failed');
+        await delay(20);
+      }
+      await maintenance.query(`DROP DATABASE "${database}"`);
       if (
         (
           await maintenance.query(

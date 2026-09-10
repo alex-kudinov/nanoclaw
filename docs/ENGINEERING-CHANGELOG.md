@@ -30,6 +30,29 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T05:09Z addendum — request replay and scoped status capabilities
+
+- Migration150 + host helpers add signed caller/path/body/timestamp/nonce/operation
+  binding, DB-clock atomic replay admission, high-entropy attempt-bound guest
+  capabilities, hashed/encrypted token storage, replay without expiry extension,
+  and append-only same-caller revocation. No public route or production apply.
+- Sonnet/high bounded review accepted with no material findings. The future route
+  must still parse the signed body and bind action/attempt/operation parameters,
+  enforce trusted caller policy, minimize responses and rate-limit; these helpers
+  are not a public API or an enrollment/financial authority.
+- 16 pure authentication + 9 real Postgres tests pass, including 25-way nonce and
+  capability races, wrong-order/caller denial, expiry/revocation, immutable/admin-only
+  evidence, populated rollback refusal, empty reapply and generated DB cleanup.
+  Full suite after cleanup correction: 3,820 pass / 32 skip / three baseline
+  failures, zero unhandled errors. Typecheck/build/continuity pass.
+- Full-suite concurrency exposed pg-pool.end resolving before server-side sockets
+  finished closing. Test/proof cleanup now waits up to five seconds for this exact
+  generated DB's connections to drain, then drops WITHOUT FORCE. This removes
+  the two observed 57P01 fixture errors instead of suppressing them; no dependency,
+  production configuration or runtime payment code changed for that correction.
+- External proof remains blocked by local Node22 outbound HTTPS and locked-Mac
+  network-rule inspection. Continued local implementation; no security bypass.
+
 #### 2026-09-10T04:55Z addendum — TEST Sessions composition
 
 - Implemented fixed-endpoint TEST/card Sessions transport and provider-neutral
