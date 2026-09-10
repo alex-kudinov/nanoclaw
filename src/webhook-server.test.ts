@@ -1,9 +1,11 @@
+import crypto from 'crypto';
 import http from 'http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WebhookServer, WebhookServerDeps } from './webhook-server.js';
 import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
+import { standardWebhookSigningPayload } from './adyen-webhook.js';
 
 vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -72,9 +74,40 @@ const testGroup = {
   added_at: '2026-01-01T00:00:00Z',
 };
 
+const adyenKey =
+  '44782DEF547AAA06C910C43932B1EB0C71FC68D9D0C057550C48EC2ACF6BA056';
+
+function adyenPayload() {
+  const notification = {
+    additionalData: { store: 'tandem_test_ecom_v1' } as Record<string, unknown>,
+    amount: { value: 39900, currency: 'USD' },
+    pspReference: '7914073381342284',
+    originalReference: '',
+    merchantAccountCode: 'TestMerchant',
+    merchantReference: 'tandem-poc-tsv1-attempt-1',
+    eventCode: 'AUTHORISATION',
+    eventDate: '2026-09-09T20:00:00Z',
+    paymentMethod: 'visa',
+    success: 'true',
+  };
+  notification.additionalData.hmacSignature = crypto
+    .createHmac('sha256', Buffer.from(adyenKey, 'hex'))
+    .update(standardWebhookSigningPayload(notification as never), 'utf8')
+    .digest('base64');
+  return { live: 'false', notificationItems: [{ NotificationRequestItem: notification }] };
+}
+
+const adyenConfig = {
+  hmacKeys: [adyenKey],
+  merchantAccount: 'TestMerchant',
+  storeReference: 'tandem_test_ecom_v1',
+  referencePrefix: 'tandem-poc-tsv1-',
+  allowedEventCodes: ['AUTHORISATION'],
+};
+
 function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
   return {
-    port: 49100 + Math.floor(Math.random() * 900),
+    port: 0,
     webhooksFile: '/tmp/webhooks.json',
     globalSecret: '',
     heartbeatPath: '/tmp/nanoclaw-heartbeat.json',
@@ -128,6 +161,79 @@ describe('WebhookServer', () => {
   it('returns 404 for unknown routes', async () => {
     const res = await makeRequest(deps.port, { path: '/unknown' });
     expect(res.status).toBe(404);
+  });
+
+  it('returns 503 for Adyen TEST when provider-native admission is not configured', async () => {
+    const res = await makeRequest(deps.port, {
+      path: '/hook/adyen-test-payments',
+      body: JSON.stringify(adyenPayload()),
+    });
+    expect(res.status).toBe(503);
+  });
+
+  it('HMAC-verifies and durably terminates an Adyen TEST notification without agent dispatch', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
+    const markWebhookHandled = vi.fn(async () => {});
+    const runAgent = vi.fn(async () => ({ status: 'success' as const, result: null }));
+    const d = makeDeps({
+      adyenTestWebhook: adyenConfig,
+      archiveWebhook,
+      markWebhookHandled,
+      runAgent,
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/adyen-test-payments',
+        body: JSON.stringify(adyenPayload()),
+      });
+      expect(res).toEqual({ status: 202, body: '[accepted]' });
+      expect(archiveWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'adyen-test-payment',
+          event_id: '7914073381342284:AUTHORISATION:true',
+          event_type: 'AUTHORISATION',
+          delivery_path: 'direct',
+        }),
+      );
+      const archiveCall = archiveWebhook.mock.calls[0] as unknown as [
+        { raw_body: unknown },
+      ];
+      const archivedBody = JSON.stringify(archiveCall[0].raw_body);
+      expect(archivedBody).not.toContain('hmacSignature');
+      expect(markWebhookHandled).toHaveBeenCalledWith(
+        71,
+        expect.objectContaining({ handled_by: 'adyen:test-admission' }),
+      );
+      expect(runAgent).not.toHaveBeenCalled();
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('rejects an invalid Adyen HMAC before any durable write', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
+    const payload = adyenPayload();
+    payload.notificationItems[0].NotificationRequestItem.additionalData.hmacSignature =
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+    const d = makeDeps({
+      adyenTestWebhook: adyenConfig,
+      archiveWebhook,
+      markWebhookHandled: vi.fn(async () => {}),
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/adyen-test-payments',
+        body: JSON.stringify(payload),
+      });
+      expect(res.status).toBe(401);
+      expect(archiveWebhook).not.toHaveBeenCalled();
+    } finally {
+      await s.stop().catch(() => {});
+    }
   });
 
   it('returns 401 when secret is wrong', async () => {

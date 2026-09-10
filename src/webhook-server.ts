@@ -40,6 +40,12 @@ import { handleChaosActivity } from './chaos-activity.js';
 import { recordChaosBooking } from './chaos-booking.js';
 import { handleStripePayment } from './stripe-payment-host.js';
 import { formatBookedNotice } from './host-router.js';
+import {
+  admitAdyenTestWebhook,
+  AdyenWebhookAdmissionError,
+  isAdyenTestWebhookConfigured,
+  type AdyenTestWebhookConfig,
+} from './adyen-webhook.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -88,6 +94,9 @@ export interface WebhookServerDeps {
   handleGmailPush?: (emailAddress: string, historyId: string) => Promise<void>;
   // Secret required on POST /hook/gmail-push. Falls back to globalSecret.
   gmailPushSecret?: string;
+  // Provider-native Adyen Standard webhook verification. This route bypasses
+  // generic shared-secret/group dispatch and admits only minimized TEST events.
+  adyenTestWebhook?: AdyenTestWebhookConfig;
   // Phase 1 webhook reliability — envelope archive + dispatch tracking.
   // When provided, every accepted /hook/:id request is recorded in
   // business_v2.webhook_inbox before agent dispatch. See docs/WEBHOOK-RELIABILITY.md.
@@ -150,11 +159,30 @@ function renderPrompt(template: string, payload: unknown): string {
     });
 }
 
-function readBody(req: http.IncomingMessage): Promise<Buffer> {
+function readBody(
+  req: http.IncomingMessage,
+  maxBytes = 1024 * 1024,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
+    let size = 0;
+    let overflow = false;
+    req.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        overflow = true;
+        chunks.length = 0;
+        return;
+      }
+      if (!overflow) chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (overflow) {
+        reject(new Error('Request body too large'));
+        return;
+      }
+      resolve(Buffer.concat(chunks));
+    });
     req.on('error', reject);
   });
 }
@@ -253,7 +281,15 @@ export class WebhookServer {
 
     return new Promise((resolve, reject) => {
       this.server.once('error', reject);
-      this.server.listen(this.deps.port, '0.0.0.0', () => resolve());
+      this.server.listen(this.deps.port, '0.0.0.0', () => {
+        // Port 0 is used by tests so the OS chooses a collision-free port.
+        // Production always supplies the configured fixed port.
+        const address = this.server.address();
+        if (this.deps.port === 0 && address && typeof address === 'object') {
+          this.deps.port = address.port;
+        }
+        resolve();
+      });
     });
   }
 
@@ -317,7 +353,17 @@ export class WebhookServer {
       }
       const health = this.deps.getHealth();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ...heartbeat, ...health }));
+      res.end(
+        JSON.stringify({
+          ...heartbeat,
+          ...health,
+          adyenTestWebhook: {
+            configured: isAdyenTestWebhookConfigured(
+              this.deps.adyenTestWebhook,
+            ),
+          },
+        }),
+      );
       return;
     }
 
@@ -496,6 +542,96 @@ export class WebhookServer {
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // POST /hook/adyen-test-payments — direct Adyen Standard webhook receiver.
+    // HMAC is embedded in each NotificationRequestItem. Validate the entire
+    // envelope before any write, then persist only a minimized TEST event and
+    // terminate without an agent, fulfillment, or customer-facing side effect.
+    const adyenUrl = req.url?.split('?')[0];
+    if (req.method === 'POST' && adyenUrl === '/hook/adyen-test-payments') {
+      if (
+        !isAdyenTestWebhookConfigured(this.deps.adyenTestWebhook) ||
+        !this.deps.archiveWebhook ||
+        !this.deps.markWebhookHandled
+      ) {
+        res.writeHead(503, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Adyen TEST receiver unavailable' }));
+        return;
+      }
+
+      let body: Buffer;
+      try {
+        body = await readBody(req, 256 * 1024);
+      } catch (err) {
+        const tooLarge =
+          err instanceof Error && err.message === 'Request body too large';
+        res.writeHead(tooLarge ? 413 : 400, {
+          'Content-Type': 'application/json',
+        });
+        res.end(JSON.stringify({ error: tooLarge ? 'Body too large' : 'Invalid body' }));
+        return;
+      }
+
+      let payload: unknown;
+      try {
+        payload = JSON.parse(body.toString('utf8'));
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+        return;
+      }
+
+      let admitted;
+      try {
+        admitted = admitAdyenTestWebhook(
+          payload,
+          this.deps.adyenTestWebhook as AdyenTestWebhookConfig,
+        );
+      } catch (err) {
+        const status =
+          err instanceof AdyenWebhookAdmissionError ? err.status : 400;
+        logger.warn(
+          { status },
+          'Adyen TEST webhook rejected before archive',
+        );
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Webhook rejected' }));
+        return;
+      }
+
+      try {
+        for (const item of admitted) {
+          const archived = await this.deps.archiveWebhook({
+            source: 'adyen-test-payment',
+            event_id: item.eventId,
+            event_type: item.eventType,
+            raw_headers: {
+              'content-type': req.headers['content-type'],
+            },
+            raw_body: item.rawBody,
+            delivery_path: 'direct',
+          });
+          await this.deps.markWebhookHandled(archived.id, {
+            handled_by: archived.isDuplicate
+              ? 'adyen:test-admission-duplicate'
+              : 'adyen:test-admission',
+            related_entity: item.relatedEntity,
+          });
+        }
+      } catch (err) {
+        logger.error({ err }, 'Adyen TEST webhook durable admission failed');
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Admission failed' }));
+        return;
+      }
+
+      res.writeHead(202, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+      });
+      res.end('[accepted]');
       return;
     }
 

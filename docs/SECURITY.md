@@ -167,6 +167,18 @@ Never print, commit, transmit for review, or summarize secret values. Token
 selection for external model review must occur inside the invoking shell and
 only sanitized source/diff content may leave the machine.
 
+The Adyen TEST Standard webhook uses a provider-generated HMAC key loaded from
+the host `.env` file. The public n8n/Cloudflare perimeter forwards JSON but does
+not authenticate it on NanoClaw's behalf. The host verifies every notification
+item before any database write and additionally requires TEST environment,
+exact signed merchant/reference, an explicit event-code allowlist, and a
+defense-in-depth reported-store match. Standard HMAC does not cover the store
+field, so the signed `tandem-poc-tsv1-` reference is the actual integration
+boundary. Stored
+events exclude the signature, shopper fields, and unrecognized additional data;
+`/health` exposes only whether the complete receiver configuration is present.
+Live Adyen keys or events are never valid on this route.
+
 ## Network and browser boundary
 
 Agent network egress is unrestricted at the validated baseline. The

@@ -30,7 +30,7 @@ vi.mock('./webhook-inbox.js', () => ({
   archiveWebhook: (i: unknown) => Promise.resolve(wh.archive(i)),
 }));
 vi.mock('./logger.js', () => ({
-  logger: { info: () => {}, warn: () => {}, error: () => {} },
+  logger: { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} },
 }));
 
 import { runChaosReconcile } from './chaos-reconciler.js';

@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 
 import {
+  ADYEN_TEST_WEBHOOK_CONFIG,
   ASSISTANT_NAME,
   DATA_DIR,
   GMAIL_PUSH_WEBHOOK_SECRET,
@@ -1305,6 +1306,7 @@ async function main(): Promise<void> {
     port: WEBHOOK_PORT,
     webhooksFile: WEBHOOKS_FILE,
     globalSecret: WEBHOOK_SECRET,
+    adyenTestWebhook: ADYEN_TEST_WEBHOOK_CONFIG,
     heartbeatPath,
     getRegisteredGroups: () => registeredGroups,
     getHealth: () => {

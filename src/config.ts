@@ -147,6 +147,42 @@ export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
 
+// Dedicated Adyen TEST Standard webhook admission. The HMAC key is loaded only
+// into the host process from the local .env file; it is never exposed through
+// /health, webhook listings, agent containers, or tracked configuration.
+const adyenTestWebhookEnv = readEnvFile([
+  'TANDEM_ADYEN_TEST_HMAC_KEYS',
+  'TANDEM_ADYEN_TEST_HMAC_KEY',
+  'TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT',
+  'TANDEM_ADYEN_TEST_STORE_REFERENCE',
+  'TANDEM_ADYEN_TEST_REFERENCE_PREFIX',
+  'TANDEM_ADYEN_TEST_EVENT_CODES',
+]);
+const adyenTestHmacKeys = (
+  adyenTestWebhookEnv.TANDEM_ADYEN_TEST_HMAC_KEYS ||
+  adyenTestWebhookEnv.TANDEM_ADYEN_TEST_HMAC_KEY ||
+  ''
+)
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+export const ADYEN_TEST_WEBHOOK_CONFIG = {
+  hmacKeys: adyenTestHmacKeys,
+  merchantAccount:
+    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT || '',
+  storeReference:
+    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_STORE_REFERENCE || '',
+  referencePrefix:
+    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_REFERENCE_PREFIX ||
+    'tandem-poc-tsv1-',
+  allowedEventCodes: (
+    adyenTestWebhookEnv.TANDEM_ADYEN_TEST_EVENT_CODES || 'AUTHORISATION'
+  )
+    .split(',')
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-Z0-9_]+$/.test(value)),
+};
+
 // Things bridge — HTTP service on the Mac Studio (the only machine with Things
 // 3). A 📌 reaction on a Mr Gru decision-brief item POSTs the parsed item here
 // to create a real Things to-do. See ~/.claude/hooks/things_bridge.py.

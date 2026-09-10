@@ -8,6 +8,46 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
+
+- Date: 2026-09-10T01:29Z
+- Owner/client: Codex + Claude reviewer
+- State: ready_for_review — implementation and independent correction review
+  complete; commit, deployment, provider configuration, and live verification
+  remain pending.
+- Commit/PR: pending on `codex/adyen-webhook-20260909`.
+- Change class: C5 security boundary; highest affected operational class is C4
+  payment admission. The route itself performs no financial or fulfillment
+  action.
+- Affected systems: `src/adyen-webhook.ts`, dedicated path in
+  `src/webhook-server.ts`, host configuration/wiring, TEST n8n relay source,
+  `business_v2.webhook_inbox`, health, tests, architecture/security/runbook.
+- Outcome: a dedicated Standard webhook path verifies every item against a
+  TEST-only HMAC key and the signed merchant/reference/event boundary, rejects
+  live and wrong-scope traffic, uses the reported store only as defense in
+  depth, minimizes the stored event, and terminates it without an agent,
+  message, enrollment, accounting, refund, payout, or other side effect.
+- Verification: Node 22.23.2 typecheck/build; 47/47 focused tests; 129 files and
+  1,655 tests full suite; documentation continuity; n8n JSON parsing; official
+  Adyen HMAC sample vector. Test harness ports now use OS allocation to remove
+  unrelated `EADDRINUSE` flakes; one incomplete logger mock gained `debug` so
+  the full suite can load configuration without a root `.env`.
+- Review: Sonnet/high R1 found that Standard HMAC does not cover reported store
+  and that n8n retained failed payloads. The signed reference now includes the
+  test-store integration token, store is explicitly unauthenticated defense in
+  depth, and both success/error execution retention are disabled. R2 accepted
+  both corrections with no unresolved material finding.
+- Deployment/migration: none. Existing webhook inbox schema is sufficient; no
+  database migration or runtime/provider mutation occurred.
+- Rollback/recovery: leave host configuration absent for inert 503 behavior;
+  after rollout, deactivate the n8n and provider TEST webhooks and clear TEST
+  host configuration while preserving durable evidence.
+- Documentation: `docs/ADYEN-TEST-WEBHOOK.md`, `docs/ARCHITECTURE.md`,
+  `docs/PROJECT-MAP.md`, `docs/SECURITY.md`, `docs/ACTIVE-WORK.md`.
+- Follow-ups: commit and build an exact immutable receiver release; deploy it
+  unconfigured; then configure/verify n8n, Adyen TEST HMAC, and one synthetic
+  notification before any payment submission.
+
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 
 - Date: 2026-08-15T20:35Z
