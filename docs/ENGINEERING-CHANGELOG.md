@@ -33,7 +33,7 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-10T03:45Z
 - Owner/client: Codex implementation; Claude Sonnet/high review pending
 - State: validating
-- Commit/PR: uncommitted candidate on
+- Commit/PR: implementation `a22dd150` pushed on
   `codex/student-enrollment-production-pilot-20260909` from registration
   `3b8ac46b` over exact live `00d66184`; reviewed enrollment/projection source
   restored from `d9e29856` and its pinned predecessors.
@@ -78,6 +78,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   map, environment contract, active work, and this changelog.
 - Follow-up: complete full verification and bounded review, then rerun P01-P10
   against current live/provider authority before the first external mutation.
+- 2026-09-10T11:40Z preflight addendum: P01 program/owner authority and P02
+  exact live lineage pass. P03 fails closed: production has one listener and
+  healthy Gmail/Slack with zero waiting groups, but three natural Sales/Chief
+  containers remain active across two samples. No backup, migration, provider
+  preflight write, deployment, or configuration change began. Resume only from
+  a fresh zero-work readback of the unchanged live release.
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
