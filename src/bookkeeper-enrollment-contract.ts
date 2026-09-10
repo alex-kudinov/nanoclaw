@@ -27,6 +27,7 @@ const sha = z.string().regex(/^[0-9a-f]{64}$/);
 const party = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 const time = z.iso.datetime({ offset: true });
 const channels = z.enum([
+  'website_checkout',
   'website_stripe_checkout',
   'manual_stripe_payment',
   'plutio_invoice_or_contract',
@@ -41,6 +42,7 @@ const receiptSchema = z.strictObject({
   source: z.strictObject({
     scope: key,
     objectType: key,
+    sourceType: key.optional(),
     objectId: z
       .string()
       .min(1)
@@ -54,7 +56,12 @@ const receiptSchema = z.strictObject({
   seatCount: z.number().int().min(1).max(100),
   seatCountEvidenceSha256: sha.nullable(),
   funding: z.strictObject({
-    kind: z.enum(['settled_payment', 'owner_grant', 'unverified']),
+    kind: z.enum([
+      'settled_payment',
+      'provider_accepted_provisional',
+      'owner_grant',
+      'unverified',
+    ]),
     amountMinor: z
       .number()
       .int()
@@ -170,6 +177,11 @@ export function applyBookkeeperFundingReceipt(
     );
   const receipt = parsed.data;
   const authority = authoritySchema.parse(trustedAuthority);
+  if (receipt.sourceChannel === 'website_checkout')
+    throw new EnrollmentCommandError(
+      'dedicated_adapter_required',
+      'website checkout requires authenticated quote-first admission',
+    );
   const fingerprint = bookkeeperContractHash(receipt);
   const sourceIdentity = bookkeeperContractHash([
     receipt.source.scope,

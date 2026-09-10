@@ -16,6 +16,7 @@ import {
 } from './student-enrollment-ingress.js';
 import {
   captureOrder,
+  EnrollmentCommandError,
   openEnrollmentException,
   attachEnrollmentEvidence,
 } from './student-enrollment-foundation.js';
@@ -31,6 +32,7 @@ const transport = z.enum([
 ]);
 type Purpose = EnrollmentIngressProof['purpose'];
 const channelSchema = z.enum([
+  'website_checkout',
   'website_stripe_checkout',
   'manual_stripe_payment',
   'plutio_invoice_or_contract',
@@ -50,6 +52,12 @@ export interface EnrollmentIssuer {
   sourceScopes: string[];
   channels: EnrollmentIngressEnvelope['channel'][];
   key: Uint8Array;
+}
+export interface EnrollmentWriterSourceRegistration {
+  channel: 'website_checkout';
+  sourceType: 'adyen_payment_acceptance_v1';
+  scope: string;
+  objectType: 'payment';
 }
 export interface SignedEnrollmentStatement {
   issuerId: string;
@@ -102,20 +110,30 @@ type Verified = {
 export async function claimEnrollmentWriter(
   client: PoolClient,
   source: EnrollmentIngressEnvelope['funding']['source'],
+  sourceChannel: EnrollmentIngressEnvelope['channel'],
   writer: 'legacy' | 'enrollment',
   policyKey: string,
   evidenceSha256: string,
   actor: string,
   at: string,
+  registeredSources: readonly EnrollmentWriterSourceRegistration[] = [],
 ): Promise<boolean> {
   await guardEnrollmentStore(client);
   const canonical = z
     .strictObject({
       scope: key,
       objectType: key,
+      sourceType: key.optional(),
       objectId: z.string().regex(/^[A-Za-z0-9._:-]{1,200}$/),
     })
     .parse(source);
+  const registeredAdyen = registeredSources.some(
+    (registered) =>
+      registered.channel === sourceChannel &&
+      registered.sourceType === canonical.sourceType &&
+      registered.scope === canonical.scope &&
+      registered.objectType === canonical.objectType,
+  );
   const validSource = /^stripe:(tandem|heartbeat)$/.test(canonical.scope)
     ? canonical.objectType === 'payment_intent' &&
       /^pi_[A-Za-z0-9_]+$/.test(canonical.objectId)
@@ -123,8 +141,12 @@ export async function claimEnrollmentWriter(
       ? canonical.objectType === 'payment_receipt'
       : canonical.scope.startsWith('plutio:')
         ? canonical.objectType === 'invoice_payment'
-        : canonical.scope.startsWith('owner:') &&
-          canonical.objectType === 'grant';
+        : canonical.scope.startsWith('owner:')
+          ? canonical.objectType === 'grant'
+          : /^adyen:[a-f0-9]{64}$/.test(canonical.scope) &&
+            canonical.objectType === 'payment' &&
+            /^[A-Za-z0-9]{16}$/.test(canonical.objectId) &&
+            registeredAdyen;
   if (!validSource) throw new Error('noncanonical_writer_source');
   key.parse(policyKey);
   key.parse(actor);
@@ -316,7 +338,7 @@ export function createEnrollmentAdmission(config: {
     key.parse(input.issuerId);
     key.parse(input.actor);
     transport.parse(input.transport);
-    const channels = z.array(channelSchema).min(1).max(8).parse(input.channels);
+    const channels = z.array(channelSchema).min(1).max(9).parse(input.channels);
     if (
       issuers.has(input.issuerId) ||
       !Object.hasOwn(roles, input.role) ||
@@ -370,6 +392,11 @@ export function createEnrollmentAdmission(config: {
       signed: SignedEnrollmentStatement[],
     ): VerifiedEnrollmentAdmission {
       const e = parseEnrollmentIngressEnvelope(candidate);
+      if (e.channel === 'website_checkout')
+        throw new EnrollmentCommandError(
+          'dedicated_adapter_required',
+          'website checkout requires authenticated quote-first admission',
+        );
       if (!Array.isArray(signed) || signed.length === 0 || signed.length > 202)
         throw new Error('invalid_statement_count');
       const expected = new Map<
@@ -496,6 +523,7 @@ export function createEnrollmentAdmission(config: {
           !(await claimEnrollmentWriter(
             client,
             e.funding.source,
+            e.channel,
             'enrollment',
             policyKey,
             hash(verified.authentication),

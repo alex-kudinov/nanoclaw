@@ -204,6 +204,27 @@ const run = (e = envelope(), s = state(), auth = authority(e)) =>
   apply(s, e, auth);
 
 describe('default-off multi-source enrollment ingress', () => {
+  it('parses typed website funding but requires the dedicated quote-first adapter', () => {
+    const e = envelope();
+    e.channel = 'website_checkout';
+    e.funding.source = {
+      scope: `adyen:${a}`,
+      objectType: 'payment',
+      objectId: 'ABCDEFGHIJKLMNOP',
+      sourceType: 'adyen_payment_acceptance_v1',
+    };
+    e.sourceAlias = e.funding.source;
+    e.funding.aliases = [];
+    e.funding.status = 'accepted_pending_receipt';
+    const auth = authority(e);
+    const original = state();
+    const before = structuredClone(original);
+    expect(() => apply(original, e, auth)).toThrow(
+      expect.objectContaining({ code: 'dedicated_adapter_required' }),
+    );
+    expect(original).toEqual(before);
+  });
+
   it('has no runtime activation mode', () =>
     expect(ENROLLMENT_INGRESS_MODE).toBe('synthetic_only'));
   it.each([

@@ -37,6 +37,7 @@ const party = z
 const refSchema = z.strictObject({
   scope: key,
   objectType: key,
+  sourceType: key.optional(),
   objectId: z
     .string()
     .min(1)
@@ -44,6 +45,7 @@ const refSchema = z.strictObject({
     .regex(/^[A-Za-z0-9._:-]+$/),
 });
 const channelSchema = z.enum([
+  'website_checkout',
   'website_stripe_checkout',
   'manual_stripe_payment',
   'plutio_invoice_or_contract',
@@ -61,7 +63,12 @@ const envelopeSchema = z.strictObject({
   funding: z.strictObject({
     source: refSchema,
     aliases: z.array(refSchema).max(20),
-    status: z.enum(['settled', 'grant', 'unverified']),
+    status: z.enum([
+      'settled',
+      'accepted_pending_receipt',
+      'grant',
+      'unverified',
+    ]),
     amountMinor: amount,
     currency,
     payerPartyId: party,
@@ -211,6 +218,11 @@ export function applyEnrollmentIngress(
   host: EnrollmentIngressAuthority,
 ): EnrollmentIngressResult {
   const e = parseEnrollmentIngressEnvelope(candidate);
+  if (e.channel === 'website_checkout')
+    throw new EnrollmentCommandError(
+      'dedicated_adapter_required',
+      'website checkout requires authenticated quote-first admission',
+    );
   const proofs = z.array(proofSchema).max(1000).parse(host.proofs);
   const at = z.iso.datetime({ offset: true }).parse(host.catalog.occurredAt);
   const fingerprint = hash(e);
@@ -408,9 +420,11 @@ export function applyEnrollmentIngress(
       kind:
         e.funding.status === 'settled'
           ? 'settled_payment'
-          : e.funding.status === 'grant'
-            ? 'owner_grant'
-            : 'unverified',
+          : e.funding.status === 'accepted_pending_receipt'
+            ? 'provider_accepted_provisional'
+            : e.funding.status === 'grant'
+              ? 'owner_grant'
+              : 'unverified',
       amountMinor: e.funding.amountMinor,
       currency: e.funding.currency,
       agreedAmountMinor: e.commercial.totalMinor,

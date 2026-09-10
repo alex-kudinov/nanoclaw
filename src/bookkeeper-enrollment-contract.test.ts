@@ -140,6 +140,84 @@ const run = (r = receipt(), s = state(), auth = authority(r)) =>
   apply(s, r, auth);
 
 describe('local Bookkeeper funding to canonical enrollment contract', () => {
+  it('keeps website checkout unavailable until quote-first admission exists', () => {
+    const r = receipt();
+    r.sourceChannel = 'website_checkout';
+    r.source = {
+      ...r.source,
+      scope: `adyen:${a}`,
+      objectType: 'payment',
+      objectId: 'ABCDEFGHIJKLMNOP',
+      sourceType: 'adyen_payment_acceptance_v1',
+    };
+    r.funding.kind = 'provider_accepted_provisional';
+    r.funding.confirmerRole = 'source_adapter';
+    const original = state();
+    const before = structuredClone(original);
+    expect(() => run(r, original)).toThrow(
+      expect.objectContaining({ code: 'dedicated_adapter_required' }),
+    );
+    expect(original).toEqual(before);
+  });
+
+  it.each([
+    'website_stripe_checkout',
+    'manual_stripe_payment',
+    'plutio_invoice_or_contract',
+    'check_ach_or_wire',
+    'sponsored_cohort',
+    'scholarship',
+    'complimentary_owner_grant',
+  ] as const)('does not broaden provisional finance to %s', (channel) => {
+    const r = receipt();
+    r.sourceChannel = channel;
+    if (channel === 'plutio_invoice_or_contract')
+      r.source = {
+        ...r.source,
+        scope: 'plutio:synthetic',
+        objectType: 'invoice_payment',
+        objectId: 'payment:synthetic',
+      };
+    if (['check_ach_or_wire', 'sponsored_cohort'].includes(channel))
+      r.source = {
+        ...r.source,
+        scope: 'bank:synthetic',
+        objectType: 'payment_receipt',
+        objectId: 'payment:synthetic',
+      };
+    if (['scholarship', 'complimentary_owner_grant'].includes(channel))
+      r.source = {
+        ...r.source,
+        scope: 'owner:synthetic',
+        objectType: 'grant',
+        objectId: 'grant:synthetic',
+      };
+    r.funding.kind = 'provider_accepted_provisional';
+    expect(reasons(run(r))).toContain('financial_terms_unverified');
+    expect(Object.keys(run(r).enrollment.enrollments)).toHaveLength(0);
+  });
+
+  it('does not let website checkout fall back to settled or unscoped funding', () => {
+    const r = receipt();
+    r.sourceChannel = 'website_checkout';
+    r.source = {
+      ...r.source,
+      scope: `adyen:${a}`,
+      objectType: 'payment',
+      objectId: 'ABCDEFGHIJKLMNOP',
+      sourceType: 'adyen_payment_acceptance_v1',
+    };
+    expect(() => run(r)).toThrow(
+      expect.objectContaining({ code: 'dedicated_adapter_required' }),
+    );
+    r.funding.kind = 'provider_accepted_provisional';
+    r.funding.confirmerRole = 'source_adapter';
+    r.source.scope = 'adyen:test';
+    expect(() => run(r)).toThrow(
+      expect.objectContaining({ code: 'dedicated_adapter_required' }),
+    );
+  });
+
   it.each([
     'website_stripe_checkout',
     'manual_stripe_payment',

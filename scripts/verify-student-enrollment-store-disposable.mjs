@@ -138,6 +138,9 @@ export function runEnrollmentStoreDisposableProof(mode = 'store') {
         '147_student_enrollment_writer_claims.sql',
         'rollback_147_student_enrollment_writer_claims.sql',
         '147_student_enrollment_writer_claims.sql',
+        '153_website_checkout_provisional_finance.sql',
+        'rollback_153_website_checkout_provisional_finance.sql',
+        '153_website_checkout_provisional_finance.sql',
       ])
         sql(
           database,

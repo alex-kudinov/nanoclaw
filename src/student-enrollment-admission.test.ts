@@ -120,6 +120,22 @@ describe('local authenticated enrollment admission', () => {
       'statement_binding_denied',
     );
   });
+  it('keeps website checkout out of legacy admission before opening a database', () => {
+    const f = admissionFixture('website', now, 'provider_read');
+    f.envelope.channel = 'website_checkout';
+    f.envelope.funding.status = 'accepted_pending_receipt';
+    f.envelope.funding.source = {
+      scope: `adyen:${'a'.repeat(64)}`,
+      objectType: 'payment',
+      objectId: 'ABCDEF0123456789',
+      sourceType: 'adyen_payment_acceptance_v1',
+    };
+    f.envelope.sourceAlias = f.envelope.funding.source;
+    f.envelope.funding.aliases = [];
+    expect(() => service(f).verify(f.envelope, f.statements)).toThrow(
+      expect.objectContaining({ code: 'dedicated_adapter_required' }),
+    );
+  });
   it('enforces issuer role capability registration and does not accept caller-supplied roles', () => {
     const f = admissionFixture('role', now);
     f.issuers[0].purposes.push('assignment');
@@ -226,8 +242,11 @@ describe('local authenticated enrollment admission', () => {
       policyConflict: true,
       noSecretsStored: true,
       rollbackRefused: true,
+      provisionalRollbackRefused: true,
       receiptConflict: true,
       authenticatedGrant: true,
+      registeredWebsiteWriterClaim: true,
+      unregisteredWebsiteWriterRejected: true,
       partialSponsor: true,
       controlReadback: true,
       correctionReviewOnly: true,

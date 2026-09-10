@@ -1,4 +1,5 @@
 export type SourceChannel =
+  | 'website_checkout'
   | 'website_stripe_checkout'
   | 'manual_stripe_payment'
   | 'plutio_invoice_or_contract'
@@ -12,7 +13,8 @@ export type FinancialClassification =
   | 'unverified'
   | 'settled'
   | 'active_terms'
-  | 'held';
+  | 'held'
+  | 'provider_accepted_provisional';
 export type PayerRelationship =
   | 'unknown'
   | 'self_purchase_explicit'
@@ -180,6 +182,7 @@ export interface FinancialObligation {
   state:
     | 'not_due'
     | 'due'
+    | 'accepted_pending_receipt'
     | 'paid'
     | 'waived'
     | 'cancelled'
@@ -446,6 +449,7 @@ function sameOrder(a: EnrollmentOrder, b: EnrollmentOrder): boolean {
 }
 
 const SOURCE_CHANNELS = new Set<SourceChannel>([
+  'website_checkout',
   'website_stripe_checkout',
   'manual_stripe_payment',
   'plutio_invoice_or_contract',
@@ -461,6 +465,7 @@ const FINANCIAL_CLASSIFICATIONS = new Set<FinancialClassification>([
   'settled',
   'active_terms',
   'held',
+  'provider_accepted_provisional',
 ]);
 const PAYER_RELATIONSHIPS = new Set<PayerRelationship>([
   'unknown',
@@ -488,6 +493,7 @@ const AGREEMENT_STATES = new Set<FinancialAgreement['state']>([
 const OBLIGATION_STATES = new Set<FinancialObligation['state']>([
   'not_due',
   'due',
+  'accepted_pending_receipt',
   'paid',
   'waived',
   'cancelled',
@@ -888,6 +894,81 @@ export function correctOrderTerms(
   return next;
 }
 
+function financialTermsPermitMaterialization(
+  state: EnrollmentFoundationState,
+  order: EnrollmentOrder,
+): boolean {
+  if (
+    ['settled', 'active_terms', 'not_applicable'].includes(
+      order.financialClassification,
+    )
+  )
+    return true;
+  if (
+    order.financialClassification !== 'provider_accepted_provisional' ||
+    order.sourceChannel !== 'website_checkout'
+  )
+    return false;
+  const sources = Object.entries(state.sourceReferences).filter(
+    ([, reference]) =>
+      reference.orderKey === order.orderKey &&
+      /^adyen:[a-f0-9]{64}$/.test(reference.sourceScope) &&
+      reference.sourceObjectType === 'payment' &&
+      /^[A-Za-z0-9]{16}$/.test(reference.sourceObjectId),
+  );
+  const sourceReferenceKey = sources.length === 1 ? sources[0]?.[0] : undefined;
+  const agreements = Object.values(state.agreements).filter(
+    (candidate) =>
+      candidate.orderKey === order.orderKey &&
+      candidate.agreementType === 'paid_in_full' &&
+      candidate.state === 'active',
+  );
+  const agreement = agreements.length === 1 ? agreements[0] : undefined;
+  const obligations = agreement
+    ? Object.values(state.obligations).filter(
+        (candidate) => candidate.agreementKey === agreement.agreementKey,
+      )
+    : [];
+  const obligation =
+    obligations.length === 1 &&
+    obligations[0]?.state === 'accepted_pending_receipt' &&
+    obligations[0].amountMinor !== null &&
+    obligations[0].amountMinor > 0 &&
+    obligations[0].currency !== null
+      ? obligations[0]
+      : undefined;
+  const readiness = Object.values(state.evidence).filter(
+    (item) =>
+      item.subjectType === 'order' &&
+      item.subjectKey === order.orderKey &&
+      item.sourceReferenceKey === sourceReferenceKey &&
+      item.evidenceType === 'provider_acceptance_readiness',
+  );
+  const registeredSources = Object.values(state.evidence).filter(
+    (item) =>
+      item.subjectType === 'order' &&
+      item.subjectKey === order.orderKey &&
+      item.sourceReferenceKey === sourceReferenceKey &&
+      item.evidenceType === 'registered_adyen_funding_source',
+  );
+  const readinessEvidence = readiness.length === 1 ? readiness[0] : undefined;
+  const registeredSource =
+    registeredSources.length === 1 ? registeredSources[0] : undefined;
+  const trustedAdapterActor = 'website-checkout-enrollment-adapter:host';
+  return Boolean(
+    sourceReferenceKey &&
+    agreement &&
+    obligation &&
+    readinessEvidence &&
+    registeredSource &&
+    agreement.evidenceSha256 === obligation.evidenceSha256 &&
+    agreement.evidenceSha256 === readinessEvidence.evidenceSha256 &&
+    agreement.evidenceSha256 === registeredSource.evidenceSha256 &&
+    readinessEvidence.recordedBy === trustedAdapterActor &&
+    registeredSource.recordedBy === trustedAdapterActor,
+  );
+}
+
 export function transitionOrderState(
   state: EnrollmentFoundationState,
   input: {
@@ -918,9 +999,7 @@ export function transitionOrderState(
       !order.offerKey ||
       !order.bundleKey ||
       !order.bundleVersion ||
-      !['settled', 'active_terms', 'not_applicable'].includes(
-        order.financialClassification,
-      ) ||
+      !financialTermsPermitMaterialization(state, order) ||
       !Object.values(state.seats).some(
         (seat) =>
           seat.orderKey === input.orderKey &&
@@ -1389,11 +1468,7 @@ export function materializeEnrollment(
       'payer_relationship_conflict',
       'payer and participant do not match the explicit relationship',
     );
-  if (
-    !['settled', 'active_terms', 'not_applicable'].includes(
-      order.financialClassification,
-    )
-  )
+  if (!financialTermsPermitMaterialization(state, order))
     throw new EnrollmentCommandError(
       'financial_terms_unknown',
       'financial terms do not permit materialization',

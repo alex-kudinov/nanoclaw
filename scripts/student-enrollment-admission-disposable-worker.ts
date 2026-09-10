@@ -44,6 +44,19 @@ const admin = {
 };
 const now = Date.now(),
   at = new Date(now).toISOString();
+const adyenScope = `adyen:${'d'.repeat(64)}`;
+const adyenRegistration = {
+  channel: 'website_checkout' as const,
+  sourceType: 'adyen_payment_acceptance_v1' as const,
+  scope: adyenScope,
+  objectType: 'payment' as const,
+};
+const adyenSource = {
+  scope: adyenScope,
+  objectType: 'payment',
+  objectId: 'ABCDEF0123456789',
+  sourceType: 'adyen_payment_acceptance_v1',
+} as const;
 const lock = `LOCK TABLE ${ENROLLMENT_STORE_TABLES.map((t) => 'business_v2.' + t).join(',')} IN SHARE ROW EXCLUSIVE MODE`;
 const sourceKey = (f: ReturnType<typeof admissionFixture>) =>
   hash([
@@ -105,6 +118,7 @@ async function legacy(f: ReturnType<typeof fixture>) {
     const allowed = await claimEnrollmentWriter(
       c,
       f.envelope.funding.source,
+      f.envelope.channel,
       'legacy',
       'policy:synthetic',
       hash(f.envelope),
@@ -491,6 +505,77 @@ try {
   );
   summary.authenticatedGrant = true;
 
+  const adyenSourceKey = hash([
+    adyenSource.scope,
+    adyenSource.objectType,
+    adyenSource.objectId,
+  ]);
+  const unregisteredClient = await admin.connect();
+  try {
+    await unregisteredClient.query('BEGIN');
+    await assert.rejects(
+      () =>
+        claimEnrollmentWriter(
+          unregisteredClient,
+          adyenSource,
+          'website_checkout',
+          'enrollment',
+          'policy:synthetic',
+          'd'.repeat(64),
+          'website-checkout-enrollment-adapter:host',
+          at,
+        ),
+      /noncanonical_writer_source/,
+    );
+    await unregisteredClient.query('ROLLBACK');
+  } finally {
+    unregisteredClient.release();
+  }
+  assert.equal(
+    (
+      await query(
+        'SELECT count(*)::int n FROM business_v2.student_enrollment_writer_claims WHERE source_key=$1',
+        [adyenSourceKey],
+      )
+    ).rows[0].n,
+    0,
+  );
+  summary.unregisteredWebsiteWriterRejected = true;
+
+  const registeredClient = await admin.connect();
+  try {
+    await registeredClient.query('BEGIN');
+    assert.equal(
+      await claimEnrollmentWriter(
+        registeredClient,
+        adyenSource,
+        'website_checkout',
+        'enrollment',
+        'policy:synthetic',
+        'd'.repeat(64),
+        'website-checkout-enrollment-adapter:host',
+        at,
+        [adyenRegistration],
+      ),
+      true,
+    );
+    await registeredClient.query('COMMIT');
+  } finally {
+    registeredClient.release();
+  }
+  assert.equal(
+    (
+      await query(
+        `SELECT count(*)::int n FROM business_v2.student_enrollment_writer_claims
+         WHERE source_key=$1 AND source_scope=$2 AND source_object_type='payment'
+           AND source_object_id=$3 AND writer='enrollment'`,
+        [adyenSourceKey, adyenScope, adyenSource.objectId],
+      )
+    ).rows[0].n,
+    1,
+  );
+  summary.registeredWebsiteWriterClaim = true;
+
   const sponsor = fixture('sponsor', 9, 'operator_decision');
   sponsor.envelope.channel = 'sponsored_cohort';
   sponsor.issuers.forEach((i) => {
@@ -617,6 +702,33 @@ try {
     rc.release();
   }
   summary.rollbackRefused = true;
+  await query(
+    `INSERT INTO business_v2.student_enrollment_orders
+     (order_key,source_channel,offer_key,bundle_key,bundle_version,payer_party_id,
+      seat_count,financial_classification,state,policy_revision,evidence_sha256,
+      effective_at,created_at,updated_at,updated_by)
+     VALUES('fixture:rollback153','website_checkout',NULL,NULL,NULL,NULL,1,
+      'provider_accepted_provisional','needs_offer',1,repeat('d',64),NULL,$1,$1,
+      'migration153:fixture')`,
+    [at],
+  );
+  const rollback153 = fs.readFileSync(
+    path.resolve(
+      'data/business/migrations/nanoclaw-v2/rollback_153_website_checkout_provisional_finance.sql',
+    ),
+    'utf8',
+  );
+  const rc153 = await admin.connect();
+  try {
+    await assert.rejects(
+      () => rc153.query(rollback153),
+      /rollback153 refused: website checkout finance state exists/,
+    );
+    await rc153.query('ROLLBACK');
+  } finally {
+    rc153.release();
+  }
+  summary.provisionalRollbackRefused = true;
   summary.nonAdminGrants = (
     await query(
       "SELECT count(*)::int n FROM information_schema.role_table_grants WHERE table_schema='business_v2' AND table_name IN ('student_enrollment_writer_claims','student_enrollment_authenticated_receipts') AND grantee NOT IN ('nanoclaw_admin',current_user)",

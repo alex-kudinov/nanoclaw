@@ -59,7 +59,7 @@ function admitted(
       evidenceSha256: SHA_A,
       observedAt: NOW,
       recordedAt: NOW,
-      recordedBy: 'test-adapter',
+      recordedBy: 'website-checkout-enrollment-adapter:host',
     },
   });
 }
@@ -97,6 +97,93 @@ function assigned(options: Parameters<typeof admitted>[0] = {}) {
     occurredAt: NOW,
   });
   return state;
+}
+
+function provisionalAssigned() {
+  const sourceReferenceKey = `adyen:${SHA_A}:payment:ABCDEF0123456789`;
+  let state = captureOrder(createEmptyEnrollmentFoundationState(), {
+    orderKey: 'order:provisional',
+    sourceChannel: 'website_checkout',
+    offerKey: 'acc-full',
+    bundleKey: 'acc-full:v1',
+    bundleVersion: 1,
+    payerPartyId: 100,
+    seatCount: 1,
+    financialClassification: 'provider_accepted_provisional',
+    policyRevision: 1,
+    evidenceSha256: SHA_A,
+    effectiveAt: NOW,
+    createdAt: NOW,
+    updatedAt: NOW,
+    updatedBy: 'test-adapter',
+    sourceReference: {
+      sourceScope: `adyen:${SHA_A}`,
+      sourceObjectType: 'payment',
+      sourceObjectId: 'ABCDEF0123456789',
+      idempotencyKey: 'source:provisional',
+      evidenceSha256: SHA_A,
+      observedAt: NOW,
+      recordedAt: NOW,
+      recordedBy: 'test-adapter',
+    },
+  }).state;
+  for (const [evidenceKey, evidenceType] of [
+    ['evidence:registered-source', 'registered_adyen_funding_source'],
+    ['evidence:acceptance-readiness', 'provider_acceptance_readiness'],
+  ] as const)
+    state = attachEnrollmentEvidence(state, {
+      evidenceKey,
+      subjectType: 'order',
+      subjectKey: 'order:provisional',
+      evidenceType,
+      sourceReferenceKey,
+      evidenceSha256: SHA_A,
+      observedAt: NOW,
+      recordedAt: NOW,
+      recordedBy: 'website-checkout-enrollment-adapter:host',
+    });
+  state = recordFinancialAgreement(state, {
+    agreementKey: 'agreement:provisional',
+    orderKey: 'order:provisional',
+    expectedOrderVersion: 0,
+    agreementType: 'paid_in_full',
+    state: 'active',
+    version: 0,
+    evidenceSha256: SHA_A,
+    actor: 'test-adapter',
+    occurredAt: NOW,
+  });
+  state = recordFinancialObligation(state, {
+    obligationKey: 'obligation:provisional',
+    agreementKey: 'agreement:provisional',
+    expectedAgreementVersion: 0,
+    sequenceNumber: 1,
+    amountMinor: 10000,
+    currency: 'USD',
+    dueAt: NOW,
+    state: 'accepted_pending_receipt',
+    version: 0,
+    evidenceSha256: SHA_A,
+    actor: 'test-adapter',
+    occurredAt: NOW,
+  });
+  state = createSeats(state, {
+    orderKey: 'order:provisional',
+    expectedOrderVersion: 1,
+    seatKeys: ['seat:provisional:1'],
+    evidenceSha256: SHA_A,
+    actor: 'test-operator',
+    occurredAt: NOW,
+  });
+  return assignParticipant(state, {
+    seatKey: 'seat:provisional:1',
+    expectedSeatVersion: 0,
+    participantPartyId: 100,
+    participantEvidenceSha256: SHA_B,
+    payerRelationship: 'self_purchase_explicit',
+    actor: 'test-operator',
+    occurredAt: NOW,
+  });
 }
 
 function materialized(options: Parameters<typeof admitted>[0] = {}) {
@@ -445,6 +532,131 @@ describe('student enrollment dark domain', () => {
         }),
       'financial_terms_unknown',
     );
+  });
+
+  it('requires exact registered Adyen evidence and provisional financial terms at both eligibility gates', () => {
+    const state = provisionalAssigned();
+    const ready = transitionOrderState(state, {
+      orderKey: 'order:provisional',
+      expectedOrderVersion: 2,
+      state: 'ready_to_materialize',
+      reasonCode: 'all_order_gates_ready',
+      evidenceSha256: SHA_A,
+      actor: 'test-operator',
+      occurredAt: NOW,
+    });
+    expect(
+      materializeEnrollment(ready, {
+        orderKey: 'order:provisional',
+        expectedOrderVersion: 3,
+        seatKey: 'seat:provisional:1',
+        expectedSeatVersion: 1,
+        enrollmentKey: 'enrollment:provisional:1',
+        catalogRevision: 1,
+        enrollmentState: 'active',
+        effectiveAt: NOW,
+        materializationSha256: SHA_C,
+        components: [
+          {
+            entitlementKey: 'entitlement:provisional:1',
+            componentKey: 'acc.module-1',
+            state: 'included',
+          },
+        ],
+        actor: 'test-operator',
+        occurredAt: NOW,
+      }).orders['order:provisional'].state,
+    ).toBe('materialized');
+
+    for (const mutate of [
+      (candidate: EnrollmentFoundationState) => {
+        delete candidate.evidence['evidence:registered-source'];
+      },
+      (candidate: EnrollmentFoundationState) => {
+        delete candidate.evidence['evidence:acceptance-readiness'];
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.evidence['evidence:acceptance-readiness'].sourceReferenceKey =
+          null;
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.agreements['agreement:provisional'].state = 'complete';
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.obligations['obligation:provisional'].state = 'paid';
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.agreements['agreement:provisional:second'] = {
+          ...candidate.agreements['agreement:provisional'],
+          agreementKey: 'agreement:provisional:second',
+        };
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.obligations['obligation:provisional:second'] = {
+          ...candidate.obligations['obligation:provisional'],
+          obligationKey: 'obligation:provisional:second',
+          sequenceNumber: 2,
+        };
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.evidence['evidence:acceptance-readiness'].evidenceSha256 =
+          SHA_B;
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.evidence['evidence:registered-source'].recordedBy =
+          'finance-operator';
+      },
+      (candidate: EnrollmentFoundationState) => {
+        candidate.sourceReferences[`adyen:${SHA_A}:payment:ZYXWVUT987654321`] =
+          {
+            ...candidate.sourceReferences[
+              `adyen:${SHA_A}:payment:ABCDEF0123456789`
+            ],
+            sourceObjectId: 'ZYXWVUT987654321',
+            idempotencyKey: 'source:second-provider-payment',
+          };
+      },
+    ]) {
+      const candidate = structuredClone(state);
+      mutate(candidate);
+      expectCode(
+        () =>
+          transitionOrderState(candidate, {
+            orderKey: 'order:provisional',
+            expectedOrderVersion: 2,
+            state: 'ready_to_materialize',
+            reasonCode: 'all_order_gates_ready',
+            evidenceSha256: SHA_A,
+            actor: 'test-operator',
+            occurredAt: NOW,
+          }),
+        'order_not_ready',
+      );
+      expectCode(
+        () =>
+          materializeEnrollment(candidate, {
+            orderKey: 'order:provisional',
+            expectedOrderVersion: 2,
+            seatKey: 'seat:provisional:1',
+            expectedSeatVersion: 1,
+            enrollmentKey: 'enrollment:provisional:blocked',
+            catalogRevision: 1,
+            enrollmentState: 'active',
+            effectiveAt: NOW,
+            materializationSha256: SHA_C,
+            components: [
+              {
+                entitlementKey: 'entitlement:provisional:blocked',
+                componentKey: 'acc.module-1',
+                state: 'included',
+              },
+            ],
+            actor: 'test-operator',
+            occurredAt: NOW,
+          }),
+        'financial_terms_unknown',
+      );
+    }
   });
 
   it('enforces the explicit payer-to-participant relationship', () => {
