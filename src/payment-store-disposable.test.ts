@@ -5,9 +5,15 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { createPaymentAttempt, type PaymentAttempt } from './payment-domain.js';
+import {
+  createPaymentAttempt,
+  decidePaymentOperationRecovery,
+  type PaymentAttempt,
+} from './payment-domain.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { PaymentStore, type PaymentTransaction } from './payment-store.js';
+import { AdyenTestSessionAdapter } from './adyen-session-adapter.js';
+import { PaymentSessionService } from './payment-session-service.js';
 
 // Explicit local socket and generated database only. No production env/config read.
 const database = `nc_payment_disposable_${process.pid}_${randomUUID().replaceAll('-', '')}`;
@@ -445,6 +451,35 @@ describe('payment store on isolated real Postgres', () => {
       ).rows.map((row) => row.kind),
     ).toEqual(['prepared', 'claimed', 'permanent_failure']);
   });
+  it('clamps session retries to the immutable quote expiry using the database clock', async () => {
+    const a = attempt();
+    await store.acceptAttempt(a);
+    const id = randomUUID();
+    const operation = await store.prepareSession({
+      attemptId: a.attemptId,
+      operationId: id,
+      idempotencyKey: id,
+      request: '{}',
+      retryWindowMs: 86400000,
+    });
+    expect(operation.retryUntil).toBe(a.quote.expiresAt);
+    expect(
+      decidePaymentOperationRecovery({
+        attempt: a,
+        operation,
+        requestFingerprint: operation.requestFingerprint,
+        now: a.quote.expiresAt,
+      }),
+    ).toBe('reconcile');
+    const replayed = await store.prepareSession({
+      attemptId: a.attemptId,
+      operationId: id,
+      idempotencyKey: id,
+      request: '{}',
+      retryWindowMs: 2 * 86400000,
+    });
+    expect(replayed.retryUntil).toBe(a.quote.expiresAt);
+  });
   it('enforces immutable database contracts and append-only receipts', async () => {
     const { input } = await prepared();
     await expect(
@@ -487,6 +522,176 @@ describe('payment store on isolated real Postgres', () => {
         )
       ).rows[0].count,
     ).toBe('0');
+  });
+  it('stitches 25 checkout requests through one committed operation and one provider session', async () => {
+    const a = attempt();
+    let calls = 0;
+    const adapter = new AdyenTestSessionAdapter('fixture-key', (async (
+      _url,
+      options,
+    ) => {
+      calls++;
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query("SET LOCAL statement_timeout='1000ms'");
+        const committed = await client.query(
+          'SELECT version FROM business_v2.payment_operations WHERE operation_id=$1 FOR UPDATE',
+          [a.attemptId],
+        );
+        expect(committed.rows).toHaveLength(1); // Already committed; no network-time row lock.
+      } finally {
+        await client.query('ROLLBACK');
+        client.release();
+      }
+      await delay(20);
+      const body = JSON.parse(String(options?.body));
+      expect(body.amount).toEqual({ value: 29900, currency: 'USD' });
+      return new Response(
+        JSON.stringify({
+          id: 'fixture-session',
+          sessionData: 'fixture-data',
+          expiresAt: body.expiresAt,
+        }),
+        { status: 201 },
+      );
+    }) as typeof fetch);
+    const service = new PaymentSessionService(
+      store,
+      adapter,
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      ['mcq-program-a-foundations:en'],
+    );
+    const results = await Promise.all(
+      Array.from({ length: 25 }, () => service.start(a)),
+    );
+    expect(calls).toBe(1);
+    expect(results.some((result) => result.state === 'checkout_ready')).toBe(
+      true,
+    );
+    const repeated = await Promise.all(
+      Array.from({ length: 25 }, () => service.resume(a)),
+    );
+    expect(repeated.every((result) => result.state === 'checkout_ready')).toBe(
+      true,
+    );
+    expect(calls).toBe(1);
+    const forged = createPaymentAttempt({
+      attemptId: a.attemptId,
+      now: a.createdAt,
+      scope: a.scope,
+      quote: { ...a.quote, originalAmount: 19900, finalAmount: 19900 },
+    });
+    await expect(service.resume(forged)).rejects.toThrow(
+      'attempt_identity_conflict',
+    );
+    const paused = new PaymentSessionService(
+      store,
+      adapter,
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      [],
+    );
+    await expect(paused.start(a)).rejects.toThrow('offer_not_enabled');
+    expect((await paused.resume(a)).state).toBe('checkout_ready');
+    expect(calls).toBe(1);
+  });
+  it('recovers a lost provider response using the same key with one logical session', async () => {
+    const a = attempt();
+    const keys: string[] = [];
+    const providerSessions = new Map<string, string>();
+    const adapter = new AdyenTestSessionAdapter('fixture-key', (async (
+      _url,
+      options,
+    ) => {
+      const key = new Headers(options?.headers).get('Idempotency-Key')!;
+      keys.push(key);
+      const body = JSON.parse(String(options?.body));
+      if (!providerSessions.has(key))
+        providerSessions.set(
+          key,
+          JSON.stringify({
+            id: 'one-logical-session',
+            sessionData: 'fixture-data',
+            expiresAt: body.expiresAt,
+          }),
+        );
+      if (keys.length === 1)
+        throw new Error('injected response lost after provider acceptance');
+      return new Response(providerSessions.get(key), { status: 201 });
+    }) as typeof fetch);
+    const service = new PaymentSessionService(
+      store,
+      adapter,
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      ['mcq-program-a-foundations:en'],
+    );
+    expect(await service.start(a)).toEqual({ state: 'pending' });
+    expect((await service.resume(a)).state).toBe('checkout_ready');
+    expect(keys).toEqual([a.attemptId, a.attemptId]);
+    expect(providerSessions.size).toBe(1);
+  });
+  it('does not report ready after a result-persistence failure and safely recovers later', async () => {
+    const a = attempt();
+    let calls = 0,
+      failWrite = true;
+    const keys = new Set<string>();
+    const adapter = new AdyenTestSessionAdapter('fixture-key', (async (
+      _url,
+      options,
+    ) => {
+      calls++;
+      keys.add(new Headers(options?.headers).get('Idempotency-Key')!);
+      return new Response(
+        JSON.stringify({
+          id: 'stable-session',
+          sessionData: 'fixture-data',
+          expiresAt: JSON.parse(String(options?.body)).expiresAt,
+        }),
+      );
+    }) as typeof fetch);
+    const failing = {
+      acceptAttempt: store.acceptAttempt.bind(store),
+      prepareSession: store.prepareSession.bind(store),
+      acquireDispatch: (id: string) => store.acquireDispatch(id, 20),
+      finishDispatch: async (
+        input: Parameters<PaymentStore['finishDispatch']>[0],
+      ) => {
+        if (failWrite && input.result === 'session_available') {
+          failWrite = false;
+          throw new Error('injected database unavailable');
+        }
+        return store.finishDispatch(input);
+      },
+    };
+    const service = new PaymentSessionService(
+      failing,
+      adapter,
+      {
+        scope: a.scope,
+        allowedOrigin: 'http://localhost:3000',
+        returnPath: '/',
+      },
+      ['mcq-program-a-foundations:en'],
+    );
+    await expect(service.start(a)).rejects.toThrow(
+      'injected database unavailable',
+    );
+    await delay(30);
+    expect((await service.resume(a)).state).toBe('checkout_ready');
+    expect(calls).toBe(2);
+    expect(keys.size).toBe(1);
   });
   it('refuses populated rollback, then proves empty rollback and reapply on synthetic-only data', async () => {
     const client = await pool.connect();

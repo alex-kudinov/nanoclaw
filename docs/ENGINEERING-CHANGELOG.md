@@ -30,6 +30,30 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T04:55Z addendum — TEST Sessions composition
+
+- Implemented fixed-endpoint TEST/card Sessions transport and provider-neutral
+  checkout preparation service over the durable store. No public/daemon route.
+  Exact scope/amount/return validation, response/timeout bounds, no raw key/token
+  logging, no ready claim until result+receipt commit, and in-flight resume after
+  new-offer disablement. Request body/key stays unchanged on uncertain outcomes.
+- Review: Sonnet/high R1 identified retry lifetime outliving quote expiry. The
+  store now clamps retryUntil to the absolute quote deadline using DB time; new
+  PostgreSQL regression proves replay cannot extend it. R2 accepted with no
+  remaining material finding. Root and standalone CLI strict typechecks/build pass.
+- Tests: 96 focused pass; final full suite including next-slice request-auth
+  tests is 3,811 pass/32 skip/three baseline failures. Service tests include 25
+  requests/one provider call, lost response after provider acceptance, failed
+  result commit and same-key recovery, plus forged-quote rejection on reuse.
+- Real TEST proof is NOT complete: one unused-Session attempt timed out before
+  any HTTP response in pinned Node22. Keyless curl and Node26 return 401 from the
+  same TEST URL; Node22 also times out on example.com. An active Little Snitch
+  extension and locked Mac require owner rule inspection; no network policy was
+  bypassed or changed. The generated local database was removed, with zero residue.
+- No payment authorization, HMAC event, enrollment, production migration or
+  deployment. Continue internal HMAC/nonce/capability source work while the owner
+  resolves the process-specific outbound network gate.
+
 #### 2026-09-10T04:33Z addendum — durable payment operation store
 
 - Migration 149 reserved after all-ref inventory proved enrollment owns 146-148.

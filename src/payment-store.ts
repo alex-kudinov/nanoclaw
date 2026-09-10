@@ -169,7 +169,12 @@ export class PaymentStore {
         idempotencyKey: input.idempotencyKey,
         requestFingerprint: fingerprint,
         now,
-        retryUntil: now + input.retryWindowMs,
+        // A fixed-expiry Session cannot be recreated usefully after quote expiry.
+        // Clamp against the absolute deadline using DB time, not caller latency.
+        retryUntil: Math.min(
+          now + input.retryWindowMs,
+          attempt.quote.expiresAt,
+        ),
       });
       const sealed = this.vault.seal(
         input.request,

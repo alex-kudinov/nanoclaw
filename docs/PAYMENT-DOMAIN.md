@@ -75,7 +75,10 @@ or key-ring configuration to the browser or an agent.
 The store serializes quote acceptance and operation preparation, commits the
 exact request before returning dispatch permission, pins one session operation
 per attempt, and uses DB-clock leases plus version/token fences. Duplicate
-prepare calls cannot extend the original retry deadline. Every accepted state
+prepare calls cannot extend the original retry deadline. Session retryUntil is
+clamped to the absolute quote expiry at preparation using the database clock,
+so an unknown, expired checkout enters reconciliation instead of retrying a
+dead Session for the rest of a longer provider idempotency window. Every accepted state
 version has an append-only receipt in the same transaction. An expired lease
 recovers the same operation, never a replacement charge. The browser must reuse
 its persisted attempt/operation identity; generating another UUID for the same
@@ -102,6 +105,32 @@ payment-evidence projection are the event-store part of this implementation,
 not falsely supplied by the three operation tables. Durable internal request
 authentication, public status capabilities and provider dispatch are subsequent
 integration boundaries. No daemon/browser route imports this store yet.
+
+### TEST Sessions integration
+
+`adyen-session-adapter.ts` builds a card-only request from the immutable quote,
+pins TEST/eu/company/merchant/store and the v72 TEST endpoint, rejects unsafe
+origin/return URLs, prevents redirects, bounds response bytes and time, and
+minimizes the session response. It never stores the API key with the request.
+`payment-session-service.ts` requires exact durable attempt readback, prepares
+the stable operation before dispatch, and commits its encrypted result before
+returning `checkout_ready` (not paid). Lost responses retain the same operation;
+no catch block switches providers or invents a replacement key. Existing
+attempts may resume when the offer is disabled for new starts.
+
+Only host-authenticated callers may use this service. It is NOT a public API:
+nonce/HMAC admission and browser status capabilities are still required before
+exposing it. Unknown results are returned to that caller; rate-limited scheduling
+and reconciliation must precede unattended/public retries.
+
+`scripts/verify-adyen-test-session-store.ts` requires explicit TEST confirmation,
+exact existing merchant/store/origin, the reviewed Foundations catalog and terms,
+and explicit generated local Postgres. It creates one unused TEST Session (no
+payment), reopens its DB pool, proves encrypted reuse with no second provider
+call, and removes its own synthetic database. Output contains counts/status/hash
+only, never API keys or session data. It does not authorize production migration
+or storefront activation. Provider API reference:
+https://docs.adyen.com/api-explorer/Checkout/72/post/sessions
 
 The behavioral suite covers quote tampering/expiry/zero values, scope pinning,
 ambiguous/repeated/expired recovery, expired sessions, duplicates, conflicting and

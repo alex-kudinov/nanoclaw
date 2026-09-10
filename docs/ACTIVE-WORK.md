@@ -195,6 +195,18 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T04:55Z: TEST Sessions adapter/service source accepted in Sonnet/high
+  R1/R2; absolute DB-clock retry expiry correction closes R1. 96 focused tests
+  (18 DB/service, 27 adapter, 51 domain) pass, root/CLI strict types and build pass.
+  Full suite including the pending 16-test request-auth module: 3,811 pass / 32
+  skip / three known baseline failures. Real unused-Session proof reached no HTTP
+  response under Node22; curl and Node26 reach Adyen, Node22 also times out on an
+  unrelated HTTPS site. Little Snitch active; Mac locked prevents rule inspection.
+  Owner asked asynchronously to unlock/check exact Node22 -> TEST Adyen HTTPS.
+  No firewall change, payment or production mutation. Continue local request
+  authentication, durable replay admission and status capabilities while awaiting
+  the critical network gate; do not claim real-provider proof from unit tests.
+
 - 2026-09-10T04:33Z: persistence source accepted by Sonnet/high, no material
   findings. 69 focused pass; full 3,764 pass/32 skip/three baseline failures.
   Continue without routine stop into `adyen-session-adapter.ts`,
