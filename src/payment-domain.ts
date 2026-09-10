@@ -133,7 +133,7 @@ export type PaymentAttempt = Readonly<
   }
 >;
 
-function validateAttempt(input: unknown): PaymentAttempt {
+export function validateAttempt(input: unknown): PaymentAttempt {
   const attempt = parse(attemptSchema, input);
   const quote = validatePaymentQuote(attempt.quote);
   check(hash(quote) === attempt.quoteFingerprint, 'quote_fingerprint_mismatch');

@@ -63,6 +63,46 @@ Unknown parent evidence must not trigger fulfillment. A capture is not settlemen
 
 ## Verification and remaining work
 
+### Durable attempt store (migration 149; source/disposable only)
+
+`payment-store.ts` now accepts an injected host transaction function (the existing
+`withTransaction` at integration) and a `PaymentPayloadVault`. It does not load
+credentials or construct a production pool. The private vault key ring supports
+explicit key rotation; old keys must remain available while their retained
+encrypted requests/responses still require recovery. Never expose vault methods
+or key-ring configuration to the browser or an agent.
+
+The store serializes quote acceptance and operation preparation, commits the
+exact request before returning dispatch permission, pins one session operation
+per attempt, and uses DB-clock leases plus version/token fences. Duplicate
+prepare calls cannot extend the original retry deadline. Every accepted state
+version has an append-only receipt in the same transaction. An expired lease
+recovers the same operation, never a replacement charge. The browser must reuse
+its persisted attempt/operation identity; generating another UUID for the same
+quote conflicts deliberately. Different quote identities still require an
+authenticated caller's order-level admission rules, not this database alone.
+
+Raw card/bank credentials are forbidden. Session request/response payloads are
+AES-256-GCM encrypted with key ID and operation/request-or-response binding as
+authenticated data. Only exact stored bytes are recoverable; changed bytes/key/
+operation identity fail closed. Provider credentials are attached transiently by
+the adapter, never included in the stored payload. Response expiry comes from the
+validated provider adapter; expired sessions reconcile rather than creating a
+second operation. Lease loss prevents a stale worker from recording its result.
+
+149 is independent of the separately reserved enrollment migrations 146-148.
+It creates three admin-only tables, immutability/version triggers and no agent
+or public grants. Its rollback locks all three tables and refuses any retained
+evidence. Production application remains gated. The disposable test uses only
+generated `nc_payment_disposable_*` databases on `/tmp:5432`, explicitly configured
+without production environment values, and removes its own database afterward.
+
+Event delivery/reference uniqueness, durable rejected-event exceptions and
+payment-evidence projection are the event-store part of this implementation,
+not falsely supplied by the three operation tables. Durable internal request
+authentication, public status capabilities and provider dispatch are subsequent
+integration boundaries. No daemon/browser route imports this store yet.
+
 The behavioral suite covers quote tampering/expiry/zero values, scope pinning,
 ambiguous/repeated/expired recovery, expired sessions, duplicates, conflicting and
 reordered events, missing predecessors, partial amounts and safe-integer overflow.

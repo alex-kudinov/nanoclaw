@@ -6,6 +6,14 @@ remain implementation authority; ordered migrations in
 
 PostgreSQL database for CRM and business operations. All agents access via `business_v2` schema views (reads) and SECURITY DEFINER helper functions (writes). Agent identity is transparently injected via PGOPTIONS session variables.
 
+Migration 149 is the source-only NC-20260909-003 payment-attempt store, independent
+of separately reserved enrollment migrations 146-148. It defines immutable
+attempt/operation contracts, encrypted provider-session payloads, version/token
+leases and append-only state receipts. All three tables and both trigger functions
+are admin-only. Populated rollback refuses. No provider dispatch, production
+migration, agent grant, source admission or financial/enrollment effect follows
+from its presence. Follow `docs/PAYMENT-DOMAIN.md` and the current task evidence.
+
 Migration 144 is the separately gated Academy Capacity Gate D operator ledger.
 It extends the populated migrations 142-143 shadow with admin-only command
 cases, append-only requested/final receipts, and a privacy-minimized operator

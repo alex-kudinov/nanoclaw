@@ -30,6 +30,25 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T04:33Z addendum — durable payment operation store
+
+- Migration 149 reserved after all-ref inventory proved enrollment owns 146-148.
+  Three admin-only tables hold immutable attempts/operations, encrypted session
+  payloads, DB-clock token/version leases and append-only state receipts.
+- Source tests: 14 real-Postgres disposable proofs, 4 encryption tests and 51
+  existing domain tests pass. Full suite: 3,764 pass / 32 skip / the same three
+  independently reproduced baseline failures. Typecheck/build pass.
+- Sonnet/high bounded review accepted without material findings. Raw PostgreSQL
+  uniqueness errors stay internal; future authenticated API must map them to
+  sanitized conflict responses. No live connection/configuration is loaded here.
+- Proof includes 25-worker contention, fresh-connection recovery, expired-worker
+  rejection, transaction/result rollback injection, immutable SQL contracts,
+  no non-admin grants, populated rollback refusal, empty rollback/reapply and
+  verified cleanup of generated local databases. No actual provider request yet.
+- Deployment: migration is unapplied to production; store is not daemon-wired.
+  Continue directly with the TEST Sessions adapter/service and durable round-trip
+  tests. Financial source admission/enrollment/cutover gates remain unchanged.
+
 - State: in_progress — reviewed unwired payment-domain source milestone; durable
   caller/adapter and configured TEST event proof remain incomplete.
 

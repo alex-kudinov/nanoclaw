@@ -195,6 +195,12 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T04:33Z: persistence source accepted by Sonnet/high, no material
+  findings. 69 focused pass; full 3,764 pass/32 skip/three baseline failures.
+  Continue without routine stop into `adyen-session-adapter.ts`,
+  `payment-session-service.ts`, and TEST provider/DB integration proof. 149 stays
+  unapplied to production; no browser/daemon entrypoint or live financial effect.
+
 - 2026-09-10T04:17Z continuation: owner requests no routine milestone stops.
   Claim persistence source `src/payment-store*.ts`, disposable tests, and
   migration/rollback 149_payment_attempt_store.sql. Refreshed all local/remote
