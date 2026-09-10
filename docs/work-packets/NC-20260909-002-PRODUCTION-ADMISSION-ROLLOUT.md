@@ -33,7 +33,8 @@ before a writer claim. Nothing is manufactured to obtain a canary.
 ## Exact lineage
 
 Current production is verified at
-`726f2c80b3d45ccddf80bfa0fe796281f54b19b1` under Node 22.23.2. The reviewed
+`00d66184c62767a7ad8a2904c3911c130aaf1ede` under Node 22.23.2. It is a
+descendant of the initial preparation observation `726f2c80`. The reviewed
 projection closure is `d9e298567ae87f48ae5b36152b3322fbbe9b73f6`, but it is
 not an ancestor of the live release. The rollout candidate must start from the
 then-current live release or reviewed descendant and integrate the pinned

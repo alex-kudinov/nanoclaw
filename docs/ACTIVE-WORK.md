@@ -17,7 +17,8 @@ outside the current client conversation.
 
 ### NC-20260909-002 — Production-admission pilot preparation
 
-- Current read-only production release is `726f2c80`; the reviewed projection
+- Final read-only production release is `00d66184`, a descendant of the initial
+  `726f2c80` observation; the reviewed projection
   closure `d9e29856` is a separate lineage, so a future candidate must begin at
   the then-current live release and deliberately integrate the reviewed source.
 - Production metadata proves 142-145 structurally present and 146-148 absent.

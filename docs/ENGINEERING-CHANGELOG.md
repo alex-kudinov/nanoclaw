@@ -59,8 +59,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   gate, independent accounting, Student Roster/Heartbeat targets, migrations
   146-148, preflight/activation/monitoring/uncertainty/abort/rollback and the
   smallest remaining owner decisions.
-- Live read-only evidence: Mini health verified release `726f2c80`, Node
-  22.23.2, matching code root, connected Gmail/Slack and zero active work.
+- Live read-only evidence: initial Mini health verified release `726f2c80`,
+  Node 22.23.2, matching code root, connected Gmail/Slack and zero active work.
+  Final post-review readback found current descendant release `00d66184` and one
+  unrelated active item; the packet now pins `00d66184` and keeps a zero-work
+  activation preflight rather than treating the transient queue as readiness.
   PostgreSQL metadata only proved 142-145 structure present, 146-148 absent,
   and inspected targets admin-owned with zero non-admin table grants. Current
   roster row-1 header and Heartbeat group/course metadata were read without any

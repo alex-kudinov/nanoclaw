@@ -25,6 +25,18 @@ The live release tree contains neither the admission/store/projection source nor
 migrations 146-148. Repository presence on the preparation branch is not live
 runtime evidence.
 
+Post-review live revalidation at `2026-09-10T02:31:27Z` found that another
+authorized task had advanced production to verified release
+`00d66184c62767a7ad8a2904c3911c130aaf1ede`, parent
+`d3c390cee090b57f535f265d0373f3f7c603eb77`, source-tree digest
+`d1b8086476e18e818751cd97b8e58b59ff380c59`, artifact SHA-256
+`ce51f7fc428f6ddf11dffc667063fbd8ad069ba1b7ce207f46f40b2f66587060`.
+Git proves it descends from `726f2c80`; it still does not descend from
+`d9e29856`. One unrelated work item was active and no item was waiting. The
+packet now pins `00d66184` and preserves the mandatory zero-work rollout
+preflight. This post-review lineage refresh changes no safety-contract field or
+reviewed digest.
+
 ## Structure-only PostgreSQL evidence
 
 The production database identified itself as `nanoclaw_business`, PostgreSQL
