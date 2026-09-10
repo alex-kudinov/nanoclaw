@@ -663,6 +663,15 @@ Syncthing syncs NanoClaw source between machines. **Excluded from sync** (`.stig
 
 **Inbound webhook reliability** — All `/hook/*` receivers are governed by [WEBHOOK-RELIABILITY.md](WEBHOOK-RELIABILITY.md): single `webhook_inbox` archive, idempotency by `(source, event_id)`, 5-min reaper for failed dispatches, 6h sweepers per source for events that never arrived, dead-letter to `#gru-chief`. n8n stays as the security perimeter (no bypass).
 
+**Adyen TEST payment admission** — `src/adyen-webhook.ts` and the dedicated
+`/hook/adyen-test-payments` path add provider-native Standard webhook HMAC
+verification inside the host. The n8n perimeter forwards the complete JSON and
+waits for the host response; it does not replace provider authentication. The
+route admits only TEST, the exact signed merchant/reference prefix and event
+allowlist, plus a defense-in-depth reported-store check, then archives a
+minimized terminal event with no
+agent or fulfillment dispatch. See [ADYEN-TEST-WEBHOOK.md](ADYEN-TEST-WEBHOOK.md).
+
 ---
 
 ## Gotchas & Design Decisions

@@ -5,6 +5,7 @@ import os from 'os';
 import path from 'path';
 
 import {
+  ADYEN_TEST_WEBHOOK_CONFIG,
   ASSISTANT_NAME,
   CHECKOUT_RECOVERY_ENABLED,
   CHECKOUT_RECOVERY_IDENTITY_SECRET,
@@ -2232,6 +2233,7 @@ async function main(): Promise<void> {
     port: WEBHOOK_PORT,
     webhooksFile: WEBHOOKS_FILE,
     globalSecret: WEBHOOK_SECRET,
+    adyenTestWebhook: ADYEN_TEST_WEBHOOK_CONFIG,
     heartbeatPath,
     getRegisteredGroups: () => registeredGroups,
     getHealth: () => {
