@@ -34,8 +34,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Owner/client: Codex + Claude reviewer
 - State: ready_for_deploy — reviewed source is integrated onto exact live
   `726f2c80`; exact-lineage verification and release remain pending.
-- Commit/PR: reviewed source `569170bd` + `3b618b41`; exact-live integration on
-  `codex/adyen-webhook-live-20260909`.
+- Commit/PR: reviewed source `569170bd` + `3b618b41`; exact-live integration
+  `b4e82ddb` on `codex/adyen-webhook-live-20260909`.
 - Change class: C5 security boundary; highest affected operational class C4.
 - Outcome: a dedicated Standard webhook path verifies TEST-only HMAC and signed
   merchant/reference/event identity, treats reported store only as defense in
