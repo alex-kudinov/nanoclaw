@@ -195,6 +195,13 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T19:44Z: standalone Session-result verifier accepted after
+  Sonnet/high R1/R2 and Codex39-test readback. R1 corrected native-reference/
+  Authorised-result binding and whole-response deadline proof. Raw official
+  v72 schema confirms reference is root-level, not per-payment; synthetic
+  fixtures match that shape. It is not a live status polling API or settlement
+  proof. Migration152 reconciliation/event work is separate and in progress.
+
 - 2026-09-10T19:32Z: refreshed origin and scanned all source migration history;
   maximum ordered migration is151. Reserve152 for authenticated Session-result
   reconciliation/method binding and required card/ACH event-operation lineage.

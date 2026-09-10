@@ -11643,3 +11643,17 @@ only after each boundary is actually crossed.
   three established baseline failures, no extra PG timeout. No production
   migration, live source enablement, provider call or student action occurred.
 - Integration scope/provenance: `docs/MCS-ENROLLMENT-DEPENDENCY-INTEGRATION.md`.
+
+## 2026-09-10 — NC-20260909-003 authenticated Session-result verifier
+
+- Added fixed-v72 TEST-only static result verification with exact native root
+  reference, trusted stored Session ID, single Authorised PSP, immutable money
+  and allowed method binding. This supplies actual-method evidence without
+  trusting unsigned Standard-webhook method/date/additionalData fields.
+- Sonnet/high R1 identified missing reference/result binding and deadline test
+  coverage. Corrected with raw official-schema placement verification; R2 has
+  no material findings. Codex independently reran39 tests, including hanging
+  transport/slow-body bounds and other-attempt reuse. No secrets in errors.
+- No native call, DB write, listener, enrollment or certificate action. The
+  separate152 durable reconciliation/event slice is not claimed complete here.
+- Review artifacts: Peri output/mcs-ready/session-result-review/.
