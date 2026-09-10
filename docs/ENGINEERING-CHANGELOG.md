@@ -97,6 +97,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   validator/tests, and privacy-safe evidence.
 - Follow-up: commit/push and Astra acceptance; the consequential pilot remains
   owner-gated.
+- Commit addendum 2026-09-10T02:27:30Z: reviewed implementation and evidence
+  committed as `75454ddf672a33a257d78e40196d195cafc240d6`. The commit hook
+  formatted every TypeScript file and changed none beyond the already formatted
+  new test. Push/remote-head verification remains pending.
 
 ### NC-20260909-001 — Local student enrollment provider-projection foundation
 

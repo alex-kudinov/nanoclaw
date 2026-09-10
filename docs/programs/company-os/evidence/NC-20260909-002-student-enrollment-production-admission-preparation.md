@@ -158,3 +158,8 @@ Final local evidence before commit:
   Trafft projection, and an expired Capacity operator reservation. The exact
   failed tests and their implementation sources are unchanged from `d9e29856`;
   a one-worker rerun reproduced 8 passed / 3 failed.
+
+Reviewed implementation and evidence commit:
+`75454ddf672a33a257d78e40196d195cafc240d6`. The commit hook reformatted the
+full TypeScript tree and changed no file beyond the already formatted new test.
+Push and remote-head verification are recorded in the final closure addendum.
