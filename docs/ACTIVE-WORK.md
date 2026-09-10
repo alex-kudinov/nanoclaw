@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; exact-live integration `b4e82ddb`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build an exact immutable receiver release, deploy it unconfigured, verify inert health/503 behavior, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:46Z |
+| `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; inert receiver live at `02073e66`; stable n8n workflow identity correction `d3c390ce`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build and deploy the reviewed stable-ID correction, import the workflow inactive, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:55Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
@@ -207,8 +207,13 @@ outside the current client conversation.
   on untouched production commit `726f2c80` and are not Adyen regressions.
 - Review: Sonnet/high found two material boundary issues. Both were corrected;
   the load-bearing R2 accepted the fixes with no unresolved material finding.
-- Next: exact-lineage verification, commit/push, immutable release build,
-  unconfigured deployment, then n8n and Adyen TEST configuration/readback.
+  The real import preflight then exposed the missing workflow ID; `d3c390ce`
+  adds a stable ID and contract test, and bounded R3 accepted it without a
+  material finding.
+- Deployment: immutable receiver release `02073e66` is live, verified, and
+  intentionally inert. Health reports unconfigured and the route returns 503.
+- Next: release the stable-ID correction, import inactive, then perform Adyen
+  TEST configuration and correlated notification readback.
 
 ### NC-20260907-007 — Current MCS catalog publication expansion
 

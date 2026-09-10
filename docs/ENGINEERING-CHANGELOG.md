@@ -32,8 +32,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-10T01:34Z
 - Owner/client: Codex + Claude reviewer
-- State: ready_for_deploy — reviewed source is integrated onto exact live
-  `726f2c80`; exact-lineage verification and release remain pending.
+- State: ready_for_deploy — receiver release `02073e66` is live and inert;
+  reviewed stable workflow-ID correction `d3c390ce` remains to release before
+  the inactive n8n import.
 - Commit/PR: reviewed source `569170bd` + `3b618b41`; exact-live integration
   `b4e82ddb` on `codex/adyen-webhook-live-20260909`.
 - Change class: C5 security boundary; highest affected operational class C4.
@@ -48,7 +49,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Review: R1 found unauthenticated store semantics and n8n error retention.
   Signed integration prefix, `reported_store`, honest boundary documentation,
   and no success/error retention close both; R2 found no material remainder.
-- Deployment/migration: none yet; existing inbox schema is sufficient.
+  Import preflight found a missing stable workflow ID; a contract-tested
+  correction was accepted by bounded Sonnet/high R3 with no material finding.
+- Deployment/migration: immutable release `02073e66` is live unconfigured and
+  fails closed with 503; existing inbox schema is sufficient.
 - Rollback: leave configuration absent for 503; after rollout deactivate n8n
   and provider TEST endpoints and clear TEST configuration.
 - Documentation: `docs/ADYEN-TEST-WEBHOOK.md`, architecture, project map,
