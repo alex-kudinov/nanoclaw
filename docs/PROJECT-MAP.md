@@ -861,10 +861,17 @@ and authenticated provider/browser entrypoints remain distinct pending work.
 Reviewed TEST-only `src/adyen-session-adapter.ts` and
 `src/payment-session-service.ts` now compose the store without daemon/public
 wiring. Source proof includes concurrency and lost-provider-response recovery;
-the real unused Session command remains blocked by process-specific Node22
-outbound HTTPS on the locked development Mac, not a proven provider failure.
-Nonce/status-capability admission is the next private boundary; production
-schema/configuration and live payment/fulfillment remain gated.
+the real unused MCS USD299 TEST Session/store proof passed on 2026-09-10 after
+the Node22 network gate cleared: one HTTP201, encrypted durable reuse after pool
+reopen, no SDK/payment/enrollment action. Production schema/configuration and
+live payment/fulfillment remain gated.
+
+The owner authorized the shared merchant TEST webhook on 2026-09-10. Explicit
+opt-in filtering verifies the whole batch HMAC and exact merchant before
+discarding signed non-Tandem references without retaining payloads or IDs.
+Tandem-prefixed notices still require the reported store and allowed event code;
+unsigned store metadata never determines discard. Strict default and LIVE
+rejection remain. See `docs/ADYEN-TEST-WEBHOOK.md` for activation and rollback.
 
 Source-only request admission (`payment-request-auth.ts`,
 `payment-admission-store.ts`, migration 150) adds HMAC caller/body/path binding,

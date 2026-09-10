@@ -157,6 +157,7 @@ const adyenTestWebhookEnv = readEnvFile([
   'TANDEM_ADYEN_TEST_STORE_REFERENCE',
   'TANDEM_ADYEN_TEST_REFERENCE_PREFIX',
   'TANDEM_ADYEN_TEST_EVENT_CODES',
+  'TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED',
 ]);
 const adyenTestHmacKeys = (
   adyenTestWebhookEnv.TANDEM_ADYEN_TEST_HMAC_KEYS ||
@@ -166,6 +167,13 @@ const adyenTestHmacKeys = (
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
+const adyenSharedFeedFilterRaw =
+  adyenTestWebhookEnv.TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED || 'false';
+if (!['false', 'true', '0', '1'].includes(adyenSharedFeedFilterRaw)) {
+  throw new Error(
+    'TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED must be true, false, 1, or 0',
+  );
+}
 export const ADYEN_TEST_WEBHOOK_CONFIG = {
   hmacKeys: adyenTestHmacKeys,
   merchantAccount: adyenTestWebhookEnv.TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT || '',
@@ -179,6 +187,8 @@ export const ADYEN_TEST_WEBHOOK_CONFIG = {
     .split(',')
     .map((value) => value.trim().toUpperCase())
     .filter((value) => /^[A-Z0-9_]+$/.test(value)),
+  discardVerifiedForeignReferences:
+    adyenSharedFeedFilterRaw === 'true' || adyenSharedFeedFilterRaw === '1',
 };
 
 const studentLifecycleEnv = readEnvFile([

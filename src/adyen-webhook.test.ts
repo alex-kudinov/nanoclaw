@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   admitAdyenTestWebhook,
@@ -54,10 +54,15 @@ function sign(notification: ReturnType<typeof item>, key = OFFICIAL_KEY) {
   return notification;
 }
 
-function envelope(notification = sign(item())) {
+function envelope(
+  notification = sign(item()),
+  ...additionalNotifications: TestNotification[]
+) {
   return {
     live: 'false',
-    notificationItems: [{ NotificationRequestItem: notification }],
+    notificationItems: [notification, ...additionalNotifications].map(
+      (value) => ({ NotificationRequestItem: value }),
+    ),
   };
 }
 
@@ -68,6 +73,52 @@ const config = {
   referencePrefix: 'tandem-poc-tsv1-',
   allowedEventCodes: ['AUTHORISATION'],
 };
+const sharedFeedConfig = {
+  ...config,
+  discardVerifiedForeignReferences: true,
+};
+
+async function loadAdyenConfig(sharedFeedFilter?: string) {
+  vi.resetModules();
+  vi.doMock('./env.js', () => ({
+    readEnvFile: (keys: string[]) =>
+      keys.includes('TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED') &&
+      sharedFeedFilter !== undefined
+        ? {
+            TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED: sharedFeedFilter,
+          }
+        : {},
+  }));
+  return (await import('./config.js')).ADYEN_TEST_WEBHOOK_CONFIG;
+}
+
+afterEach(() => {
+  vi.doUnmock('./env.js');
+  vi.resetModules();
+});
+
+describe('Adyen shared TEST feed configuration', () => {
+  it('defaults foreign-reference filtering off', async () => {
+    expect((await loadAdyenConfig()).discardVerifiedForeignReferences).toBe(
+      false,
+    );
+  });
+
+  it.each(['true', '1'])(
+    'explicitly enables filtering with %s',
+    async (value) => {
+      expect(
+        (await loadAdyenConfig(value)).discardVerifiedForeignReferences,
+      ).toBe(true);
+    },
+  );
+
+  it('rejects an invalid opt-in value', async () => {
+    await expect(loadAdyenConfig('yes')).rejects.toThrow(
+      'TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED must be true, false, 1, or 0',
+    );
+  });
+});
 
 describe('Adyen Standard webhook HMAC', () => {
   it('matches the official Adyen signing example', () => {
@@ -103,6 +154,116 @@ describe('Adyen Standard webhook HMAC', () => {
     expect(stored).not.toContain('hmacSignature');
     expect(stored).not.toContain('must-not-persist@example.com');
   });
+
+  it('discards a fully verified foreign-only TEST notification when explicitly enabled', () => {
+    const foreign = item({ merchantReference: 'another-platform-attempt-1' });
+    foreign.additionalData = {};
+    delete (foreign as unknown as Record<string, unknown>).eventDate;
+    foreign.paymentMethod = 'x'.repeat(500);
+    foreign.reason = 'x'.repeat(2_000);
+
+    expect(
+      admitAdyenTestWebhook(envelope(sign(foreign)), sharedFeedConfig),
+    ).toEqual([]);
+  });
+
+  it('treats an empty signed merchant reference as foreign only when filtering is enabled', () => {
+    const foreign = item();
+    delete (foreign as unknown as Record<string, unknown>).merchantReference;
+
+    expect(
+      admitAdyenTestWebhook(envelope(sign(foreign)), sharedFeedConfig),
+    ).toEqual([]);
+    expect(() =>
+      admitAdyenTestWebhook(envelope(sign(foreign)), config),
+    ).toThrowError(expect.objectContaining({ status: 403 }));
+  });
+
+  it('admits only Tandem items from a fully verified mixed TEST batch', () => {
+    const foreign = sign(
+      item({
+        pspReference: 'foreign-psp-reference',
+        merchantReference: 'another-platform-attempt-1',
+        eventCode: 'REFUND',
+      }),
+    );
+    const tandem = sign(item({ pspReference: 'tandem-psp-reference' }));
+
+    const admitted = admitAdyenTestWebhook(
+      envelope(foreign, tandem),
+      sharedFeedConfig,
+    );
+    expect(admitted).toHaveLength(1);
+    expect(admitted[0].eventId).toBe('tandem-psp-reference:AUTHORISATION:true');
+  });
+
+  it.each([
+    [
+      'invalid HMAC anywhere in the batch',
+      () => {
+        const invalid = sign(item({ pspReference: 'invalid-owned' }));
+        invalid.additionalData.hmacSignature =
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+        return envelope(
+          sign(item({ merchantReference: 'another-platform-attempt-1' })),
+          invalid,
+        );
+      },
+      401,
+    ],
+    [
+      'an invalid HMAC after a wrong-merchant item',
+      () => {
+        const invalid = sign(item({ pspReference: 'invalid-owned' }));
+        invalid.additionalData.hmacSignature =
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+        return envelope(
+          sign(
+            item({
+              merchantAccountCode: 'OtherMerchant',
+              merchantReference: 'another-platform-attempt-1',
+            }),
+          ),
+          invalid,
+        );
+      },
+      401,
+    ],
+    [
+      'a signed foreign reference from another merchant',
+      () =>
+        envelope(
+          sign(
+            item({
+              merchantAccountCode: 'OtherMerchant',
+              merchantReference: 'another-platform-attempt-1',
+            }),
+          ),
+        ),
+      403,
+    ],
+    [
+      'a Tandem reference with a conflicting store',
+      () => {
+        const owned = item();
+        owned.additionalData.store = 'other_store';
+        return envelope(sign(owned));
+      },
+      403,
+    ],
+    [
+      'a Tandem reference with a disallowed event',
+      () => envelope(sign(item({ eventCode: 'REFUND' }))),
+      403,
+    ],
+  ])(
+    'still rejects %s when shared-feed filtering is enabled',
+    (_name, payload, status) => {
+      expect(() =>
+        admitAdyenTestWebhook(payload(), sharedFeedConfig),
+      ).toThrowError(expect.objectContaining({ status }));
+    },
+  );
 
   it.each([
     ['live environment', { live: true }, 403],

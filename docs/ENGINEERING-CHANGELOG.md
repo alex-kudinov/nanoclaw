@@ -30,6 +30,35 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T12:05Z addendum — approved shared TEST feed filtering
+
+- State: validating. Node22 network gate is resolved. The reviewed real MCS
+  USD299 TEST Session/store proof returned one201 and reused the exact encrypted
+  Session after pool reopen. No SDK/payment authorization or enrollment occurred.
+- Owner approved shared-platform TEST webhook transit/filtering. New explicit
+  default-off flag verifies all HMACs and exact merchant before acknowledging
+  and discarding signed non-Tandem references with no payload/ID retention.
+  Store metadata cannot decide discard; Tandem store/event guards and LIVE
+  rejection remain. No source or provider scope is broadened to LIVE.
+- Verification:82 focused receiver/config/route/n8n cases pass; final full
+  suite3863 pass/32skip/same three established baseline failures. Typecheck,
+  build, runtime doctor, email-critical803 plus runner45, replay13 and docs
+  continuity pass. No unhandled test error.
+- Filter review: fresh Sonnet/high with actual Read,Write and strict empty MCP;
+  one bounded round, no material findings. Codex independently checked source,
+  batch-before-write behavior, log negative assertions and caller empty-array
+  behavior. Exact review receipt is in docs/reports at commit boundary.
+- Private first-key helper passed separate bounded Sonnet/high R1 and a narrow
+  R2 after Codex reproduced/fixed partial-temp-write residue and added durable
+  backup-directory fsync. All8 fixture tests and real-path read-only dry-run pass.
+  It does not
+  rotate keys or restart services. Configuration/provider activation and real
+  HMAC round-trip proof remain distinct gates. Production migrations149-151,
+  actual durable API/WordPress wiring and MCS traffic cutover remain unapplied.
+- Rollback: receiver flag defaults off; deactivate the TEST provider/n8n paths
+  before returning to strict mode or removing configuration. No existing shared
+  webhook, customer communication or financial operation was changed.
+
 #### 2026-09-10T06:11Z addendum — signed command composition and critical gate
 
 - State: blocked — reviewed source is complete at the internal API boundary;
