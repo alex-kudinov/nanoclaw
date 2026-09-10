@@ -21,6 +21,8 @@ readiness remains deliberately false and deployment is not applicable.
   Map, Active Work, and changelog histories were reconciled by meaning; current
   admission/store facts and final publication closure facts are both retained.
 - Cross-machine task claim was committed and pushed first at `b99b5362`.
+- Reviewed implementation commit:
+  `deaab99ca4c756f54d22d8c6e6f9b2d4a91daf69`.
 
 ## Files and mechanics
 

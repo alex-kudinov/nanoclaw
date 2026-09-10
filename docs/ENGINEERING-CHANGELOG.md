@@ -45,8 +45,8 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-10T00:44:00Z
 - Owner/client: Codex Sol High execution worker with independent Claude
   Sonnet/high review; Astra owns final acceptance and program state.
-- State: ready_for_review; implementation, review, and verification complete;
-  final commit/push receipt pending.
+- State: complete; implementation `deaab99ca4c756f54d22d8c6e6f9b2d4a91daf69`
+  committed, review and verification complete, deployment not applicable.
 - Branch/base: `codex/student-enrollment-projection-foundation-20260909` from
   authenticated-admission closure `8b1ffbb9`, semantically integrated with the
   reviewed strategy/catalog/publication lineages `40f0d364`, `0e6fb605`, and
@@ -89,6 +89,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   records that R2 read related migrations 148 and 142 beyond its five-file
   prompt, so it is not represented as exact-scope compliant. No secrets or
   unrelated private source were read.
+- Closure addendum 2026-09-10T01:12:00Z: implementation `deaab99c` committed
+  after secret-pattern scan, staged diff inspection, focused/typecheck/full/
+  continuity verification and exact predecessor reproduction. Deployment and
+  live verification are not applicable under the explicit local-only boundary;
+  no `.program` state was touched by the execution worker.
 
 ### NC-20260907-007 — Scoped MCS catalog publication closure
 

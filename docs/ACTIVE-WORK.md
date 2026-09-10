@@ -38,7 +38,7 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260909-001` | Build an unwired, deterministic provider-projection foundation with fail-closed pilot readiness | Codex | `codex/student-enrollment-projection-foundation-20260909` @ integrated admission `8b1ffbb9` + strategy/catalog/publication `40f0d364`, `0e6fb605`, `55c068d2`; isolated checkout | `validating` | C2 (future provider activation C5) | Local deterministic builders/normalizers, injected provider driver, guarded versioned outbox delivery, migration 148, synthetic doubles, disposable PostgreSQL, authoritative docs and review/evidence. No production migration/runtime wiring/provider access or writes, live/historical student data, credentials, deployment, finance, or communication. | Run bounded Claude review, fix verified material findings, rerun focused/full/typecheck/continuity, commit and push; deployment is explicitly not applicable. | 2026-09-10T00:44Z |
+| `NC-20260909-001` | Build an unwired, deterministic provider-projection foundation with fail-closed pilot readiness | Codex + Claude reviewer | pushed `codex/student-enrollment-projection-foundation-20260909`; implementation `deaab99c` over integrated admission `8b1ffbb9` + strategy/catalog/publication `40f0d364`, `0e6fb605`, `55c068d2` | `complete` | C2 (future provider activation C5) | Reviewed local deterministic builders/normalizers, injected provider driver, guarded versioned outbox delivery, migration 148, synthetic doubles, disposable PostgreSQL, authoritative docs and evidence. Focused 15/15; full 3,774 pass / 32 skip / three reproduced predecessor failures. No production migration/runtime wiring/provider access or writes, live/historical student data, credentials, deployment, finance, or communication. | None for this local slice. Astra retains program closure; production/provider pilot remains separately unauthorized and current target readiness is false. | 2026-09-10T01:12Z |
 
 - The accepted pilot is the first fully settled self-purchased dated Supervision
   offer/version only. `student_roster` and `heartbeat` are required; `encharge`
@@ -50,6 +50,10 @@ outside the current client conversation.
 - Readiness fails closed until every required target has a reviewed adapter,
   exact destination identity, apply path, exact readback verification,
   rollback/reconciliation semantics, and permission/activation readiness.
+- Review closed in two Sonnet/high rounds. R1's active-claim supersession and
+  fabricated replay operation-ID findings were fixed with exact races; R2 has
+  no material findings. See the tracked evidence for the truthful R2 scope
+  disposition and numeric usage.
 
 ### NC-20260906-009 — Local authenticated source admission
 
