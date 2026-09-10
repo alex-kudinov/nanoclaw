@@ -101,6 +101,12 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   committed as `75454ddf672a33a257d78e40196d195cafc240d6`. The commit hook
   formatted every TypeScript file and changed none beyond the already formatted
   new test. Push/remote-head verification remains pending.
+- Push addendum 2026-09-10T02:30:00Z: implementation `75454ddf` and evidence
+  commit `540885a454ea7a7add86947aeab1aed38396287c` pushed to
+  `origin/codex/student-enrollment-pilot-preparation-20260909`; local HEAD,
+  remote-tracking ref and `ls-remote` agreed at `540885a4` before this final
+  closure addendum. Deployment/migration/live outcome remain not applicable to
+  preparation; the four owner decisions are still open.
 
 ### NC-20260909-001 — Local student enrollment provider-projection foundation
 
