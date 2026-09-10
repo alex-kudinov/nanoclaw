@@ -13,6 +13,8 @@ const envelopeSchema = z
       '/internal/payments/sessions',
       '/internal/payments/status',
       '/internal/payments/returns',
+      '/internal/payments/identity/resolve',
+      '/internal/payments/identity/status',
     ]),
     timestamp: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
     nonce: z.uuid(),

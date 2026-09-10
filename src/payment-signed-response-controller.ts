@@ -23,11 +23,16 @@ const ref = z
   .max(200)
   .regex(/^[A-Za-z0-9_:.\/-]+$/);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
-const paths = z.enum([
+const controllerPaths = z.enum([
   '/internal/payments/sessions',
   '/internal/payments/attempts',
   '/internal/payments/status',
   '/internal/payments/returns',
+]);
+const responsePaths = z.enum([
+  ...controllerPaths.options,
+  '/internal/payments/identity/resolve',
+  '/internal/payments/identity/status',
 ]);
 const requestTransport = z
   .object({
@@ -37,7 +42,7 @@ const requestTransport = z
         keyId: ref,
         caller: ref,
         method: z.literal('POST'),
-        path: paths,
+        path: controllerPaths,
         timestamp: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
         nonce: uuid,
         operationId: uuid,
@@ -147,7 +152,7 @@ export class PaymentResponseSigner {
   readonly caller: string;
 
   sign(input: {
-    path: z.infer<typeof paths>;
+    path: z.infer<typeof responsePaths>;
     operationId: string;
     requestNonce: string;
     status: number;
@@ -157,7 +162,7 @@ export class PaymentResponseSigner {
     if (
       !uuid.safeParse(input.operationId).success ||
       !uuid.safeParse(input.requestNonce).success ||
-      !paths.safeParse(input.path).success ||
+      !responsePaths.safeParse(input.path).success ||
       !Number.isInteger(input.status) ||
       input.status < 100 ||
       input.status > 599 ||
@@ -221,7 +226,7 @@ export class PaymentSignedResponseController {
     raw: Buffer,
   ): Promise<PaymentApiResponse> {
     let verified: {
-      path: z.infer<typeof paths>;
+      path: z.infer<typeof controllerPaths>;
       operationId: string;
       requestNonce: string;
       body: Buffer;
