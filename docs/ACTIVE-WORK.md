@@ -195,6 +195,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T19:32Z: refreshed origin and scanned all source migration history;
+  maximum ordered migration is151. Reserve152 for authenticated Session-result
+  reconciliation/method binding and required card/ACH event-operation lineage.
+  No production apply. Next source slice owns payment-domain/event-store/
+  checkout-evidence/controller/runtime integration and focused/disposable tests;
+  Session-result adapter review proceeds separately. Scoped policy is in Peri
+  `docs/ACH-ACCESS-AND-CERTIFICATION-POLICY.md`. No other live population changed.
+
 - 2026-09-10T19:26Z: imported the exact reviewed enrollment dependency at
   d9e29856 (73 source/helper/contract/evidence paths), preserving payment149-151
   and excluding unrelated branch configuration/audit and production-pilot
