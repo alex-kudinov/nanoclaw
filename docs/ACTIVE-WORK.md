@@ -195,6 +195,12 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-10T20:39Z: pre-workflow TEST edge source accepted after Sonnet/high R1
+  and independent6-test/500-request local rerun (zero upstream calls). Only owned
+  native signed items are forwarded; exact upstream202/[accepted] is mandatory.
+  No LiteSpeed/n8n/key/listener change. Signed private responses and stable
+  attempt receipts are the next independently reviewed source slice.
+
 - 2026-09-10T20:39Z:152 evidence/reconciliation slice accepted by bounded
   Sonnet/high reviews. Controller and event intake R1 had no findings; corrected
   crossed-reference races, reversal-history clearance and sticky conflict status

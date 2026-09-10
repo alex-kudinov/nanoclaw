@@ -11676,3 +11676,17 @@ only after each boundary is actually crossed.
   certificate issuance, customer message or cutover. Pre-workflow edge filtering,
   protected BFF, canonical fulfillment and genuine TEST proof remain separate.
 - Review artifacts: Peri output/mcs-ready/*152-review/.
+
+## 2026-09-10 — NC-20260909-003 pre-workflow TEST edge source
+
+- Added a factory-only bounded HTTP filter before workflow persistence. Reuses
+  native HMAC admission; no unsigned trusted-event DTO, database, logger or default
+  listener. Foreign traffic is locally acknowledged; only owned native signed
+  fields are forwarded, without optional private metadata or incoming headers.
+- Exact allowlisted upstream and202/[accepted] ACK, body/header/time/concurrency
+  bounds, no-queue backpressure and safe abort/error handling are tested.
+- Sonnet/high R1 no material findings. Coordinator independently reran6 HTTP
+  tests and500 foreign requests at25 concurrency: zero upstream calls, p95 27.77ms.
+  These measurements are local-only, not whole-gateway capacity or provider proof.
+- No external activation, secret installation, proxy/workflow change, payment,
+  learner effect or certificate action. Exact TEST deployment/readback follows.
