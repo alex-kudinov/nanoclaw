@@ -40,6 +40,77 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260909-001 — Local student enrollment provider-projection foundation
+
+- Date: 2026-09-10T00:44:00Z
+- Owner/client: Codex Sol High execution worker with independent Claude
+  Sonnet/high review; Astra owns final acceptance and program state.
+- State: ready_for_review; implementation, review, and verification complete;
+  final commit/push receipt pending.
+- Branch/base: `codex/student-enrollment-projection-foundation-20260909` from
+  authenticated-admission closure `8b1ffbb9`, semantically integrated with the
+  reviewed strategy/catalog/publication lineages `40f0d364`, `0e6fb605`, and
+  `55c068d2`. The unrelated Sales implementation was not integrated.
+- Change class: C2 local source and disposable DDL/DML; future provider
+  activation is C5 and remains unauthorized.
+- Outcome: deterministic Student Roster and two-layer Heartbeat payloads,
+  target-specific normalized readback, injected provider-driver contract,
+  fail-closed four-target readiness, target/version idempotency, stale refusal,
+  lease-fenced claim, exact readback receipts, retry, uncertain-acceptance hold,
+  supersession, durable projection exceptions, and rollback. Encharge and
+  Plutio are explicitly `not_applicable` for the selected offer/version.
+- Pilot: only authenticated, fully settled, self-purchased
+  `supervision-inaugural` version 1 assigned to `supervision:2026-10-07` with
+  zero blocking exceptions. Production readiness is false: the Heartbeat
+  delivery marker has no exact provider identity and provider permission plus
+  activation readiness are unverified.
+- Verification: pinned Node typecheck; focused engine/catalog/migration and
+  disposable suite 15/15; one generated disposable PostgreSQL proof of one-winner
+  claims, failed-to-retry attempt 2, exact readback, duplicate suppression,
+  uncertain acceptance before retry, supersession, stale refusal, preserved
+  settled order/enrollment/assignment on partial failure, rollback, populated
+  rollback refusal, and zero database residue. Full root: 3,774 pass / 32 skip /
+  three failures, all reproduced unchanged on integrated predecessor `c246671c`
+  (CNPC wrapper literal, date-stale Trafft fixture, time-sensitive Capacity
+  reservation fixture). The first disposable run found
+  and corrected an incoherent synthetic clock; the exact rerun passes.
+- Deployment/migration: not applicable and explicitly excluded. No real
+  credential, provider read/write, student/history data, production database,
+  migration apply, paid-event diversion, writer cutover, runtime wiring,
+  deployment, financial action, browser/CSV shortcut, or communication.
+- Rollback/recovery: remove the unwired source/catalog and migration 148. SQL
+  rollback is allowed only before any delivery evidence exists; provider
+  rollback removes only receipt-owned effects and preserves canonical truth.
+- Documentation: projection foundation, project map, data guide, structure-only
+  schema note, active work, target catalog/schema, review/evidence artifacts.
+- Review: R1 found active-claim supersession and fabricated replay operation-ID
+  defects. Both were corrected with exact unit/disposable races. R2 returned
+  `NO MATERIAL FINDINGS`. The response remains verbatim; Codex separately
+  records that R2 read related migrations 148 and 142 beyond its five-file
+  prompt, so it is not represented as exact-scope compliant. No secrets or
+  unrelated private source were read.
+
+### NC-20260907-007 — Scoped MCS catalog publication closure
+
+- State: complete. NanoClaw release `013b1d86d884` and Tandemweb
+  `5ed4a462a3a1` were independently read back with exact scoped v2 artifacts.
+- Outcome: current ALT MCS admitted-price qualification was added while both
+  supervision routes and primary/unqualified/retired Product Map history were
+  preserved. Offer-key qualification requires zero supplied price IDs.
+- Boundary: no provider product, payment, customer/student, roster/access,
+  capacity/schedule, migration, source-sync, or communication mutation; no
+  manufactured outcome canary. Source sync remains paused.
+
+### NC-20260907-006 — Two-route supervision catalog publication closure
+
+- State: complete. NanoClaw `c5fdf5f6d9d5` and Tandemweb `9d708ec4d940`
+  activated the reviewed inaugural/regular source-driven publication contract.
+- Outcome: exact source digests, account identity, cohort eligibility, generated
+  artifacts and consumer readback passed; inaugural permits October 7, 2026 and
+  regular excludes it for later cohorts.
+- Boundary: no paid-event diversion, enrollment replay, provider/student/roster,
+  payment/class/capacity/schedule, migration, message, or broader catalog action.
+
 ### NC-20260906-009 — Local authenticated enrollment admission
 
 - Date: 2026-09-07T04:05:00Z

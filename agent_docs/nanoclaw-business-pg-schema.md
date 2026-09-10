@@ -2,6 +2,13 @@
 
 Generated: 2026-09-06T21:30:24.628Z
 
+Additional local/unapplied source extension (NC-20260909-001): migration 148
+adds target-scoped idempotency, exact destination identity, provider operation,
+exact readback hash, uncertain-acceptance hold, and supersession references to
+`business_v2.student_projection_outbox`. It adds no rows, grants, runtime
+wiring, or provider access and is tested only in uniquely generated disposable
+PostgreSQL. The production snapshot below is unchanged.
+
 Additional local/unapplied source extension (NC-20260906-009): migration 147
 creates `business_v2.student_enrollment_authenticated_receipts` (issuer/receipt
 identity, source/body hashes, actor/role/purpose/transport and times) and

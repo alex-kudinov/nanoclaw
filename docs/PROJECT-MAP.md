@@ -33,6 +33,19 @@ checkpoint applies no migrations, provider/student writes, or runtime deployment
 Sol made no portfolio mutation; after R2, Astra registered the four reviewed
 candidate gaps at revision 247 without activating them.
 
+Projection foundation `NC-20260909-001` deliberately integrates the local
+authenticated-admission/store line with the current source-bound publication
+line. `src/student-enrollment-projection.ts` and its guarded PostgreSQL store
+provide deterministic target payloads, exact normalized readback, target/version
+idempotency, stale refusal, lease-fenced claims, retry, uncertain-acceptance
+holds, supersession, durable owned exceptions, and rollback behind an injected
+driver. Migration 148 and all execution remain local/disposable and unwired.
+The first pilot catalog requires Student Roster plus two-layer Heartbeat for
+the settled self-purchased October 7 supervision offer; Encharge and Plutio are
+explicitly not applicable. Production readiness remains false because provider
+permissions/activation and the separate hidden zero-content Heartbeat marker
+identity are not verified. See `docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md`.
+
 Publication expansion `NC-20260907-007` replaces the runtime compatibility
 consumer with `facts/generated/student-product-bindings-v2.scoped.json`. The
 three managed routes carry exact account-local product and price IDs plus typed

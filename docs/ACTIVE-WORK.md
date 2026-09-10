@@ -11,15 +11,34 @@ outside the current client conversation.
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | `codex/catalog-publication-20260907` from exact live `1449812c1e71`; dirty primary preserved; Tandemweb companion branch from `0e42c7dd2c27` | `in_progress` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, focused/full checks, bounded Sonnet/high review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | Revalidate source digests and actual configured-consumer Stripe account alias; implement both consumer artifacts and fail-closed compatibility checks; review; release one consumer at a time with exact artifact/readback proof. | 2026-09-07T21:28Z |
+| `NC-20260907-007` | Expand governed student-catalog publication to the current MCS checkout population | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `013b1d86d884`; Tandemweb live/main `5ed4a462a3a1`; Toolbox isolated `778a60e`; dirty primaries preserved | `complete` | C4 | Scoped v2 resolver/publication covers the exact current ALT MCS admitted-price family, preserves primary and unqualified/retired ALT history on Product Map, and keeps both supervision routes unchanged. Exact immutable/static artifacts, one guarded operational prompt, focused/full gates, bounded review, and live readbacks pass. No provider/product/payment/customer/student/roster/access/capacity/schedule/message/migration/source-sync mutation or manufactured canary. | None for this population. Broader catalog coverage and natural enrollment outcomes remain future work; source sync stays paused. | 2026-09-08T02:58Z |
+| `NC-20260907-006` | Implement and activate the reviewed two-route student catalog publication contract | Astra owner + Sol High writer + Claude reviewer | NanoClaw live `c5fdf5f6d9d5`; Tandemweb live `9d708ec4d940`; source branches pushed; dirty primaries preserved | `complete` | C4 | Exact supervision inaugural/regular schema, source-reference manifest, cohort-aware deterministic generator, pinned NanoClaw compatibility output and Tandemweb static validation consumer, guarded Mini-only source-mirror correction, focused/full checks, bounded review, immutable consumer releases and exact readback. No paid-event/provider/business mutation, enrollment replay, access/roster/customer/payment/class/capacity/schedule change, message, migration, or broader product rollout. | None. Source-sync convergence remains separately unauthorized and paused. | 2026-09-07T23:41Z |
 
 | `NC-20260907-002` | Add selective consultative Sales dialogue while preserving direct answers | Codex + Claude reviewer | `codex/sales-consultative-dialogue-20260907` from exact live `aa73538c8450`; dirty primary preserved | `in_progress` | C3 | Sales decision/playbook/continuity, bounded manual-review protection, generated conversation evaluation, focused/full checks and immutable release. No customer send, follow-up cadence change, new provider access or schema migration. | Implement against accepted owner examples; verify continuity and direct/mixed/exploratory responses; obtain bounded Sonnet review and deploy with non-sending live proof. | 2026-09-07T14:14Z |
+
+### NC-20260907-007 — Scoped MCS catalog publication
+
+- Complete at NanoClaw `013b1d86d884` and Tandemweb `5ed4a462a3a1` with exact
+  generated-artifact and installed readback. Source sync remains paused; no
+  provider/student/payment/roster/access mutation or manufactured canary ran.
+
+### NC-20260907-006 — Two-route supervision catalog publication
+
+- Complete at NanoClaw `c5fdf5f6d9d5` and Tandemweb `9d708ec4d940`. Inaugural
+  and regular routes retain distinct cohort rules and source-driven consumer
+  validation. No enrollment/provider/business mutation was part of publication.
+
+### NC-20260907-002 — Selective consultative Sales dialogue
+
+- Preserved historical concurrent-work claim from the publication lineage.
+  This projection branch integrates no Sales source commit and makes no Sales,
+  customer-message, approval, or runtime change.
 
 ### NC-20260909-001 — Local student enrollment provider-projection foundation
 
 | Task ID | Outcome | Owner/client | Branch @ base | Status | Class | Scope | Next action | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `NC-20260909-001` | Build an unwired, deterministic provider-projection foundation with fail-closed pilot readiness | Codex | `codex/student-enrollment-projection-foundation-20260909` @ authenticated-admission closure `8b1ffbb9`; isolated `/Users/xbohdpukc/dev/NanoClaw-enrollment-projection-20260909` | `in_progress` | C2 (future provider activation C5) | Reconcile reviewed admission/store and current lifecycle/catalog/publication lineages; local source, tests, synthetic provider doubles, disposable PostgreSQL, authoritative docs, review/evidence only. No production migration/runtime wiring/provider access or writes, live/historical student data, credentials, deployment, finance, or communication. | Push this cross-machine claim, integrate the exact reviewed source-authority lineage semantically, then implement and prove the local projection contract. | 2026-09-10T00:22Z |
+| `NC-20260909-001` | Build an unwired, deterministic provider-projection foundation with fail-closed pilot readiness | Codex | `codex/student-enrollment-projection-foundation-20260909` @ integrated admission `8b1ffbb9` + strategy/catalog/publication `40f0d364`, `0e6fb605`, `55c068d2`; isolated checkout | `validating` | C2 (future provider activation C5) | Local deterministic builders/normalizers, injected provider driver, guarded versioned outbox delivery, migration 148, synthetic doubles, disposable PostgreSQL, authoritative docs and review/evidence. No production migration/runtime wiring/provider access or writes, live/historical student data, credentials, deployment, finance, or communication. | Run bounded Claude review, fix verified material findings, rerun focused/full/typecheck/continuity, commit and push; deployment is explicitly not applicable. | 2026-09-10T00:44Z |
 
 - The accepted pilot is the first fully settled self-purchased dated Supervision
   offer/version only. `student_roster` and `heartbeat` are required; `encharge`

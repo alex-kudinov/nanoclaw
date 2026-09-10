@@ -10,6 +10,15 @@ access and is exercised only in disposable databases. See
 `docs/STUDENT-ENROLLMENT-AUTHENTICATED-ADMISSION.md`; native provider bindings,
 both real writer paths and production promotion remain separate pilot gates.
 
+Local/unapplied migration 148 extends the same unwired projection outbox with
+target/version idempotency, exact destination identity, provider-operation and
+readback evidence, uncertain-acceptance holds, and supersession references for
+NC-20260909-001. Synthetic drivers and uniquely generated disposable PostgreSQL
+are the only execution surfaces. It grants no runtime, provider, credential,
+student, financial, deployment, or communication authority; populated rollback
+refuses delivery-evidence deletion. See
+`docs/STUDENT-ENROLLMENT-PROJECTION-FOUNDATION.md`.
+
 Local/unapplied migration 146 supports the unwired enrollment store: projection
 row versions and individual evidence-history identities. It changes no roles
 or grants and has guarded rollback. See
