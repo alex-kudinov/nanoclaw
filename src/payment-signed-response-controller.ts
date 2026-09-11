@@ -33,6 +33,7 @@ const responsePaths = z.enum([
   ...controllerPaths.options,
   '/internal/payments/identity/resolve',
   '/internal/payments/identity/status',
+  '/internal/payments/enrollment-admissions',
 ]);
 const requestTransport = z
   .object({

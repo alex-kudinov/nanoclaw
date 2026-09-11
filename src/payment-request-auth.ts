@@ -15,6 +15,7 @@ const envelopeSchema = z
       '/internal/payments/returns',
       '/internal/payments/identity/resolve',
       '/internal/payments/identity/status',
+      '/internal/payments/enrollment-admissions',
     ]),
     timestamp: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
     nonce: z.uuid(),
