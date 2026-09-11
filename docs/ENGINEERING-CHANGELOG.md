@@ -118,6 +118,17 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   documentation continuity pass. The full root suite is 4,031 pass / 32 skip /
   four unchanged baseline failures on files untouched from exact live
   `75d5b6c1`; the parallel-load-only shadow timeout passes alone.
+- 2026-09-11T01:49Z deployment addendum: commit `7a3fe6b3` is pushed and the
+  verified immutable release is live on `mini-claw.local` (source tree
+  `80196d18…`, artifact `78241d9b…`, archive `2d1f84fe…`, Node 22.23.2).
+  The one-time pre-barrier bootstrap changed only the three release pointers
+  and retains rollback `75d5b6c1`. Barrier-aware health is valid/unpaused with
+  zero host jobs, zero waiting/outgoing work, one listener and healthy
+  Gmail/Slack. A live dry-run while three natural Mailman/Contador/Chief
+  conversations were active classified all three as adoptable and safe with
+  exact queue/runtime agreement. The exclusive release resource was released
+  at Company OS r284. No migration, provider/student/financial/Sheet/
+  Heartbeat/configuration/writer/pilot-arming change occurred.
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
