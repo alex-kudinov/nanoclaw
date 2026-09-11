@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nanoclaw.local/schemas/student-foundations-publication-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "publication_id",
+    "publication_revision",
+    "profile",
+    "consumer",
+    "coverage_state",
+    "population_keys",
+    "source_roots",
+    "sources",
+    "routes",
+    "resolution_profile",
+    "evidence_limits"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "publication_id": { "const": "student-foundations-publication" },
+    "publication_revision": { "type": "integer", "minimum": 1 },
+    "profile": { "const": "foundations-test" },
+    "consumer": { "const": "tandemweb-foundations-test" },
+    "coverage_state": { "const": "staged" },
+    "population_keys": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/key" }
+    },
+    "source_roots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nanoclaw", "tandemweb"],
+      "properties": {
+        "nanoclaw": { "const": "nanoclaw" },
+        "tandemweb": { "const": "tandemweb" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/route" }
+    },
+    "resolution_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_identity_fields",
+        "shared_provider_identity_selects_route",
+        "mismatch",
+        "unknown",
+        "incomplete"
+      ],
+      "properties": {
+        "required_identity_fields": { "const": ["offer", "locale"] },
+        "shared_provider_identity_selects_route": { "const": false },
+        "mismatch": { "const": "hold" },
+        "unknown": { "const": "hold" },
+        "incomplete": { "const": "hold" }
+      }
+    },
+    "evidence_limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group_course_attachment_verified",
+        "learner_access_verified",
+        "progress_verified",
+        "completion_verified",
+        "foundations_certificate_outcome_verified",
+        "runtime_consumer_enabled"
+      ],
+      "properties": {
+        "group_course_attachment_verified": { "const": false },
+        "learner_access_verified": { "const": false },
+        "progress_verified": { "const": false },
+        "completion_verified": { "const": false },
+        "foundations_certificate_outcome_verified": { "const": false },
+        "runtime_consumer_enabled": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+    "locale": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_key",
+        "root",
+        "path",
+        "source_version",
+        "source_sha256"
+      ],
+      "properties": {
+        "source_key": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "root": { "enum": ["nanoclaw", "tandemweb"] },
+        "path": { "type": "string", "minLength": 1 },
+        "source_version": { "type": "string", "minLength": 1 },
+        "source_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer_key",
+        "content_locale",
+        "bundle_key",
+        "component_key"
+      ],
+      "properties": {
+        "offer_key": { "$ref": "#/$defs/key" },
+        "content_locale": { "$ref": "#/$defs/locale" },
+        "bundle_key": { "$ref": "#/$defs/key" },
+        "component_key": { "$ref": "#/$defs/key" }
+      }
+    }
+  }
+}

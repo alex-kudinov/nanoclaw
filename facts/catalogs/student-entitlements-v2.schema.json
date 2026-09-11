@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nanoclaw.local/schemas/student-entitlements-v2.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_id",
+    "catalog_revision",
+    "kind",
+    "base",
+    "component_additions",
+    "bundle_additions",
+    "offer_additions",
+    "certificate_outcome"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0" },
+    "catalog_id": { "const": "student-entitlements" },
+    "catalog_revision": { "const": 2 },
+    "kind": { "const": "immutable_successor_delta" },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "catalog_revision", "source_sha256"],
+      "properties": {
+        "path": { "const": "facts/catalogs/student-entitlements-v1.json" },
+        "catalog_revision": { "const": 1 },
+        "source_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "component_additions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "bundle_additions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/bundle" }
+    },
+    "offer_additions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/offer" }
+    },
+    "certificate_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preset_key",
+        "campaign_key",
+        "campaign_id",
+        "detail_id",
+        "native_identity_verified",
+        "locale_academic_mapping_verified",
+        "publication_status",
+        "source_reference"
+      ],
+      "properties": {
+        "preset_key": { "const": "mcs-foundation" },
+        "campaign_key": { "const": "mcs-foundation@v1" },
+        "campaign_id": { "$ref": "#/$defs/uuid" },
+        "detail_id": { "$ref": "#/$defs/uuid" },
+        "native_identity_verified": { "const": true },
+        "locale_academic_mapping_verified": { "const": false },
+        "publication_status": { "const": "held" },
+        "source_reference": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "uuid": { "type": "string", "format": "uuid", "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$" },
+    "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$" },
+    "locale": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$"
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_key",
+        "content_locale",
+        "name",
+        "component_type",
+        "delivery_mode",
+        "scheduling_model",
+        "consumption_model",
+        "marker_policy",
+        "quantity",
+        "heartbeat",
+        "evidence_status",
+        "sources",
+        "open_questions"
+      ],
+      "properties": {
+        "component_key": { "$ref": "#/$defs/key" },
+        "content_locale": { "$ref": "#/$defs/locale" },
+        "name": { "type": "string", "minLength": 1 },
+        "component_type": { "const": "course" },
+        "delivery_mode": { "const": "self_paced" },
+        "scheduling_model": { "const": "self_paced" },
+        "consumption_model": { "const": "course_completion" },
+        "marker_policy": { "const": "none" },
+        "quantity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "unit", "status"],
+          "properties": {
+            "value": { "const": 1 },
+            "unit": { "const": "course entitlement" },
+            "status": { "const": "source_confirmed" }
+          }
+        },
+        "heartbeat": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "access_group_ids",
+            "course_ids",
+            "cohort_ids",
+            "attachment_status"
+          ],
+          "properties": {
+            "access_group_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": { "$ref": "#/$defs/uuid" }
+            },
+            "course_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": { "$ref": "#/$defs/uuid" }
+            },
+            "cohort_ids": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "items": { "$ref": "#/$defs/uuid" }
+            },
+            "attachment_status": {
+              "const": "group_and_course_verified_attachment_unavailable"
+            }
+          }
+        },
+        "evidence_status": { "const": "source_confirmed" },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "open_questions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundle_key", "program_key", "version", "components"],
+      "properties": {
+        "bundle_key": { "$ref": "#/$defs/key" },
+        "program_key": { "const": "mcs-foundations" },
+        "version": { "const": 1 },
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["component_key", "inclusion", "condition"],
+            "properties": {
+              "component_key": { "$ref": "#/$defs/key" },
+              "inclusion": { "const": "included" },
+              "condition": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer_key",
+        "content_locale",
+        "bundle_key",
+        "component_key",
+        "status",
+        "enrollment_scope",
+        "price_cents",
+        "currency",
+        "regional_policy_reference",
+        "heartbeat_access_group_id",
+        "heartbeat_course_id",
+        "heartbeat_course_cohort_id"
+      ],
+      "properties": {
+        "offer_key": { "$ref": "#/$defs/key" },
+        "content_locale": { "$ref": "#/$defs/locale" },
+        "bundle_key": { "$ref": "#/$defs/key" },
+        "component_key": { "$ref": "#/$defs/key" },
+        "status": { "const": "active" },
+        "enrollment_scope": { "const": "standalone_course" },
+        "price_cents": { "type": "integer", "minimum": 1 },
+        "currency": { "const": "usd" },
+        "regional_policy_reference": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/key" }]
+        },
+        "heartbeat_access_group_id": { "$ref": "#/$defs/uuid" },
+        "heartbeat_course_id": { "$ref": "#/$defs/uuid" },
+        "heartbeat_course_cohort_id": { "$ref": "#/$defs/uuid" }
+      }
+    }
+  }
+}

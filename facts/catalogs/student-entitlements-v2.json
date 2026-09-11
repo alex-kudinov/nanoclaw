@@ -1,0 +1,218 @@
+{
+  "schema_version": "2.0",
+  "catalog_id": "student-entitlements",
+  "catalog_revision": 2,
+  "kind": "immutable_successor_delta",
+  "base": {
+    "path": "facts/catalogs/student-entitlements-v1.json",
+    "catalog_revision": 1,
+    "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b"
+  },
+  "component_additions": [
+    {
+      "component_key": "mcs.foundations.fr",
+      "content_locale": "fr-FR",
+      "name": "Fondamentaux du mentor coaching",
+      "component_type": "course",
+      "delivery_mode": "self_paced",
+      "scheduling_model": "self_paced",
+      "consumption_model": "course_completion",
+      "marker_policy": "none",
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
+      "heartbeat": {
+        "access_group_ids": ["f5e6701b-83ad-4b30-8529-c45e107b35d7"],
+        "course_ids": ["4aa45a9c-271d-4525-983d-0ea9864f31a6"],
+        "cohort_ids": ["674dc326-1b7e-488a-b10c-1b764152a54f"],
+        "attachment_status": "group_and_course_verified_attachment_unavailable"
+      },
+      "evidence_status": "source_confirmed",
+      "sources": [
+        "facts/catalogs/mcs-foundations-locales.json#fr-FR",
+        "facts/catalogs/mcs-foundations-standalone-v1.json#fr-FR"
+      ],
+      "open_questions": [
+        "Verify the exact Heartbeat group-to-course attachment before access projection activation."
+      ]
+    },
+    {
+      "component_key": "mcs.foundations.ja",
+      "content_locale": "ja-JP",
+      "name": "メンターコーチング基礎講座",
+      "component_type": "course",
+      "delivery_mode": "self_paced",
+      "scheduling_model": "self_paced",
+      "consumption_model": "course_completion",
+      "marker_policy": "none",
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
+      "heartbeat": {
+        "access_group_ids": ["b817b870-9d25-415f-bc20-d8a6e9437ccb"],
+        "course_ids": ["360068af-9fed-4ea3-8e61-8eadf6193b0e"],
+        "cohort_ids": ["15b0d919-9c5d-4c37-b8a4-544aeb92a9dc"],
+        "attachment_status": "group_and_course_verified_attachment_unavailable"
+      },
+      "evidence_status": "source_confirmed",
+      "sources": [
+        "facts/catalogs/mcs-foundations-locales.json#ja-JP",
+        "facts/catalogs/mcs-foundations-standalone-v1.json#ja-JP"
+      ],
+      "open_questions": [
+        "Verify the exact Heartbeat group-to-course attachment before access projection activation."
+      ]
+    },
+    {
+      "component_key": "mcs.foundations.es-419",
+      "content_locale": "es-419",
+      "name": "Fundamentos de Mentor Coaching",
+      "component_type": "course",
+      "delivery_mode": "self_paced",
+      "scheduling_model": "self_paced",
+      "consumption_model": "course_completion",
+      "marker_policy": "none",
+      "quantity": {
+        "value": 1,
+        "unit": "course entitlement",
+        "status": "source_confirmed"
+      },
+      "heartbeat": {
+        "access_group_ids": ["ad1ee8f1-4b43-41a3-9239-34bdc36a1d23"],
+        "course_ids": ["7be7606b-8da7-4214-82f2-1a235412fa12"],
+        "cohort_ids": ["f3abc1d5-3c80-43b7-885a-89acf014a7d0"],
+        "attachment_status": "group_and_course_verified_attachment_unavailable"
+      },
+      "evidence_status": "source_confirmed",
+      "sources": [
+        "facts/catalogs/mcs-foundations-locales.json#es-419",
+        "facts/catalogs/mcs-foundations-standalone-v1.json#es-419"
+      ],
+      "open_questions": [
+        "Verify the exact Heartbeat group-to-course attachment before access projection activation."
+      ]
+    }
+  ],
+  "bundle_additions": [
+    {
+      "bundle_key": "mcs-foundations-en:v1",
+      "program_key": "mcs-foundations",
+      "version": 1,
+      "components": [
+        {
+          "component_key": "mcs.foundations",
+          "inclusion": "included",
+          "condition": null
+        }
+      ]
+    },
+    {
+      "bundle_key": "mcs-foundations-fr:v1",
+      "program_key": "mcs-foundations",
+      "version": 1,
+      "components": [
+        {
+          "component_key": "mcs.foundations.fr",
+          "inclusion": "included",
+          "condition": null
+        }
+      ]
+    },
+    {
+      "bundle_key": "mcs-foundations-ja:v1",
+      "program_key": "mcs-foundations",
+      "version": 1,
+      "components": [
+        {
+          "component_key": "mcs.foundations.ja",
+          "inclusion": "included",
+          "condition": null
+        }
+      ]
+    },
+    {
+      "bundle_key": "mcs-foundations-es-419:v1",
+      "program_key": "mcs-foundations",
+      "version": 1,
+      "components": [
+        {
+          "component_key": "mcs.foundations.es-419",
+          "inclusion": "included",
+          "condition": null
+        }
+      ]
+    }
+  ],
+  "offer_additions": [
+    {
+      "offer_key": "mcq-program-a-foundations",
+      "content_locale": "en-US",
+      "bundle_key": "mcs-foundations-en:v1",
+      "component_key": "mcs.foundations",
+      "status": "active",
+      "enrollment_scope": "standalone_course",
+      "price_cents": 29900,
+      "currency": "usd",
+      "regional_policy_reference": null,
+      "heartbeat_access_group_id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+      "heartbeat_course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+      "heartbeat_course_cohort_id": "f2a36eca-a017-4536-9b83-368f51219895"
+    },
+    {
+      "offer_key": "mcs-foundations-fr",
+      "content_locale": "fr-FR",
+      "bundle_key": "mcs-foundations-fr:v1",
+      "component_key": "mcs.foundations.fr",
+      "status": "active",
+      "enrollment_scope": "standalone_course",
+      "price_cents": 29900,
+      "currency": "usd",
+      "regional_policy_reference": null,
+      "heartbeat_access_group_id": "f5e6701b-83ad-4b30-8529-c45e107b35d7",
+      "heartbeat_course_id": "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+      "heartbeat_course_cohort_id": "674dc326-1b7e-488a-b10c-1b764152a54f"
+    },
+    {
+      "offer_key": "mcs-foundations-ja",
+      "content_locale": "ja-JP",
+      "bundle_key": "mcs-foundations-ja:v1",
+      "component_key": "mcs.foundations.ja",
+      "status": "active",
+      "enrollment_scope": "standalone_course",
+      "price_cents": 29900,
+      "currency": "usd",
+      "regional_policy_reference": null,
+      "heartbeat_access_group_id": "b817b870-9d25-415f-bc20-d8a6e9437ccb",
+      "heartbeat_course_id": "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+      "heartbeat_course_cohort_id": "15b0d919-9c5d-4c37-b8a4-544aeb92a9dc"
+    },
+    {
+      "offer_key": "mcs-foundations-es",
+      "content_locale": "es-419",
+      "bundle_key": "mcs-foundations-es-419:v1",
+      "component_key": "mcs.foundations.es-419",
+      "status": "active",
+      "enrollment_scope": "standalone_course",
+      "price_cents": 29900,
+      "currency": "usd",
+      "regional_policy_reference": "latam-resident-v1",
+      "heartbeat_access_group_id": "ad1ee8f1-4b43-41a3-9239-34bdc36a1d23",
+      "heartbeat_course_id": "7be7606b-8da7-4214-82f2-1a235412fa12",
+      "heartbeat_course_cohort_id": "f3abc1d5-3c80-43b7-885a-89acf014a7d0"
+    }
+  ],
+  "certificate_outcome": {
+    "preset_key": "mcs-foundation",
+    "campaign_key": "mcs-foundation@v1",
+    "campaign_id": "08df056a-6dac-46d2-8ca5-14998a5b1d1d",
+    "detail_id": "08deb7a0-0528-469c-8372-d2897e861cef",
+    "native_identity_verified": true,
+    "locale_academic_mapping_verified": false,
+    "publication_status": "held",
+    "source_reference": "peri:output/mcs-ready/FOUNDATIONS-CERTIFICATE-NATIVE-READBACK.md"
+  }
+}

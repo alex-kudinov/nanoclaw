@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "publication_id": "student-foundations-publication",
+  "publication_revision": 1,
+  "profile": "foundations-test",
+  "consumer": "tandemweb-foundations-test",
+  "coverage_state": "staged",
+  "population_keys": [
+    "mcq-program-a-foundations",
+    "mcs-foundations-fr",
+    "mcs-foundations-ja",
+    "mcs-foundations-es"
+  ],
+  "source_roots": { "nanoclaw": "nanoclaw", "tandemweb": "tandemweb" },
+  "sources": [
+    {
+      "source_key": "entitlement_base",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/student-entitlements-v1.json",
+      "source_version": "catalog_revision:1",
+      "source_sha256": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b"
+    },
+    {
+      "source_key": "entitlement_successor",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/student-entitlements-v2.json",
+      "source_version": "catalog_revision:2",
+      "source_sha256": "76182c6863d9768f02f38c5be4952ca371c25332e15e465daae57a0968323c7b"
+    },
+    {
+      "source_key": "locale_catalog",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/mcs-foundations-locales.json",
+      "source_version": "catalog_revision:1",
+      "source_sha256": "b828d032bc14157d3c753bf5b086379d3fc4fdff0df32f3e655de2954684f5ef"
+    },
+    {
+      "source_key": "delivery_readback",
+      "root": "nanoclaw",
+      "path": "facts/catalogs/mcs-foundations-standalone-v1.json",
+      "source_version": "catalog_revision:1",
+      "source_sha256": "0fff83f6c2295dcbdc87efda66a9efdd59a57c631f0500936cb8061be24c1e09"
+    },
+    {
+      "source_key": "checkout_catalog",
+      "root": "tandemweb",
+      "path": "data/checkout/products.json",
+      "source_version": "git:b9c6ab342f9491d820753ffb0d2f14df4d78479a",
+      "source_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9"
+    }
+  ],
+  "routes": [
+    {
+      "offer_key": "mcq-program-a-foundations",
+      "content_locale": "en-US",
+      "bundle_key": "mcs-foundations-en:v1",
+      "component_key": "mcs.foundations"
+    },
+    {
+      "offer_key": "mcs-foundations-fr",
+      "content_locale": "fr-FR",
+      "bundle_key": "mcs-foundations-fr:v1",
+      "component_key": "mcs.foundations.fr"
+    },
+    {
+      "offer_key": "mcs-foundations-ja",
+      "content_locale": "ja-JP",
+      "bundle_key": "mcs-foundations-ja:v1",
+      "component_key": "mcs.foundations.ja"
+    },
+    {
+      "offer_key": "mcs-foundations-es",
+      "content_locale": "es-419",
+      "bundle_key": "mcs-foundations-es-419:v1",
+      "component_key": "mcs.foundations.es-419"
+    }
+  ],
+  "resolution_profile": {
+    "required_identity_fields": ["offer", "locale"],
+    "shared_provider_identity_selects_route": false,
+    "mismatch": "hold",
+    "unknown": "hold",
+    "incomplete": "hold"
+  },
+  "evidence_limits": {
+    "group_course_attachment_verified": false,
+    "learner_access_verified": false,
+    "progress_verified": false,
+    "completion_verified": false,
+    "foundations_certificate_outcome_verified": false,
+    "runtime_consumer_enabled": false
+  }
+}

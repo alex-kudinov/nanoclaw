@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "catalog_id": "mcs-foundations-standalone",
+  "catalog_revision": 1,
+  "observed_at": "2026-09-10T19:13:05Z",
+  "routes": [
+    {
+      "offer_key": "mcq-program-a-foundations",
+      "locale": "en-US",
+      "access_group_id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+      "course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+      "course_cohort_id": "f2a36eca-a017-4536-9b83-368f51219895"
+    },
+    {
+      "offer_key": "mcs-foundations-fr",
+      "locale": "fr-FR",
+      "access_group_id": "f5e6701b-83ad-4b30-8529-c45e107b35d7",
+      "course_id": "4aa45a9c-271d-4525-983d-0ea9864f31a6",
+      "course_cohort_id": "674dc326-1b7e-488a-b10c-1b764152a54f"
+    },
+    {
+      "offer_key": "mcs-foundations-ja",
+      "locale": "ja-JP",
+      "access_group_id": "b817b870-9d25-415f-bc20-d8a6e9437ccb",
+      "course_id": "360068af-9fed-4ea3-8e61-8eadf6193b0e",
+      "course_cohort_id": "15b0d919-9c5d-4c37-b8a4-544aeb92a9dc"
+    },
+    {
+      "offer_key": "mcs-foundations-es",
+      "locale": "es-419",
+      "access_group_id": "ad1ee8f1-4b43-41a3-9239-34bdc36a1d23",
+      "course_id": "7be7606b-8da7-4214-82f2-1a235412fa12",
+      "course_cohort_id": "f3abc1d5-3c80-43b7-885a-89acf014a7d0"
+    }
+  ],
+  "evidence_limits": {
+    "group_exists": true,
+    "course_exists": true,
+    "course_cohort_relationship_verified": true,
+    "group_course_attachment_verified": false,
+    "learner_access_verified": false,
+    "progress_verified": false,
+    "completion_verified": false,
+    "certificate_outcome_verified": false
+  },
+  "source": {
+    "checkout_revision": "git:b9c6ab342f9491d820753ffb0d2f14df4d78479a",
+    "checkout_sha256": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9",
+    "readback_reference": "peri:output/mcs-ready/FOUNDATIONS-DELIVERY-READBACK.md"
+  }
+}

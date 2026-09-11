@@ -20,6 +20,42 @@ const TRACKED_OUTPUTS = {
   nanoclaw: 'facts/generated/student-product-bindings-v2.scoped.json',
   tandemweb: 'data/generated/student-catalog-publication-v2.json',
 };
+const FOUNDATIONS_MANIFEST_PATH =
+  'facts/catalogs/student-foundations-publication-v1.json';
+const FOUNDATIONS_SCHEMA_PATH =
+  'facts/catalogs/student-foundations-publication-v1.schema.json';
+const FOUNDATIONS_ENTITLEMENT_SCHEMA_PATH =
+  'facts/catalogs/student-entitlements-v2.schema.json';
+const FOUNDATIONS_OUTPUT = 'student-foundations-publication-v1.json';
+const FOUNDATIONS_TRACKED_OUTPUTS = {
+  nanoclaw: 'facts/generated/student-foundations-publication-v1.scoped.json',
+  tandemweb: 'data/generated/student-foundations-publication-v1.json',
+};
+const FOUNDATIONS_SOURCES = new Map([
+  [
+    'entitlement_base',
+    { root: 'nanoclaw', path: 'facts/catalogs/student-entitlements-v1.json' },
+  ],
+  [
+    'entitlement_successor',
+    { root: 'nanoclaw', path: 'facts/catalogs/student-entitlements-v2.json' },
+  ],
+  [
+    'locale_catalog',
+    { root: 'nanoclaw', path: 'facts/catalogs/mcs-foundations-locales.json' },
+  ],
+  [
+    'delivery_readback',
+    {
+      root: 'nanoclaw',
+      path: 'facts/catalogs/mcs-foundations-standalone-v1.json',
+    },
+  ],
+  [
+    'checkout_catalog',
+    { root: 'tandemweb', path: 'data/checkout/products.json' },
+  ],
+]);
 const SUPERVISION_POPULATION = ['supervision-inaugural', 'supervision-regular'];
 const EXPECTED_POPULATION = [...SUPERVISION_POPULATION, 'mcs-full'];
 const EXPECTED_CONSUMERS = [
@@ -1255,6 +1291,245 @@ export function buildPublication({
   };
 }
 
+/** Generic manifest-driven staged profile. It never feeds the legacy v2 resolver. */
+export function buildFoundationsPublication({
+  manifest,
+  schema,
+  entitlementSchema,
+  nanoclawRoot,
+  tandemwebRoot,
+}) {
+  validateManifestSchema(schema, manifest);
+  if (
+    !sameArray(
+      manifest.population_keys,
+      manifest.routes.map((route) => route.offer_key),
+    ) ||
+    new Set(
+      manifest.routes.map(
+        (route) => `${route.offer_key}\0${route.content_locale}`,
+      ),
+    ).size !== manifest.routes.length
+  )
+    fail('foundations_population_invalid');
+  const declared = new Map();
+  const values = new Map();
+  if (manifest.sources.length !== FOUNDATIONS_SOURCES.size)
+    fail('foundations_source_set_invalid');
+  for (const source of manifest.sources) {
+    const allowed = FOUNDATIONS_SOURCES.get(source.source_key);
+    if (
+      !allowed ||
+      source.root !== allowed.root ||
+      source.path !== allowed.path ||
+      declared.has(source.source_key)
+    )
+      fail('foundations_source_ref_invalid', source.source_key);
+    const root = source.root === 'nanoclaw' ? nanoclawRoot : tandemwebRoot;
+    const absolute = resolveAllowedSourceForRead(root, source.path);
+    const bytes = fs.readFileSync(absolute);
+    if (sha256Bytes(bytes) !== source.source_sha256)
+      fail('foundations_source_digest_invalid', source.source_key);
+    declared.set(source.source_key, source);
+    values.set(source.source_key, parseJson(bytes, source.source_key));
+  }
+  for (const key of FOUNDATIONS_SOURCES.keys())
+    if (!declared.has(key)) fail('foundations_source_set_invalid', key);
+
+  const base = values.get('entitlement_base');
+  const successor = values.get('entitlement_successor');
+  const localeCatalog = values.get('locale_catalog');
+  const delivery = values.get('delivery_readback');
+  const checkout = values.get('checkout_catalog');
+  validateManifestSchema(entitlementSchema, successor);
+  if (
+    base.catalog_id !== 'student-entitlements' ||
+    base.catalog_revision !== 1 ||
+    successor.base.source_sha256 !==
+      declared.get('entitlement_base').source_sha256 ||
+    successor.catalog_revision !== 2 ||
+    successor.certificate_outcome.locale_academic_mapping_verified !== false ||
+    successor.certificate_outcome.publication_status !== 'held'
+  )
+    fail('foundations_entitlement_successor_invalid');
+  const components = new Map(
+    [...base.components, ...successor.component_additions].map((item) => [
+      item.component_key,
+      item,
+    ]),
+  );
+  const bundles = new Map(
+    successor.bundle_additions.map((item) => [item.bundle_key, item]),
+  );
+  const offers = new Map(
+    successor.offer_additions.map((item) => [item.offer_key, item]),
+  );
+  if (
+    components.size !==
+      base.components.length + successor.component_additions.length ||
+    bundles.size !== successor.bundle_additions.length ||
+    offers.size !== successor.offer_additions.length
+  )
+    fail('foundations_entitlement_duplicate');
+  const deliveryRoutes = new Map(
+    delivery.routes.map((item) => [item.offer_key, item]),
+  );
+  const localeRoutes = new Map(
+    localeCatalog.locales.map((item) => [item.checkout_product, item]),
+  );
+  if (
+    deliveryRoutes.size !== delivery.routes.length ||
+    localeRoutes.size !== localeCatalog.locales.length ||
+    delivery.evidence_limits.group_exists !== true ||
+    delivery.evidence_limits.course_exists !== true ||
+    delivery.evidence_limits.course_cohort_relationship_verified !== true ||
+    delivery.evidence_limits.group_course_attachment_verified !== false ||
+    delivery.evidence_limits.learner_access_verified !== false ||
+    delivery.evidence_limits.progress_verified !== false ||
+    delivery.evidence_limits.completion_verified !== false ||
+    delivery.evidence_limits.certificate_outcome_verified !== false ||
+    Object.values(manifest.evidence_limits).some((value) => value !== false)
+  )
+    fail('foundations_evidence_overreach');
+
+  const routes = manifest.routes.map((route) => {
+    const offer = offers.get(route.offer_key);
+    const bundle = bundles.get(route.bundle_key);
+    const component = components.get(route.component_key);
+    const delivered = deliveryRoutes.get(route.offer_key);
+    const localized = localeRoutes.get(route.offer_key);
+    const product = checkout[route.offer_key];
+    const nativeIds = delivered
+      ? [
+          delivered.access_group_id,
+          delivered.course_id,
+          delivered.course_cohort_id,
+        ]
+      : [];
+    if (
+      !offer ||
+      !bundle ||
+      !component ||
+      !delivered ||
+      !localized ||
+      !product ||
+      nativeIds.some(
+        (value) =>
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            value,
+          ),
+      ) ||
+      offer.bundle_key !== route.bundle_key ||
+      offer.component_key !== route.component_key ||
+      offer.content_locale !== route.content_locale ||
+      localized.locale !== route.content_locale ||
+      bundle.components.length !== 1 ||
+      bundle.components[0].component_key !== route.component_key ||
+      bundle.components[0].inclusion !== 'included' ||
+      bundle.components[0].condition !== null ||
+      component.component_type !== 'course' ||
+      component.delivery_mode !== 'self_paced' ||
+      component.scheduling_model !== 'self_paced' ||
+      component.consumption_model !== 'course_completion' ||
+      component.marker_policy !== 'none' ||
+      (route.component_key !== 'mcs.foundations' &&
+        component.content_locale !== route.content_locale) ||
+      route.component_key === 'mcs.certificate' ||
+      delivered.locale !== route.content_locale ||
+      delivered.access_group_id !== offer.heartbeat_access_group_id ||
+      delivered.course_id !== offer.heartbeat_course_id ||
+      delivered.course_cohort_id !== offer.heartbeat_course_cohort_id ||
+      component.heartbeat.access_group_ids[0] !== delivered.access_group_id ||
+      component.heartbeat.course_ids[0] !== delivered.course_id ||
+      (component.heartbeat.cohort_ids &&
+        component.heartbeat.cohort_ids[0] !== delivered.course_cohort_id) ||
+      offer.status !== 'active' ||
+      offer.enrollment_scope !== 'standalone_course' ||
+      product.active !== true ||
+      product.price_cents !== offer.price_cents ||
+      product.currency !== offer.currency ||
+      product.heartbeat_group_id !== delivered.access_group_id ||
+      product.requires_cohort === true ||
+      !String(product.heartbeat_access_url ?? '').endsWith(
+        delivered.course_cohort_id,
+      )
+    )
+      fail('foundations_route_mismatch', route.offer_key);
+    const sourceRegionalPolicy = product.regional_pricing?.policy_id ?? null;
+    if (sourceRegionalPolicy !== offer.regional_policy_reference)
+      fail('foundations_regional_policy_mismatch', route.offer_key);
+    return {
+      offer_key: route.offer_key,
+      content_locale: route.content_locale,
+      active: true,
+      pricing_authority: {
+        authority: 'wordpress_quote_v1',
+        base_amount_minor: offer.price_cents,
+        currency: offer.currency.toUpperCase(),
+        regional_policy_reference: offer.regional_policy_reference,
+        locale_infers_country: false,
+      },
+      entitlement: {
+        catalog_revision: successor.catalog_revision,
+        bundle_key: route.bundle_key,
+        bundle_version: bundle.version,
+        component_key: route.component_key,
+        enrollment_scope: 'standalone_course',
+      },
+      delivery: {
+        mode: 'self_paced',
+        scheduling_model: 'self_paced',
+        marker_policy: 'none',
+        requires_cohort_selection: false,
+        heartbeat: {
+          access_group_id: delivered.access_group_id,
+          course_id: delivered.course_id,
+          course_cohort_id: delivered.course_cohort_id,
+          group_course_attachment_verified: false,
+        },
+      },
+      certificate: {
+        preset_key: successor.certificate_outcome.preset_key,
+        campaign_key: successor.certificate_outcome.campaign_key,
+        campaign_id: successor.certificate_outcome.campaign_id,
+        detail_id: successor.certificate_outcome.detail_id,
+        native_identity_verified:
+          successor.certificate_outcome.native_identity_verified,
+        locale_academic_mapping_verified: false,
+        publication_status: 'held',
+      },
+    };
+  });
+  if (routes.some((route) => canonicalJson(route).includes('mcs.certificate')))
+    fail('foundations_full_certificate_inherited');
+  const payload = {
+    schema_version: 1,
+    publication_id: 'student-foundations-publication-v1',
+    publication_revision: manifest.publication_revision,
+    profile: manifest.profile,
+    coverage_state: 'staged',
+    population_keys: [...manifest.population_keys],
+    source_versions: Object.fromEntries(
+      manifest.sources.map((source) => [
+        source.source_key,
+        source.source_version,
+      ]),
+    ),
+    source_sha256: Object.fromEntries(
+      manifest.sources.map((source) => [
+        source.source_key,
+        source.source_sha256,
+      ]),
+    ),
+    routes,
+    resolution_profile: structuredClone(manifest.resolution_profile),
+    evidence_limits: structuredClone(manifest.evidence_limits),
+  };
+  const publication = { ...payload, payload_sha256: sha256Value(payload) };
+  const bytes = prettyJson(publication);
+  return { publication, bytes: { nanoclaw: bytes, tandemweb: bytes } };
+}
+
 function parseArgs(argv) {
   const args = { nanoclawRoot: SCRIPT_ROOT };
   for (let index = 0; index < argv.length; index += 1) {
@@ -1267,9 +1542,17 @@ function parseArgs(argv) {
     else if (arg === '--write-tracked') args.writeTracked = true;
     else if (arg === '--check') args.check = true;
     else if (arg === '--check-nanoclaw') args.checkNanoclaw = true;
-    else fail('argument_invalid', arg);
+    else if (arg === '--profile') {
+      const value = argv[++index];
+      if (!value || value.startsWith('--'))
+        fail('argument_missing', '--profile');
+      args.profile = value;
+    } else fail('argument_invalid', arg);
   }
-  if (!args.checkNanoclaw && !args.tandemwebRoot)
+  if (
+    (!args.checkNanoclaw || args.profile === 'foundations-test') &&
+    !args.tandemwebRoot
+  )
     fail('argument_missing', '--tandemweb-root');
   if (!args.outDir && !args.writeTracked && !args.check && !args.checkNanoclaw)
     fail(
@@ -1291,6 +1574,88 @@ function compareBytes(absolute, expected, code) {
 
 function runCli() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.profile !== undefined && args.profile !== 'foundations-test')
+    fail('argument_invalid', args.profile);
+  if (args.profile === 'foundations-test') {
+    const manifest = parseJson(
+      fs.readFileSync(
+        resolveAllowedSourceForRead(
+          args.nanoclawRoot,
+          FOUNDATIONS_MANIFEST_PATH,
+        ),
+      ),
+      'foundations_publication_manifest',
+    );
+    const schema = parseJson(
+      fs.readFileSync(
+        resolveAllowedSourceForRead(args.nanoclawRoot, FOUNDATIONS_SCHEMA_PATH),
+      ),
+      'foundations_publication_schema',
+    );
+    const entitlementSchema = parseJson(
+      fs.readFileSync(
+        resolveAllowedSourceForRead(
+          args.nanoclawRoot,
+          FOUNDATIONS_ENTITLEMENT_SCHEMA_PATH,
+        ),
+      ),
+      'foundations_entitlement_schema',
+    );
+    const built = buildFoundationsPublication({
+      manifest,
+      schema,
+      entitlementSchema,
+      nanoclawRoot: args.nanoclawRoot,
+      tandemwebRoot: args.tandemwebRoot,
+    });
+    if (args.outDir) {
+      fs.mkdirSync(args.outDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(args.outDir, FOUNDATIONS_OUTPUT),
+        built.bytes.nanoclaw,
+      );
+    }
+    if (args.writeTracked) {
+      for (const [consumer, relative] of Object.entries(
+        FOUNDATIONS_TRACKED_OUTPUTS,
+      )) {
+        const root =
+          consumer === 'nanoclaw' ? args.nanoclawRoot : args.tandemwebRoot;
+        const absolute = resolveAllowedSource(root, relative);
+        fs.mkdirSync(path.dirname(absolute), { recursive: true });
+        fs.writeFileSync(absolute, built.bytes[consumer]);
+      }
+    }
+    if (args.check || args.checkNanoclaw) {
+      compareBytes(
+        resolveAllowedSource(
+          args.nanoclawRoot,
+          FOUNDATIONS_TRACKED_OUTPUTS.nanoclaw,
+        ),
+        built.bytes.nanoclaw,
+        'foundations_nanoclaw_output_stale',
+      );
+    }
+    if (args.check) {
+      compareBytes(
+        resolveAllowedSource(
+          args.tandemwebRoot,
+          FOUNDATIONS_TRACKED_OUTPUTS.tandemweb,
+        ),
+        built.bytes.tandemweb,
+        'foundations_tandemweb_output_stale',
+      );
+    }
+    process.stdout.write(
+      `${JSON.stringify({
+        status: 'staged',
+        profile: manifest.profile,
+        population_keys: manifest.population_keys,
+        output_sha256: sha256Bytes(built.bytes.nanoclaw),
+      })}\n`,
+    );
+    return;
+  }
   const manifestAbsolute = resolveAllowedSourceForRead(
     args.nanoclawRoot,
     MANIFEST_PATH,
