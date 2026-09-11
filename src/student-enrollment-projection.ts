@@ -47,7 +47,7 @@ export interface SupervisionProjectionSubject {
 
 export interface ProjectionEnvelope {
   target: StudentProjectionTarget;
-  subjectType: 'assignment';
+  subjectType: 'assignment' | 'enrollment';
   subjectKey: string;
   subjectVersion: number;
   destinationKey: string;
@@ -307,6 +307,34 @@ export function normalizeProviderReadback(
       delivery_starts_at: v.delivery_starts_at,
     };
   if (target === 'heartbeat')
+    if (v.kind === 'heartbeat_test_membership')
+      return {
+        schemaVersion: v.schemaVersion,
+        kind: v.kind,
+        participantPartyId: v.participantPartyId,
+        participantEmailSha256: v.participantEmailSha256,
+        heartbeatUserId: v.heartbeatUserId,
+        groupId: v.groupId,
+        courseId: v.courseId,
+        cohortId: v.cohortId,
+        membership: v.membership,
+        learnerLoginProof: v.learnerLoginProof,
+      };
+  if (target === 'heartbeat')
+    if (v.kind === 'heartbeat_live_membership')
+      return {
+        schemaVersion: v.schemaVersion,
+        kind: v.kind,
+        participantPartyId: v.participantPartyId,
+        participantEmailSha256: v.participantEmailSha256,
+        groupId: v.groupId,
+        courseId: v.courseId,
+        cohortId: v.cohortId,
+        identity: v.identity,
+        membership: v.membership,
+        learnerLoginProof: v.learnerLoginProof,
+      };
+  if (target === 'heartbeat')
     return {
       participant_key: v.participant_key,
       participant_email: String(v.participant_email ?? '')
@@ -333,10 +361,16 @@ export async function deliverProjection(
   if (!(await ledger.isCurrent(envelope)))
     throw new Error('stale_projection_version');
   let operationId: string;
-  const prior = await driver.findByIdempotencyKey(
-    envelope.idempotencyKey,
-    envelope.destinationKey,
-  );
+  let prior: ExistingProjectionEffect | null;
+  try {
+    prior = await driver.findByIdempotencyKey(
+      envelope.idempotencyKey,
+      envelope.destinationKey,
+    );
+  } catch {
+    await ledger.recordRetryableFailure(envelope, 'provider_lookup_failed');
+    return 'retryable_failure';
+  }
   if (prior) {
     operationId = prior.operationId;
   } else {
@@ -384,7 +418,21 @@ export async function deliverProjection(
       return 'held';
     }
   }
-  const readback = await driver.readback(envelope);
+  let readback: unknown;
+  try {
+    readback = await driver.readback(envelope);
+  } catch {
+    await ledger.recordHeldException(
+      envelope,
+      'provider_readback_unavailable',
+      projectionHash({
+        target: envelope.target,
+        idempotencyKey: envelope.idempotencyKey,
+      }),
+      operationId,
+    );
+    return 'held';
+  }
   const readbackSha256 = projectionHash(
     normalizeProviderReadback(envelope.target, readback),
   );

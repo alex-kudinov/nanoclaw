@@ -17,6 +17,7 @@ import { PaymentStore, type PaymentTransaction } from './payment-store.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { createPaymentAttempt, type PaymentScope } from './payment-domain.js';
 import { standardWebhookSigningPayload } from './adyen-webhook.js';
+import { ADYEN_CARD_EVENT_CODES } from './adyen-environment.js';
 import {
   ADYEN_TEST_REFERENCE_PREFIX,
   adyenTestAttemptReference,
@@ -53,7 +54,8 @@ const config = {
   merchantAccount: scope.merchant,
   storeReference: scope.store!,
   referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
-  allowedEventCodes: ['AUTHORISATION'],
+  allowedEventCodes: [...ADYEN_CARD_EVENT_CODES],
+  retainVerifiedOwnedUnsupported: true,
 };
 const sql = (name: string) =>
   readFileSync(
@@ -109,7 +111,18 @@ async function attempt(overrides: Partial<PaymentScope> = {}, persist = true) {
       expiresAt: now + 60000,
     },
   });
-  return persist ? store.acceptAttempt(a) : a;
+  if (!persist) return a;
+  await store.acceptAttempt(a);
+  await store.prepareSession({
+    attemptId: a.attemptId,
+    operationId: a.attemptId,
+    idempotencyKey: a.attemptId,
+    request: JSON.stringify({
+      reference: adyenTestAttemptReference(a.attemptId),
+    }),
+    retryWindowMs: 60000,
+  });
+  return a;
 }
 function notification(
   attemptId: string,
@@ -167,6 +180,7 @@ beforeAll(async () => {
   await pool.query(sql('150_payment_request_admission.sql'));
   await pool.query(migration);
   await pool.query(sql('152_payment_method_reconciliation.sql'));
+  await pool.query(sql('159_payment_terminal_card_retry.sql'));
   store = new PaymentStore(
     transaction,
     new PaymentPayloadVault('fixture', new Map([['fixture', randomBytes(32)]])),
@@ -437,12 +451,11 @@ describe('HMAC-admitted durable provider payment events', () => {
       )[0].result,
     ).toBe('recorded');
   });
-  it('rejects wrong merchant/reference/event and records valid-HMAC amount/currency mismatches', async () => {
+  it('rejects wrong merchant/reference and records valid-HMAC amount/currency mismatches', async () => {
     const a = await attempt();
     for (const change of [
       { merchantAccountCode: 'wrong' },
       { merchantReference: 'wrong' },
-      { eventCode: 'CAPTURE' },
     ]) {
       await expect(
         events.recordWebhook(payload(notification(a.attemptId, change))),
@@ -463,6 +476,75 @@ describe('HMAC-admitted durable provider payment events', () => {
     expect(
       (await events.readInternalEvidence(a.attemptId))?.exceptions,
     ).toContain('amount_or_fact_conflict');
+  });
+  it('routes every supported card event through the canonical store and keeps owned unknown events hash-only', async () => {
+    for (const eventCode of ADYEN_CARD_EVENT_CODES) {
+      const a = await attempt();
+      if (eventCode === 'PENDING' || eventCode === 'AUTHORISATION') {
+        await events.recordWebhook(
+          payload(
+            notification(a.attemptId, {
+              eventCode,
+              success: eventCode === 'AUTHORISATION' ? 'true' : 'false',
+            }),
+          ),
+        );
+      } else {
+        const authorization = notification(a.attemptId);
+        await events.recordWebhook(payload(authorization));
+        await events.recordWebhook(
+          payload(
+            notification(a.attemptId, {
+              eventCode,
+              originalReference:
+                authorization.NotificationRequestItem.pspReference,
+              success: 'false',
+            }),
+          ),
+        );
+      }
+      expect(
+        Number(
+          (
+            await pool.query(
+              'SELECT count(*) FROM business_v2.payment_events WHERE attempt_id=$1',
+              [a.attemptId],
+            )
+          ).rows[0].count,
+        ),
+      ).toBeGreaterThan(0);
+    }
+
+    const a = await attempt();
+    const unknown = notification(a.attemptId, {
+      eventCode: 'OFFER_CLOSED',
+    });
+    expect((await events.recordWebhook(payload(unknown)))[0]).toEqual({
+      result: 'needs_review',
+      attemptId: a.attemptId,
+    });
+    expect(
+      (
+        await pool.query(
+          'SELECT count(*) FROM business_v2.payment_events WHERE attempt_id=$1',
+          [a.attemptId],
+        )
+      ).rows[0].count,
+    ).toBe('0');
+    const exception = await pool.query(
+      `SELECT event_id_sha256,event_code,reason,attempt_hint
+       FROM business_v2.payment_owned_event_exceptions
+       WHERE attempt_hint=$1 AND event_code='OFFER_CLOSED'`,
+      [a.attemptId],
+    );
+    expect(exception.rows).toEqual([
+      expect.objectContaining({
+        event_code: 'OFFER_CLOSED',
+        reason: 'unsupported_event',
+        attempt_hint: a.attemptId,
+      }),
+    ]);
+    expect(exception.rows[0].event_id_sha256).toMatch(/^[a-f0-9]{64}$/);
   });
   it('rolls back reference, event and projection together on a commit failure', async () => {
     const a = await attempt(),
@@ -725,6 +807,10 @@ describe('HMAC-admitted durable provider payment events', () => {
       await client.query('ROLLBACK');
       client.release();
     }
+    await pool.query(
+      'TRUNCATE business_v2.payment_session_result_receipts,business_v2.payment_session_result_operations,business_v2.payment_method_bindings,business_v2.payment_event_operations,business_v2.payment_event_operation_parents,business_v2.payment_owned_event_exceptions',
+    );
+    await pool.query(sql('rollback_159_payment_terminal_card_retry.sql'));
     await pool.query(sql('rollback_152_payment_method_reconciliation.sql'));
     await pool.query(
       'TRUNCATE business_v2.payment_checkout_evidence,business_v2.payment_event_exceptions,business_v2.payment_events,business_v2.payment_provider_references',

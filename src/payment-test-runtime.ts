@@ -1,34 +1,16 @@
 import type { AdyenTestWebhookConfig } from './adyen-webhook.js';
-import { AdyenTestSessionResultAdapter } from './adyen-session-result-adapter.js';
+import type { AdyenSessionRouting } from './adyen-session-adapter.js';
 import {
-  AdyenTestSessionAdapter,
-  type AdyenSessionRouting,
-} from './adyen-session-adapter.js';
-import {
-  PaymentAdmissionStore,
-  type PaymentCallerPolicy,
-} from './payment-admission-store.js';
-import {
-  PaymentApiController,
-  PaymentRequestLimiter,
-} from './payment-api-controller.js';
-import {
-  paymentScopeFingerprint,
   PaymentDomainError,
-  validatePaymentMethodCapabilities,
   type PaymentMethodCapability,
   type PaymentScope,
 } from './payment-domain.js';
-import { PaymentEventStore } from './payment-event-store.js';
-import { PaymentHttpAdapter } from './payment-http-adapter.js';
-import { PaymentMethodReconciliationStore } from './payment-method-reconciliation-store.js';
-import { PaymentPayloadVault } from './payment-payload-vault.js';
+import type { PaymentRequestKey } from './payment-request-auth.js';
 import {
-  PaymentRequestAuthenticator,
-  type PaymentRequestKey,
-} from './payment-request-auth.js';
-import { PaymentSessionService } from './payment-session-service.js';
-import { PaymentStore, type PaymentTransaction } from './payment-store.js';
+  createPaymentRuntimeCore,
+  type PaymentRuntimeCoreDependencies,
+} from './payment-runtime-core.js';
+import type { PaymentResponseKey } from './payment-signed-response-controller.js';
 
 export interface PaymentTestRuntimeConfig {
   mode: 'test';
@@ -42,11 +24,18 @@ export interface PaymentTestRuntimeConfig {
   paymentMethodCapabilities: readonly PaymentMethodCapability[];
   recoveryMode: 'dispatch' | 'reconcile_only';
   requestKeys: ReadonlyMap<string, PaymentRequestKey>;
+  signedResponses?: {
+    keyId: string;
+    key: PaymentResponseKey;
+  };
   payloadKeyId: string;
   payloadKeys: ReadonlyMap<string, Buffer>;
+  returnBindingKey: Buffer;
   adyenApiKey: string;
   sessionRouting: Omit<AdyenSessionRouting, 'scope'>;
-  webhook: AdyenTestWebhookConfig;
+  /** Null keeps Session/return/status available while native ingress fails closed. */
+  webhook: AdyenTestWebhookConfig | null;
+  webhookMethodEvidence?: 'session_result_only' | 'card_scope_webhook';
   limits: {
     requestsPerWindow: number;
     maxActive: number;
@@ -56,180 +45,47 @@ export interface PaymentTestRuntimeConfig {
   };
 }
 
-export interface PaymentTestRuntimeDependencies {
-  /** Explicit 149-151-capable transaction boundary; no default pool is opened. */
-  transaction: PaymentTransaction;
-  providerTransport?: typeof fetch;
-}
-
-function strictReferences(
-  values: readonly string[],
-  allowEmpty = false,
-): ReadonlySet<string> {
-  if (
-    !Array.isArray(values) ||
-    (!allowEmpty && values.length < 1) ||
-    values.length > 100 ||
-    values.some(
-      (value) =>
-        typeof value !== 'string' || !/^[A-Za-z0-9_:.\/-]{1,200}$/.test(value),
-    ) ||
-    new Set(values).size !== values.length
-  )
-    throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  return new Set(values);
-}
-
-function validateRouting(routing: Omit<AdyenSessionRouting, 'scope'>): void {
-  try {
-    const localeMappings = routing.providerLocaleByQuoteLocale;
-    if (
-      localeMappings !== undefined &&
-      (localeMappings === null ||
-        typeof localeMappings !== 'object' ||
-        Array.isArray(localeMappings) ||
-        Object.entries(localeMappings).some(
-          ([quoteLocale, providerLocale]) =>
-            !/^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$/.test(quoteLocale) ||
-            !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(providerLocale),
-        ))
-    )
-      throw new Error();
-    const origin = new URL(routing.allowedOrigin);
-    const returned = new URL(routing.returnPath, origin);
-    if (
-      origin.origin !== routing.allowedOrigin ||
-      origin.username ||
-      origin.password ||
-      !(
-        origin.protocol === 'https:' ||
-        (origin.protocol === 'http:' &&
-          ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname))
-      ) ||
-      !routing.returnPath.startsWith('/') ||
-      returned.origin !== origin.origin ||
-      returned.search ||
-      returned.hash
-    )
-      throw new Error();
-  } catch {
-    throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  }
-}
+export type PaymentTestRuntimeDependencies = PaymentRuntimeCoreDependencies;
 
 /**
- * Composes the reviewed TEST kernels. Importing/calling this factory neither
- * creates a listener nor discovers a database, environment file or LIVE scope.
+ * Compatibility-preserving TEST composition over the environment-explicit
+ * provider core. It still discovers no listener, database, config or secret.
  */
 export function createPaymentTestRuntime(
   config: PaymentTestRuntimeConfig,
   dependencies: PaymentTestRuntimeDependencies,
 ) {
-  if (
-    config.mode !== 'test' ||
-    typeof dependencies?.transaction !== 'function' ||
-    !/^[A-Za-z0-9_-]{1,64}$/.test(config.caller) ||
-    config.scope.provider !== 'adyen' ||
-    config.scope.environment !== 'test' ||
-    config.scope.endpointRegion !== 'eu' ||
-    config.scope.store === null
-  )
+  if (config.mode !== 'test' || config.scope.environment !== 'test')
     throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  const scopeHash = paymentScopeFingerprint(config.scope);
-  const quoteAuthorities = strictReferences(config.quoteAuthorities);
-  const recoveryOfferLocales = strictReferences(config.recoveryOfferLocales);
-  const newAttemptOfferLocales = strictReferences(
-    config.newAttemptOfferLocales,
-    true,
+  return createPaymentRuntimeCore(
+    {
+      caller: config.caller,
+      scope: config.scope,
+      endpoint: { environment: 'test', liveEndpointPrefix: null },
+      quoteAuthorities: config.quoteAuthorities,
+      recoveryOfferLocales: config.recoveryOfferLocales,
+      newAttemptOfferLocales: config.newAttemptOfferLocales,
+      paymentMethodCapabilities: config.paymentMethodCapabilities,
+      recoveryMode: config.recoveryMode,
+      credentials: {
+        environment: 'test',
+        requestKeys: config.requestKeys,
+        ...(config.signedResponses
+          ? { signedResponses: config.signedResponses }
+          : {}),
+        payloadKeyId: config.payloadKeyId,
+        payloadKeys: config.payloadKeys,
+        returnBindingKey: config.returnBindingKey,
+        adyenApiKey: config.adyenApiKey,
+      },
+      sessionRouting: config.sessionRouting,
+      webhook: config.webhook
+        ? { ...config.webhook, environment: 'test' }
+        : null,
+      webhookMethodEvidence:
+        config.webhookMethodEvidence ?? 'session_result_only',
+      limits: config.limits,
+    },
+    dependencies,
   );
-  if (
-    [...newAttemptOfferLocales].some(
-      (offerLocale) => !recoveryOfferLocales.has(offerLocale),
-    )
-  )
-    throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  for (const offerLocale of recoveryOfferLocales) {
-    const separator = offerLocale.lastIndexOf(':');
-    const locale = offerLocale.slice(separator + 1);
-    if (separator < 1 || !/^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$/.test(locale))
-      throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  }
-  for (const offerLocale of newAttemptOfferLocales) {
-    const locale = offerLocale.slice(offerLocale.lastIndexOf(':') + 1);
-    if (
-      /^[a-z]{2}-[0-9]{3}$/.test(locale) &&
-      config.sessionRouting.providerLocaleByQuoteLocale?.[locale] === undefined
-    )
-      throw new PaymentDomainError('invalid_payment_runtime_configuration');
-  }
-  const paymentMethodCapabilities = validatePaymentMethodCapabilities(
-    config.paymentMethodCapabilities,
-  );
-  validateRouting(config.sessionRouting);
-
-  const permits: PaymentCallerPolicy = (caller, attempt) =>
-    caller === config.caller &&
-    quoteAuthorities.has(attempt.quote.authority) &&
-    recoveryOfferLocales.has(
-      `${attempt.quote.offerKey}:${attempt.quote.locale}`,
-    ) &&
-    paymentScopeFingerprint(attempt.scope) === scopeHash;
-  const vault = new PaymentPayloadVault(
-    config.payloadKeyId,
-    config.payloadKeys,
-  );
-  const authenticator = new PaymentRequestAuthenticator(config.requestKeys);
-  const store = new PaymentStore(dependencies.transaction, vault);
-  const admission = new PaymentAdmissionStore(
-    dependencies.transaction,
-    authenticator,
-    vault,
-    permits,
-  );
-  const sessions = new PaymentSessionService(
-    store,
-    new AdyenTestSessionAdapter(
-      config.adyenApiKey,
-      dependencies.providerTransport,
-    ),
-    { scope: config.scope, ...config.sessionRouting },
-    newAttemptOfferLocales,
-    paymentMethodCapabilities,
-    config.recoveryMode,
-  );
-  const events = new PaymentEventStore(
-    dependencies.transaction,
-    config.scope,
-    config.webhook,
-  );
-  const reconciliation = new PaymentMethodReconciliationStore(
-    dependencies.transaction,
-    vault,
-    store,
-    new AdyenTestSessionResultAdapter(
-      config.adyenApiKey,
-      config.scope,
-      dependencies.providerTransport,
-    ),
-    config.scope,
-  );
-  const controller = new PaymentApiController(
-    config.caller,
-    permits,
-    new PaymentRequestLimiter(
-      config.limits.requestsPerWindow,
-      config.limits.maxActive,
-      config.limits.windowMs,
-    ),
-    { admission, store, sessions, events, reconciliation },
-  );
-  const http = new PaymentHttpAdapter(
-    controller,
-    config.limits.maxBodyBytes,
-    config.limits.bodyReadTimeoutMs,
-  );
-  return Object.freeze({
-    http,
-    recordWebhook: (payload: unknown) => events.recordWebhook(payload),
-  });
 }

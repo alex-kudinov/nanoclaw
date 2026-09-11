@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   decidePaymentOperationRecovery,
   PaymentDomainError,
+  paymentMethodCapabilitiesForAttempt,
   preparePaymentOperation,
   recordPaymentOperationResult,
   validateAttempt,
@@ -15,6 +16,10 @@ import {
   PaymentPayloadVault,
   paymentPayloadFingerprint,
 } from './payment-payload-vault.js';
+import {
+  sessionIdSha256,
+  type PaymentSessionReturnBinding,
+} from './payment-session-return-binding.js';
 
 /** Supply the host's withTransaction; tests supply isolated Postgres transactions. */
 export type PaymentTransaction = <T>(
@@ -32,6 +37,9 @@ interface OperationRow {
   version: number;
   lease_token: string | null;
   lease_until: string | null;
+  session_sequence: number;
+  predecessor_operation_id: string | null;
+  retry_terminal_receipt_sha256: string | null;
 }
 
 function uuid(value: string): void {
@@ -52,13 +60,45 @@ function operation(row: OperationRow): PaymentOperation {
 
 export type PaymentDispatch =
   | { decision: 'busy' | 'reconcile' | 'stop' }
-  | { decision: 'reuse_session'; response: string }
+  | {
+      decision: 'reuse_session';
+      response: string;
+      operationId: string;
+      sessionSequence: number;
+    }
   | {
       decision: 'dispatch';
       operation: PaymentOperation;
       request: string;
       leaseToken: string;
       version: number;
+      sessionSequence: number;
+    };
+
+export type PaymentSessionRetryPreparation =
+  | {
+      disposition:
+        | 'reconfirmation_required'
+        | 'limit_reached'
+        | 'retry_not_allowed';
+    }
+  | {
+      disposition: 'prepared';
+      attempt: PaymentAttempt;
+      operationId: string;
+      sessionSequence: number;
+    };
+
+export type PaymentSessionSubmitCheck =
+  | { state: 'session_submit_allowed' }
+  | {
+      state: 'session_submit_blocked';
+      reason:
+        | 'stale_session'
+        | 'needs_review'
+        | 'not_payable'
+        | 'expired'
+        | 'unavailable';
     };
 
 /**
@@ -93,20 +133,42 @@ export class PaymentStore {
   /** Internal reconciliation only; caller authentication/capability precedes it. */
   async readPersistedSession(
     attemptId: string,
-  ): Promise<{ attempt: PaymentAttempt; session: string } | null> {
+    paymentOperationId?: string,
+  ): Promise<{
+    attempt: PaymentAttempt;
+    session: string;
+    paymentOperationId: string;
+    sessionSequence: number;
+  } | null> {
     uuid(attemptId);
+    if (paymentOperationId !== undefined) uuid(paymentOperationId);
     return this.transaction(async (client) => {
       const result = await client.query<{
         contract: unknown;
         operation_id: string;
         encrypted_response: string;
+        session_sequence: number;
       }>(
-        `SELECT a.contract,o.operation_id,o.encrypted_response
+        `SELECT a.contract,o.operation_id,o.encrypted_response,o.session_sequence
         FROM business_v2.payment_attempts a JOIN business_v2.payment_operations o ON o.attempt_id=a.attempt_id
-        WHERE a.attempt_id=$1 AND o.state='session_available' AND o.encrypted_response IS NOT NULL`,
-        [attemptId],
+        WHERE a.attempt_id=$1 AND o.state='session_available'
+          AND o.encrypted_response IS NOT NULL
+          AND ($2::uuid IS NULL OR o.operation_id=$2)
+          AND ($2::uuid IS NOT NULL OR (
+            o.session_sequence=1
+            AND NOT EXISTS (SELECT 1 FROM business_v2.payment_operations x
+              WHERE x.attempt_id=a.attempt_id AND x.session_sequence>1)
+            AND NOT EXISTS (SELECT 1 FROM business_v2.payment_session_terminal_nonpayment_receipts t
+              WHERE t.attempt_id=a.attempt_id)
+            AND NOT EXISTS (SELECT 1 FROM business_v2.payment_session_retry_exceptions e
+              WHERE e.attempt_id=a.attempt_id)
+          ))
+        ORDER BY o.session_sequence DESC`,
+        [attemptId, paymentOperationId ?? null],
       );
       if (!result.rowCount) return null;
+      if (paymentOperationId === undefined && result.rowCount !== 1)
+        throw new PaymentDomainError('session_operation_binding_required');
       const row = result.rows[0];
       return {
         attempt: validateAttempt(row.contract),
@@ -114,6 +176,8 @@ export class PaymentStore {
           row.encrypted_response,
           `${row.operation_id}:response`,
         ),
+        paymentOperationId: row.operation_id,
+        sessionSequence: Number(row.session_sequence),
       };
     });
   }
@@ -188,7 +252,7 @@ export class PaymentStore {
       ensure(attempts.rows.length === 1, 'attempt_not_found');
       const attempt = validateAttempt(attempts.rows[0].contract);
       const existing = await client.query<OperationRow>(
-        'SELECT * FROM business_v2.payment_operations WHERE attempt_id=$1',
+        'SELECT * FROM business_v2.payment_operations WHERE attempt_id=$1 AND session_sequence=1',
         [input.attemptId],
       );
       if (existing.rows.length) {
@@ -282,6 +346,8 @@ export class PaymentStore {
             row.encrypted_response,
             `${operationId}:response`,
           ),
+          operationId: row.operation_id,
+          sessionSequence: row.session_sequence,
         };
       }
       if (decision === 'stop' || decision === 'reconcile') return { decision };
@@ -316,6 +382,7 @@ export class PaymentStore {
         request,
         leaseToken,
         version,
+        sessionSequence: row.session_sequence,
       };
     });
   }
@@ -383,6 +450,285 @@ export class PaymentStore {
         'INSERT INTO business_v2.payment_operation_receipts(operation_id,version,kind) VALUES($1,$2,$3)',
         [input.operationId, version, next.state],
       );
+    });
+  }
+
+  async currentOperationId(attemptId: string): Promise<string> {
+    uuid(attemptId);
+    return this.transaction(async (client) => {
+      const result = await client.query<{ operation_id: string }>(
+        `SELECT operation_id FROM business_v2.payment_operations
+         WHERE attempt_id=$1 ORDER BY session_sequence DESC LIMIT 1`,
+        [attemptId],
+      );
+      ensure(result.rowCount === 1, 'operation_not_found');
+      return result.rows[0].operation_id;
+    });
+  }
+
+  async checkSessionSubmit(
+    binding: PaymentSessionReturnBinding,
+  ): Promise<PaymentSessionSubmitCheck> {
+    uuid(binding.attemptId);
+    uuid(binding.paymentOperationId);
+    return this.transaction(async (client) => {
+      const attempts = await client.query<{ contract: unknown }>(
+        'SELECT contract FROM business_v2.payment_attempts WHERE attempt_id=$1 FOR UPDATE',
+        [binding.attemptId],
+      );
+      ensure(attempts.rowCount === 1, 'attempt_not_found');
+      const attempt = validateAttempt(attempts.rows[0].contract);
+      const operations = await client.query<OperationRow>(
+        `SELECT * FROM business_v2.payment_operations WHERE attempt_id=$1
+         ORDER BY session_sequence FOR UPDATE`,
+        [binding.attemptId],
+      );
+      ensure(operations.rows.length >= 1, 'operation_not_found');
+      const bound = operations.rows.find(
+        (row) => row.operation_id === binding.paymentOperationId,
+      );
+      if (!bound || bound !== operations.rows[operations.rows.length - 1])
+        return { state: 'session_submit_blocked', reason: 'stale_session' };
+      if (
+        Number(bound.session_sequence) !== binding.sessionSequence ||
+        bound.state !== 'session_available' ||
+        bound.encrypted_response === null ||
+        bound.session_expires_at === null
+      )
+        return { state: 'session_submit_blocked', reason: 'unavailable' };
+      let session: { id: string; expiresAt: string };
+      try {
+        const parsed = z
+          .object({
+            id: z.string().min(1).max(200),
+            expiresAt: z.iso.datetime({ offset: true }),
+          })
+          .passthrough()
+          .parse(
+            JSON.parse(
+              this.vault.open(
+                bound.encrypted_response,
+                `${bound.operation_id}:response`,
+              ),
+            ),
+          );
+        session = parsed;
+      } catch {
+        return { state: 'session_submit_blocked', reason: 'needs_review' };
+      }
+      if (
+        sessionIdSha256(session.id) !== binding.sessionIdSha256 ||
+        Date.parse(session.expiresAt) !== Number(bound.session_expires_at)
+      )
+        throw new PaymentDomainError('return_binding_conflict');
+      const now = await this.now(client);
+      if (
+        now >= Number(bound.session_expires_at) ||
+        now >= attempt.quote.expiresAt
+      )
+        return { state: 'session_submit_blocked', reason: 'expired' };
+      const blockers = await client.query<{
+        retry_exception: boolean;
+        method_binding: boolean;
+        enrollment: boolean;
+        terminal_current: boolean;
+        positive_result: boolean;
+        uncertain_result: boolean;
+        positive_event: boolean;
+        pending_event: boolean;
+        uncertain_projection: boolean;
+      }>(
+        `SELECT
+          EXISTS(SELECT 1 FROM business_v2.payment_session_retry_exceptions
+            WHERE attempt_id=$1) retry_exception,
+          EXISTS(SELECT 1 FROM business_v2.payment_method_bindings
+            WHERE attempt_id=$1) method_binding,
+          EXISTS(SELECT 1 FROM business_v2.payment_enrollment_admissions
+            WHERE attempt_id=$1) enrollment,
+          EXISTS(SELECT 1 FROM business_v2.payment_session_terminal_nonpayment_receipts
+            WHERE payment_operation_id=$2) terminal_current,
+          EXISTS(SELECT 1 FROM business_v2.payment_session_result_operations
+            WHERE payment_operation_id=$2 AND state='verified') positive_result,
+          EXISTS(SELECT 1 FROM business_v2.payment_session_result_operations
+            WHERE payment_operation_id=$2 AND state IN ('prepared','unknown','conflict')) uncertain_result,
+          EXISTS(SELECT 1 FROM business_v2.payment_events
+            WHERE attempt_id=$1 AND fact->>'kind'='authorization'
+              AND fact->>'success'='true') positive_event,
+          EXISTS(SELECT 1 FROM business_v2.payment_events
+            WHERE attempt_id=$1 AND fact->>'kind'='pending') pending_event,
+          EXISTS(SELECT 1 FROM business_v2.payment_checkout_evidence
+            WHERE attempt_id=$1 AND projection->>'state' IN
+              ('needs_review','payment_pending','payment_reversed','refund_pending')) uncertain_projection`,
+        [binding.attemptId, binding.paymentOperationId],
+      );
+      const state = blockers.rows[0];
+      if (!state)
+        return { state: 'session_submit_blocked', reason: 'unavailable' };
+      if (state.retry_exception)
+        return { state: 'session_submit_blocked', reason: 'needs_review' };
+      if (
+        state.method_binding ||
+        state.enrollment ||
+        state.terminal_current ||
+        state.positive_result ||
+        state.positive_event
+      )
+        return { state: 'session_submit_blocked', reason: 'not_payable' };
+      if (
+        state.uncertain_result ||
+        state.pending_event ||
+        state.uncertain_projection
+      )
+        return { state: 'session_submit_blocked', reason: 'needs_review' };
+      return { state: 'session_submit_allowed' };
+    });
+  }
+
+  async prepareSuccessorSession(input: {
+    attemptId: string;
+    operationId: string;
+    terminalReceipt: string;
+    requestForSequence: (attempt: PaymentAttempt, sequence: number) => string;
+    retryWindowMs: number;
+  }): Promise<PaymentSessionRetryPreparation> {
+    uuid(input.attemptId);
+    uuid(input.operationId);
+    ensure(
+      /^terminal-nonpayment:v1:[a-f0-9]{64}$/.test(input.terminalReceipt) &&
+        typeof input.requestForSequence === 'function' &&
+        Number.isSafeInteger(input.retryWindowMs) &&
+        input.retryWindowMs > 0 &&
+        input.retryWindowMs < 7 * 86400000,
+      'invalid_terminal_retry_request',
+    );
+    const receiptSha256 = input.terminalReceipt.slice(
+      'terminal-nonpayment:v1:'.length,
+    );
+    return this.transaction(async (client) => {
+      const attempts = await client.query<{ contract: unknown }>(
+        'SELECT contract FROM business_v2.payment_attempts WHERE attempt_id=$1 FOR UPDATE',
+        [input.attemptId],
+      );
+      ensure(attempts.rowCount === 1, 'attempt_not_found');
+      const attempt = validateAttempt(attempts.rows[0].contract);
+      const capabilities = paymentMethodCapabilitiesForAttempt(attempt);
+      if (capabilities.length !== 1 || capabilities[0] !== 'card')
+        return { disposition: 'retry_not_allowed' };
+      const operations = await client.query<OperationRow>(
+        `SELECT * FROM business_v2.payment_operations WHERE attempt_id=$1
+         ORDER BY session_sequence FOR UPDATE`,
+        [input.attemptId],
+      );
+      ensure(operations.rows.length >= 1, 'operation_not_found');
+      const latest = operations.rows[operations.rows.length - 1];
+      const terminal = await client.query<{
+        receipt_sha256: string;
+        payment_operation_id: string;
+        session_sequence: number;
+      }>(
+        `SELECT receipt_sha256,payment_operation_id,session_sequence
+         FROM business_v2.payment_session_terminal_nonpayment_receipts
+         WHERE receipt_sha256=$1 FOR UPDATE`,
+        [receiptSha256],
+      );
+      if (terminal.rowCount !== 1) return { disposition: 'retry_not_allowed' };
+      const existing = operations.rows.find(
+        (row) => row.retry_terminal_receipt_sha256 === receiptSha256,
+      );
+      if (existing) {
+        ensure(
+          existing.predecessor_operation_id ===
+            terminal.rows[0].payment_operation_id &&
+            existing.session_sequence ===
+              Number(terminal.rows[0].session_sequence) + 1,
+          'operation_prepare_conflict',
+        );
+        return {
+          disposition: 'prepared',
+          attempt,
+          operationId: existing.operation_id,
+          sessionSequence: existing.session_sequence,
+        };
+      }
+      const blockers = await client.query(
+        `SELECT
+          EXISTS(SELECT 1 FROM business_v2.payment_session_retry_exceptions
+            WHERE attempt_id=$1) retry_exception,
+          EXISTS(SELECT 1 FROM business_v2.payment_method_bindings
+            WHERE attempt_id=$1) method_binding,
+          EXISTS(SELECT 1 FROM business_v2.payment_enrollment_admissions
+            WHERE attempt_id=$1) enrollment,
+          -- Generic payment_failed is deliberately absent: it is neither
+          -- retry authority nor a contradiction to exact terminal proof.
+          EXISTS(SELECT 1 FROM business_v2.payment_checkout_evidence
+            WHERE attempt_id=$1 AND projection->>'state' IN (
+              'payment_pending','authorization_recorded','payment_reversed',
+              'refund_pending','needs_review'
+            )) contradictory_evidence`,
+        [input.attemptId],
+      );
+      if (
+        blockers.rows[0]?.retry_exception ||
+        blockers.rows[0]?.method_binding ||
+        blockers.rows[0]?.enrollment ||
+        blockers.rows[0]?.contradictory_evidence
+      )
+        return { disposition: 'retry_not_allowed' };
+      if (
+        terminal.rows[0].payment_operation_id !== latest.operation_id ||
+        Number(terminal.rows[0].session_sequence) !== latest.session_sequence
+      )
+        return { disposition: 'retry_not_allowed' };
+      if (latest.session_sequence >= 3) return { disposition: 'limit_reached' };
+      const now = await this.now(client);
+      if (now >= attempt.quote.expiresAt)
+        return { disposition: 'reconfirmation_required' };
+      const sessionSequence = latest.session_sequence + 1;
+      const request = input.requestForSequence(attempt, sessionSequence);
+      ensure(
+        typeof request === 'string' && Buffer.byteLength(request) <= 65536,
+        'invalid_payload_size',
+      );
+      const fingerprint = paymentPayloadFingerprint(request);
+      const prepared = preparePaymentOperation({
+        attempt,
+        operationId: input.operationId,
+        idempotencyKey: input.operationId,
+        requestFingerprint: fingerprint,
+        now,
+        retryUntil: Math.min(
+          now + input.retryWindowMs,
+          attempt.quote.expiresAt,
+        ),
+      });
+      await client.query(
+        `INSERT INTO business_v2.payment_operations
+         (operation_id,attempt_id,idempotency_key,contract,request_sha256,
+          encrypted_request,state,session_sequence,predecessor_operation_id,
+          retry_terminal_receipt_sha256)
+         VALUES($1,$2,$9,$3::jsonb,$4,$5,'dispatching',$6,$7,$8)`,
+        [
+          input.operationId,
+          input.attemptId,
+          JSON.stringify(prepared),
+          fingerprint,
+          this.vault.seal(request, `${input.operationId}:request`),
+          sessionSequence,
+          latest.operation_id,
+          receiptSha256,
+          input.operationId,
+        ],
+      );
+      await client.query(
+        "INSERT INTO business_v2.payment_operation_receipts(operation_id,version,kind) VALUES($1,0,'prepared')",
+        [input.operationId],
+      );
+      return {
+        disposition: 'prepared',
+        attempt,
+        operationId: input.operationId,
+        sessionSequence,
+      };
     });
   }
 }

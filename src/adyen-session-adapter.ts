@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { adyenTestAttemptReference } from './adyen-payment-identifiers.js';
+import {
+  assertCanonicalAdyenEnvironmentProfile,
+  assertAdyenScopeForEnvironment,
+  resolveAdyenEnvironment,
+  type AdyenEnvironmentProfile,
+} from './adyen-environment.js';
+import { adyenAttemptReference } from './adyen-payment-identifiers.js';
 
 import {
   paymentMethodCapabilitiesForAttempt,
@@ -10,7 +16,6 @@ import {
   type PaymentScope,
 } from './payment-domain.js';
 
-const TEST_SESSIONS_URL = 'https://checkout-test.adyen.com/v72/sessions';
 const responseSchema = z.object({
   id: z.string().min(1).max(200),
   sessionData: z.string().min(1).max(60000),
@@ -23,6 +28,11 @@ export interface AdyenSessionRouting {
   returnPath: string;
   /** Explicit presentation-only mapping; never changes quote/product identity. */
   providerLocaleByQuoteLocale?: Readonly<Record<string, string>>;
+}
+
+export interface AdyenApiCredential {
+  readonly environment: 'test' | 'live';
+  readonly apiKey: string;
 }
 
 const ADYEN_METHOD_TYPES: Readonly<
@@ -64,24 +74,21 @@ function resolveProviderShopperLocale(
 }
 
 /** The request contains no API key or raw card/bank data. All money is authoritative. */
-export function buildAdyenTestSessionRequest(
+export function buildAdyenSessionRequest(
   input: unknown,
   routing: AdyenSessionRouting,
+  profile: AdyenEnvironmentProfile,
   configuredPaymentMethods: unknown = ['card'],
+  sessionSequence = 1,
 ): string {
   const attempt = validateAttempt(input);
   const scope = attempt.scope;
+  assertAdyenScopeForEnvironment(scope, profile);
   if (
-    scope.provider !== 'adyen' ||
-    scope.environment !== 'test' ||
-    scope.endpointRegion !== 'eu' ||
-    scope.store === null ||
     JSON.stringify(scope) !==
-      JSON.stringify(
-        validateAttempt({ ...attempt, scope: routing.scope }).scope,
-      )
+    JSON.stringify(validateAttempt({ ...attempt, scope: routing.scope }).scope)
   ) {
-    throw new PaymentDomainError('adyen_test_scope_mismatch');
+    throw new PaymentDomainError('adyen_scope_mismatch');
   }
   const origin = new URL(routing.allowedOrigin);
   if (
@@ -121,7 +128,11 @@ export function buildAdyenTestSessionRequest(
   return JSON.stringify({
     merchantAccount: scope.merchant,
     store: scope.store,
-    reference: adyenTestAttemptReference(attempt.attemptId),
+    reference: adyenAttemptReference(
+      attempt.attemptId,
+      profile,
+      sessionSequence,
+    ),
     amount: {
       value: attempt.quote.finalAmount,
       currency: attempt.quote.currency,
@@ -134,12 +145,37 @@ export function buildAdyenTestSessionRequest(
     // Pin new one-time Sessions; never infer mutable merchant-default capture.
     // This requests immediate capture but does not prove capture or settlement.
     captureDelayHours: 0,
-    shopperReference: `tandem-test-${attempt.attemptId}`,
+    shopperReference: `tandem-${profile.environment}-${attempt.attemptId}`,
     expiresAt: new Date(attempt.quote.expiresAt).toISOString(),
     allowedPaymentMethods: capabilities.map(
       (capability) => ADYEN_METHOD_TYPES[capability],
     ),
   });
+}
+
+export function buildAdyenTestSessionRequest(
+  input: unknown,
+  routing: AdyenSessionRouting,
+  configuredPaymentMethods: unknown = ['card'],
+): string {
+  try {
+    return buildAdyenSessionRequest(
+      input,
+      routing,
+      resolveAdyenEnvironment({
+        environment: 'test',
+        liveEndpointPrefix: null,
+      }),
+      configuredPaymentMethods,
+    );
+  } catch (error) {
+    if (
+      error instanceof PaymentDomainError &&
+      error.code === 'adyen_scope_mismatch'
+    )
+      throw new PaymentDomainError('adyen_test_scope_mismatch');
+    throw error;
+  }
 }
 
 async function readBoundedJson(response: Response): Promise<unknown> {
@@ -162,23 +198,29 @@ async function readBoundedJson(response: Response): Promise<unknown> {
   }
 }
 
-/** TEST-only transport. Unknown response/timeout is never permission for a new key. */
-export class AdyenTestSessionAdapter {
+/** Unknown response/timeout is never permission for a new provider operation. */
+export class AdyenSessionAdapter {
   #apiKey: string;
   constructor(
-    apiKey: string,
+    credential: AdyenApiCredential,
+    private readonly profile: AdyenEnvironmentProfile,
     private readonly transport: typeof fetch = fetch,
   ) {
-    if (!apiKey || /[\r\n]/.test(apiKey))
+    assertCanonicalAdyenEnvironmentProfile(profile);
+    if (
+      credential.environment !== profile.environment ||
+      !credential.apiKey ||
+      /[\r\n]/.test(credential.apiKey)
+    )
       throw new PaymentDomainError('adyen_key_unavailable');
-    this.#apiKey = apiKey;
+    this.#apiKey = credential.apiKey;
   }
 
   async create(request: string, idempotencyKey: string): Promise<AdyenSession> {
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(idempotencyKey))
       throw new PaymentDomainError('invalid_idempotency_key');
     try {
-      const response = await this.transport(TEST_SESSIONS_URL, {
+      const response = await this.transport(this.profile.sessionsUrl, {
         method: 'POST',
         redirect: 'error',
         signal: AbortSignal.timeout(15000),
@@ -200,5 +242,19 @@ export class AdyenTestSessionAdapter {
     } catch {
       throw new PaymentDomainError('provider_outcome_unknown');
     }
+  }
+}
+
+/** Compatibility wrapper for the existing TEST-only composition. */
+export class AdyenTestSessionAdapter extends AdyenSessionAdapter {
+  constructor(apiKey: string, transport: typeof fetch = fetch) {
+    super(
+      { environment: 'test', apiKey },
+      resolveAdyenEnvironment({
+        environment: 'test',
+        liveEndpointPrefix: null,
+      }),
+      transport,
+    );
   }
 }

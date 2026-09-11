@@ -97,7 +97,7 @@ export class PaymentCheckoutAdmissionStore {
       typeof transaction !== 'function' ||
       !/^[A-Za-z0-9_-]{1,64}$/.test(caller) ||
       scope.provider !== 'adyen' ||
-      scope.environment !== 'test' ||
+      !['test', 'live'].includes(scope.environment) ||
       scope.store === null
     )
       throw new PaymentDomainError('invalid_checkout_admission_configuration');

@@ -143,6 +143,12 @@ beforeAll(async () => {
   pool = new Pool({ ...config, database });
   await pool.query('CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin');
   await pool.query(migration);
+  // This suite isolates migration149 behavior; add only the additive read
+  // column now required by the current store. Migration159 is exercised by
+  // the full-service disposable suite with all of its prerequisites.
+  await pool.query(
+    'ALTER TABLE business_v2.payment_operations ADD COLUMN session_sequence integer NOT NULL DEFAULT 1',
+  );
   store = new PaymentStore(transaction(pool), vault);
 }, 15000);
 
@@ -419,6 +425,8 @@ describe('payment store on isolated real Postgres', () => {
       expect(await store.acquireDispatch(input.operationId)).toEqual({
         decision: 'reuse_session',
         response: 'sandbox-session-secret-fixture',
+        operationId: input.operationId,
+        sessionSequence: 1,
       });
       const rows = (
         await pool.query(

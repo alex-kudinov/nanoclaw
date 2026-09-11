@@ -121,6 +121,7 @@ async function seed(
     paymentReference?: string;
     authorizationAmount?: number;
     authorizationCurrency?: string;
+    webhookMethodEvidence?: boolean;
   } = {},
 ) {
   ordinal++;
@@ -306,27 +307,48 @@ async function seed(
         checkoutEvidence,
       ],
     );
-    await client.query(
-      `INSERT INTO business_v2.payment_session_result_operations
-       (operation_id,attempt_id,session_id_sha256,result_sha256,
-        encrypted_result,retry_until,state,version)
-       VALUES($1,$2,repeat('a',64),repeat('b',64),'fixture',$3,'verified',1)`,
-      [methodOperationId, attempt.attemptId, attempt.quote.expiresAt],
-    );
-    await client.query(
-      `INSERT INTO business_v2.payment_method_bindings
+    if (!options.webhookMethodEvidence) {
+      await client.query(
+        `INSERT INTO business_v2.payment_session_result_operations
+       (operation_id,attempt_id,payment_operation_id,session_sequence,
+        session_id_sha256,result_sha256,encrypted_result,retry_until,state,version)
+       VALUES($1,$2,$3,1,repeat('a',64),repeat('b',64),'fixture',$4,'verified',1)`,
+        [
+          methodOperationId,
+          attempt.attemptId,
+          providerOperationId,
+          attempt.quote.expiresAt,
+        ],
+      );
+      await client.query(
+        `INSERT INTO business_v2.payment_method_bindings
        (scope_sha256,payment_reference,attempt_id,method,operation_id,evidence_sha256)
        VALUES($1,$2,$3,$4,$5,repeat('c',64))`,
-      [
-        scopeHash,
-        paymentReference,
-        attempt.attemptId,
-        method,
-        methodOperationId,
-      ],
-    );
+        [
+          scopeHash,
+          paymentReference,
+          attempt.attemptId,
+          method,
+          methodOperationId,
+        ],
+      );
+    }
   });
-  await events.recordWebhook(
+  const eventWriter = options.webhookMethodEvidence
+    ? new PaymentEventStore(
+        transaction,
+        scope,
+        {
+          hmacKeys: [webhookKey],
+          merchantAccount: scope.merchant,
+          storeReference: scope.store!,
+          referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
+          allowedEventCodes: ['AUTHORISATION', 'CHARGEBACK'],
+        },
+        'card_scope_webhook',
+      )
+    : events;
+  await eventWriter.recordWebhook(
     webhook(attempt, paymentReference, 'AUTHORISATION', {
       amount: options.authorizationAmount,
       currency: options.authorizationCurrency,
@@ -440,8 +462,12 @@ beforeAll(async () => {
     '153_website_checkout_provisional_finance.sql',
     '154_payment_identity_preparation.sql',
     '155_website_checkout_admission_evidence.sql',
+    '157_payment_webhook_method_evidence.sql',
+    '159_payment_terminal_card_retry.sql',
   ])
     await pool.query(sql(migration));
+  await pool.query(sql('rollback_157_payment_webhook_method_evidence.sql'));
+  await pool.query(sql('157_payment_webhook_method_evidence.sql'));
   store = new PaymentStore(
     transaction,
     new PaymentPayloadVault(
@@ -465,6 +491,47 @@ afterAll(async () => {
 });
 
 describe('quote-derived website checkout enrollment adapter', () => {
+  it('materializes card enrollment from signed webhook evidence after browser closure', async () => {
+    const fixture = await seed('card', { webhookMethodEvidence: true });
+    const binding = await pool.query(
+      `SELECT method,operation_id,source_kind,source_event_id
+       FROM business_v2.payment_method_bindings WHERE attempt_id=$1`,
+      [fixture.attempt.attemptId],
+    );
+    expect(binding.rows).toEqual([
+      expect.objectContaining({
+        method: 'card',
+        operation_id: null,
+        source_kind: 'card_scope_webhook',
+      }),
+    ]);
+    expect(binding.rows[0].source_event_id).toContain(':AUTHORISATION:true');
+    await expect(
+      adapter('adyen-card-auto-capture-config-v1').admit(
+        fixture.attempt.attemptId,
+      ),
+    ).resolves.toMatchObject({
+      disposition: 'accepted',
+      canonicalEnrollment: 'materialized',
+      currentPaymentState: 'eligible',
+    });
+    expect(
+      (
+        await pool.query(
+          `SELECT method_source_kind,method_operation_id,method_event_id
+           FROM business_v2.payment_enrollment_admissions WHERE attempt_id=$1`,
+          [fixture.attempt.attemptId],
+        )
+      ).rows,
+    ).toEqual([
+      expect.objectContaining({
+        method_source_kind: 'card_scope_webhook',
+        method_operation_id: null,
+        method_event_id: binding.rows[0].source_event_id,
+      }),
+    ]);
+  });
+
   it('materializes one provisional ACH canonical enrollment and replays exactly', async () => {
     const fixture = await seed('ach_direct_debit', { mandate: true });
     const first = await adapter().admit(fixture.attempt.attemptId);
@@ -499,7 +566,8 @@ describe('quote-derived website checkout enrollment adapter', () => {
     const counts = await pool.query(
       `SELECT
        (SELECT count(*) FROM business_v2.student_enrollment_orders WHERE order_key=$1)::int orders,
-       (SELECT count(*) FROM business_v2.student_enrollments_v2)::int enrollments,
+       (SELECT count(*) FROM business_v2.student_enrollments_v2
+         WHERE enrollment_key=$1 || ':seat:1:enrollment')::int enrollments,
        (SELECT count(*) FROM business_v2.student_projection_outbox)::int projections,
        (SELECT count(*) FROM business_v2.payment_enrollment_admissions WHERE attempt_id=$2)::int admissions`,
       [first.orderKey, fixture.attempt.attemptId],
@@ -875,5 +943,17 @@ describe('quote-derived website checkout enrollment adapter', () => {
         )
       ).rows[0].n,
     ).toBe(1);
+  });
+
+  it('refuses migration157 rollback after webhook method evidence exists', async () => {
+    const client = await pool.connect();
+    try {
+      await expect(
+        client.query(sql('rollback_157_payment_webhook_method_evidence.sql')),
+      ).rejects.toThrow('webhook-derived method evidence exists');
+    } finally {
+      await client.query('ROLLBACK').catch(() => undefined);
+      client.release();
+    }
   });
 });

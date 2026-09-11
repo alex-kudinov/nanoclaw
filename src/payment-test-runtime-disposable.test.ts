@@ -220,6 +220,15 @@ beforeAll(async () => {
     '152_payment_method_reconciliation.sql',
   ])
     await pool.query(sql(migration));
+  await pool.query(`CREATE TABLE business_v2.payment_enrollment_admissions (
+    attempt_id uuid PRIMARY KEY REFERENCES business_v2.payment_attempts(attempt_id),
+    scope_sha256 text NOT NULL CHECK (scope_sha256 ~ '^[a-f0-9]{64}$'),
+    method_operation_id uuid NOT NULL
+      REFERENCES business_v2.payment_session_result_operations(operation_id)
+  );
+  ALTER TABLE business_v2.payment_enrollment_admissions OWNER TO nanoclaw_admin`);
+  await pool.query(sql('157_payment_webhook_method_evidence.sql'));
+  await pool.query(sql('159_payment_terminal_card_retry.sql'));
   runtimeConfig = {
     mode: 'test',
     caller,
@@ -232,6 +241,7 @@ beforeAll(async () => {
     requestKeys,
     payloadKeyId: 'fixture-payload',
     payloadKeys: new Map([['fixture-payload', randomBytes(32)]]),
+    returnBindingKey: randomBytes(32),
     adyenApiKey: 'fixture-api-key',
     sessionRouting: {
       allowedOrigin: 'http://localhost:3000',
@@ -402,6 +412,44 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
     expect(
       (await post('/internal/payments/status', statusCommand)).body,
     ).toEqual({ attemptId: a.attemptId, state: 'awaiting_payment' });
+
+    const webhookDisabled = createPaymentTestRuntime(
+      { ...runtimeConfig, webhook: null },
+      {
+        transaction,
+        providerTransport: (async () => {
+          throw new Error('status must not call the provider');
+        }) as typeof fetch,
+      },
+    );
+    const webhookDisabledServer = createServer(webhookDisabled.http.handle);
+    await new Promise<void>((resolve, reject) => {
+      webhookDisabledServer.once('error', reject);
+      webhookDisabledServer.listen(0, '127.0.0.1', resolve);
+    });
+    const webhookDisabledAddress = webhookDisabledServer.address();
+    if (!webhookDisabledAddress || typeof webhookDisabledAddress === 'string')
+      throw new Error('no webhook-disabled address');
+    try {
+      expect(
+        (
+          await post(
+            '/internal/payments/status',
+            { ...statusCommand, requestId: randomUUID() },
+            `http://127.0.0.1:${webhookDisabledAddress.port}`,
+          )
+        ).body,
+      ).toEqual({ attemptId: a.attemptId, state: 'awaiting_payment' });
+      expect(() => webhookDisabled.recordWebhook({})).toThrow(
+        'payment_webhook_unconfigured',
+      );
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        webhookDisabledServer.close((error) =>
+          error ? reject(error) : resolve(),
+        ),
+      );
+    }
     const returned = await post('/internal/payments/returns', {
       ...statusCommand,
       requestId: randomUUID(),

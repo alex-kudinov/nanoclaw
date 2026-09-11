@@ -42,6 +42,14 @@ Its signed inner body has these exact fields:
       "acceptedAt": 0
     },
     "achMandate": null
+  },
+  "attribution": {
+    "snapshotId": "uuid",
+    "snapshotSha256": "sha256",
+    "snapshotJsonBase64": "canonical private bytes",
+    "bindingReference": "attribution-binding:v1:{quoteId}",
+    "bindingSha256": "sha256",
+    "bindingJsonBase64": "canonical private bytes"
   }
 }
 ```
@@ -64,6 +72,12 @@ content hash and receipt.
 New evidence must match a fixed host policy registry of approved document
 version/content-hash pairs and applicability time. An exact previously accepted
 row replays after policy rotation; policy changes never rewrite history.
+
+The complete TEST service requires the attribution field and validates it before
+creating immutable checkout evidence. Standalone controller fixtures may omit it
+only because they do not invoke enrollment. See
+`MCS-WEBSITE-CHECKOUT-TEST-SERVICE.md` for strict nested keys, trusted field-map
+pinning, encrypted host storage and the same-route response.
 
 ## Durable boundary
 
@@ -143,6 +157,18 @@ on replay. A failure after the PSP writer claim rolls back the claim, financial
 records, admission evidence and canonical enrollment together; retry uses the
 same source identities.
 
-No certificate financial-clearance, received-funds, free-order, promotion
-consumption, attribution, native access, customer communication or payment
-operation is implemented here.
+The adapter itself still performs no certificate financial-clearance,
+received-funds, free-order, promotion consumption, attribution emission, native
+access, customer communication or payment operation. The complete TEST service
+requires an independently validated encrypted attribution row before calling the
+adapter and reconstructs a signed promotion-consumption verifier afterward; those
+composition stages do not change the adapter's authority.
+
+The production profile accepts only the English-only
+revision 2 of `student-foundations-publication-v1` as the verified production
+candidate and only when a
+separate accepted activation receipt binds its exact revision, payload digest,
+caller and offer/locale. The candidate's own
+`runtime_consumer_enabled: false` remains truthful: candidate publication and
+runtime activation are separate authorities. TEST continues to accept only the
+original four-locale staged artifact and pin.

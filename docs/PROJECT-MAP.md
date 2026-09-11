@@ -705,7 +705,7 @@ dependencies, not active runtime channels in this snapshot.
 ### Business automation
 
 | Area                 | Main files                                                                                                                                                                                                                                                                                                                                              | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Lead/identity        | `src/lead-matcher.ts`, `src/identity-join.ts`                                                                                                                                                                                                                                                                                                           | business identity resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Pipeline             | `src/pipeline-status.ts`, `src/email-interaction-log.ts`, `src/approved-email-execution.ts`                                                                                                                                                                                                                                                             | interaction and reply-state evidence; deployed NC-20260821-006 host-stamps exact approved Sales pipeline identity into future Gmail-confirmed outbound receipts, with no historical backfill                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Plutio               | `src/plutio-cli.ts`, `src/plutio-proposals.ts`, `src/plutio-outbox-reaper.ts`, `src/booking-plutio-host.ts`                                                                                                                                                                                                                                             | proposal/outbox integration and the dark Booking lifecycle host adapter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -858,13 +858,15 @@ disposable Postgres proof exercises contention, lease loss, atomic receipts and
 guarded rollback without touching live data. Event delivery/projection storage
 and authenticated provider/browser entrypoints remain distinct pending work.
 
-Reviewed TEST-only `src/adyen-session-adapter.ts` and
-`src/payment-session-service.ts` now compose the store without daemon/public
+Environment-explicit `src/adyen-environment.ts`, `src/adyen-session-adapter.ts`
+and `src/payment-session-service.ts` now compose the store without daemon/public
 wiring. Source proof includes concurrency and lost-provider-response recovery;
 the real unused MCS USD299 TEST Session/store proof passed on 2026-09-10 after
 the Node22 network gate cleared: one HTTP201, encrypted durable reuse after pool
-reopen, no SDK/payment/enrollment action. Production schema/configuration and
-live payment/fulfillment remain gated.
+reopen, no SDK/payment/enrollment action. The compatibility TEST wrapper retains
+the existing behavior. LIVE source constructs only the validated Adyen prefix
+hostname and uses a distinct correlation namespace; production host
+configuration, schema apply and payment/fulfillment remain gated.
 
 The owner authorized the shared merchant TEST webhook on 2026-09-10. Explicit
 opt-in filtering verifies the whole batch HMAC and exact merchant before
@@ -881,9 +883,10 @@ response minimization and rate limits remain mandatory integration work.
 
 Source-only event ledger (`payment-event-store.ts`, `payment-checkout-evidence.ts`,
 migration151; `docs/PAYMENT-EVENT-LEDGER.md`) separates checkout Sessions from
-scoped PSP payment attempts, admits only verified TEST AUTHORISATION batches,
-persists immutable events/reference bindings plus sticky review exceptions, and
-updates evidence projections atomically. No daemon/public wiring, settlement,
+scoped PSP payment attempts. The environment-explicit intake admits the full
+existing card reducer event set through the one canonical store; verified owned
+unsupported codes remain hash-only exceptions. Scope/reference conflicts and
+sticky review exceptions remain durable. No daemon/public wiring, settlement,
 enrollment or financial effect is enabled by this source.
 
 `src/payment-api-controller.ts` composes the internal signed transport, route-owned
@@ -892,16 +895,52 @@ resume/status and minimized no-store responses. See `docs/PAYMENT-API-CONTRACT.m
 It is still unwired; no port listener, WordPress/daemon route, production migration
 or secret installation is created by the controller's presence.
 
-Reviewed deployment-readiness composition now adds `payment-http-adapter.ts`
-and `payment-test-runtime.ts`: injected TEST-only kernels, bounded body bytes
-and read deadline, safe abort/rejection handling, immutable card/ACH capability
-snapshots and explicit provider-locale presentation mapping. Stable recovery
-offer registration is separate from new-attempt enablement; rollback recovers
-the original stored operation instead of rebuilding or changing providers.
-Explicit reconciliation-only mode dispatches no new provider operation.
-Real disposable PG/HTTP proofs pass. No default listener, LIVE configuration,
-production migration, settlement or fulfillment is activated by this factory.
-See `docs/PAYMENT-WORDPRESS-ADAPTER-CONTRACT.md` for the private integration.
+Reviewed deployment-readiness composition uses `payment-http-adapter.ts` and
+the compatibility `payment-test-runtime.ts` wrapper over
+`payment-runtime-core.ts`. `payment-live-runtime.ts` adds a source-only,
+disabled-by-default English Foundations/card LIVE composition with exact caller,
+scope, endpoint, credential environment, merchant/store, reference namespace
+and full existing card-event controls. New attempts require both runtime and
+recovery enablement; rollback removes only new-attempt admission while retaining
+status, returns, provider-pinned recovery and owned webhook intake. No default
+listener, environment reader, production database, migration, public BFF,
+publication/fulfillment lowering or provider call is introduced. See
+`docs/PAYMENT-LIVE-RUNTIME.md` and
+`docs/PAYMENT-WORDPRESS-ADAPTER-CONTRACT.md`.
+
+The concrete customer communication owner is
+`src/website-checkout-customer-notices.ts` with local migration 158 and
+`docs/WEBSITE-CHECKOUT-CUSTOMER-NOTICES.md`. It independently re-reads exact
+LIVE card, money, enrollment, Party and current Heartbeat membership authority;
+uses the canonical Gmail sender and C3 brake; and stores an immutable hashed
+job plus Gmail ACK/readback stages. Self purchase receives one combined
+payment/access confirmation. Gift purchase separates the payer receipt from a
+learner access notice that does not duplicate Heartbeat's sign-in invitation.
+Unknown Gmail acceptance is held and reconciled by exact Sent metadata, never
+blindly resent. The owner and migration remain unwired, unapplied and off.
+
+`website-checkout-service.ts` now provides one full environment-explicit
+private composition reused by the compatibility TEST wrapper and the LIVE
+wrapper. `website-checkout-live-runner.ts` adds an executable loopback-only HTTP
+listener with explicit private config, schema/dependency readiness, shallow
+health and bounded graceful shutdown; it never creates or migrates a database.
+LIVE enrollment accepts only the inert English production candidate plus a
+separate exact activation receipt. Heartbeat delivery reuses the canonical
+projection outbox/leases/receipts, rechecks the active enrollment and current
+card readiness before every provider operation, preserves existing identities
+and groups, and adds only the verified English group. A restart-safe scanner
+drives enrollment, access and the injected idempotent customer-notice owner
+from durable webhook evidence without browser/status dependence; provider work
+never blocks webhook acknowledgment. Post-enrollment adverse evidence adds a
+version-keyed Finance-owned exception without a new grant or auto-revoke. New
+LIVE Sessions are
+invalid unless publication, access-owner, webhook/capture, and receipt/welcome
+owner-policy gates are all active. Migration158 and the canonical Gmail-backed
+notice adapter now provide the default-off durable owner; exact sender and
+activation receipts remain external gates. TEST adds an explicit
+`public_anonymous` private routing profile for the MCS return path while keeping
+the prior protected-preview profile as the default. See
+`docs/WEBSITE-CHECKOUT-LIVE-SERVICE.md`.
 
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
@@ -909,13 +948,15 @@ PostgreSQL store and projection outbox (migrations146-148). See
 `docs/MCS-ENROLLMENT-DEPENDENCY-INTEGRATION.md`. Exact source imports do not
 activate the unrelated Supervision production pilot or an MCS source/consumer.
 
-`adyen-session-result-adapter.ts` is a reviewed standalone TEST verifier for
+`adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,
 stored Session ID, one Authorised PSP payment, exact amount/currency and actual
 method. A single deadline and response limit bound transport/body/cleanup.
 It does not trust unsigned Standard-webhook method metadata or claim settlement,
-fulfillment/certification readiness. Durable reconciliation wiring follows under
-the separately reserved migration152; no provider call occurs on import.
+fulfillment/certification readiness. TEST retains its compatibility wrapper;
+LIVE uses the exact constructed v72 endpoint and separate reference namespace.
+Durable reconciliation remains under migration152; no provider call occurs on
+import.
 
 Migration152 now composes encrypted, fenced Session-result reconciliation and
 actual-method bindings with required card/ACH event history and minimized status.
@@ -948,6 +989,22 @@ locale component, paid-in-full agreement and pending-receipt obligation, but
 requests no projection/access delivery and never evaluates or clears a
 certificate. This remains disposable/source-only: no listener, runtime import,
 production migration, provider call or business action is enabled.
+
+`createWebsiteCheckoutTestService` is the first executable disposable composition
+of those reviewed kernels for English Foundations/card only. One listener-ready
+handler routes signed Session/recovery/status, identity and same-route checkout/
+attribution/enrollment requests; the existing HMAC event store remains an injected
+native intake. Tentative migration156 encrypts and binds the strict WordPress
+attribution snapshot/quote record before canonical materialization. Exact request
+replay moves from held to accepted/duplicate after authenticated result/event
+evidence and can emit the stable reviewed promotion verifier. No daemon import,
+default listener, production schema apply, real provider operation, projection,
+certificate action follows from this source. The later explicit QA-only access
+boundary in `MCS-WEBSITE-CHECKOUT-HEARTBEAT-TEST-DELIVERY.md` reuses migration148
+to queue an enrollment-subject Heartbeat projection only after canonical TEST card
+admission. It hard-pins one existing QA identity/destination, uses the registered
+toolbox with exact native membership readback, and keeps membership distinct from
+course attachment, learner login/progress and production fulfillment.
 
 | Area                     | Main files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -2482,7 +2539,7 @@ while keeping secrets and volatile runtime state excluded.
 ## 21. Documentation index
 
 | Document                                            | Use                                                                                                                                       | Caution                                                                                                                                                                                                                                                                                                                |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CLAUDE.md`                                         | current repository operations and conventions                                                                                             | verify implementation-specific claims                                                                                                                                                                                                                                                                                  |
 | `AGENTS.md`                                         | Codex entry point                                                                                                                         | intentionally delegates to Claude sources                                                                                                                                                                                                                                                                              |
 | `docs/PROJECT-MAP.md`                               | reconciled cross-client map                                                                                                               | dated snapshot, not live status                                                                                                                                                                                                                                                                                        |

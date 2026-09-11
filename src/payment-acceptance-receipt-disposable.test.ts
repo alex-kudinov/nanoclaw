@@ -73,6 +73,9 @@ beforeAll(async () => {
   pool = new Pool({ ...config, database });
   await pool.query('CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin');
   await pool.query(sql('149_payment_attempt_store.sql'));
+  await pool.query(
+    'ALTER TABLE business_v2.payment_operations ADD COLUMN session_sequence integer NOT NULL DEFAULT 1',
+  );
   await pool.query(sql('150_payment_request_admission.sql'));
   store = new PaymentStore(transaction, vault);
 }, 15000);

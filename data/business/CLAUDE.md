@@ -32,6 +32,33 @@ bridge and gives no settlement/fulfillment authority. All four tables are
 admin-only; populated rollback refuses. No production apply or public route.
 See `docs/PAYMENT-EVENT-LEDGER.md` for source, scope and transaction guarantees.
 
+Migration 156 is a tentative local-only NC-20260909-003 attribution-admission
+schema over migrations 150 and 155. It stores exact WordPress snapshot/binding
+hashes and encrypted canonical bytes in one immutable admin-only row bound by
+foreign key to checkout evidence and the originating status-capability operation.
+Empty rollback/reapply is allowed; populated rollback refuses. The migration is
+not a globally published namespace reservation and must not be committed, pushed
+or applied outside a generated disposable database until root resolves shared
+migration authority. See `docs/MCS-WEBSITE-CHECKOUT-TEST-SERVICE.md`.
+
+Migration 157 is a tentative local-only NC-20260909-003 method-evidence
+successor over 151, 152 and 155. It preserves existing Session-result rows and
+adds an exact alternative source: a successful HMAC-admitted AUTHORISATION may
+bind `card` only from an attempt whose immutable capability set is exactly
+card-only. The method and enrollment rows reference that exact payment event;
+unsigned provider/browser method labels are not authority. Empty rollback is
+verified; populated webhook-source rollback refuses. No production apply,
+provider action or enrollment follows from schema presence.
+
+Migration 158 is the tentative local-only customer-notice ledger ordered after
+157. It adds immutable admin-only notice jobs and append-only Gmail receipt
+stages for the exact English website checkout. It stores Party IDs and hashes,
+not customer email/body content; uncertain Gmail acceptance holds against blind
+resend and populated rollback refuses. It is not the Plutio outbox or a new
+student projection target. No migration apply, Gmail send, daemon wiring or
+activation follows from source presence. See
+`docs/WEBSITE-CHECKOUT-CUSTOMER-NOTICES.md`.
+
 Migration 150 adds source-only admin-owned payment request nonces, guest-status
 capabilities and append-only revocations over migration 149. Authentication uses
 an exact signed-body/header contract and DB-clock replay admission; status tokens

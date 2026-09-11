@@ -123,7 +123,7 @@ export class PaymentIdentityReferenceIssuer {
     if (
       this.#secret.length < 32 ||
       source.provider !== 'adyen' ||
-      source.environment !== 'test' ||
+      !['test', 'live'].includes(source.environment) ||
       source.store === null
     )
       throw new PaymentDomainError('invalid_identity_configuration');

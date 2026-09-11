@@ -74,6 +74,7 @@ function setup(
       sessionData: 'private-session-fixture',
       expiresAt: new Date(now + 60000).toISOString(),
     },
+    returnBinding: 'fixture-private-return-binding',
   };
   const deps = {
     admission: {
@@ -117,6 +118,9 @@ function setup(
       validateStart: vi.fn(validateAttempt),
       start: vi.fn(async () => ready),
       resume: vi.fn(async () => ready),
+      checkSubmit: vi.fn(async () => ({
+        state: 'session_submit_allowed' as const,
+      })),
     },
     events: {
       readInternalEvidence: vi.fn(
@@ -413,6 +417,41 @@ describe('unwired signed payment HTTP controller', () => {
     expect(s.deps.store.readAttempt).not.toHaveBeenCalled();
     expect(s.deps.events.readInternalEvidence).not.toHaveBeenCalled();
     expect(s.deps.sessions.resume).not.toHaveBeenCalled();
+  });
+  it('admits a signed read-only submit check with no card or operation fields', async () => {
+    const s = setup(undefined, true);
+    const command = {
+      requestId: randomUUID(),
+      attemptId: s.attempt.attemptId,
+      capability: s.token,
+      returnBinding: 'private-exact-binding',
+    };
+    const checked = await s.controller.handle(
+      'POST',
+      '/internal/payments/session-submit-checks',
+      s.signed('/internal/payments/session-submit-checks', command),
+    );
+    expect(checked).toMatchObject({
+      status: 200,
+      body: {
+        attemptId: s.attempt.attemptId,
+        state: 'session_submit_allowed',
+      },
+    });
+    expect(s.deps.sessions.checkSubmit).toHaveBeenCalledWith({
+      attemptId: s.attempt.attemptId,
+      returnBinding: command.returnBinding,
+    });
+    const withCardData = { ...command, requestId: randomUUID(), card: '4111' };
+    expect(
+      (
+        await s.controller.handle(
+          'POST',
+          '/internal/payments/session-submit-checks',
+          s.signed('/internal/payments/session-submit-checks', withCardData),
+        )
+      ).status,
+    ).toBe(400);
   });
   it('authenticates a returned Session result and exposes no method/provider detail', async () => {
     const s = setup(undefined, true);

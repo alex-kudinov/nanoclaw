@@ -16,14 +16,45 @@ ALTER TABLE business_v2.payment_operations
   DROP CONSTRAINT payment_operations_attempt_id_key,
   ADD COLUMN session_sequence integer NOT NULL DEFAULT 1
     CHECK (session_sequence BETWEEN 1 AND 3),
-  ADD COLUMN predecessor_operation_id uuid
-    REFERENCES business_v2.payment_operations(operation_id),
+  ADD COLUMN predecessor_operation_id uuid,
   ADD CONSTRAINT payment_operations_attempt_sequence_uniq
     UNIQUE(attempt_id,session_sequence),
   ADD CONSTRAINT payment_operations_identity_sequence_uniq
     UNIQUE(operation_id,attempt_id,session_sequence),
   ADD CONSTRAINT payment_operations_predecessor_uniq
     UNIQUE(predecessor_operation_id);
+
+ALTER TABLE business_v2.payment_operations
+  ADD COLUMN predecessor_session_sequence integer
+    GENERATED ALWAYS AS (
+      CASE WHEN session_sequence>1 THEN session_sequence-1 ELSE NULL END
+    ) STORED,
+  ADD CONSTRAINT payment_operations_predecessor_lineage_fk
+    FOREIGN KEY(predecessor_operation_id,attempt_id,predecessor_session_sequence)
+    REFERENCES business_v2.payment_operations(operation_id,attempt_id,session_sequence);
+
+-- Generated columns are unavailable as stable NEW values in a BEFORE trigger.
+-- Exclude only the DB-generated adjacency projection; every caller-writable
+-- lineage field remains immutable under migration149's original guard.
+CREATE OR REPLACE FUNCTION business_v2.fn_payment_operation_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$ BEGIN
+  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'payment operation deletion refused'; END IF;
+  IF (to_jsonb(NEW) - ARRAY[
+        'state','session_expires_at','encrypted_response','version',
+        'lease_token','lease_until','predecessor_session_sequence'
+      ]) IS DISTINCT FROM
+     (to_jsonb(OLD) - ARRAY[
+        'state','session_expires_at','encrypted_response','version',
+        'lease_token','lease_until','predecessor_session_sequence'
+      ]) THEN
+    RAISE EXCEPTION 'payment operation immutable contract';
+  END IF;
+  IF NEW.version <> OLD.version + 1 THEN RAISE EXCEPTION 'payment operation version fence'; END IF;
+  IF OLD.state IN ('session_available','permanent_failure') THEN
+    RAISE EXCEPTION 'payment operation terminal state';
+  END IF;
+  RETURN NEW;
+END $$;
 
 CREATE TABLE business_v2.payment_session_terminal_nonpayment_receipts (
   receipt_sha256 text PRIMARY KEY CHECK (receipt_sha256 ~ '^[a-f0-9]{64}$'),
@@ -38,26 +69,34 @@ CREATE TABLE business_v2.payment_session_terminal_nonpayment_receipts (
   source text NOT NULL CHECK (source='authenticated_session_result'),
   observed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   UNIQUE(attempt_id,session_sequence),
+  UNIQUE(receipt_sha256,attempt_id,payment_operation_id,session_sequence),
   FOREIGN KEY(payment_operation_id,attempt_id,session_sequence)
     REFERENCES business_v2.payment_operations(operation_id,attempt_id,session_sequence)
 );
 
 ALTER TABLE business_v2.payment_operations
-  ADD COLUMN retry_terminal_receipt_sha256 text
-    REFERENCES business_v2.payment_session_terminal_nonpayment_receipts(receipt_sha256),
+  ADD COLUMN retry_terminal_receipt_sha256 text,
   ADD CONSTRAINT payment_operations_retry_terminal_uniq
     UNIQUE(retry_terminal_receipt_sha256),
+  ADD CONSTRAINT payment_operations_retry_terminal_lineage_fk
+    FOREIGN KEY(
+      retry_terminal_receipt_sha256,attempt_id,
+      predecessor_operation_id,predecessor_session_sequence
+    ) REFERENCES business_v2.payment_session_terminal_nonpayment_receipts(
+      receipt_sha256,attempt_id,payment_operation_id,session_sequence
+    ),
   ADD CONSTRAINT payment_operations_retry_lineage_check CHECK (
     (session_sequence=1 AND predecessor_operation_id IS NULL
+      AND predecessor_session_sequence IS NULL
       AND retry_terminal_receipt_sha256 IS NULL)
     OR
     (session_sequence>1 AND predecessor_operation_id IS NOT NULL
+      AND predecessor_session_sequence=session_sequence-1
       AND retry_terminal_receipt_sha256 IS NOT NULL)
   );
 
--- Migration149's operation guard compares every column except its explicit
--- state/lease/result allowlist. These additive lineage columns are therefore
--- DB-immutable without weakening or replacing that guard.
+-- Migration149's operation guard still compares every caller-writable lineage
+-- column. Only the generated adjacency projection is excluded above.
 
 ALTER TABLE business_v2.payment_session_result_operations
   DROP CONSTRAINT payment_session_result_operations_attempt_id_key,

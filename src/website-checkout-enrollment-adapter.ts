@@ -41,97 +41,110 @@ const ref = z
   .min(1)
   .max(200)
   .regex(/^[A-Za-z0-9_:.\/-]+$/);
-const publicationSchema = z
+const routeSchema = z
   .object({
-    schema_version: z.literal(1),
-    publication_id: z.literal('student-foundations-publication-v1'),
-    publication_revision: z.number().int().positive(),
-    profile: z.literal('foundations-test'),
-    coverage_state: z.literal('staged'),
-    population_keys: z.array(ref).min(1).max(100),
-    source_versions: z.record(z.string(), z.string()),
-    source_sha256: z.record(z.string(), digest),
-    routes: z
-      .array(
-        z
-          .object({
-            offer_key: ref,
-            content_locale: z
-              .string()
-              .regex(/^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$/),
-            active: z.literal(true),
-            pricing_authority: z
-              .object({
-                authority: z.literal('wordpress_quote_v1'),
-                base_amount_minor: z.number().int().positive(),
-                currency: z.string().regex(/^[A-Z]{3}$/),
-                regional_policy_reference: ref.nullable(),
-                locale_infers_country: z.literal(false),
-              })
-              .strict(),
-            entitlement: z
-              .object({
-                catalog_revision: z.number().int().positive(),
-                bundle_key: ref,
-                bundle_version: z.number().int().positive(),
-                component_key: ref,
-                enrollment_scope: z.literal('standalone_course'),
-              })
-              .strict(),
-            delivery: z
-              .object({
-                mode: z.literal('self_paced'),
-                scheduling_model: z.literal('self_paced'),
-                marker_policy: z.literal('none'),
-                requires_cohort_selection: z.literal(false),
-                heartbeat: z.object({}).passthrough(),
-              })
-              .strict(),
-            certificate: z
-              .object({
-                preset_key: z.literal('mcs-foundation'),
-                campaign_key: z.literal('mcs-foundation@v1'),
-                campaign_id: uuid,
-                detail_id: uuid,
-                native_identity_verified: z.literal(true),
-                locale_academic_mapping_verified: z.literal(false),
-                publication_status: z.literal('held'),
-              })
-              .strict(),
-          })
-          .strict(),
-      )
-      .min(1)
-      .max(100),
-    resolution_profile: z
+    offer_key: ref,
+    content_locale: z.string().regex(/^[a-z]{2}(?:-(?:[A-Z]{2}|[0-9]{3}))?$/),
+    active: z.literal(true),
+    pricing_authority: z
       .object({
-        required_identity_fields: z.tuple([
-          z.literal('offer'),
-          z.literal('locale'),
-        ]),
-        shared_provider_identity_selects_route: z.literal(false),
-        mismatch: z.literal('hold'),
-        unknown: z.literal('hold'),
-        incomplete: z.literal('hold'),
+        authority: z.literal('wordpress_quote_v1'),
+        base_amount_minor: z.number().int().positive(),
+        currency: z.string().regex(/^[A-Z]{3}$/),
+        regional_policy_reference: ref.nullable(),
+        locale_infers_country: z.literal(false),
       })
       .strict(),
-    evidence_limits: z
+    entitlement: z
       .object({
-        group_course_attachment_verified: z.literal(false),
-        learner_access_verified: z.literal(false),
-        progress_verified: z.literal(false),
-        completion_verified: z.literal(false),
-        foundations_certificate_outcome_verified: z.literal(false),
-        runtime_consumer_enabled: z.literal(false),
+        catalog_revision: z.number().int().positive(),
+        bundle_key: ref,
+        bundle_version: z.number().int().positive(),
+        component_key: ref,
+        enrollment_scope: z.literal('standalone_course'),
       })
       .strict(),
-    payload_sha256: digest,
+    delivery: z
+      .object({
+        mode: z.literal('self_paced'),
+        scheduling_model: z.literal('self_paced'),
+        marker_policy: z.literal('none'),
+        requires_cohort_selection: z.literal(false),
+        heartbeat: z.object({}).passthrough(),
+      })
+      .strict(),
+    certificate: z
+      .object({
+        preset_key: z.literal('mcs-foundation'),
+        campaign_key: z.literal('mcs-foundation@v1'),
+        campaign_id: uuid,
+        detail_id: uuid,
+        native_identity_verified: z.literal(true),
+        locale_academic_mapping_verified: z.literal(false),
+        publication_status: z.literal('held'),
+      })
+      .strict(),
   })
   .strict();
+const sharedPublication = {
+  schema_version: z.literal(1),
+  publication_revision: z.number().int().positive(),
+  population_keys: z.array(ref).min(1).max(100),
+  source_versions: z.record(z.string(), z.string()),
+  source_sha256: z.record(z.string(), digest),
+  routes: z.array(routeSchema).min(1).max(100),
+  resolution_profile: z
+    .object({
+      required_identity_fields: z.tuple([
+        z.literal('offer'),
+        z.literal('locale'),
+      ]),
+      shared_provider_identity_selects_route: z.literal(false),
+      mismatch: z.literal('hold'),
+      unknown: z.literal('hold'),
+      incomplete: z.literal('hold'),
+    })
+    .strict(),
+  evidence_limits: z
+    .object({
+      group_course_attachment_verified: z.boolean(),
+      learner_access_verified: z.literal(false),
+      progress_verified: z.literal(false),
+      completion_verified: z.literal(false),
+      foundations_certificate_outcome_verified: z.literal(false),
+      runtime_consumer_enabled: z.literal(false),
+    })
+    .strict(),
+  payload_sha256: digest,
+} as const;
+const testPublicationSchema = z
+  .object({
+    ...sharedPublication,
+    publication_id: z.literal('student-foundations-publication-v1'),
+    profile: z.literal('foundations-test'),
+    coverage_state: z.literal('staged'),
+  })
+  .strict();
+const livePublicationSchema = z
+  .object({
+    ...sharedPublication,
+    publication_id: z.literal('student-foundations-publication-v1'),
+    profile: z.literal('foundations-production-candidate'),
+    coverage_state: z.literal('verified_candidate'),
+  })
+  .strict();
+const publicationSchema = z.union([
+  testPublicationSchema,
+  livePublicationSchema,
+]);
 type Publication = z.infer<typeof publicationSchema>;
 type Route = Publication['routes'][number];
 
-type MethodRow = PaymentMethodBinding & { operationId: string };
+type MethodRow = PaymentMethodBinding & {
+  operationId: string | null;
+  sourceKind: 'session_result' | 'card_scope_webhook';
+  sourceEventId: string | null;
+};
 type ProjectionRow = { projection: CheckoutPaymentEvidence; version: number };
 type IdentityRow = {
   caller: string;
@@ -157,7 +170,9 @@ type ConsumedRow = {
   identity_receipt_reference: string;
   payment_reference: string;
   payment_method: 'card' | 'ach_direct_debit';
-  method_operation_id: string;
+  method_operation_id: string | null;
+  method_source_kind: 'session_result' | 'card_scope_webhook';
+  method_event_id: string | null;
   method_evidence_sha256: string;
   payment_projection_version: number;
   payment_projection_sha256: string;
@@ -182,7 +197,7 @@ export interface WebsiteCheckoutEnrollmentResult {
   disposition: 'accepted' | 'duplicate' | 'held';
   orderKey: string;
   canonicalEnrollment: 'materialized' | 'not_materialized';
-  accessDelivery: 'not_requested';
+  accessDelivery: 'not_requested' | 'queued' | 'membership_verified' | 'held';
   certificateFinancialClearance: 'not_evaluated';
   currentPaymentState: 'eligible' | 'pending' | 'needs_review';
   reasons: string[];
@@ -194,6 +209,27 @@ export interface WebsiteCheckoutPublicationPin {
   publicationRevision: number;
   payloadSha256: string;
 }
+
+export interface WebsiteCheckoutPublicationActivationReceipt {
+  schemaVersion: 1;
+  environment: 'live';
+  status: 'accepted';
+  caller: 'tandem-wordpress-live';
+  publicationId: 'student-foundations-publication-v1';
+  publicationRevision: number;
+  publicationPayloadSha256: string;
+  offerLocale: 'mcq-program-a-foundations:en-US';
+  decisionReference: string;
+  approvedAt: string;
+  receiptSha256: string;
+}
+
+export type WebsiteCheckoutEnrollmentRuntimeProfile =
+  | { environment: 'test'; activationReceipt?: never }
+  | {
+      environment: 'live';
+      activationReceipt: WebsiteCheckoutPublicationActivationReceipt;
+    };
 
 export function websiteCheckoutPublicationVersions(input: {
   publicationId: string;
@@ -235,6 +271,48 @@ function publicationPayloadHash(publication: Publication): string {
   return calculated;
 }
 
+export function websiteCheckoutActivationReceiptHash(
+  receipt: Omit<WebsiteCheckoutPublicationActivationReceipt, 'receiptSha256'>,
+): string {
+  return hash(receipt);
+}
+
+function validLiveActivation(
+  caller: string,
+  publication: Publication,
+  receipt: WebsiteCheckoutPublicationActivationReceipt | undefined,
+): boolean {
+  if (
+    publication.publication_id !== 'student-foundations-publication-v1' ||
+    publication.profile !== 'foundations-production-candidate' ||
+    publication.coverage_state !== 'verified_candidate' ||
+    publication.population_keys.length !== 1 ||
+    publication.population_keys[0] !== 'mcq-program-a-foundations' ||
+    publication.routes.length !== 1 ||
+    publication.routes[0].offer_key !== 'mcq-program-a-foundations' ||
+    publication.routes[0].content_locale !== 'en-US' ||
+    publication.evidence_limits.group_course_attachment_verified !== true ||
+    publication.evidence_limits.runtime_consumer_enabled !== false ||
+    !receipt
+  )
+    return false;
+  const { receiptSha256, ...payload } = receipt;
+  return (
+    receipt.schemaVersion === 1 &&
+    receipt.environment === 'live' &&
+    receipt.status === 'accepted' &&
+    receipt.caller === caller &&
+    caller === 'tandem-wordpress-live' &&
+    receipt.publicationId === publication.publication_id &&
+    receipt.publicationRevision === publication.publication_revision &&
+    receipt.publicationPayloadSha256 === publication.payload_sha256 &&
+    receipt.offerLocale === 'mcq-program-a-foundations:en-US' &&
+    ref.safeParse(receipt.decisionReference).success &&
+    Number.isFinite(Date.parse(receipt.approvedAt)) &&
+    receiptSha256 === websiteCheckoutActivationReceiptHash(payload)
+  );
+}
+
 export class WebsiteCheckoutEnrollmentAdapter {
   private readonly scopeHash: string;
   private readonly publication: Publication;
@@ -249,6 +327,10 @@ export class WebsiteCheckoutEnrollmentAdapter {
     publication: unknown,
     publicationPin: WebsiteCheckoutPublicationPin,
     cardCaptureConfigurationEvidence: string | null,
+    private readonly attributionRequired = false,
+    runtimeProfile: WebsiteCheckoutEnrollmentRuntimeProfile = {
+      environment: 'test',
+    },
   ) {
     this.scopeHash = paymentScopeFingerprint(scope);
     const parsed = publicationSchema.safeParse(publication);
@@ -256,13 +338,24 @@ export class WebsiteCheckoutEnrollmentAdapter {
       !parsed.success ||
       !/^[A-Za-z0-9_-]{1,64}$/.test(caller) ||
       scope.provider !== 'adyen' ||
-      scope.environment !== 'test' ||
+      scope.environment !== runtimeProfile.environment ||
       scope.store === null ||
       publicationPin.publicationId !== parsed.data.publication_id ||
       publicationPin.publicationRevision !== parsed.data.publication_revision ||
       publicationPin.payloadSha256 !== parsed.data.payload_sha256 ||
+      typeof attributionRequired !== 'boolean' ||
       (cardCaptureConfigurationEvidence !== null &&
-        !ref.safeParse(cardCaptureConfigurationEvidence).success)
+        !ref.safeParse(cardCaptureConfigurationEvidence).success) ||
+      (runtimeProfile.environment === 'test'
+        ? parsed.data.publication_id !== 'student-foundations-publication-v1' ||
+          parsed.data.profile !== 'foundations-test' ||
+          parsed.data.coverage_state !== 'staged' ||
+          parsed.data.evidence_limits.group_course_attachment_verified !== false
+        : !validLiveActivation(
+            caller,
+            parsed.data,
+            runtimeProfile.activationReceipt,
+          ))
     )
       throw new PaymentDomainError('invalid_website_adapter_configuration');
     this.publication = Object.freeze(structuredClone(parsed.data));
@@ -305,15 +398,23 @@ export class WebsiteCheckoutEnrollmentAdapter {
       payment_reference: string;
       method: 'card' | 'ach_direct_debit';
       evidence_sha256: string;
-      operation_id: string;
+      operation_id: string | null;
+      source_kind: 'session_result' | 'card_scope_webhook';
+      source_event_id: string | null;
     }>(
-      `SELECT attempt_id,payment_reference,method,evidence_sha256,operation_id
+      `SELECT attempt_id,payment_reference,method,evidence_sha256,operation_id,
+         source_kind,source_event_id
        FROM business_v2.payment_method_bindings
        WHERE scope_sha256=$1 AND attempt_id=$2`,
       [this.scopeHash, attempt.attemptId],
     );
     const projectionRows = await client.query<ProjectionRow>(
       `SELECT projection,version FROM business_v2.payment_checkout_evidence
+       WHERE attempt_id=$1`,
+      [attempt.attemptId],
+    );
+    const retryExceptions = await client.query<{ reason: string }>(
+      `SELECT DISTINCT reason FROM business_v2.payment_session_retry_exceptions
        WHERE attempt_id=$1`,
       [attempt.attemptId],
     );
@@ -325,10 +426,30 @@ export class WebsiteCheckoutEnrollmentAdapter {
             paymentMethod: methodRows.rows[0].method,
             evidenceSha256: methodRows.rows[0].evidence_sha256,
             operationId: methodRows.rows[0].operation_id,
+            sourceKind: methodRows.rows[0].source_kind,
+            sourceEventId: methodRows.rows[0].source_event_id,
           }
         : null;
     const projection =
-      projectionRows.rowCount === 1 ? projectionRows.rows[0] : null;
+      projectionRows.rowCount === 1
+        ? {
+            ...projectionRows.rows[0],
+            ...(retryExceptions.rowCount
+              ? {
+                  projection: {
+                    ...projectionRows.rows[0].projection,
+                    state: 'needs_review' as const,
+                    exceptions: [
+                      ...new Set([
+                        ...projectionRows.rows[0].projection.exceptions,
+                        ...retryExceptions.rows.map((row) => row.reason),
+                      ]),
+                    ].sort(),
+                  },
+                }
+              : {}),
+          }
+        : null;
     const readiness = decidePaymentReadiness({
       attempt,
       evidence: projection?.projection ?? {
@@ -377,6 +498,23 @@ export class WebsiteCheckoutEnrollmentAdapter {
     );
     if (checkoutRows.rowCount !== 1) return null;
     const checkout = checkoutRows.rows[0];
+    if (this.attributionRequired) {
+      const attribution = await client.query(
+        `SELECT 1 FROM business_v2.payment_checkout_attribution_admissions
+         WHERE scope_sha256=$1 AND caller=$2 AND attempt_id=$3
+           AND checkout_evidence_reference=$4 FOR UPDATE`,
+        [
+          this.scopeHash,
+          this.caller,
+          attempt.attemptId,
+          checkout.evidence_reference,
+        ],
+      );
+      ensure(
+        attribution.rowCount === 1,
+        'checkout_attribution_evidence_missing',
+      );
+    }
     ensure(
       checkout.quote_id === attempt.quote.quoteId &&
         checkout.quote_fingerprint === attempt.quoteFingerprint &&
@@ -415,7 +553,8 @@ export class WebsiteCheckoutEnrollmentAdapter {
     );
     const operations = await client.query<{ operation_id: string }>(
       `SELECT operation_id FROM business_v2.payment_operations
-       WHERE attempt_id=$1 AND state='session_available'`,
+       WHERE attempt_id=$1 AND state='session_available'
+       ORDER BY session_sequence DESC LIMIT 1`,
       [attempt.attemptId],
     );
     ensure(operations.rowCount === 1, 'checkout_provider_operation_missing');
@@ -425,6 +564,39 @@ export class WebsiteCheckoutEnrollmentAdapter {
       route: route ?? null,
       providerOperationId: operations.rows[0].operation_id,
     };
+  }
+
+  private async assertMethodOperationLineage(
+    client: PoolClient,
+    current: Awaited<ReturnType<typeof this.currentEvidence>>,
+    providerOperationId: string,
+  ): Promise<void> {
+    if (!current.method) return;
+    const lineage =
+      current.method.sourceKind === 'session_result'
+        ? await client.query(
+            `SELECT 1 FROM business_v2.payment_session_result_operations
+             WHERE operation_id=$1 AND payment_operation_id=$2
+               AND attempt_id=$3 AND state='verified'`,
+            [
+              current.method.operationId,
+              providerOperationId,
+              current.method.attemptId,
+            ],
+          )
+        : await client.query(
+            `SELECT 1 FROM business_v2.payment_events
+             WHERE scope_sha256=$1 AND event_id=$2 AND payment_operation_id=$3
+               AND attempt_id=$4 AND fact->>'kind'='authorization'
+               AND fact->>'success'='true'`,
+            [
+              this.scopeHash,
+              current.method.sourceEventId,
+              providerOperationId,
+              current.method.attemptId,
+            ],
+          );
+    ensure(lineage.rowCount === 1, 'checkout_provider_operation_mismatch');
   }
 
   private validateConsumed(
@@ -452,6 +624,8 @@ export class WebsiteCheckoutEnrollmentAdapter {
         consumed.payment_reference === current.method.paymentReference &&
         consumed.payment_method === current.method.paymentMethod &&
         consumed.method_operation_id === current.method.operationId &&
+        consumed.method_source_kind === current.method.sourceKind &&
+        consumed.method_event_id === current.method.sourceEventId &&
         consumed.method_evidence_sha256 === current.method.evidenceSha256 &&
         consumed.evidence_reference ===
           `enrollment-admission:v1:${consumed.admission_evidence_sha256}` &&
@@ -538,6 +712,11 @@ export class WebsiteCheckoutEnrollmentAdapter {
         if (!authority)
           return { ...state, orderKey, disposition: 'held' as const };
         const current = await this.currentEvidence(client, attempt);
+        await this.assertMethodOperationLineage(
+          client,
+          current,
+          authority.providerOperationId,
+        );
         const consumedRows = await client.query<ConsumedRow>(
           `SELECT * FROM business_v2.payment_enrollment_admissions
            WHERE scope_sha256=$1 AND attempt_id=$2 FOR UPDATE`,
@@ -831,6 +1010,7 @@ export class WebsiteCheckoutEnrollmentAdapter {
            (scope_sha256,attempt_id,checkout_caller,checkout_operation_id,
             checkout_evidence_reference,identity_receipt_reference,
             payment_reference,payment_method,method_operation_id,
+            method_source_kind,method_event_id,
             method_evidence_sha256,payment_projection_version,
             payment_projection_sha256,publication_id,publication_revision,
             publication_payload_sha256,offer_key,content_locale,bundle_key,
@@ -838,7 +1018,8 @@ export class WebsiteCheckoutEnrollmentAdapter {
             financial_evidence_sha256,admission_evidence_sha256,
             evidence_reference,state,materialized_at)
            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
-             $17,$18,$19,$20,$21,$22,$23,$24,$25,'provisional_materialized',$26)`,
+             $17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,
+             'provisional_materialized',$28)`,
           [
             this.scopeHash,
             attempt.attemptId,
@@ -849,6 +1030,8 @@ export class WebsiteCheckoutEnrollmentAdapter {
             psp,
             current.method.paymentMethod,
             current.method.operationId,
+            current.method.sourceKind,
+            current.method.sourceEventId,
             current.method.evidenceSha256,
             current.projection.version,
             projectionHash,

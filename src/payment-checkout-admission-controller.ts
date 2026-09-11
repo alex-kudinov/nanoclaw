@@ -10,8 +10,19 @@ import {
   parsePaymentCheckoutAdmissionCommand,
 } from './payment-checkout-admission.js';
 import type { PaymentCheckoutAdmissionStore } from './payment-checkout-admission-store.js';
+import type { PaymentCheckoutAttributionStore } from './payment-checkout-attribution-store.js';
 import { PaymentDomainError } from './payment-domain.js';
+import type { PaymentPromotionConsumptionReceiptReader } from './payment-promotion-consumption-receipt.js';
 import type { PaymentResponseSigner } from './payment-signed-response-controller.js';
+import type { WebsiteCheckoutEnrollmentAdapter } from './website-checkout-enrollment-adapter.js';
+import type { WebsiteCheckoutEnrollmentResult } from './website-checkout-enrollment-adapter.js';
+
+export interface WebsiteCheckoutAccessDelivery {
+  deliver(
+    attemptId: string,
+    enrollment: WebsiteCheckoutEnrollmentResult,
+  ): Promise<WebsiteCheckoutEnrollmentResult>;
+}
 
 const path = '/internal/payments/enrollment-admissions' as const;
 const outerSchema = z
@@ -29,12 +40,27 @@ export class PaymentCheckoutAdmissionController {
     private readonly deps: {
       admission: Pick<PaymentAdmissionStore, 'preflightSignature' | 'admit'>;
       store: Pick<PaymentCheckoutAdmissionStore, 'accept'>;
+      attribution?: Pick<
+        PaymentCheckoutAttributionStore,
+        'preflight' | 'accept'
+      >;
+      enrollment?: Pick<WebsiteCheckoutEnrollmentAdapter, 'admit'>;
+      promotion?: Pick<
+        PaymentPromotionConsumptionReceiptReader,
+        'preflight' | 'read'
+      >;
+      accessDelivery?: WebsiteCheckoutAccessDelivery;
     },
   ) {
     if (
       !/^[A-Za-z0-9_-]{1,64}$/.test(caller) ||
       signer.caller !== caller ||
-      !(limiter instanceof PaymentRequestLimiter)
+      !(limiter instanceof PaymentRequestLimiter) ||
+      [deps.attribution, deps.enrollment, deps.promotion].filter(Boolean)
+        .length === 1 ||
+      [deps.attribution, deps.enrollment, deps.promotion].filter(Boolean)
+        .length === 2 ||
+      (deps.accessDelivery !== undefined && !deps.enrollment)
     )
       throw new PaymentDomainError('invalid_checkout_admission_configuration');
   }
@@ -119,11 +145,52 @@ export class PaymentCheckoutAdmissionController {
       } catch {
         throw new PaymentDomainError('invalid_checkout_admission_request');
       }
+      const parsedCommand = parsePaymentCheckoutAdmissionCommand(command);
+      const attribution = this.deps.attribution;
+      const enrollment = this.deps.enrollment;
+      const promotion = this.deps.promotion;
+      const composed = attribution && enrollment && promotion;
+      if (composed && !parsedCommand.attribution)
+        throw new PaymentDomainError('invalid_checkout_attribution');
+      if (composed)
+        await attribution.preflight({
+          attribution: parsedCommand.attribution!,
+          command: parsedCommand,
+        });
       const receipt = await this.deps.store.accept({
-        command: parsePaymentCheckoutAdmissionCommand(command),
+        command: parsedCommand,
         bodySha256: checkoutAdmissionBodySha256(body),
         admitted,
       });
+      if (composed) {
+        await attribution.accept({
+          attribution: parsedCommand.attribution!,
+          attemptId: parsedCommand.attemptId,
+          checkoutEvidenceReference: receipt.evidenceReference,
+        });
+        await promotion.preflight(parsedCommand.attemptId);
+        const admittedEnrollment = await enrollment.admit(
+          parsedCommand.attemptId,
+        );
+        const enrollmentResult = this.deps.accessDelivery
+          ? await this.deps.accessDelivery.deliver(
+              parsedCommand.attemptId,
+              admittedEnrollment,
+            )
+          : admittedEnrollment;
+        const promotionConsumptionReceipt =
+          enrollmentResult.canonicalEnrollment === 'materialized' &&
+          ['accepted', 'duplicate'].includes(enrollmentResult.disposition)
+            ? await promotion.read(parsedCommand.attemptId, enrollmentResult)
+            : null;
+        return this.signed(auth.operationId, auth.nonce, 200, {
+          schemaVersion: 1,
+          status: 'accepted',
+          checkoutAdmissionEvidence: receipt,
+          enrollmentResult,
+          promotionConsumptionReceipt,
+        });
+      }
       return this.signed(auth.operationId, auth.nonce, 200, {
         schemaVersion: 1,
         status: 'accepted',

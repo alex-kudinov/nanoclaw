@@ -13,6 +13,8 @@ const envelopeSchema = z
       '/internal/payments/sessions',
       '/internal/payments/status',
       '/internal/payments/returns',
+      '/internal/payments/session-retries',
+      '/internal/payments/session-submit-checks',
       '/internal/payments/identity/resolve',
       '/internal/payments/identity/status',
       '/internal/payments/enrollment-admissions',

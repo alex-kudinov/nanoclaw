@@ -141,7 +141,6 @@ describe('Adyen TEST Session-result verifier', () => {
     { name: 'different Session', top: { id: 'other-session' } },
     { name: 'missing Session status', top: { status: undefined } },
     { name: 'incomplete Session', top: { status: 'active' } },
-    { name: 'expired Session', top: { status: 'expired' } },
     { name: 'empty authorised payments', top: { payments: [] } },
     { name: 'multiple authorised payments', multiple: true },
     {
@@ -187,6 +186,61 @@ describe('Adyen TEST Session-result verifier', () => {
         attempt: a,
         sessionId: 'fixture-session',
         sessionResult: 'fixture-result',
+      }),
+    ).rejects.toThrow('provider_session_result_conflict');
+  });
+
+  it.each(['refused', 'canceled', 'expired'] as const)(
+    'accepts exact authenticated %s Session as terminal nonpayment without payment fields',
+    async (status) => {
+      const a = attempt(['card']);
+      const adapter = new AdyenTestSessionResultAdapter(
+        'fixture',
+        scope,
+        (async () =>
+          new Response(
+            JSON.stringify({
+              id: 'fixture-session',
+              status,
+              reference: `tandem-poc-tsv1-${a.attemptId}-s2`,
+            }),
+          )) as typeof fetch,
+      );
+      await expect(
+        adapter.verify({
+          attempt: a,
+          sessionId: 'fixture-session',
+          sessionResult: 'fixture-result',
+          sessionSequence: 2,
+        }),
+      ).resolves.toEqual({
+        attemptId: a.attemptId,
+        sessionId: 'fixture-session',
+        status,
+      });
+    },
+  );
+
+  it('rejects terminal proof carrying another Session sequence reference', async () => {
+    const a = attempt(['card']);
+    const adapter = new AdyenTestSessionResultAdapter(
+      'fixture',
+      scope,
+      (async () =>
+        new Response(
+          JSON.stringify({
+            id: 'fixture-session',
+            status: 'refused',
+            reference: `tandem-poc-tsv1-${a.attemptId}`,
+          }),
+        )) as typeof fetch,
+    );
+    await expect(
+      adapter.verify({
+        attempt: a,
+        sessionId: 'fixture-session',
+        sessionResult: 'fixture-result',
+        sessionSequence: 2,
       }),
     ).rejects.toThrow('provider_session_result_conflict');
   });

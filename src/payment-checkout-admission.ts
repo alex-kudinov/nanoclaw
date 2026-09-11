@@ -2,6 +2,7 @@ import { createHash, createHmac } from 'node:crypto';
 
 import { z } from 'zod';
 
+import { checkoutAttributionHandoffSchema } from './payment-checkout-attribution.js';
 import { PaymentDomainError, type PaymentScope } from './payment-domain.js';
 
 const uuid = z.uuid();
@@ -55,6 +56,7 @@ const commandSchema = z
         achMandate: mandateEvidence.nullable(),
       })
       .strict(),
+    attribution: checkoutAttributionHandoffSchema.optional(),
   })
   .strict();
 

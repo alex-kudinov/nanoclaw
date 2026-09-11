@@ -4,6 +4,7 @@ import {
   assertProjectionReadiness,
   buildSupervisionPilotProjections,
   deliverProjection,
+  projectionHash,
   rollbackProjection,
   type ProjectionDeliveryLedger,
   type ProjectionDestinationReadiness,
@@ -129,13 +130,14 @@ class Ledger implements ProjectionDeliveryLedger {
 
 function driver(
   envelope: ProjectionEnvelope,
-  mode: 'ok' | 'fail' | 'uncertain' = 'ok',
+  mode: 'ok' | 'fail' | 'uncertain' | 'lookup_fail' | 'readback_fail' = 'ok',
 ) {
   let effects = 0;
   let existing: { operationId: string; readback: unknown } | null = null;
   const value: ProviderProjectionDriver & { effects: () => number } = {
     target: envelope.target,
     async findByIdempotencyKey() {
+      if (mode === 'lookup_fail') throw new Error('synthetic lookup failure');
       return existing;
     },
     async apply() {
@@ -150,6 +152,8 @@ function driver(
       return { operationId: `op-${effects}` };
     },
     async readback() {
+      if (mode === 'readback_fail')
+        throw new Error('synthetic readback failure');
       return existing?.readback ?? null;
     },
     async rollback(_envelope, operationId) {
@@ -220,6 +224,38 @@ describe('student enrollment provider projection foundation', () => {
     expect(ledger.operationIds).toEqual(['op-1', 'op-1']);
   });
 
+  it('verifies the minimized production Heartbeat identity and membership readback', async () => {
+    const expectedReadback = {
+      schemaVersion: 1,
+      kind: 'heartbeat_live_membership',
+      participantPartyId: '10001',
+      participantEmailSha256: 'a'.repeat(64),
+      groupId: '4c54983c-0e7b-4dd0-aebc-0f0cb1c82298',
+      courseId: 'abd312e4-b01a-4718-8918-f79d081753c0',
+      cohortId: 'f2a36eca-a017-4536-9b83-368f51219895',
+      identity: 'verified',
+      membership: 'verified',
+      learnerLoginProof: 'not_verified',
+    };
+    const envelope: ProjectionEnvelope = {
+      target: 'heartbeat',
+      subjectType: 'enrollment',
+      subjectKey: 'website-checkout:fixture:seat:1:enrollment',
+      subjectVersion: 0,
+      destinationKey:
+        'heartbeat:main:group:4c54983c-0e7b-4dd0-aebc-0f0cb1c82298',
+      idempotencyKey: 'website_checkout_heartbeat_live:fixture',
+      payload: expectedReadback,
+      payloadSha256: projectionHash(expectedReadback),
+      expectedReadback,
+      expectedReadbackSha256: projectionHash(expectedReadback),
+    };
+    const ledger = new Ledger();
+    await expect(
+      deliverProjection(envelope, driver(envelope), ledger),
+    ).resolves.toBe('verified');
+  });
+
   it('refuses stale versions, retries definitive failure, and holds uncertain acceptance', async () => {
     const envelope = buildSupervisionPilotProjections(subject, readiness())[0];
     const stale = new Ledger();
@@ -249,6 +285,29 @@ describe('student enrollment provider projection foundation', () => {
     await rollbackProjection(envelope, 'op-1', provider, ledger);
     expect(provider.effects()).toBe(0);
     expect(ledger.events).toContain('rolled_back');
+  });
+
+  it('records bounded lookup failure and holds unavailable post-apply readback', async () => {
+    const envelope = buildSupervisionPilotProjections(subject, readiness())[0];
+    const lookup = new Ledger();
+    expect(
+      await deliverProjection(
+        envelope,
+        driver(envelope, 'lookup_fail'),
+        lookup,
+      ),
+    ).toBe('retryable_failure');
+    expect(lookup.events).toContain('failed:provider_lookup_failed');
+
+    const readback = new Ledger();
+    expect(
+      await deliverProjection(
+        envelope,
+        driver(envelope, 'readback_fail'),
+        readback,
+      ),
+    ).toBe('held');
+    expect(readback.exceptions).toContain('provider_readback_unavailable');
   });
 
   it('holds an applied effect when the canonical version changes mid-delivery', async () => {

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "publication_id": "student-foundations-publication-v1",
+  "publication_revision": 2,
+  "profile": "foundations-production-candidate",
+  "coverage_state": "verified_candidate",
+  "population_keys": ["mcq-program-a-foundations"],
+  "source_versions": {
+    "entitlement_base": "catalog_revision:1",
+    "entitlement_successor": "catalog_revision:2",
+    "locale_catalog": "catalog_revision:1",
+    "delivery_readback": "catalog_revision:1",
+    "checkout_catalog": "git:b9c6ab342f9491d820753ffb0d2f14df4d78479a"
+  },
+  "source_sha256": {
+    "entitlement_base": "d82a3c2b80e95bfb0cfd2f67e22851b1dfb056bf943616d01e874e0a63b2f72b",
+    "entitlement_successor": "76182c6863d9768f02f38c5be4952ca371c25332e15e465daae57a0968323c7b",
+    "locale_catalog": "b828d032bc14157d3c753bf5b086379d3fc4fdff0df32f3e655de2954684f5ef",
+    "delivery_readback": "0fff83f6c2295dcbdc87efda66a9efdd59a57c631f0500936cb8061be24c1e09",
+    "checkout_catalog": "e565501c4f8a8bdd4f0573f0469e2377e87a3f16e34ce029190d9dd3b17211c9"
+  },
+  "routes": [
+    {
+      "offer_key": "mcq-program-a-foundations",
+      "content_locale": "en-US",
+      "active": true,
+      "pricing_authority": {
+        "authority": "wordpress_quote_v1",
+        "base_amount_minor": 29900,
+        "currency": "USD",
+        "regional_policy_reference": null,
+        "locale_infers_country": false
+      },
+      "entitlement": {
+        "catalog_revision": 2,
+        "bundle_key": "mcs-foundations-en:v1",
+        "bundle_version": 1,
+        "component_key": "mcs.foundations",
+        "enrollment_scope": "standalone_course"
+      },
+      "delivery": {
+        "mode": "self_paced",
+        "scheduling_model": "self_paced",
+        "marker_policy": "none",
+        "requires_cohort_selection": false,
+        "heartbeat": {
+          "access_group_id": "4c54983c-0e7b-4dd0-aebc-0f0cb1c82298",
+          "course_id": "abd312e4-b01a-4718-8918-f79d081753c0",
+          "course_cohort_id": "f2a36eca-a017-4536-9b83-368f51219895",
+          "group_course_attachment_verified": true
+        }
+      },
+      "certificate": {
+        "preset_key": "mcs-foundation",
+        "campaign_key": "mcs-foundation@v1",
+        "campaign_id": "08df056a-6dac-46d2-8ca5-14998a5b1d1d",
+        "detail_id": "08deb7a0-0528-469c-8372-d2897e861cef",
+        "native_identity_verified": true,
+        "locale_academic_mapping_verified": false,
+        "publication_status": "held"
+      }
+    }
+  ],
+  "resolution_profile": {
+    "required_identity_fields": ["offer", "locale"],
+    "shared_provider_identity_selects_route": false,
+    "mismatch": "hold",
+    "unknown": "hold",
+    "incomplete": "hold"
+  },
+  "evidence_limits": {
+    "group_course_attachment_verified": true,
+    "learner_access_verified": false,
+    "progress_verified": false,
+    "completion_verified": false,
+    "foundations_certificate_outcome_verified": false,
+    "runtime_consumer_enabled": false
+  },
+  "payload_sha256": "e1fed347482be9f5455971bf7cdd802a3d381a9fb9f882a630cb0ff4c72d4f47"
+}

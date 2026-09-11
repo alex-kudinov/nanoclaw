@@ -1,13 +1,14 @@
 import crypto from 'crypto';
 
-export interface AdyenTestWebhookConfig {
+export interface AdyenWebhookConfig {
+  environment: 'test' | 'live';
   hmacKeys: string[];
   merchantAccount: string;
   storeReference: string;
   referencePrefix: string;
   allowedEventCodes: string[];
   /**
-   * TEST-only shared-feed escape hatch. When enabled, a notification from the
+   * Shared-feed escape hatch. When enabled, a notification from the
    * exact configured merchant whose signed reference is not Tandem-owned is
    * acknowledged and discarded after the whole batch passes HMAC verification.
    */
@@ -15,6 +16,9 @@ export interface AdyenTestWebhookConfig {
   /** Admit verified owned unknown event codes for hash-only durable review. */
   retainVerifiedOwnedUnsupported?: boolean;
 }
+
+/** Compatibility surface for the existing TEST receiver/config. */
+export type AdyenTestWebhookConfig = Omit<AdyenWebhookConfig, 'environment'>;
 
 interface AdyenAmount {
   value: number;
@@ -232,11 +236,12 @@ export function verifyStandardWebhookHmac(
   });
 }
 
-export function isAdyenTestWebhookConfigured(
-  config: AdyenTestWebhookConfig | undefined,
+export function isAdyenWebhookConfigured(
+  config: AdyenWebhookConfig | undefined,
 ): boolean {
   return Boolean(
     config &&
+    (config.environment === 'test' || config.environment === 'live') &&
     config.hmacKeys.some(validHexKey) &&
     config.merchantAccount &&
     config.storeReference &&
@@ -245,20 +250,32 @@ export function isAdyenTestWebhookConfigured(
   );
 }
 
-export function admitAdyenTestWebhook(
+export function isAdyenTestWebhookConfigured(
+  config: AdyenTestWebhookConfig | undefined,
+): boolean {
+  return isAdyenWebhookConfigured(
+    config ? { ...config, environment: 'test' } : undefined,
+  );
+}
+
+export function admitAdyenWebhook(
   payload: unknown,
-  config: AdyenTestWebhookConfig,
+  config: AdyenWebhookConfig,
 ): AdyenAdmittedNotification[] {
-  if (!isAdyenTestWebhookConfigured(config)) {
+  if (!isAdyenWebhookConfigured(config)) {
     throw new AdyenWebhookAdmissionError(
-      'Adyen TEST webhook is not configured',
+      `Adyen ${config.environment.toUpperCase()} webhook is not configured`,
       503,
     );
   }
   const envelope = record(payload);
-  if (!envelope || (envelope.live !== false && envelope.live !== 'false')) {
+  const expectedLive = config.environment === 'live';
+  if (
+    !envelope ||
+    (envelope.live !== expectedLive && envelope.live !== String(expectedLive))
+  ) {
     throw new AdyenWebhookAdmissionError(
-      'Live Adyen events are not admitted here',
+      'Adyen webhook environment is not admitted here',
       403,
     );
   }
@@ -307,7 +324,7 @@ export function admitAdyenTestWebhook(
   return items.map((item) => {
     const eventId = `${item.pspReference}:${item.eventCode}:${item.success}`;
     const minimized = {
-      live: false,
+      live: expectedLive,
       notification: {
         pspReference: item.pspReference,
         originalReference: item.originalReference || undefined,
@@ -328,7 +345,7 @@ export function admitAdyenTestWebhook(
       rawBody: minimized,
       relatedEntity: {
         provider: 'adyen',
-        environment: 'test',
+        environment: config.environment,
         psp_reference: item.pspReference,
         original_reference: item.originalReference || null,
         merchant_reference: item.merchantReference,
@@ -339,4 +356,11 @@ export function admitAdyenTestWebhook(
       },
     };
   });
+}
+
+export function admitAdyenTestWebhook(
+  payload: unknown,
+  config: AdyenTestWebhookConfig,
+): AdyenAdmittedNotification[] {
+  return admitAdyenWebhook(payload, { ...config, environment: 'test' });
 }

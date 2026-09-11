@@ -1,15 +1,18 @@
 import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import {
-  admitAdyenTestWebhook,
+  admitAdyenWebhook,
+  type AdyenWebhookConfig,
   type AdyenTestWebhookConfig,
 } from './adyen-webhook.js';
 import {
   ADYEN_TEST_REFERENCE_PREFIX,
-  parseAdyenTestAttemptReference,
+  parseAdyenPaymentOperationReference,
 } from './adyen-payment-identifiers.js';
+import { ADYEN_LIVE_REFERENCE_PREFIX } from './adyen-environment.js';
 import {
   paymentScopeFingerprint,
+  paymentMethodCapabilitiesForAttempt,
   PaymentDomainError,
   projectPaymentEvidence,
   validateAttempt,
@@ -51,23 +54,34 @@ const EVENT_KINDS = {
 } as const;
 const PAYMENT_EVENT_CODES = new Set(Object.keys(EVENT_KINDS));
 
-/** TEST HMAC ingress only. No browser callback, plain-fact ingress or fulfillment. */
+/** Environment-scoped HMAC ingress. No browser callback, plain-fact ingress or fulfillment. */
 export class PaymentEventStore {
   private readonly scope: PaymentScope;
   private readonly scopeHash: string;
-  #config: AdyenTestWebhookConfig;
+  #config: AdyenWebhookConfig;
   constructor(
     private readonly transaction: PaymentTransaction,
     scope: PaymentScope,
-    config: AdyenTestWebhookConfig,
+    config: AdyenTestWebhookConfig | AdyenWebhookConfig,
+    private readonly methodEvidence:
+      | 'session_result_only'
+      | 'card_scope_webhook' = 'session_result_only',
   ) {
     this.scopeHash = paymentScopeFingerprint(scope);
+    const explicitEnvironment =
+      'environment' in config ? config.environment : 'test';
+    const expectedReferencePrefix =
+      explicitEnvironment === 'test'
+        ? ADYEN_TEST_REFERENCE_PREFIX
+        : ADYEN_LIVE_REFERENCE_PREFIX;
     if (
       scope.provider !== 'adyen' ||
-      scope.environment !== 'test' ||
+      scope.environment !== explicitEnvironment ||
+      scope.endpointRegion !== 'eu' ||
       scope.merchant !== config.merchantAccount ||
       scope.store !== config.storeReference ||
-      config.referencePrefix !== ADYEN_TEST_REFERENCE_PREFIX ||
+      config.referencePrefix !== expectedReferencePrefix ||
+      !['session_result_only', 'card_scope_webhook'].includes(methodEvidence) ||
       !config.allowedEventCodes.includes('AUTHORISATION') ||
       config.allowedEventCodes.some((code) => !PAYMENT_EVENT_CODES.has(code))
     ) {
@@ -76,6 +90,7 @@ export class PaymentEventStore {
     this.scope = Object.freeze({ ...scope });
     this.#config = {
       ...config,
+      environment: explicitEnvironment,
       hmacKeys: [...config.hmacKeys],
       allowedEventCodes: [...config.allowedEventCodes],
     };
@@ -84,7 +99,7 @@ export class PaymentEventStore {
   async recordWebhook(payload: unknown): Promise<EventResult[]> {
     // The parser verifies EVERY signature and signed merchant/reference before
     // ANY item is persisted. Reported store is unsigned defense-in-depth only.
-    const admitted = admitAdyenTestWebhook(payload, this.#config);
+    const admitted = admitAdyenWebhook(payload, this.#config);
     const results: EventResult[] = [];
     for (const item of admitted) {
       const entity = item.relatedEntity;
@@ -92,10 +107,16 @@ export class PaymentEventStore {
       const eventCode = String(entity.event_code) as keyof typeof EVENT_KINDS;
       const kind = EVENT_KINDS[eventCode];
       let attemptId: string | null = null;
+      let sessionSequence = 1;
       try {
-        attemptId = parseAdyenTestAttemptReference(
+        const correlation = parseAdyenPaymentOperationReference(
           String(entity.merchant_reference),
+          {
+            referencePrefix: this.#config.referencePrefix,
+          },
         );
+        attemptId = correlation.attemptId;
+        sessionSequence = correlation.sessionSequence;
       } catch {
         results.push(
           await this.recordOwnedIntakeException(
@@ -151,7 +172,7 @@ export class PaymentEventStore {
         amount: amount.value,
         currency: amount.currency,
       };
-      results.push(await this.recordFact(fact));
+      results.push(await this.recordFact(fact, sessionSequence));
     }
     return results;
   }
@@ -237,7 +258,10 @@ export class PaymentEventStore {
       );
     }
     const exceptions = await client.query<{ reason: string }>(
-      'SELECT DISTINCT reason FROM business_v2.payment_event_exceptions WHERE scope_sha256=$2 AND (attempt_id=$1 OR related_attempt_id=$1)',
+      `SELECT DISTINCT reason FROM business_v2.payment_event_exceptions
+       WHERE scope_sha256=$2 AND (attempt_id=$1 OR related_attempt_id=$1)
+       UNION SELECT DISTINCT reason FROM business_v2.payment_session_retry_exceptions
+       WHERE attempt_id=$1`,
       [attemptId, this.scopeHash],
     );
     if (exceptions.rowCount) {
@@ -297,7 +321,10 @@ export class PaymentEventStore {
     return { result: 'needs_review', attemptId };
   }
 
-  private async recordFact(fact: PaymentFact): Promise<EventResult> {
+  private async recordFact(
+    fact: PaymentFact,
+    sessionSequence: number,
+  ): Promise<EventResult> {
     return this.transaction(async (client) => {
       // Serialize the provider reference, then lock all involved attempts in UUID
       // order; a cross-checkout reference conflict cannot deadlock two checkouts.
@@ -361,19 +388,44 @@ export class PaymentEventStore {
           attemptRow.attempt_id,
           scopedPriorOwner,
         );
-      if (fact.kind === 'authorization' && fact.success) {
+      const paymentOperation = await client.query<{ operation_id: string }>(
+        `SELECT operation_id FROM business_v2.payment_operations
+         WHERE attempt_id=$1 AND session_sequence=$2 FOR UPDATE`,
+        [attemptRow.attempt_id, sessionSequence],
+      );
+      if (paymentOperation.rowCount !== 1)
+        return this.exception(
+          client,
+          fact,
+          'amount_or_fact_conflict',
+          attemptRow.attempt_id,
+        );
+      const paymentOperationId = paymentOperation.rows[0].operation_id;
+      const terminalPredecessor =
+        fact.kind === 'authorization' && fact.success
+          ? await client.query(
+              `SELECT 1 FROM business_v2.payment_session_terminal_nonpayment_receipts
+               WHERE payment_operation_id=$1`,
+              [paymentOperationId],
+            )
+          : null;
+      const latePositive = Boolean(terminalPredecessor?.rowCount);
+      if (!latePositive && fact.kind === 'authorization' && fact.success) {
         const methodBinding = await client.query<{
           attempt_id: string;
           payment_reference: string;
+          method: string;
         }>(
-          `SELECT attempt_id,payment_reference FROM business_v2.payment_method_bindings
+          `SELECT attempt_id,payment_reference,method FROM business_v2.payment_method_bindings
           WHERE attempt_id=$1 OR (scope_sha256=$2 AND payment_reference=$3) FOR UPDATE`,
           [attemptRow.attempt_id, this.scopeHash, fact.paymentReference],
         );
         const conflict = methodBinding.rows.find(
           (row) =>
             row.attempt_id !== attemptRow.attempt_id ||
-            row.payment_reference !== fact.paymentReference,
+            row.payment_reference !== fact.paymentReference ||
+            (this.methodEvidence === 'card_scope_webhook' &&
+              row.method !== 'card'),
         );
         if (conflict)
           return this.exception(
@@ -433,8 +485,16 @@ export class PaymentEventStore {
       }
       if (!priorOwner)
         await client.query(
-          'INSERT INTO business_v2.payment_provider_references(scope_sha256,payment_reference,attempt_id) VALUES($1,$2,$3)',
-          [this.scopeHash, fact.paymentReference, attemptRow.attempt_id],
+          `INSERT INTO business_v2.payment_provider_references
+           (scope_sha256,payment_reference,attempt_id,payment_operation_id,session_sequence)
+           VALUES($1,$2,$3,$4,$5)`,
+          [
+            this.scopeHash,
+            fact.paymentReference,
+            attemptRow.attempt_id,
+            paymentOperationId,
+            sessionSequence,
+          ],
         );
       if (!['pending', 'authorization'].includes(fact.kind)) {
         await client.query(
@@ -493,8 +553,10 @@ export class PaymentEventStore {
           );
       }
       await client.query(
-        `INSERT INTO business_v2.payment_events(scope_sha256,event_id,payload_sha256,attempt_id,payment_reference,fact)
-        VALUES($1,$2,$3,$4,$5,$6::jsonb)`,
+        `INSERT INTO business_v2.payment_events
+         (scope_sha256,event_id,payload_sha256,attempt_id,payment_reference,fact,
+          payment_operation_id,session_sequence)
+        VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8)`,
         [
           this.scopeHash,
           fact.deliveryId,
@@ -502,8 +564,67 @@ export class PaymentEventStore {
           attemptRow.attempt_id,
           fact.paymentReference,
           JSON.stringify(fact),
+          paymentOperationId,
+          sessionSequence,
         ],
       );
+      if (latePositive) {
+        await client.query(
+          `INSERT INTO business_v2.payment_session_retry_exceptions
+           (exception_sha256,attempt_id,payment_operation_id,session_sequence,
+            event_id_sha256,reason)
+           VALUES($1,$2,$3,$4,$5,'late_positive_after_terminal')
+           ON CONFLICT(exception_sha256) DO NOTHING`,
+          [
+            paymentPayloadFingerprint(
+              JSON.stringify([
+                this.scopeHash,
+                fact.deliveryId,
+                paymentOperationId,
+                'late_positive_after_terminal',
+              ]),
+            ),
+            attemptRow.attempt_id,
+            paymentOperationId,
+            sessionSequence,
+            paymentPayloadFingerprint(fact.deliveryId),
+          ],
+        );
+      }
+      if (
+        !latePositive &&
+        this.methodEvidence === 'card_scope_webhook' &&
+        fact.kind === 'authorization' &&
+        fact.success
+      ) {
+        const capabilities = paymentMethodCapabilitiesForAttempt(attempt);
+        if (capabilities.length === 1 && capabilities[0] === 'card') {
+          const evidenceSha256 = paymentPayloadFingerprint(
+            JSON.stringify({
+              scopeSha256: this.scopeHash,
+              attemptId: attempt.attemptId,
+              paymentReference: fact.paymentReference,
+              sourceEventId: fact.deliveryId,
+              sourceKind: 'card_scope_webhook',
+              method: 'card',
+            }),
+          );
+          await client.query(
+            `INSERT INTO business_v2.payment_method_bindings
+             (scope_sha256,payment_reference,attempt_id,method,operation_id,
+              evidence_sha256,source_kind,source_event_id)
+             VALUES($1,$2,$3,'card',NULL,$4,'card_scope_webhook',$5)
+             ON CONFLICT(attempt_id) DO NOTHING`,
+            [
+              this.scopeHash,
+              fact.paymentReference,
+              attempt.attemptId,
+              evidenceSha256,
+              fact.deliveryId,
+            ],
+          );
+        }
+      }
       if (fact.kind === 'chargeback' && fact.success) {
         const eventHash = paymentPayloadFingerprint(fact.deliveryId);
         await client.query(
@@ -532,7 +653,9 @@ export class PaymentEventStore {
       );
       return {
         result:
-          projection?.state === 'needs_review' ? 'needs_review' : 'recorded',
+          latePositive || projection?.state === 'needs_review'
+            ? 'needs_review'
+            : 'recorded',
         attemptId: attemptRow.attempt_id,
       };
     });
@@ -561,12 +684,25 @@ export class PaymentEventStore {
       )
         return null;
       return (
-        rows.rows[0].projection ??
-        projectCheckoutPaymentEvidence({
-          attempt: rows.rows[0].contract,
-          facts: [],
-        })
-      );
+        await client.query(
+          'SELECT 1 FROM business_v2.payment_session_retry_exceptions WHERE attempt_id=$1 LIMIT 1',
+          [attemptId],
+        )
+      ).rowCount
+        ? {
+            ...(rows.rows[0].projection ??
+              projectCheckoutPaymentEvidence({
+                attempt: rows.rows[0].contract,
+                facts: [],
+              })),
+            state: 'needs_review' as const,
+            exceptions: ['payment_session_retry_exception'],
+          }
+        : (rows.rows[0].projection ??
+            projectCheckoutPaymentEvidence({
+              attempt: rows.rows[0].contract,
+              facts: [],
+            }));
     });
   }
 }

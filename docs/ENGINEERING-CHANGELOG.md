@@ -28,7 +28,253 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### 2026-09-11 final isolated TEST acceptance
+
+- Deployed the reviewed English MCS card stack only to the preserved isolated
+  TEST fixture: migration159 exact adjacent/same-attempt lineage, 11-event edge
+  and backend parity, v2 attribution, September 11 Terms, exact retained-v1 HTTP
+  replay, webhook/Session-result method convergence, retry/pre-submit fencing,
+  canonical enrollment and the owner-approved Heartbeat driver. LIVE remains
+  default-off and unchanged.
+- Review path was explicit. R1 `e765b90a-8dad-4ad9-a471-c26bea17037f`
+  (Sonnet/high: 3 calls; 6 input; 45,338 cache-create; 41,267 cache-read;
+  17,870 output; maximum context 46,878) found cross-attempt retry-lineage DDL.
+  Corrected R2 `394c52d0-431f-44ba-ab81-bf03bb4eb6f4` (3 calls; 6 input;
+  39,389 cache-create; 28,317 cache-read; 24,900 output; maximum context
+  40,929) returned `NO MATERIAL FINDINGS`. Native-defect review
+  `139235e8-8b73-467b-9ebf-8c080c95d2e0` (3 calls; 6 input; 34,033
+  cache-create; 21,061 cache-read; 17,101 output; maximum context 34,035)
+  raised only a conditional cross-attempt concern; actual table uniqueness
+  constraints made it moot, leaving no unresolved verified material finding.
+- Final fresh native TEST completed official simulator 3DS and persisted one
+  verified Session result, one successful HMAC authorization, one card binding
+  with exact webhook operation/sequence provenance, current Terms/v2
+  attribution, one active canonical enrollment/component and one verified
+  Heartbeat projection. Owner CLI independently confirmed the exact QA user is
+  in the target group and still has 13 total memberships. One status reload
+  created no duplicate. Two earlier global conflicts remain preserved.
+- Test-only fixture corrections added actual migration157 before159 and changed
+  binding-tamper coverage to flip decoded ciphertext. All payment/checkout tests
+  pass 433 with 8 skipped and 0 failures; typecheck and diff checks pass. The
+  last broad suite retained established unrelated and parallel-only failures,
+  so no globally green CI claim is made.
+- This acceptance proves TEST authorization/result/method/enrollment/group
+  membership, not settlement, receipt/welcome email delivery, learner login,
+  course activity, certification, or LIVE/production readiness. No LIVE config,
+  schema apply, provider charge, deployment or production activation occurred.
+
+### 2026-09-11 addendum — terminal card retry, source-only
+
+- Added tentative local migration 159 and a bounded three-Session chain. The
+  same immutable attempt/quote/attribution survives; each successor consumes
+  one exact authenticated terminal receipt for its predecessor.
+- Added purpose-separated encrypted return bindings, strict signed `-s2`/`-s3`
+  webhook correlation, stale predecessor late-positive diversion, and the
+  signed private `/internal/payments/session-retries` contract. Expired quote
+  returns reconfirmation without provider I/O.
+- Enrollment now keeps the original commercial attribution operation while
+  requiring method/event evidence for the latest Session operation. Retry
+  exceptions gate enrollment, Heartbeat access, and Gmail notice authority.
+- Disposable full-service proof covers refusal, explicit successor success,
+  original attribution/price/promotion preservation, canonical enrollment/
+  access, and a stable notice-owner key. Focused 172/172 plus 36/36 pass;
+  typecheck/build/format/diff pass. Full suite 4,246 pass/32 skip with the three
+  established unrelated baselines plus one parallel-only capacity-shadow
+  timeout that passes alone.
+- Bounded Sonnet/high R1 found one material post-success replay ordering defect;
+  it was fixed and regression-tested. R2 returned `NO MATERIAL FINDINGS`.
+  Nothing was applied to a real database or provider/runtime/config, and no
+  payment, enrollment/access, message, commit, push, or deploy occurred.
+- Root independently found a later material migration159 upgrade defect: its
+  additive backfills ran through immutable legacy result/reference/event
+  triggers and would fail on populated data. The correction disables only those
+  named triggers inside the migration transaction, restores/verifies them before
+  commit, and changes no prior business/cipher/state/version field. A populated
+  verified+conflict+event fixture proves exact preservation, restored
+  immutability and rollback refusal 2/2. Review is pending under the stopped
+  review-authority gate.
+- Added the signed private exact-binding pre-submit check with no card fields,
+  Session creation or provider call. It consults the backend new-payment kill
+  gate and current chain/evidence under lock, allowing original/current
+  successor Sessions and blocking stale, positive, late-positive, pending,
+  unknown, expired or unavailable state. Focused 28/28 pass. It narrows but
+  cannot eliminate the issued-capability/check-to-submit race; review is
+  pending root's next explicitly approved packet.
+
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
+
+#### 2026-09-11T13:13Z addendum — environment-explicit core and inert LIVE composition
+
+- State: `validating`. Source is uncommitted/unpushed on base `1a1f3b8d`; this
+  addendum extends the current dirty English-card task without publishing or
+  activating it.
+- Added one reusable provider/runtime core while preserving the prior TEST
+  exports and TEST service. Environment selection now owns exact endpoint,
+  credential purpose, HMAC envelope, scope and correlation namespace. LIVE can
+  construct only `{validated-prefix}-checkout-live.adyenpayments.com` v72 and
+  reserves the appended suffix within the DNS-label limit.
+- Added a source-only `createPaymentLiveRuntime` fixed to
+  `tandem-wordpress-live`, `tandem-wordpress-commerce-v1`,
+  `mcq-program-a-foundations:en-US`, card, LIVE/eu and canonical HTTPS return
+  origin. All activation flags are explicit and default off. New starts require
+  enabled+recovery; recovery-only preserves status, return reconciliation,
+  original-provider dispatch/reconciliation and owned webhook intake.
+- Generalized the one canonical HMAC/event store for LIVE without adding a
+  parallel ledger. LIVE requires all 11 existing card reducer events and
+  hash-only retention for verified owned unsupported events; TEST/LIVE keys,
+  envelope flags, merchant/store, scope and reference prefixes fail closed.
+  Settlement and fulfillment remain unproven and unchanged.
+- Verification under pinned Node22.23.2: focused provider/runtime/event suites
+  134/134 pass; typecheck/build pass. Final full root run is4183 passed/32
+  skipped with the same three established unrelated failures plus one parallel
+  disposable timeout; the timeout immediately passed2/2 alone. `git diff
+--check` passes.
+- Sonnet/high bounded R1 used Read/Write with strict empty MCP over49,844
+  request/evidence bytes. Its two confirmation questions were independently
+  resolved: the unchanged full scope fingerprint pins provider/region/store,
+  and the exact offer key matches the current publication/service. Codex then
+  added canonical HTTPS origin, quote-authority and complete DNS-label
+  hardening; narrow Sonnet/high R2 returned `NO MATERIAL FINDINGS`. R1 session
+  `a0795b3e-4d43-4e4a-83de-288760335092`:4 calls, input8/cache-create74454/
+  cache-read129128/output21597, max context79295. R2 session
+  `2ca93784-8de4-4fb9-8af7-484e12c4c39e`:4 calls, input8/cache-create30154/
+  cache-read108522/output6596, max context40041. Neither used shell, network,
+  MCP, secrets, settings or repository write access.
+- Deployment/migration: none. No listener/public BFF/frontend, private config
+  reader, migration, provider request, production database, payment,
+  publication/fulfillment lowering, commit, push, deploy or activation.
+  Managed-host composition, public WordPress checkout, activated English
+  publication, production Heartbeat/receipt delivery and external readiness
+  gates remain unresolved.
+
+#### 2026-09-11T02:57Z addendum — executable English card TEST service
+
+- State: `validating`. Source is uncommitted/unpushed on exact base `1a1f3b8d`;
+  root retains exact diff acceptance and tentative migration156 namespace
+  authority before any source publication.
+- `createWebsiteCheckoutTestService` is the first complete listener-ready
+  disposable composition: signed Session/resume/return/status, signed identity,
+  same-route checkout/attribution/enrollment admission and native HTTP HMAC event
+  intake. It permits exactly `mcq-program-a-foundations:en-US`, card and
+  TEST/eu/full Store Reference scope. It creates no listener and reads no
+  environment/default database.
+- The existing `/enrollment-admissions` command adds the exact six-field
+  WordPress attribution handoff. Canonical base64/UTF-8/hash, strict nested
+  schemas, request fingerprint, trusted field-map ID/hash and every overlapping
+  snapshot/binding/attempt/quote/identity/Terms/privacy value are checked before
+  immutable checkout evidence. Exact canonical bytes are encrypted with distinct
+  AAD; no raw tracker token, contact, payment field, role proof, capability or
+  promotion code is stored or returned.
+- Same-body/business-operation replay with a fresh transport nonce returns a
+  stable checkout receipt and moves enrollment held->accepted->duplicate after
+  authenticated card result and signed authorization. The promotion verifier
+  uses the reviewed PHP shape, exact originating Session operation and
+  `adyen_card_authorization_v1`; it requires a host-configured promotion policy
+  and durable card enrollment. Unlimited promotion redemption may be null;
+  limited/restricted reservation remains bound by quote fingerprint. No-promo and
+  regional-only policies return null.
+- The hard-TEST launcher pins actual WordPress quote authority
+  `tandem-wordpress-commerce-v1`, permits webhook-disabled and TEST-capture-
+  unverified startup without inventing either proof, and keeps enrollment held.
+  Its private manifest preserves the exact guarded disposable database across
+  stop/restart and configuration update. Only explicit `--cleanup` can drop that
+  exact inactive, current-user-owned fixture.
+- Tentative local-only migration156 adds one immutable admin-only encrypted
+  attribution row with exact checkout/capability FKs and unique operation,
+  attempt, snapshot and binding identities. Empty rollback/reapply passes and
+  populated rollback refuses. All fetched refs had max migration155; root has
+  not yet granted global namespace publication or any production apply.
+- Cross-project vector: exact WordPress file SHA-256
+  `846f3b4d81ff6c882803709fe1ae026efabcc84af08fecce516766bd73ae5663`;
+  strict Node readback decoded snapshot
+  `afff1fa4e3268309990ab749c012e6092fe3333418fb72460593522c47bea317`
+  and binding
+  `23da9601d0181defcd1c1c34918c776eb7862dcbc1e91e9a3e846938eb5ad690`,
+  identical to PHP's 31/31 fixture proof.
+- Verification under Node22.23.2: focused13 files/79 pass, including complete
+  disposable HTTP/PostgreSQL service2/2, promotion matrix7/7, webhook HTTP2/2,
+  runner parser7/7, sanitized CLI failure1/1 and actual persistent PostgreSQL
+  restart/config-update/cleanup1/1. Full4158 passed/
+  32 skipped/the same three established unrelated failures (Capacity reserved
+  seat, CNPC wrapper string, date-sensitive Trafft). Whole-tree typecheck, build,
+  exact-source formatting and diff check pass. Continuity intentionally reports
+  168 active/ready rows and 163 changelog entries and passes with the two
+  local-only migration files staged solely for trackability.
+- Sonnet/high R1 found one material missing caller pin in the promotion receipt
+  join. The correction uses the actual enrollment `checkout_caller` both in the
+  attribution join and bound filter; R2 returned `NO MATERIAL FINDINGS`. R1
+  session `04e00394-c47b-40b1-aabc-1fd9c4e48a23`:8 calls, input16/
+  cache-create112829/cache-read487339/output28291, max context117670 and one
+  bounded-context warning. R2 session `ee93251b-2d4b-445a-b3b1-55ef4b86312e`:
+  6 calls, input12/cache-create51493/cache-read242220/output4294, max context61380,
+  no warnings. Both used Sonnet/high, `Read,Write`, empty strict MCP and no shell,
+  network, Git, secrets, settings or raw logs.
+- Owner-authorized R3 reviewed corrected unlimited/null-redemption promotion,
+  actual slash-component/raw-policy semantics, native webhook HTTP and persistent
+  hard-TEST launcher. Frozen session `BDB008BC-0452-408E-BDF8-963A81D8420F`
+  returned `NO MATERIAL FINDINGS`; usage was input8/cache-create52438/
+  cache-read104611/output11201, max context62338, no audit warning. Claude could
+  not recompute hashes without shell and was not shown the adapter's null-capture
+  enforcement; Codex recomputed all hashes and exact adapter17/17 proves
+  `card_capture_configuration_unverified` holds enrollment. An earlier R3 UUID
+  `8145A541-85C3-45B4-B702-A9D81A4B100D` consumed input10/cache-create21837/
+  cache-read90090/output4993, max context26678 after relative review paths were
+  mistakenly resolved under Peri and then refused as a mid-session redirect; it
+  read no source and produced no verdict. This is recorded as a review-packet
+  orchestration defect, not a source finding.
+- The first real parser attempt exposed raw global fatal presentation. The CLI
+  now catches every config/start/cleanup error and emits only fixed
+  `ERROR website-checkout-test code=startup_failed`; a subprocess test proves no
+  exception text, private path, JSON parse context or driver detail escapes.
+- Owner-authorized QA access delivery now reuses migration148's projection
+  outbox with an enrollment subject and exact version/lease/idempotency fences.
+  It is default-off and literal-pinned to the approved QA email, existing native
+  user and English MCS group/course/cohort. Every provider operation re-reads the
+  active canonical participant Party and exact native ID/email; only registered
+  bizmgr toolbox `get-user`/`add-to-group` calls are possible, with no sibling
+  removal, rollback, certificate or message action. Lost acknowledgement holds,
+  and exact admission replay finds membership before any reapply.
+- Signed access state remains the existing enrollment object with only
+  `accessDelivery` widened to `not_requested|queued|held|membership_verified`
+  and bounded matching reasons. WordPress strictly cross-checks materialization,
+  maps pending/held/verified separately, and says exact group membership does not
+  prove group-to-course attachment, learner login, visit, progress or production
+  fulfillment.
+- The existing TEST runner now includes migration148 for fresh databases and
+  safely upgrades the preserved isolated database only when all six projection
+  columns are absent; partial lineage refuses. It also sets reviewed
+  `retainVerifiedOwnedUnsupported:true`: composed proof stores an owned unknown
+  event only as one hash-only exception and zero payment facts. Allowed financial
+  events remain AUTHORISATION-only; adverse/capture/refund readiness is not
+  claimed.
+- The first native Session expired with no Pay submitted. Final WordPress
+  fake-clock and actual-browser proof refuse expiry before mount, after async
+  construction and at submit, disable/unmount on timer, and route
+  `reconciliation_required` to same-attempt status-review copy. Two browser
+  retries left the exact backend operation count at one; no reset/new attempt or
+  Stripe fallback ran.
+- Final access gates under Node22.23.2: focused10 files/60 pass; shared projection/
+  enrollment/publication10 files/83 pass; full4162 pass/32 skip with the same
+  three unrelated Capacity/CNPC/Trafft baselines; typecheck, build, format,
+  continuity and diff checks pass. WordPress final POC28/28 and access/expiry7/7
+  pass. Bounded Sonnet/high R1 session
+  `90078AE4-0FBF-44EC-A208-319B5CB2594D` reviewed exactly eight artifacts and
+  returned `NO MATERIAL FINDINGS`: input8/cache-create49939/cache-read83412/
+  output13727, max context54780, no audit warnings.
+- After the isolated restart, `/attempts` recovery succeeded with the same
+  capability but `/status` returned service unavailable. Read-only evidence
+  proved one unexpired/unrevoked capability and zero event/projection rows. The
+  webhook-disabled fallback returned nullable SQL projection directly, unlike the
+  configured event store's existing empty-facts projector. It now calls that exact
+  `projectCheckoutPaymentEvidence({attempt,facts:[]})` policy, returning truthful
+  `awaiting_payment` without changing financial authority. Focused43 pass and full
+  remains4162/32/same3 baselines; build/type/format/diff pass. WordPress mechanically
+  clarifies `awaiting_payment` as “No payment has been confirmed”; POC28/28/build/
+  diff pass. No extra Claude round was used for this low-impact parity/copy fix.
+- No real provider/payment, daemon/runtime configuration, production schema,
+  Heartbeat membership, certificate action, external attribution event,
+  customer communication or business mutation occurred. Actual protected TEST
+  provider purchase and membership outcome remain separate root-controlled gates.
 
 #### 2026-09-11T01:26Z addendum — canonical checkout enrollment consumption
 
@@ -359,7 +605,6 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Rollback: reactivate prior verified release and restore prior Sales prompt.
 - External boundary: no customer email/message, approval, provider/business
   data, migration, schedule, payment, or manufactured lead was created.
-
 
 ### NC-20260907-007 — Current MCS catalog publication expansion
 
@@ -11720,12 +11965,12 @@ only after each boundary is actually crossed.
   Corrected shared-reference/attempt races, sanitized repository failures, sticky
   method-conflict status and chargeback reversal history. Two narrow R2s accepted
   those corrections. Codex113-test/typecheck recheck passes; full bounded run:
- 4075 pass/32 skip and exactly the three established baseline failures (includes
+  4075 pass/32 skip and exactly the three established baseline failures (includes
   the separate uncommitted edge tests). Continuity/capability checks pass.
 - No production migration, live provider call, public route, course grant,
   certificate issuance, customer message or cutover. Pre-workflow edge filtering,
   protected BFF, canonical fulfillment and genuine TEST proof remain separate.
-- Review artifacts: Peri output/mcs-ready/*152-review/.
+- Review artifacts: Peri output/mcs-ready/\*152-review/.
 
 ## 2026-09-10 — NC-20260909-003 pre-workflow TEST edge source
 
@@ -11740,3 +11985,97 @@ only after each boundary is actually crossed.
   These measurements are local-only, not whole-gateway capacity or provider proof.
 - No external activation, secret installation, proxy/workflow change, payment,
   learner effect or certificate action. Exact TEST deployment/readback follows.
+
+## 2026-09-11 — NC-20260909-003 durable customer receipt and access notices
+
+- Added the concrete Gmail-backed `WebsiteCheckoutReceiptWelcomeOwner` plus
+  local migration 158. The new admin-only ledger is independent of Plutio,
+  student projections and operator-approved Mailman actions; it stores
+  immutable Party/content/sender hashes and append-only queue/claim/Gmail ACK/
+  readback/hold receipts without persisting customer email or body content.
+- Exact LIVE card readiness, $299 USD base and admitted final amount, active
+  canonical enrollment/obligation, unmerged payer/learner identity and current-
+  version Heartbeat membership are re-read before each possible send. Self gets
+  one combined payment/access confirmation. Gifts separate payer receipt from
+  learner access copy and leave first-login invitation to Heartbeat. Copy makes
+  no settlement, completion, certificate or marketing claim.
+- Canonical `gmail-api.ts` `sendEmail` and the C3 safety brake are reused with a
+  pinned Gmail profile and Send-As. Deterministic notice identities plus exact
+  Sent/metadata readback adopt one prior result; unknown acceptance holds and
+  ordinary replay never resends. Service-level receipt reference is emitted
+  only after the complete required notice set is verified.
+- Verification: focused notice and real disposable PostgreSQL suites 12/12;
+  related Gmail/payment/service checks 84/84; typecheck, build, documentation
+  continuity and diff checks pass. Full suite is 4,220 passed/32 skipped with
+  only the three established unrelated capacity/CNPC/Trafft failures.
+- Review: bounded Sonnet/high R1 found one partial aggregate receipt-reference
+  inconsistency. Codex fixed it and added a gift payer-confirmed/learner-held
+  regression; narrow R2 returned `NO MATERIAL FINDINGS`.
+- Deployment/migration: none. Migration 158 is a tentative local allocation
+  ordered after separately owned 157; it was applied only to a generated local
+  disposable database and cleaned. No Gmail, customer, provider, live config,
+  production database, commit, push, service activation or deployment action
+  occurred. Exact factory wiring/configuration, migration application and first
+  customer outcome remain separate root-owned gates.
+- Documentation: `docs/WEBSITE-CHECKOUT-CUSTOMER-NOTICES.md`, project map,
+  business schema guide and active-work record updated.
+
+## 2026-09-11 — NC-20260909-003 managed LIVE service and browser-independent fulfillment
+
+- Added one explicit TEST/LIVE full private checkout composition. The LIVE
+  runner validates an owner-only config, exact caller/origin/offer/card/key
+  purposes, inert publication plus separate activation receipt, approved access
+  and Gmail notice owners, and existing 148/149-159 schema lineage before
+  opening a loopback-only HTTP listener. `/health`, `/ready`, bounded shutdown
+  and restart reuse are fixture-proven; production startup never creates or
+  migrates a database.
+- Preserved the protected TEST wrapper and records. An explicit
+  `public_anonymous` profile selects only the MCS public return path; a dedicated
+  manifest-switch command verifies the exact old config digest (including the
+  legacy protected hash), writes an exclusive private backup, and refuses an
+  unknown mismatch without DB access.
+- Added the immutable English-only publication revision-2 candidate with the
+  natively verified Heartbeat group/course/cohort mapping. Candidate bytes keep
+  `runtime_consumer_enabled:false`; LIVE runtime requires an exact separately
+  accepted activation receipt. The original revision-1 four-locale TEST artifact
+  and digest are unchanged.
+- Added production Heartbeat membership delivery through the existing student
+  projection outbox/leases/receipts. It derives the exact active learner and
+  current card readiness before every provider read/write, creates only a
+  missing role User, preserves existing identity/role/groups, adds only the
+  pinned English group, holds uncertain acceptance, and records a versioned
+  Finance exception for later adverse evidence without revocation or
+  certification.
+- Tentative local migration157 adds an exact alternative method-evidence source
+  for browser closure: only successful HMAC-admitted AUTHORISATION on an
+  immutable card-only attempt can bind card to the exact payment event. Existing
+  Session-result rows remain the default. Empty rollback/reapply and populated
+  refusal pass in disposable PostgreSQL; the canonical enrollment records the
+  same evidence source.
+- A restart-safe keyset scanner now drains every signed checkout+attribution row
+  with durable payment evidence, invokes idempotent enrollment/access/notices,
+  and never blocks webhook acknowledgment. Claude access R1 found first-batch
+  starvation; the scanner now paginates through the complete ordered set and a
+  > batch regression passes. The timing question was closed with a fresh
+  > canonical authority check immediately before each Heartbeat write.
+- Verification: pinned Node22.23.2 typecheck/build pass; focused service,
+  identity, webhook, enrollment, projection, migration157, notice and restart
+  suites pass. Full suite:4220 pass/32 skip with exactly the three established
+  unrelated Academy Capacity, CNPC source-assertion and date-sensitive Trafft
+  failures. Sonnet/high service R1 found no verified defect and identified the
+  then-missing notice wiring; notice source later supplied it. Access R1's one
+  material scanner finding was fixed; narrow corrections R2 returned
+  `NO MATERIAL FINDINGS`.
+- Native evidence: the public TEST profile first reached real Adyen 3DS and
+  HTTP200 return using the DECLINED holder fixture, leaving one conflict-held
+  Session result. A later separately authorized logged-out USD299 official-Visa
+  case completed native3DS/return and produced exactly one verified Session
+  result plus one card/session_result binding while preserving that conflict.
+  Zero webhook events/admissions leave state truthfully `confirming_payment` /
+  `payment_evidence_pending`; no enrollment/access/notice outcome is claimed.
+  Adyen v72 official docs confirm the strict authorised-result fields and
+  webhook order-system authority; no schema relaxation was made for refused
+  results.
+- No LIVE/private config read, production DB/migration, provider write, payment,
+  Heartbeat action, invite, Gmail send, commit, push, deploy or activation was
+  performed in this backend slice.

@@ -15,9 +15,14 @@ import { standardWebhookSigningPayload } from './adyen-webhook.js';
 import {
   createPaymentAttempt,
   PaymentDomainError,
+  paymentScopeFingerprint,
   type PaymentScope,
 } from './payment-domain.js';
 import { PaymentMethodReconciliationStore } from './payment-method-reconciliation-store.js';
+import {
+  PaymentSessionReturnBindingIssuer,
+  sessionIdSha256,
+} from './payment-session-return-binding.js';
 import { PaymentEventStore } from './payment-event-store.js';
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { PaymentStore, type PaymentTransaction } from './payment-store.js';
@@ -53,6 +58,9 @@ const vault = new PaymentPayloadVault(
   new Map([['fixture', randomBytes(32)]]),
 );
 const webhookKey = randomBytes(32).toString('hex');
+const returnBindings = new PaymentSessionReturnBindingIssuer(
+  Buffer.alloc(32, 0x54),
+);
 let store: PaymentStore;
 const sql = (name: string) =>
   readFileSync(
@@ -75,13 +83,18 @@ const transaction: PaymentTransaction = async (work) => {
   }
 };
 
-function attempt() {
+function attempt(
+  paymentMethodCapabilities: Array<'card' | 'ach_direct_debit'> = [
+    'card',
+    'ach_direct_debit',
+  ],
+) {
   const now = Date.now() - 1000;
   return createPaymentAttempt({
     attemptId: randomUUID(),
     now,
     scope,
-    paymentMethodCapabilities: ['card', 'ach_direct_debit'],
+    paymentMethodCapabilities,
     quote: {
       schemaVersion: 1,
       quoteId: randomUUID(),
@@ -110,8 +123,10 @@ function attempt() {
   });
 }
 
-async function persistedSession() {
-  const a = attempt();
+async function persistedSession(
+  paymentMethodCapabilities?: Array<'card' | 'ach_direct_debit'>,
+) {
+  const a = attempt(paymentMethodCapabilities);
   await store.acceptAttempt(a);
   await store.prepareSession({
     attemptId: a.attemptId,
@@ -136,6 +151,61 @@ async function persistedSession() {
     sessionExpiresAt: a.quote.expiresAt,
   });
   return { a, session };
+}
+
+async function successorSession(
+  fixture: Awaited<ReturnType<typeof persistedSession>>,
+) {
+  const predecessor = await pool.query<{ operation_id: string }>(
+    `SELECT operation_id FROM business_v2.payment_operations
+     WHERE attempt_id=$1 AND session_sequence=1`,
+    [fixture.a.attemptId],
+  );
+  const receiptHash = randomBytes(32).toString('hex');
+  await pool.query(
+    `INSERT INTO business_v2.payment_session_terminal_nonpayment_receipts
+     (receipt_sha256,scope_sha256,attempt_id,payment_operation_id,
+      session_sequence,session_id_sha256,result_sha256,response_sha256,
+      terminal_status,source)
+     VALUES($1,$2,$3,$4,1,$5,$6,$7,'refused','authenticated_session_result')`,
+    [
+      receiptHash,
+      paymentScopeFingerprint(scope),
+      fixture.a.attemptId,
+      predecessor.rows[0].operation_id,
+      randomBytes(32).toString('hex'),
+      randomBytes(32).toString('hex'),
+      randomBytes(32).toString('hex'),
+    ],
+  );
+  const operationId = randomUUID();
+  const prepared = await store.prepareSuccessorSession({
+    attemptId: fixture.a.attemptId,
+    operationId,
+    terminalReceipt: `terminal-nonpayment:v1:${receiptHash}`,
+    requestForSequence: (_attempt, sequence) =>
+      JSON.stringify({
+        reference: `tandem-poc-tsv1-${fixture.a.attemptId}-s${sequence}`,
+      }),
+    retryWindowMs: 60000,
+  });
+  if (prepared.disposition !== 'prepared') throw new Error('retry unavailable');
+  const lease = await store.acquireDispatch(operationId);
+  if (lease.decision !== 'dispatch') throw new Error('dispatch unavailable');
+  const session = {
+    id: `session-${fixture.a.attemptId}-s2`,
+    sessionData: 'private-successor-fixture',
+    expiresAt: new Date(fixture.a.quote.expiresAt).toISOString(),
+  };
+  await store.finishDispatch({
+    operationId,
+    leaseToken: lease.leaseToken,
+    version: lease.version,
+    result: 'session_available',
+    response: JSON.stringify(session),
+    sessionExpiresAt: fixture.a.quote.expiresAt,
+  });
+  return { ...fixture, session, operationId };
 }
 
 function verified(
@@ -203,8 +273,28 @@ beforeAll(async () => {
     '150_payment_request_admission.sql',
     '151_payment_event_ledger.sql',
     '152_payment_method_reconciliation.sql',
+    '159_payment_terminal_card_retry.sql',
   ])
     await pool.query(sql(migration));
+  await pool.query(`ALTER TABLE business_v2.payment_method_bindings
+    ADD COLUMN source_kind text NOT NULL DEFAULT 'session_result'
+      CHECK (source_kind IN ('session_result','card_scope_webhook')),
+    ADD COLUMN source_event_id text,
+    ALTER COLUMN operation_id DROP NOT NULL,
+    ADD CONSTRAINT payment_method_binding_source_event_fk
+      FOREIGN KEY(scope_sha256,source_event_id)
+      REFERENCES business_v2.payment_events(scope_sha256,event_id),
+    ADD CONSTRAINT payment_method_binding_exact_source_check CHECK (
+      (source_kind='session_result' AND operation_id IS NOT NULL
+        AND source_event_id IS NULL)
+      OR
+      (source_kind='card_scope_webhook' AND operation_id IS NULL
+        AND source_event_id IS NOT NULL)
+    )`);
+  await pool.query(`CREATE TABLE business_v2.payment_enrollment_admissions (
+    attempt_id uuid PRIMARY KEY
+  );
+  ALTER TABLE business_v2.payment_enrollment_admissions OWNER TO nanoclaw_admin`);
   store = new PaymentStore(transaction, vault);
 }, 15000);
 
@@ -347,6 +437,342 @@ describe('durable method reconciliation on disposable Postgres', () => {
       service.verify({ ...input, sessionResult: 'changed' }),
     ).rejects.toThrow('session_result_operation_conflict');
     expect(calls).toBe(2);
+  });
+
+  it('reuses an exact compatible webhook-first card binding without rewriting it', async () => {
+    const fixture = await persistedSession(['card']);
+    const paymentReference = 'WEBHOOKFIRST0001';
+    const eventStore = new PaymentEventStore(
+      transaction,
+      scope,
+      {
+        hmacKeys: [webhookKey],
+        merchantAccount: scope.merchant,
+        storeReference: scope.store!,
+        referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
+        allowedEventCodes: ['AUTHORISATION'],
+      },
+      'card_scope_webhook',
+    );
+    expect(
+      await eventStore.recordWebhook({
+        live: false,
+        notificationItems: [
+          notification(fixture.a.attemptId, 'AUTHORISATION', {
+            pspReference: paymentReference,
+          }),
+        ],
+      }),
+    ).toEqual([{ result: 'recorded', attemptId: fixture.a.attemptId }]);
+    const before = await pool.query(
+      `SELECT evidence_sha256,source_event_id FROM business_v2.payment_method_bindings
+       WHERE attempt_id=$1 AND source_kind='card_scope_webhook'`,
+      [fixture.a.attemptId],
+    );
+    const service = new PaymentMethodReconciliationStore(
+      transaction,
+      vault,
+      store,
+      {
+        verify: async () =>
+          verified(fixture.a, fixture.session.id, paymentReference, 'card'),
+      },
+      scope,
+    );
+    const input = {
+      operationId: randomUUID(),
+      attemptId: fixture.a.attemptId,
+      sessionResult: 'webhook-first-compatible-result',
+    };
+    expect(await service.verify(input)).toMatchObject({ state: 'verified' });
+    expect(await service.verify(input)).toMatchObject({ state: 'verified' });
+    const after = await pool.query(
+      `SELECT evidence_sha256,source_event_id,source_kind,operation_id
+       FROM business_v2.payment_method_bindings WHERE attempt_id=$1`,
+      [fixture.a.attemptId],
+    );
+    expect(after.rows).toEqual([
+      {
+        ...before.rows[0],
+        source_kind: 'card_scope_webhook',
+        operation_id: null,
+      },
+    ]);
+  });
+
+  it('keeps the exact Session-result binding on a compatible webhook replay', async () => {
+    const fixture = await persistedSession(['card']);
+    const paymentReference = 'RESULTFIRST00001';
+    const methodStore = new PaymentMethodReconciliationStore(
+      transaction,
+      vault,
+      store,
+      {
+        verify: async () =>
+          verified(fixture.a, fixture.session.id, paymentReference, 'card'),
+      },
+      scope,
+    );
+    const request = {
+      operationId: randomUUID(),
+      attemptId: fixture.a.attemptId,
+      sessionResult: 'result-first-compatible-result',
+    };
+    expect(await methodStore.verify(request)).toMatchObject({
+      state: 'verified',
+    });
+    const before = await pool.query(
+      `SELECT evidence_sha256,operation_id,source_kind,source_event_id
+       FROM business_v2.payment_method_bindings WHERE attempt_id=$1`,
+      [fixture.a.attemptId],
+    );
+    const eventStore = new PaymentEventStore(
+      transaction,
+      scope,
+      {
+        hmacKeys: [webhookKey],
+        merchantAccount: scope.merchant,
+        storeReference: scope.store!,
+        referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
+        allowedEventCodes: ['AUTHORISATION'],
+      },
+      'card_scope_webhook',
+    );
+    const webhook = {
+      live: false,
+      notificationItems: [
+        notification(fixture.a.attemptId, 'AUTHORISATION', {
+          pspReference: paymentReference,
+        }),
+      ],
+    };
+    expect(await eventStore.recordWebhook(webhook)).toEqual([
+      { result: 'recorded', attemptId: fixture.a.attemptId },
+    ]);
+    expect(await eventStore.recordWebhook(webhook)).toEqual([
+      { result: 'duplicate', attemptId: fixture.a.attemptId },
+    ]);
+    expect(await methodStore.verify(request)).toMatchObject({
+      state: 'verified',
+    });
+    expect(
+      (
+        await pool.query(
+          `SELECT evidence_sha256,operation_id,source_kind,source_event_id
+           FROM business_v2.payment_method_bindings WHERE attempt_id=$1`,
+          [fixture.a.attemptId],
+        )
+      ).rows,
+    ).toEqual(before.rows);
+  });
+
+  it('converges an exact compatible webhook and Session-result race on one binding', async () => {
+    const fixture = await persistedSession(['card']);
+    const paymentReference = 'COMPATIBLERACE01';
+    const eventStore = new PaymentEventStore(
+      transaction,
+      scope,
+      {
+        hmacKeys: [webhookKey],
+        merchantAccount: scope.merchant,
+        storeReference: scope.store!,
+        referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
+        allowedEventCodes: ['AUTHORISATION'],
+      },
+      'card_scope_webhook',
+    );
+    const methodStore = new PaymentMethodReconciliationStore(
+      transaction,
+      vault,
+      store,
+      {
+        verify: async () =>
+          verified(fixture.a, fixture.session.id, paymentReference, 'card'),
+      },
+      scope,
+    );
+    const [event, result] = await Promise.all([
+      eventStore.recordWebhook({
+        live: false,
+        notificationItems: [
+          notification(fixture.a.attemptId, 'AUTHORISATION', {
+            pspReference: paymentReference,
+          }),
+        ],
+      }),
+      methodStore.verify({
+        operationId: randomUUID(),
+        attemptId: fixture.a.attemptId,
+        sessionResult: 'compatible-race-result',
+      }),
+    ]);
+    expect(event).toEqual([
+      { result: 'recorded', attemptId: fixture.a.attemptId },
+    ]);
+    expect(result).toMatchObject({ state: 'verified' });
+    expect(
+      (
+        await pool.query(
+          `SELECT count(*)::int count FROM business_v2.payment_method_bindings
+           WHERE attempt_id=$1 AND payment_reference=$2 AND method='card'`,
+          [fixture.a.attemptId, paymentReference],
+        )
+      ).rows[0].count,
+    ).toBe(1);
+    expect(
+      (
+        await pool.query(
+          `SELECT state FROM business_v2.payment_session_result_operations
+           WHERE attempt_id=$1`,
+          [fixture.a.attemptId],
+        )
+      ).rows[0].state,
+    ).toBe('verified');
+  });
+
+  it('rejects webhook-first PSP, method and Session-sequence mismatches', async () => {
+    const verifyAfterWebhook = async (
+      fixture: Awaited<ReturnType<typeof persistedSession>>,
+      webhookReference: string,
+      resultReference: string,
+      method: 'card' | 'ach_direct_debit',
+    ) => {
+      const eventStore = new PaymentEventStore(
+        transaction,
+        scope,
+        {
+          hmacKeys: [webhookKey],
+          merchantAccount: scope.merchant,
+          storeReference: scope.store!,
+          referencePrefix: ADYEN_TEST_REFERENCE_PREFIX,
+          allowedEventCodes: ['AUTHORISATION'],
+        },
+        'card_scope_webhook',
+      );
+      await eventStore.recordWebhook({
+        live: false,
+        notificationItems: [
+          notification(fixture.a.attemptId, 'AUTHORISATION', {
+            pspReference: webhookReference,
+          }),
+        ],
+      });
+      const service = new PaymentMethodReconciliationStore(
+        transaction,
+        vault,
+        store,
+        {
+          verify: async () =>
+            verified(fixture.a, fixture.session.id, resultReference, method),
+        },
+        scope,
+      );
+      return service.verify({
+        operationId: randomUUID(),
+        attemptId: fixture.a.attemptId,
+        sessionResult: `mismatch-${randomUUID()}`,
+      });
+    };
+
+    const psp = await persistedSession(['card']);
+    expect(
+      await verifyAfterWebhook(
+        psp,
+        'WEBHOOKPSP000001',
+        'RESULTPSP0000001',
+        'card',
+      ),
+    ).toEqual({ state: 'needs_review' });
+
+    const method = await persistedSession(['card']);
+    expect(
+      await verifyAfterWebhook(
+        method,
+        'METHODMISMATCH01',
+        'METHODMISMATCH01',
+        'ach_direct_debit',
+      ),
+    ).toEqual({ state: 'needs_review' });
+
+    const sequenceOne = await persistedSession(['card']);
+    const webhookReference = 'SEQUENCEMISMAT01';
+    const sequenceTwo = await successorSession(sequenceOne);
+    const sequenceOneOperation = await pool.query<{ operation_id: string }>(
+      `SELECT operation_id FROM business_v2.payment_operations
+       WHERE attempt_id=$1 AND session_sequence=1`,
+      [sequenceOne.a.attemptId],
+    );
+    const eventId = `sequence-fixture-${randomUUID()}`;
+    const eventEvidence = randomBytes(32).toString('hex');
+    await pool.query(
+      `INSERT INTO business_v2.payment_provider_references
+       (scope_sha256,payment_reference,attempt_id,payment_operation_id,session_sequence)
+       VALUES($1,$2,$3,$4,1)`,
+      [
+        paymentScopeFingerprint(scope),
+        webhookReference,
+        sequenceOne.a.attemptId,
+        sequenceOneOperation.rows[0].operation_id,
+      ],
+    );
+    await pool.query(
+      `INSERT INTO business_v2.payment_events
+       (scope_sha256,event_id,payload_sha256,attempt_id,payment_reference,fact,
+        payment_operation_id,session_sequence)
+       VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,1)`,
+      [
+        paymentScopeFingerprint(scope),
+        eventId,
+        randomBytes(32).toString('hex'),
+        sequenceOne.a.attemptId,
+        webhookReference,
+        JSON.stringify({ kind: 'authorization', success: true }),
+        sequenceOneOperation.rows[0].operation_id,
+      ],
+    );
+    await pool.query(
+      `INSERT INTO business_v2.payment_method_bindings
+       (scope_sha256,payment_reference,attempt_id,method,operation_id,
+        evidence_sha256,source_kind,source_event_id)
+       VALUES($1,$2,$3,'card',NULL,$4,'card_scope_webhook',$5)`,
+      [
+        paymentScopeFingerprint(scope),
+        webhookReference,
+        sequenceOne.a.attemptId,
+        eventEvidence,
+        eventId,
+      ],
+    );
+    const sequenceService = new PaymentMethodReconciliationStore(
+      transaction,
+      vault,
+      store,
+      {
+        verify: async () =>
+          verified(
+            sequenceTwo.a,
+            sequenceTwo.session.id,
+            webhookReference,
+            'card',
+          ),
+      },
+      scope,
+      returnBindings,
+    );
+    expect(
+      await sequenceService.verify({
+        operationId: randomUUID(),
+        attemptId: sequenceTwo.a.attemptId,
+        sessionResult: 'sequence-two-result',
+        returnBinding: returnBindings.issue({
+          attemptId: sequenceTwo.a.attemptId,
+          paymentOperationId: sequenceTwo.operationId,
+          sessionSequence: 2,
+          sessionIdSha256: sessionIdSha256(sequenceTwo.session.id),
+          expiresAt: sequenceTwo.a.quote.expiresAt,
+        }),
+      }),
+    ).toEqual({ state: 'needs_review' });
   });
 
   it('holds provider conflicts and crossed payment references for review', async () => {
@@ -601,9 +1027,11 @@ describe('durable method reconciliation on disposable Postgres', () => {
       pool.query(sql('rollback_152_payment_method_reconciliation.sql')),
     ).rejects.toThrow('rollback152 refused');
     await pool.query('ROLLBACK');
+    await pool.query('TRUNCATE business_v2.payment_attempts CASCADE');
     await pool.query(
       'TRUNCATE business_v2.payment_owned_event_exceptions,business_v2.payment_event_operations,business_v2.payment_event_operation_parents,business_v2.payment_method_bindings,business_v2.payment_session_result_receipts,business_v2.payment_session_result_operations',
     );
+    await pool.query(sql('rollback_159_payment_terminal_card_retry.sql'));
     await pool.query(sql('rollback_152_payment_method_reconciliation.sql'));
     await pool.query(sql('152_payment_method_reconciliation.sql'));
   });

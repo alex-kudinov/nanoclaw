@@ -60,9 +60,13 @@ ALTER TABLE business_v2.payment_session_result_operations
 
 ALTER TABLE business_v2.payment_operations
   DROP CONSTRAINT payment_operations_retry_lineage_check,
+  DROP CONSTRAINT payment_operations_retry_terminal_lineage_fk,
   DROP CONSTRAINT payment_operations_retry_terminal_uniq,
   DROP COLUMN retry_terminal_receipt_sha256;
 DROP TABLE business_v2.payment_session_terminal_nonpayment_receipts;
+ALTER TABLE business_v2.payment_operations
+  DROP CONSTRAINT payment_operations_predecessor_lineage_fk,
+  DROP COLUMN predecessor_session_sequence;
 ALTER TABLE business_v2.payment_operations
   DROP CONSTRAINT payment_operations_predecessor_uniq,
   DROP CONSTRAINT payment_operations_identity_sequence_uniq,
@@ -70,5 +74,20 @@ ALTER TABLE business_v2.payment_operations
   DROP COLUMN predecessor_operation_id,
   DROP COLUMN session_sequence,
   ADD CONSTRAINT payment_operations_attempt_id_key UNIQUE(attempt_id);
+
+CREATE OR REPLACE FUNCTION business_v2.fn_payment_operation_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$ BEGIN
+  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'payment operation deletion refused'; END IF;
+  IF (to_jsonb(NEW) - ARRAY['state','session_expires_at','encrypted_response','version','lease_token','lease_until'])
+       IS DISTINCT FROM
+     (to_jsonb(OLD) - ARRAY['state','session_expires_at','encrypted_response','version','lease_token','lease_until']) THEN
+    RAISE EXCEPTION 'payment operation immutable contract';
+  END IF;
+  IF NEW.version <> OLD.version + 1 THEN RAISE EXCEPTION 'payment operation version fence'; END IF;
+  IF OLD.state IN ('session_available','permanent_failure') THEN
+    RAISE EXCEPTION 'payment operation terminal state';
+  END IF;
+  RETURN NEW;
+END $$;
 
 COMMIT;

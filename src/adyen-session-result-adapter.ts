@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { adyenTestAttemptReference } from './adyen-payment-identifiers.js';
+import {
+  assertAdyenScopeForEnvironment,
+  resolveAdyenEnvironment,
+  type AdyenEnvironmentProfile,
+} from './adyen-environment.js';
+import { adyenAttemptReference } from './adyen-payment-identifiers.js';
+import type { AdyenApiCredential } from './adyen-session-adapter.js';
 import {
   paymentMethodCapabilitiesForAttempt,
   paymentScopeFingerprint,
@@ -10,8 +16,6 @@ import {
   type PaymentScope,
 } from './payment-domain.js';
 
-const TEST_SESSIONS_ORIGIN = 'https://checkout-test.adyen.com';
-const TEST_SESSIONS_PATH = '/v72/sessions/';
 const MAX_RESPONSE_BYTES = 131072;
 const REQUEST_TIMEOUT_MS = 15000;
 const reference = z
@@ -19,11 +23,11 @@ const reference = z
   .min(1)
   .max(200)
   .regex(/^[A-Za-z0-9_:.\/-]+$/);
-const responseSchema = z
+const responseBaseSchema = z
   .object({
     id: z.string().min(1).max(200),
     status: z.string().min(1).max(80),
-    reference,
+    reference: reference.optional(),
     payments: z
       .array(
         z
@@ -42,11 +46,12 @@ const responseSchema = z
           })
           .passthrough(),
       )
-      .max(20),
+      .max(20)
+      .optional(),
   })
   .passthrough();
 
-export interface VerifiedAdyenTestSessionPayment {
+export interface VerifiedAdyenSessionPayment {
   attemptId: string;
   sessionId: string;
   paymentReference: string;
@@ -54,6 +59,15 @@ export interface VerifiedAdyenTestSessionPayment {
   amount: number;
   currency: string;
 }
+export interface VerifiedAdyenSessionTerminalNonpayment {
+  attemptId: string;
+  sessionId: string;
+  status: 'refused' | 'canceled' | 'expired';
+}
+export type VerifiedAdyenSessionResult =
+  | VerifiedAdyenSessionPayment
+  | VerifiedAdyenSessionTerminalNonpayment;
+export type VerifiedAdyenTestSessionPayment = VerifiedAdyenSessionPayment;
 
 function withDeadline<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   if (signal.aborted)
@@ -108,28 +122,32 @@ function publicMethod(providerType: string): PaymentMethodCapability | null {
 }
 
 /**
- * One authenticated, non-polling TEST read that verifies the actual method used.
+ * One authenticated, non-polling provider read that verifies the actual method used.
  * The browser's sessionResult is untrusted until this call returns a binding.
  */
-export class AdyenTestSessionResultAdapter {
+export class AdyenSessionResultAdapter {
   #apiKey: string;
   private readonly scopeHash: string;
   constructor(
-    apiKey: string,
+    credential: AdyenApiCredential,
     scope: PaymentScope,
+    private readonly profile: AdyenEnvironmentProfile,
     private readonly transport: typeof fetch = fetch,
     private readonly requestTimeoutMs: number = REQUEST_TIMEOUT_MS,
+    private readonly scopeMismatchCode = 'adyen_scope_mismatch',
   ) {
-    if (!apiKey || /[\r\n]/.test(apiKey))
-      throw new PaymentDomainError('adyen_key_unavailable');
-    this.#apiKey = apiKey;
     if (
-      scope.provider !== 'adyen' ||
-      scope.environment !== 'test' ||
-      scope.endpointRegion !== 'eu' ||
-      scope.store === null
+      credential.environment !== profile.environment ||
+      !credential.apiKey ||
+      /[\r\n]/.test(credential.apiKey)
     )
-      throw new PaymentDomainError('adyen_test_scope_mismatch');
+      throw new PaymentDomainError('adyen_key_unavailable');
+    this.#apiKey = credential.apiKey;
+    try {
+      assertAdyenScopeForEnvironment(scope, profile);
+    } catch {
+      throw new PaymentDomainError(this.scopeMismatchCode);
+    }
     this.scopeHash = paymentScopeFingerprint(scope);
     if (
       !Number.isSafeInteger(requestTimeoutMs) ||
@@ -143,16 +161,14 @@ export class AdyenTestSessionResultAdapter {
     attempt: unknown;
     sessionId: string;
     sessionResult: string;
-  }): Promise<VerifiedAdyenTestSessionPayment> {
+    sessionSequence?: number;
+  }): Promise<VerifiedAdyenSessionResult> {
     const attempt = validateAttempt(input.attempt);
     if (
-      attempt.scope.provider !== 'adyen' ||
-      attempt.scope.environment !== 'test' ||
-      attempt.scope.endpointRegion !== 'eu' ||
-      attempt.scope.store === null ||
+      attempt.scope.environment !== this.profile.environment ||
       paymentScopeFingerprint(attempt.scope) !== this.scopeHash
     )
-      throw new PaymentDomainError('adyen_test_scope_mismatch');
+      throw new PaymentDomainError(this.scopeMismatchCode);
     if (
       typeof input.sessionId !== 'string' ||
       input.sessionId.length < 1 ||
@@ -168,8 +184,8 @@ export class AdyenTestSessionResultAdapter {
     let raw: unknown;
     try {
       const url = new URL(
-        `${TEST_SESSIONS_PATH}${encodeURIComponent(input.sessionId)}`,
-        TEST_SESSIONS_ORIGIN,
+        `${this.profile.sessionsPath}${encodeURIComponent(input.sessionId)}`,
+        this.profile.sessionsOrigin,
       );
       url.searchParams.set('sessionResult', input.sessionResult);
       const signal = AbortSignal.timeout(this.requestTimeoutMs);
@@ -194,11 +210,41 @@ export class AdyenTestSessionResultAdapter {
       throw new PaymentDomainError('provider_outcome_unknown');
     }
 
-    const parsed = responseSchema.safeParse(raw);
+    const parsed = responseBaseSchema.safeParse(raw);
+    const sessionSequence = input.sessionSequence ?? 1;
+    if (
+      !Number.isSafeInteger(sessionSequence) ||
+      sessionSequence < 1 ||
+      sessionSequence > 3
+    )
+      throw new PaymentDomainError('invalid_session_result_request');
+    const expectedReference = adyenAttemptReference(
+      attempt.attemptId,
+      this.profile,
+      sessionSequence,
+    );
+    if (
+      parsed.success &&
+      parsed.data.id === input.sessionId &&
+      ['refused', 'canceled', 'expired'].includes(parsed.data.status)
+    ) {
+      if (
+        parsed.data.reference !== undefined &&
+        parsed.data.reference !== expectedReference
+      )
+        throw new PaymentDomainError('provider_session_result_conflict');
+      return Object.freeze({
+        attemptId: attempt.attemptId,
+        sessionId: input.sessionId,
+        status: parsed.data.status as 'refused' | 'canceled' | 'expired',
+      });
+    }
     if (
       !parsed.success ||
       parsed.data.id !== input.sessionId ||
       parsed.data.status !== 'completed' ||
+      parsed.data.reference === undefined ||
+      parsed.data.payments === undefined ||
       parsed.data.payments.length !== 1
     )
       throw new PaymentDomainError('provider_session_result_conflict');
@@ -206,7 +252,7 @@ export class AdyenTestSessionResultAdapter {
     const method = publicMethod(payment.paymentMethod.type);
     if (
       method === null ||
-      parsed.data.reference !== adyenTestAttemptReference(attempt.attemptId) ||
+      parsed.data.reference !== expectedReference ||
       payment.resultCode !== 'Authorised' ||
       !paymentMethodCapabilitiesForAttempt(attempt).includes(method) ||
       payment.amount.value !== attempt.quote.finalAmount ||
@@ -221,5 +267,27 @@ export class AdyenTestSessionResultAdapter {
       amount: payment.amount.value,
       currency: payment.amount.currency,
     });
+  }
+}
+
+/** Compatibility wrapper for the existing TEST-only composition. */
+export class AdyenTestSessionResultAdapter extends AdyenSessionResultAdapter {
+  constructor(
+    apiKey: string,
+    scope: PaymentScope,
+    transport: typeof fetch = fetch,
+    requestTimeoutMs: number = REQUEST_TIMEOUT_MS,
+  ) {
+    super(
+      { environment: 'test', apiKey },
+      scope,
+      resolveAdyenEnvironment({
+        environment: 'test',
+        liveEndpointPrefix: null,
+      }),
+      transport,
+      requestTimeoutMs,
+      'adyen_test_scope_mismatch',
+    );
   }
 }

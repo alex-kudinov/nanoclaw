@@ -28,13 +28,26 @@ const readSchema = z
   })
   .strict();
 const returnSchema = readSchema
-  .extend({ sessionResult: z.string().min(1).max(65536) })
+  .extend({
+    sessionResult: z.string().min(1).max(65536),
+    returnBinding: z.string().min(1).max(1000).optional(),
+  })
+  .strict();
+const retrySchema = readSchema
+  .extend({
+    terminalReceipt: z.string().regex(/^terminal-nonpayment:v1:[a-f0-9]{64}$/),
+  })
+  .strict();
+const submitCheckSchema = readSchema
+  .extend({ returnBinding: z.string().min(1).max(1000) })
   .strict();
 const paths = new Set([
   '/internal/payments/sessions',
   '/internal/payments/attempts',
   '/internal/payments/status',
   '/internal/payments/returns',
+  '/internal/payments/session-retries',
+  '/internal/payments/session-submit-checks',
 ]);
 
 /** One bounded bucket per configured caller/controller, not attacker-chosen IDs. */
@@ -85,12 +98,14 @@ type Dependencies = {
     'preflightSignature' | 'admit' | 'issueStatusCapability' | 'permitsStatus'
   >;
   store: Pick<PaymentStore, 'acceptAttempt' | 'readAttempt'>;
-  sessions: Pick<PaymentSessionService, 'validateStart' | 'start' | 'resume'>;
+  sessions: Pick<PaymentSessionService, 'validateStart' | 'start' | 'resume'> &
+    Partial<Pick<PaymentSessionService, 'retry' | 'checkSubmit'>>;
   events: Pick<PaymentEventStore, 'readInternalEvidence'>;
   reconciliation?: Pick<
     PaymentMethodReconciliationStore,
     'verify' | 'readState'
-  >;
+  > &
+    Partial<Pick<PaymentMethodReconciliationStore, 'readTerminalRetry'>>;
 };
 
 /** Unwired HTTP adapter. Caller/path come from server routing, never the envelope. */
@@ -203,7 +218,13 @@ export class PaymentApiController {
         });
       }
       const read = (
-        path === '/internal/payments/returns' ? returnSchema : readSchema
+        path === '/internal/payments/returns'
+          ? returnSchema
+          : path === '/internal/payments/session-retries'
+            ? retrySchema
+            : path === '/internal/payments/session-submit-checks'
+              ? submitCheckSchema
+              : readSchema
       ).safeParse(command);
       if (!read.success || read.data.requestId !== receipt.operationId)
         return this.response(400, { error: 'invalid_request' });
@@ -221,6 +242,31 @@ export class PaymentApiController {
         const result = await this.deps.sessions.resume(attempt.attemptId);
         return this.response(200, { ...result, attemptId: attempt.attemptId });
       }
+      if (path === '/internal/payments/session-retries') {
+        if (!this.deps.sessions.retry)
+          return this.response(503, { error: 'payment_service_unavailable' });
+        const retry = retrySchema.parse(command);
+        const result = await this.deps.sessions.retry({
+          attemptId: attempt.attemptId,
+          operationId: receipt.operationId,
+          terminalReceipt: retry.terminalReceipt,
+        });
+        return this.response(200, { ...result, attemptId: attempt.attemptId });
+      }
+      if (path === '/internal/payments/session-submit-checks') {
+        if (!this.deps.sessions.checkSubmit)
+          return this.response(200, {
+            attemptId: attempt.attemptId,
+            state: 'session_submit_blocked',
+            reason: 'unavailable',
+          });
+        const check = submitCheckSchema.parse(command);
+        const result = await this.deps.sessions.checkSubmit({
+          attemptId: attempt.attemptId,
+          returnBinding: check.returnBinding,
+        });
+        return this.response(200, { attemptId: attempt.attemptId, ...result });
+      }
       if (path === '/internal/payments/returns') {
         if (!this.deps.reconciliation)
           return this.response(503, { error: 'payment_service_unavailable' });
@@ -229,13 +275,32 @@ export class PaymentApiController {
           operationId: receipt.operationId,
           attemptId: attempt.attemptId,
           sessionResult: returned.sessionResult,
+          ...(returned.returnBinding
+            ? { returnBinding: returned.returnBinding }
+            : {}),
         });
+        const terminalRetry =
+          result.state === 'terminal_nonpayment'
+            ? await this.deps.reconciliation.readTerminalRetry?.(
+                attempt.attemptId,
+              )
+            : null;
         return this.response(200, {
           attemptId: attempt.attemptId,
           state:
             result.state === 'needs_review'
               ? 'needs_review'
-              : 'confirming_payment',
+              : result.state === 'terminal_nonpayment'
+                ? 'terminal_nonpayment'
+                : 'confirming_payment',
+          ...(terminalRetry
+            ? {
+                retry: {
+                  disposition: terminalRetry.disposition,
+                  terminalReceipt: terminalRetry.terminalReceipt,
+                },
+              }
+            : {}),
         });
       }
       const reconciliationState = await this.deps.reconciliation?.readState(
@@ -246,6 +311,24 @@ export class PaymentApiController {
           attemptId: attempt.attemptId,
           state: 'needs_review',
         });
+      if (reconciliationState === 'terminal_nonpayment') {
+        const retry = await this.deps.reconciliation?.readTerminalRetry?.(
+          attempt.attemptId,
+        );
+        if (!retry)
+          return this.response(200, {
+            attemptId: attempt.attemptId,
+            state: 'needs_review',
+          });
+        return this.response(200, {
+          attemptId: attempt.attemptId,
+          state: retry.state,
+          retry: {
+            disposition: retry.disposition,
+            terminalReceipt: retry.terminalReceipt,
+          },
+        });
+      }
       const evidence = await this.deps.events.readInternalEvidence(
         attempt.attemptId,
       );
@@ -292,6 +375,9 @@ export class PaymentApiController {
           'invalid_capability_request',
           'invalid_payment_method_capabilities',
           'invalid_session_result_request',
+          'invalid_return_binding',
+          'return_binding_expired',
+          'invalid_terminal_retry_request',
         ].includes(code)
       )
         return this.response(400, { error: 'invalid_request' });
