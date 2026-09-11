@@ -9,7 +9,7 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-003` | Complete reusable MCS Foundations one-time card/ACH deployment readiness | Codex coordinator + Sol writers + Claude reviewer | `codex/adyen-webhook-live-20260909` source6f98ca10; live75d5b6c1 remains unchanged; dirty primaries preserved | `in_progress` | C5 | Owner requests full deploy-ready implementation: shared regional/coupon parity, durable HTTP/session/event/status composition, protected TEST preview, exact fulfillment and noise/recovery proof. Plaid/CRM/other methods deferred. Existing source kernels reviewed; new source slices have explicit writer boundaries and independent review. | Complete backend HTTP/TEST composition and card/ACH capabilities; integrate with shared WordPress quote/preview contract and prove all readiness gates. No production activation/migration/customer effects; do not label mock/source-only success deploy-ready. Program work:mcs-foundations-deploy-ready at Peri. | 2026-09-10T18:41Z |
+| `NC-20260909-003` | Complete reusable MCS Foundations one-time card/ACH deployment readiness | Codex coordinator + bounded writers + Claude reviewer | `codex/adyen-webhook-live-20260909` source `c9a486c4` plus root-accepted canonical adapter; live `75d5b6c1` remains unchanged; dirty primaries preserved | `in_progress` | C5 | Owner requests full deploy-ready implementation: shared regional/coupon parity, durable HTTP/session/event/status composition, protected TEST preview, exact canonical enrollment consumption and noise/recovery proof. Plaid/CRM/other methods deferred. Existing source kernels and the source-only adapter are independently reviewed; no runtime consumer is enabled. | Commit/push the accepted 11-file canonical-adapter slice through normal hooks, then continue remaining readiness gates. No production activation/migration/customer effects; do not label source-only success deploy-ready. Program `work:mcs-foundations-deploy-ready` at Peri. | 2026-09-11T01:29Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
@@ -194,6 +194,21 @@ outside the current client conversation.
 ## Task details
 
 ### NC-20260909-003
+
+- 2026-09-11T01:26Z: canonical website checkout enrollment adapter source is
+  ready for root review at uncommitted base `c9a486c4`. It re-reads exact
+  checkout/identity/payment/publication authority and transactionally creates one
+  canonical order, seat, enrollment, financial agreement and pending-receipt
+  obligation without projection, access delivery or certificate action. Exact
+  publication pins/version bindings, regional discount, payer/participant,
+  mandate/card, multiple/crossed PSP, rollback, replay, adverse-fact and
+  concurrent-duplicate cases pass. Adapter17/17; related10 files123/123;
+  full4138 pass/32 skip/the same three established unrelated failures. R1's only
+  amount/currency finding omitted the trusted pre-persistence projection check;
+  signed mismatch tests proved zero writes and narrow Sonnet/high R2 retracted
+  it. Typecheck/build/continuity and root's exact-diff checks pass; normal
+  commit/push is authorized. No production migration/runtime/provider/business
+  action occurred.
 
 - 2026-09-10T20:39Z: pre-workflow TEST edge source accepted after Sonnet/high R1
   and independent6-test/500-request local rerun (zero upstream calls). Only owned

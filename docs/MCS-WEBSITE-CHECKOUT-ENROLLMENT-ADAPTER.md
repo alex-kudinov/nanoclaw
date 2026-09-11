@@ -90,6 +90,22 @@ The adapter accepts only `attemptId` and re-reads all authority. It is
 runtime consumer disabled, and persists only through the existing disposable
 enrollment-store transaction guard.
 
+Construction requires an independently configured trusted publication pin:
+the exact `publication_id`, positive `publication_revision` and declared
+`payload_sha256`. The adapter then independently recomputes the payload digest;
+changing and rehashing a supplied publication cannot rotate its trusted pin.
+The immutable WordPress quote must carry these exact version bindings:
+
+- catalog: `publication.source_versions.checkout_catalog`;
+- bundle: `route.entitlement.bundle_key + ':revision-' + bundle_version`;
+- delivery: `'publication:' + publication_id + ':r' + revision + ':' + offer_key`.
+
+Catalog, bundle, delivery, offer, locale, source digest or pinned-publication
+mismatch holds before a writer claim or canonical enrollment write. The
+publication base amount binds the quote's original amount; an authenticated
+nonzero regional discount remains WordPress-owned and the resulting financial
+obligation records the exact final quote amount.
+
 For new materialization it requires one exact method binding and one current
 authorized payment projection matching the quote amount/currency/PSP, with no
 second authorized PSP or adverse/conflicting evidence. ACH requires the accepted
@@ -100,6 +116,15 @@ seat, active paid-in-full agreement, accepted-pending-receipt obligation and one
 locale component. The resulting canonical enrollment is not course-access
 delivery: no projection job or provider effect is requested.
 
+The trusted payment-event boundary performs the amount/currency portion before
+publishing that projection: every admitted fact must use the attempt quote
+currency, and an authorization fact must equal the exact final quote amount.
+Mismatch becomes durable `amount_or_fact_conflict` evidence and cannot appear as
+an authorized projection. The adapter therefore consumes the minimized trusted
+projection plus exact PSP binding instead of duplicating fields removed by that
+projection contract. Disposable adapter tests exercise both mismatches through
+the real event store and prove zero writer claim or canonical admission.
+
 Exact replay validates the immutable accepted and consumed bindings plus the
 canonical readback. It does not recompute the original consumption digest from
 today's evolving financial projection, catalog or capture configuration. It
@@ -107,6 +132,16 @@ separately rechecks current adverse state and reports it without rewriting facts
 revoking access or clearing certification. Missing/pending/conflicting evidence
 returns held before canonical writes. Multiple PSPs never create a second writer
 claim or enrollment.
+
+The complete decision runs in the existing serializable disposable enrollment
+transaction. Canonical tables are locked before adapter reads; checkout and
+identity rows are then row-locked, method bindings are immutable, and payment
+projection reads share one transaction snapshot. No payment writer acquires a
+canonical enrollment lock, so this introduces no inverse lock order. A later
+adverse provider fact may serialize after enrollment and is deliberately exposed
+on replay. A failure after the PSP writer claim rolls back the claim, financial
+records, admission evidence and canonical enrollment together; retry uses the
+same source identities.
 
 No certificate financial-clearance, received-funds, free-order, promotion
 consumption, attribution, native access, customer communication or payment

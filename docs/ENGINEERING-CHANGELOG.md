@@ -30,6 +30,56 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-11T01:26Z addendum — canonical checkout enrollment consumption
+
+- State: `in_progress`. The adapter source slice is accepted; overall NC work
+  remains open. Base is `c9a486c4`; root independently passed adapter17/17,
+  typecheck, continuity and exact-diff inspection and authorized normal
+  commit/push.
+- Added the unwired `WebsiteCheckoutEnrollmentAdapter`: `admit(attemptId)`
+  re-reads the immutable attempt/quote, authenticated checkout and separate
+  payer/participant evidence, one exact method/PSP, trusted signed-event
+  projection and independently pinned staged publication. It derives order
+  identity from scope plus quote and commits one writer claim, canonical order,
+  seat, active enrollment/locale component, paid-in-full agreement,
+  accepted-pending-receipt obligation and immutable admission evidence in the
+  existing disposable serializable transaction.
+- Exact quote binding uses the published checkout catalog version,
+  `bundle_key:revision-N` and publication/revision/offer delivery version. The
+  publication base amount binds original price while a nonzero regional discount
+  persists the final quoted obligation. A changed or self-rehashed publication,
+  version/offer/locale mismatch, missing mandate/card policy evidence, multiple
+  PSP, crossed writer, duplicate quote/PSP or failed final insert cannot create a
+  partial or second enrollment.
+- The trusted event projection rejects authorization currency mismatch and any
+  authorization amount other than exact final quote before event/projection
+  persistence. Signed end-to-end wrong-amount/currency cases create durable
+  review evidence and zero writer/admission rows; a later mismatched fact leaves
+  accepted consumption unchanged and surfaces current review state.
+- Verification under Node22.23.2: adapter17/17; ten related enrollment/payment
+  files123/123; full4138 pass/32 skip/three established unrelated failures
+  (`academy-capacity-operator-disposable` reserved-seat expectation,
+  `cnpc-prompt-contract` wrapper string and date-sensitive Trafft shadow).
+  Typecheck, build, exact-file Prettier and documentation continuity all pass.
+- Independent review: Sonnet/high R1 reported one material amount/currency gap,
+  but its proposed adapter comparison referenced fields deliberately absent from
+  the minimized projection and missed the earlier trusted validator. Codex and
+  root traced the only projection writer and added real-store mismatch proofs.
+  Narrow unresolved-boundary R2 returned `FINDING RETRACTED`; no source-domain
+  defect or schema expansion remained. R1 session
+  `e04f8139-76c2-469c-8143-339d32c1e3bc`:4 calls, input8/cache-create119755/
+  cache-read173590/output21990, max context124596; context target warning because
+  the initial packet included the complete adapter/test. R2 session
+  `b416eb1b-3b88-49da-8c06-db1a4bc73f59`:4 calls, input8/cache-create35572/
+  cache-read114017/output6535, max context45459, no warnings.
+- Documentation: `docs/MCS-WEBSITE-CHECKOUT-ENROLLMENT-ADAPTER.md`, project map,
+  active work and bounded R1/R2 request/evidence/response artifacts. No raw test
+  log or secret-bearing artifact was added.
+- Deployment/migration: none. No runtime import, listener, production migration,
+  provider/payment operation, projection delivery, access action, certificate
+  clearance/issuance, customer communication or other business effect occurred.
+  Root accepted the exact 11-file diff and authorized its normal commit/push.
+
 #### 2026-09-10T14:36Z addendum — supported SSH key provisioning
 
 - Owner correctly challenged the unnecessary manual Terminal handoff. Existing
