@@ -1,5 +1,28 @@
 # NanoClaw engineering changelog
 
+## 2026-09-11 — NC-20260909-003 LIVE shared-feed filter wiring correction
+
+- Root deployment inspection found that the standalone LIVE receiver omitted
+  and its composition prohibited the existing verified-foreign-reference
+  filter. Unrelated shared merchant events would403/retry. LIVE now requires
+  and supplies that flag; the existing whole-batch HMAC/merchant checks,
+  owned store/correlation validation and durable event admission are unchanged.
+- Regression covers no-storage foreign success, mixed invalid HMAC, wrong
+  merchant, owned validation failure and valid owned storage dispatch.47 focused
+  tests, typecheck and continuity pass. Full run:4281 pass/32 skip/5 failures;
+  two disposable timeouts pass3/3 under a one-worker rerun. The same unrelated
+  Capacity, CNPC prompt and Trafft shadow failures remain, not a green suite.
+- Narrow Sonnet/high follow-up86d5abf1-ce16-41e6-a5a1-b0e970471588 found no
+  material defect in filter correction or ten-path deployment helper. Root
+  independently verified parser ordering/storage behavior. LiteSpeed contexts
+  can prefix-match; exact application route rejection remains the boundary,
+  notwithstanding review prose calling them exact matches.
+- Migration146–160 already applied frome289799e with15 individual readbacks;
+  28 new tables empty/admin-owned, grants0, old40/40/40/0 counts unchanged.
+  No additional schema change in this correction. Dedicated receiver not yet
+  running, provider hook inactive, public MCS stillStripe. Final immutable
+  installation and live foreign/provider proof remain separate requirements.
+
 ## 2026-09-11 — NC-20260909-003 authorized dedicated LIVE release preparation
 
 - Owner authorized the English MCS Foundations one-time-card rollout. Added a

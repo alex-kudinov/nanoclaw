@@ -68,6 +68,7 @@ function config(): PaymentLiveRuntimeConfig {
       referencePrefix: ADYEN_LIVE_REFERENCE_PREFIX,
       allowedEventCodes: [...ADYEN_CARD_EVENT_CODES],
       retainVerifiedOwnedUnsupported: true,
+      discardVerifiedForeignReferences: true,
     },
     limits: {
       requestsPerWindow: 100,
@@ -163,9 +164,9 @@ describe('disabled-by-default English MCS LIVE card composition', () => {
       },
     ],
     [
-      'foreign discard',
+      'missing shared-feed filter',
       (value: PaymentLiveRuntimeConfig) => {
-        value.webhook.discardVerifiedForeignReferences = true;
+        value.webhook.discardVerifiedForeignReferences = false;
       },
     ],
     [
@@ -192,6 +193,85 @@ describe('disabled-by-default English MCS LIVE card composition', () => {
       runtime.recordWebhook({ live: false, notificationItems: [] }),
     ).rejects.toThrow('Adyen webhook environment is not admitted here');
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('discards signed LIVE foreign traffic before storage, but still authenticates every item', async () => {
+    const value = config();
+    const db = vi.fn(async () => {
+      throw new Error('storage must not open');
+    });
+    const runtime = createPaymentLiveRuntime(value, {
+      transaction: db as PaymentTransaction,
+    });
+    const notification = {
+      pspReference: 'synthetic-foreign-psp',
+      originalReference: '',
+      merchantAccountCode: scope.merchant,
+      merchantReference: 'other-platform-order',
+      eventCode: 'AUTHORISATION',
+      success: 'true',
+      amount: { value: 100, currency: 'USD' },
+      additionalData: {},
+    };
+    const sign = (item: typeof notification) => ({
+      ...item,
+      additionalData: {
+        hmacSignature: createHmac(
+          'sha256',
+          Buffer.from(value.webhook.hmacKeys[0], 'hex'),
+        )
+          .update(standardWebhookSigningPayload(item))
+          .digest('base64'),
+      },
+    });
+    const envelope = (...items: ReturnType<typeof sign>[]) => ({
+      live: true,
+      notificationItems: items.map((NotificationRequestItem) => ({
+        NotificationRequestItem,
+      })),
+    });
+    const foreign = sign(notification);
+    await expect(runtime.recordWebhook(envelope(foreign))).resolves.toEqual([]);
+    await expect(
+      runtime.recordWebhook(
+        envelope(foreign, {
+          ...foreign,
+          additionalData: { hmacSignature: 'invalid' },
+        }),
+      ),
+    ).rejects.toThrow('Invalid HMAC signature');
+    await expect(
+      runtime.recordWebhook(
+        envelope(
+          sign({
+            ...notification,
+            merchantAccountCode: 'different-merchant',
+          }),
+        ),
+      ),
+    ).rejects.toThrow('Merchant is not allowlisted');
+    const owned = sign({
+      ...notification,
+      merchantReference: adyenAttemptReference(randomUUID(), {
+        referencePrefix: ADYEN_LIVE_REFERENCE_PREFIX,
+      }),
+    });
+    // An owned malformed event cannot disappear merely because it shares a
+    // batch with foreign noise. Store/date validation remains enforced.
+    await expect(
+      runtime.recordWebhook(envelope(foreign, owned)),
+    ).rejects.toThrow();
+    expect(db).not.toHaveBeenCalled();
+    const validOwned = {
+      ...owned,
+      eventDate: new Date().toISOString(),
+      paymentMethod: 'visa',
+      additionalData: { ...owned.additionalData, store: scope.store },
+    };
+    await expect(
+      runtime.recordWebhook(envelope(foreign, validOwned)),
+    ).rejects.toThrow('storage must not open');
+    expect(db).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a LIVE envelope signed with an independent TEST HMAC key before storage', async () => {

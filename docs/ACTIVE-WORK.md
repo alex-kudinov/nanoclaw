@@ -1,5 +1,12 @@
 # NanoClaw active work
 
+2026-09-11T23:05Z — NC-20260909-003 root continuation, source owner Codex:
+the authorized LIVE rollout exposed an unwired shared-feed filter. Patch only
+LIVE composition/runner plus regression tests; reuse existing whole-batch HMAC
+verification and in-memory foreign-reference discard. No schema change. Both
+production schemas are being installed separately; public routing remains
+Stripe. Review/release correction before enabling the inactive LIVE webhook.
+
 Status: shared current-state register
 Protocol: `docs/CHANGE-PROTOCOL.md`
 Last reviewed: 2026-08-29

@@ -110,7 +110,7 @@ export function createPaymentLiveRuntime(
     config.webhook.merchantAccount !== config.scope.merchant ||
     config.webhook.storeReference !== config.scope.store ||
     config.webhook.referencePrefix !== ADYEN_LIVE_REFERENCE_PREFIX ||
-    config.webhook.discardVerifiedForeignReferences === true ||
+    config.webhook.discardVerifiedForeignReferences !== true ||
     config.webhook.retainVerifiedOwnedUnsupported !== true ||
     !sameCardEventSet(config.webhook.allowedEventCodes)
   )

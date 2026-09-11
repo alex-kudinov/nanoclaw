@@ -650,6 +650,9 @@ export async function startWebsiteCheckoutLiveService(
             referencePrefix: ADYEN_LIVE_REFERENCE_PREFIX,
             allowedEventCodes: [...ADYEN_CARD_EVENT_CODES],
             retainVerifiedOwnedUnsupported: true,
+            // Shared merchant feed: authenticate the entire batch, then discard
+            // foreign signed references in memory before any storage work.
+            discardVerifiedForeignReferences: true,
           },
           limits: {
             requestsPerWindow: 300,

@@ -991,6 +991,13 @@ default listener, environment/database access or external activation. Local HTTP
 burst proof shows zero foreign forwarding; actual gateway deployment/readback and
 capacity acceptance remain separate.
 
+The dedicated LIVE checkout receiver now explicitly requires the same native
+whole-batch signature/merchant verification and in-memory foreign-reference
+discard in its composition. This avoids provider retries for unrelated shared
+merchant traffic without opening storage or forwarding it to n8n. Owned items
+still require exact store/correlation checks and durable event/exception intake;
+one invalid signature rejects the whole batch. The TEST edge remains unchanged.
+
 The source-only `website-checkout-enrollment-adapter.ts` now composes the
 authenticated checkout/identity evidence from migration155, exact staged
 Foundations publication pin and versions, one immutable method binding and the
