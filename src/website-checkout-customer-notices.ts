@@ -643,19 +643,39 @@ export class CanonicalGmailWebsiteCheckoutNoticeSender implements WebsiteCheckou
     private readonly sendFn: typeof sendEmail = sendEmail,
     private readonly writeGuard: typeof assertExternalWriteAllowed = assertExternalWriteAllowed,
   ) {
+    const fromAddress = normalizedEmail(headerEmail(senderAddress));
     if (
       normalizedEmail(senderAccount) !== senderAccount.toLowerCase() ||
-      headerEmail(senderAddress) !== normalizedEmail(senderAccount)
+      fromAddress !== headerEmail(senderAddress) ||
+      /[\r\n]/u.test(senderAddress)
     )
       throw new Error('notice_gmail_config_invalid');
   }
   async verifyAccount() {
     const profile = await this.gmail.users.getProfile({ userId: 'me' });
-    if (
-      normalizedEmail(profile.data.emailAddress) !==
-      this.senderAccount.toLowerCase()
-    )
+    const profileAddress = normalizedEmail(profile.data.emailAddress);
+    if (profileAddress !== this.senderAccount.toLowerCase())
       throw new Error('notice_gmail_account_mismatch');
+    const fromAddress = normalizedEmail(headerEmail(this.senderAddress));
+    if (fromAddress === profileAddress) return;
+    const aliases = await this.gmail.users.settings.sendAs.list({
+      userId: 'me',
+    });
+    const matches = (aliases.data.sendAs ?? []).filter(
+      (candidate) =>
+        normalizedEmail(candidate.sendAsEmail) === fromAddress &&
+        candidate.verificationStatus === 'accepted',
+    );
+    if (matches.length !== 1) throw new Error('notice_gmail_send_as_mismatch');
+    const exact = await this.gmail.users.settings.sendAs.get({
+      userId: 'me',
+      sendAsEmail: fromAddress,
+    });
+    if (
+      normalizedEmail(exact.data.sendAsEmail) !== fromAddress ||
+      exact.data.verificationStatus !== 'accepted'
+    )
+      throw new Error('notice_gmail_send_as_mismatch');
   }
   private async exact(
     messageId: string,
@@ -822,7 +842,9 @@ export class WebsiteCheckoutCustomerNoticeOwner implements WebsiteCheckoutReceip
       !/^https:\/\//.test(config.courseUrl) ||
       normalizedEmail(config.senderAccount) !==
         config.senderAccount.toLowerCase() ||
-      headerEmail(config.senderAddress) !== config.senderAccount ||
+      normalizedEmail(headerEmail(config.senderAddress)) !==
+        headerEmail(config.senderAddress) ||
+      /[\r\n]/u.test(config.senderAddress) ||
       !config.decisionReference ||
       !/^[a-f0-9]{64}$/.test(config.activationReceiptSha256) ||
       config.scope.provider !== 'adyen' ||

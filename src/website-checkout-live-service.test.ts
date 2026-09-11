@@ -529,8 +529,8 @@ describe('managed LIVE private config and schema gates', () => {
       productName: 'Mentor Coaching Foundations',
       courseUrl:
         'https://community.tandemcoaching.academy/courses/c/f2a36eca-a017-4536-9b83-368f51219895',
-      senderAccount: 'fixture@example.com',
-      senderAddress: 'fixture@example.com',
+      senderAccount: 'profile@example.com',
+      senderAddress: 'Tandem Coaching <receipts@example.com>',
       decisionReference: 'decision:fixture-notice-activation',
       approvedAt: '2026-09-11T12:00:00Z',
     };
@@ -565,7 +565,7 @@ describe('managed LIVE private config and schema gates', () => {
           'student_projection_receipts',
           'payment_attempts',
           'payment_operations',
-          'payment_request_admissions',
+          'payment_request_nonces',
           'payment_events',
           'payment_method_bindings',
           'payment_session_result_operations',

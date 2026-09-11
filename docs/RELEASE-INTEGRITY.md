@@ -920,6 +920,35 @@ Database migrations are a separate boundary. Additive migrations normally
 remain in place while host code rolls back. A destructive schema rollback
 requires its own review and data-retention decision.
 
+### Dedicated website checkout service packaging
+
+Beginning with the English MCS LIVE checkout release, the clean archive also
+binds the compiled `dist/website-checkout-live-entrypoint.js`, the inert
+`launchd/com.nanoclaw.website-checkout-live.plist` template, and the exact
+`launchd/com.nanoclaw.website-checkout-live-tunnel.plist` template, and the
+exact forward/rollback migration files 146 through 160. It does not include a broad
+business-migration directory or any private configuration. Before hashing the
+artifact, the builder runs the compiled entrypoint's help path and proves that a
+relative private-config path fails without opening a database or listener.
+
+The checkout service is a separate launchd job; it must not replace or modify
+`com.nanoclaw`. Render its template only into a machine-local candidate with
+the already installed pinned Node, a newly extracted immutable release, an
+owner-only absolute private config, a writable working directory outside the
+release and an external log directory. The template deliberately has no port,
+remote endpoint or tunnel value: the validated private config owns loopback
+bind/port, while a separately verified HTTPS and encrypted cross-host transport
+owns WordPress reachability. Installing the job, applying migrations, installing
+credentials, starting the service and routing traffic remain distinct changes.
+
+Rollback first disables new attempts at the WordPress/backend gates while
+preserving recovery and webhook intake, then restores the prior checkout job or
+keeps it stopped. Additive payment migrations normally remain. Migration146's
+rollback refuses whenever the shared student projection outbox is populated,
+so production rollback must rely on the pre-migration database backup or a
+separately reviewed forward correction rather than assuming the ordered
+rollback scripts can remove every schema change.
+
 ## Deployment states
 
 - `committed`: source exists in Git.

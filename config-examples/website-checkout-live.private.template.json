@@ -1,0 +1,92 @@
+{
+  "TEMPLATE_ONLY_REMOVE_BEFORE_VALIDATION": true,
+  "schemaVersion": 1,
+  "mode": "live",
+  "purpose": "website-checkout-live-v1",
+  "requestKey": "REQUIRED_DISTINCT_64_LOWERCASE_HEX",
+  "responseKey": "REQUIRED_DISTINCT_64_LOWERCASE_HEX",
+  "encryptionKey": "REQUIRED_DISTINCT_64_LOWERCASE_HEX",
+  "listener": {
+    "host": "127.0.0.1",
+    "port": 3445
+  },
+  "database": {
+    "host": "/tmp",
+    "port": 5432,
+    "name": "nanoclaw_business",
+    "user": "xbohdpukc",
+    "ssl": "disable",
+    "role": "nanoclaw_admin",
+    "schemaContract": "nanoclaw-v2:148,149-160"
+  },
+  "adyen": {
+    "environment": "live",
+    "endpointPrefix": "REQUIRED_PROVIDER_PREFIX",
+    "apiKey": "",
+    "company": "REQUIRED_LIVE_COMPANY",
+    "merchant": "REQUIRED_LIVE_MERCHANT",
+    "store": "REQUIRED_LIVE_STORE",
+    "webhookHmacKey": "REQUIRED_64_LOWERCASE_HEX"
+  },
+  "backend": {
+    "caller": "tandem-wordpress-live",
+    "requestKeyId": "REQUIRED_LIVE_REQUEST_KEY_ID",
+    "responseKeyId": "REQUIRED_LIVE_RESPONSE_KEY_ID",
+    "quoteAuthority": "tandem-wordpress-commerce-v1",
+    "allowedOrigin": "https://tandemcoach.co",
+    "returnPath": "/checkout/mcs-foundations/return/",
+    "cardCaptureConfigurationEvidence": "",
+    "attributionFieldMap": {
+      "id": "checkout-attribution-fields-en-mcs-card-v2",
+      "sha256": "0d7fbf7d6c3b548e7ba6cf3249418e50f14fb315d1dfee5cc597a4c748a8456e"
+    },
+    "attributionExternalEmission": "disabled",
+    "enrollmentTerms": {
+      "version": "REQUIRED_CURRENT_TERMS_VERSION",
+      "contentSha256": "REQUIRED_64_LOWERCASE_HEX"
+    },
+    "privacy": {
+      "version": "REQUIRED_CURRENT_PRIVACY_VERSION",
+      "contentSha256": "REQUIRED_64_LOWERCASE_HEX"
+    },
+    "promotionPolicyReferences": []
+  },
+  "activation": {
+    "serviceEnabled": false,
+    "recoverExisting": false,
+    "newAttemptsEnabled": false
+  },
+  "publication": {
+    "artifactPath": "REQUIRED_ABSOLUTE_IMMUTABLE_PUBLICATION_PATH",
+    "publicationId": "student-foundations-publication-v1",
+    "publicationRevision": 2,
+    "payloadSha256": "e1fed347482be9f5455971bf7cdd802a3d381a9fb9f882a630cb0ff4c72d4f47",
+    "activationReceipt": {
+      "schemaVersion": 1,
+      "environment": "live",
+      "status": "accepted",
+      "caller": "tandem-wordpress-live",
+      "publicationId": "student-foundations-publication-v1",
+      "publicationRevision": 2,
+      "publicationPayloadSha256": "e1fed347482be9f5455971bf7cdd802a3d381a9fb9f882a630cb0ff4c72d4f47",
+      "offerLocale": "mcq-program-a-foundations:en-US",
+      "decisionReference": "decision:english-mcs-live-rollout-authorized-2026-09-11",
+      "approvedAt": "2026-09-11T21:22:46.710Z",
+      "receiptSha256": "9c2540b636233b50742135a326e5c918d5d09c5a840a1a87dfc4fc37f84d0db2"
+    }
+  },
+  "heartbeatAccess": {
+    "enabled": false
+  },
+  "receiptWelcome": {
+    "owner": "unassigned",
+    "enabled": false
+  },
+  "fulfillment": {
+    "pollIntervalMs": 0,
+    "batchSize": 0
+  },
+  "chaosObservability": {
+    "enabled": false
+  }
+}

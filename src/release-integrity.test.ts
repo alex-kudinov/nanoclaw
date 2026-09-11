@@ -84,6 +84,20 @@ describe('release integrity', () => {
     ).toThrow('does not match its release manifest');
   });
 
+  it('refuses an unlisted compiled artifact added after the manifest', () => {
+    const { root, dist } = makeRoot();
+    writeManifest(dist);
+    fs.writeFileSync(path.join(dist, 'unlisted.js'), 'export {};\n');
+    expect(() =>
+      verifyRuntimeRelease({
+        cwd: root,
+        distDir: dist,
+        nodeVersion: '22.23.2',
+        requireManifest: true,
+      }),
+    ).toThrow('does not match its release manifest');
+  });
+
   it('refuses symlinks that could escape the compiled artifact digest', () => {
     const { root, dist } = makeRoot();
     writeManifest(dist);

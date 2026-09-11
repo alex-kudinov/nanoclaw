@@ -30,13 +30,38 @@ capabilities, or private status data.
 The executable is:
 
 ```text
-npm run checkout-live:serve -- --config <APPROVED_ABSOLUTE_PRIVATE_CONFIG_PATH>
+<PINNED_NODE> <IMMUTABLE_RELEASE>/dist/website-checkout-live-entrypoint.js \
+  --config <APPROVED_ABSOLUTE_PRIVATE_CONFIG_PATH>
 ```
 
-The normal immutable NanoClaw release/supervisor process remains authoritative.
-An inert supervisor entry may use that command only after substituting the
-approved release path, private config path, host transport, and port. This
-source does not name or install any of those deployment values.
+Before start, the same compiled entrypoint accepts `--check-config` with the
+absolute owner-only config. It validates the complete strict config and exact
+publication artifact and emits only `VALID ... config=accepted`; it does not
+open a database, listener, provider connection, Gmail or Heartbeat operation.
+Both check and start first run the existing full compiled-artifact release
+verifier. The rendered service plist must set
+`NANOCLAW_REQUIRE_RELEASE_MANIFEST=1`, the exact full expected commit and a
+release-matching `NANOCLAW_CODE_ROOT`; missing/mutated/unlisted artifacts, wrong
+commit, wrong Node or mismatched root fail before config/DB/listener work.
+
+The clean-release builder executes that compiled entrypoint's `--help` and
+relative-config refusal paths before inventorying the archive, and packages the
+exact forward/rollback migrations 146-160. The inert
+`launchd/com.nanoclaw.website-checkout-live.plist` template contains only
+unresolved node, immutable release, private config, non-release working
+directory and log-root placeholders. It supplies no port, remote host, tunnel,
+credential or activation value and cannot be installed as shipped. The normal
+immutable NanoClaw release process remains authoritative; root must render and
+validate a machine-local supervisor definition from separately approved values.
+
+The separately authorized transport assignment is Mini
+`127.0.0.1:3445` to VPS loopback `127.0.0.1:15680`. Both were unoccupied at
+read-only preflight; existing TEST port 15679 remains separate. The inert
+`com.nanoclaw.website-checkout-live-tunnel.plist` template pins only that reverse
+forward, VPS SSH port 2225, strict host checking, fail-fast forward setup and
+keepalives. Its identity path and working/log directories remain unresolved.
+The Mini's existing approved identity was verified mode 0600 by an explicit
+read-only handshake; no tunnel was opened.
 
 ## Private configuration and activation
 

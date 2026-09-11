@@ -195,6 +195,28 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- Authorized LIVE release preparation is reviewed and validated. Dedicated
+  compiled entrypoint/146–160 inventory/immutable guard, genuine schema-name
+  correction and verified Gmail-alias support are ready for source publication.
+  Root repeated339 focused tests; no existing main service, production schema,
+  checkout traffic or customer action was changed. Peri rollout claim owns
+  subsequent exact release, backups, migrations, private configuration and
+  canary; the real-money purchase remains owner-operated. See the new changelog
+  entry and Peri live-rollout/CURRENT.md, not older pending-authority notes.
+- 2026-09-11T21:39Z authorized LIVE deployment preparation is locally frozen
+  at source base `bf05adc`. Read-only Mini/VPS/production-schema preflight found
+  main NanoClaw healthy on immutable `7a3fe6b3`, no checkout service/tunnel,
+  approved free ports Mini3445/VPS15680, and an exact pre-146 database with 40
+  retained projection rows. The required forward chain is146-160; migration146
+  cannot be destructively rolled back over the populated shared outbox. A
+  compiled manifest/commit/Node/root-verified checkout entrypoint, exact
+  migration release inventory, inert separate service/tunnel plists, invalid
+  private config template and actual-migration readiness regression are pending
+  bounded review. Focused41/41, typecheck/build and plist syntax pass. No
+  production database/config/supervisor/provider/listener/tunnel/email/payment/
+  traffic mutation or main-service repoint occurred. Root owns review, release,
+  schema/config and activation transitions; durable preparation is in Peri
+  `output/mcs-ready/live-rollout/SERVICE-PREP.md`.
 - 2026-09-11T20:22Z root review/verification addendum: independent Sonnet/high
   final review `dc8a0f10-d8df-4f47-8a03-130b23272d1b` found no material defects.
   Root independently repeated 312/312 payment/checkout tests, typecheck and

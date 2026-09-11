@@ -1,5 +1,35 @@
 # NanoClaw engineering changelog
 
+## 2026-09-11 — NC-20260909-003 authorized dedicated LIVE release preparation
+
+- Owner authorized the English MCS Foundations one-time-card rollout. Added a
+  compiled standalone entrypoint, exact migration146–160 release inventory,
+  inert service/tunnel templates, full immutable startup verification, and
+  distinct release-integrity diagnostics. Corrected LIVE readiness to check
+  the actual payment_request_nonces table; genuine disposable schema passes.
+- Corrected receipt delivery to distinguish the authenticated Gmail profile
+  from its existing accepted Send-As alias. Real read-only profile/list/get
+  metadata verified the configured identity; no sender, OAuth scope or email
+  was changed. Exact From/Sent readback and existing write guards remain.
+- Sonnet/high release R1 and R2 completed; application, routing, alias, loader,
+  TLS and packaging changes have no unresolved material findings. R2's
+  observational migration-helper receipt-order gap was mechanically fixed and
+  verified with four forced-success/failure cases without changing SQL/guards.
+  Evidence is under Peri output/mcs-ready/live-rollout/REVIEW-DISPOSITION.md.
+- Root checks:339 payment/checkout/release-integrity tests passed; prior41
+  packaging/readiness tests, typecheck/build and plist syntax passed. This does
+  not erase the previously recorded unrelated whole-repository failures.
+- Runtime remains unactivated: dedicated service will use existing operational
+  CWD for canonical env/Gmail/Heartbeat dependencies, a new full-commit code
+  root, separate logging, and strict loopback tunnel. Main release7a3fe6b3 and
+  its critical shared dependency blobs remain unchanged. No production DB,
+  checkout service, email or payment operation has occurred at this boundary.
+- Independent infrastructure proof: valid certificate now serves the exact
+  webhook vhost, with global listener/DNS unchanged; normal direct/public TLS
+  checks passed. Dedicated restricted runtime credential and inactive webhook
+  are prepared privately. WordPress72-table backup verified. These facts are
+  not payment, fulfillment, reporting or public-traffic completion claims.
+
 ## 2026-09-07 — NC-20260907-001 supervision repair and product identity bridge
 
 - Exact live case 63 repaired through the deployed host: CSS row 6 verified,

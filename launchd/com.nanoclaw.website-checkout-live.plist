@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nanoclaw.website-checkout-live</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{NODE_PATH}}</string>
+    <string>{{RELEASE_ROOT}}/dist/website-checkout-live-entrypoint.js</string>
+    <string>--config</string>
+    <string>{{PRIVATE_CONFIG_PATH}}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>{{RUNTIME_WORKING_DIRECTORY}}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NANOCLAW_CODE_ROOT</key>
+    <string>{{RELEASE_ROOT}}</string>
+    <key>NANOCLAW_EXPECTED_RELEASE_COMMIT</key>
+    <string>{{FULL_RELEASE_COMMIT}}</string>
+    <key>NANOCLAW_REQUIRE_RELEASE_MANIFEST</key>
+    <string>1</string>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>PATH</key>
+    <string>/usr/bin:/bin</string>
+  </dict>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>{{LOG_ROOT}}/website-checkout-live.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_ROOT}}/website-checkout-live.stderr.log</string>
+</dict>
+</plist>

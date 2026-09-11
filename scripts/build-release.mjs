@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from 'crypto';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -32,7 +32,10 @@ if (status) {
 // sources before any compiled or archive artifact can be created.
 execFileSync(
   process.execPath,
-  [path.join(root, 'scripts', 'build-student-catalog-publication.mjs'), '--check-nanoclaw'],
+  [
+    path.join(root, 'scripts', 'build-student-catalog-publication.mjs'),
+    '--check-nanoclaw',
+  ],
   { cwd: root, stdio: 'inherit' },
 );
 
@@ -78,6 +81,47 @@ execFileSync(
   ],
   { cwd: root, stdio: 'inherit' },
 );
+
+// The dedicated checkout supervisor runs compiled release code only. Prove the
+// executable help and pre-config refusal paths without opening a database or
+// listener before the artifact is inventoried.
+const checkoutEntrypoint = path.join(
+  dist,
+  'website-checkout-live-entrypoint.js',
+);
+const checkoutHelp = spawnSync(
+  process.execPath,
+  [checkoutEntrypoint, '--help'],
+  {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 5_000,
+    maxBuffer: 1024 * 1024,
+  },
+);
+if (
+  checkoutHelp.status !== 0 ||
+  checkoutHelp.stdout !==
+    'usage: website-checkout-live (--config|--check-config) ABSOLUTE_PATH\n' ||
+  checkoutHelp.stderr !== ''
+) {
+  throw new Error('website checkout release entrypoint help check failed');
+}
+const checkoutInvalid = spawnSync(
+  process.execPath,
+  [checkoutEntrypoint, '--config', 'relative-private-config.json'],
+  { cwd: root, encoding: 'utf8', timeout: 5_000, maxBuffer: 1024 * 1024 },
+);
+if (
+  checkoutInvalid.status !== 1 ||
+  checkoutInvalid.stdout !== '' ||
+  checkoutInvalid.stderr !==
+    'ERROR website-checkout-live code=invalid_arguments\n'
+) {
+  throw new Error(
+    'website checkout release entrypoint config refusal check failed',
+  );
+}
 
 const { computeArtifactDigest } = await import(
   new URL('../dist/release-integrity.js', import.meta.url)
@@ -223,6 +267,36 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_144_academy_capacity_operator_pilot.sql',
     'data/business/migrations/nanoclaw-v2/145_academy_capacity_simple_sync.sql',
     'data/business/migrations/nanoclaw-v2/rollback_145_academy_capacity_simple_sync.sql',
+    'data/business/migrations/nanoclaw-v2/146_student_enrollment_store_contract.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_146_student_enrollment_store_contract.sql',
+    'data/business/migrations/nanoclaw-v2/147_student_enrollment_writer_claims.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_147_student_enrollment_writer_claims.sql',
+    'data/business/migrations/nanoclaw-v2/148_student_enrollment_projection_foundation.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_148_student_enrollment_projection_foundation.sql',
+    'data/business/migrations/nanoclaw-v2/149_payment_attempt_store.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_149_payment_attempt_store.sql',
+    'data/business/migrations/nanoclaw-v2/150_payment_request_admission.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_150_payment_request_admission.sql',
+    'data/business/migrations/nanoclaw-v2/151_payment_event_ledger.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_151_payment_event_ledger.sql',
+    'data/business/migrations/nanoclaw-v2/152_payment_method_reconciliation.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_152_payment_method_reconciliation.sql',
+    'data/business/migrations/nanoclaw-v2/153_website_checkout_provisional_finance.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_153_website_checkout_provisional_finance.sql',
+    'data/business/migrations/nanoclaw-v2/154_payment_identity_preparation.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_154_payment_identity_preparation.sql',
+    'data/business/migrations/nanoclaw-v2/155_website_checkout_admission_evidence.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_155_website_checkout_admission_evidence.sql',
+    'data/business/migrations/nanoclaw-v2/156_website_checkout_attribution_admission.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_156_website_checkout_attribution_admission.sql',
+    'data/business/migrations/nanoclaw-v2/157_payment_webhook_method_evidence.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_157_payment_webhook_method_evidence.sql',
+    'data/business/migrations/nanoclaw-v2/158_website_checkout_customer_notices.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_158_website_checkout_customer_notices.sql',
+    'data/business/migrations/nanoclaw-v2/159_payment_terminal_card_retry.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_159_payment_terminal_card_retry.sql',
+    'data/business/migrations/nanoclaw-v2/160_payment_chaos_observability.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_160_payment_chaos_observability.sql',
     'scripts/verify-release.mjs',
     'scripts/build-student-catalog-publication.mjs',
     'scripts/reconcile-supervision-checkout-source.mjs',

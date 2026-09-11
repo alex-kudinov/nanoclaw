@@ -29,6 +29,10 @@ import {
 } from './payment-domain.js';
 import { PaymentRequestAuthenticator } from './payment-request-auth.js';
 import type { PaymentTransaction } from './payment-store.js';
+import {
+  verifyPaymentChaosObservabilitySchema,
+  verifyWebsiteCheckoutLiveSchema,
+} from './website-checkout-live-runner.js';
 import { createWebsiteCheckoutTestService } from './website-checkout-test-service.js';
 
 const database = `nc_student_enrollment_store_${randomUUID().replaceAll('-', '')}`;
@@ -414,7 +418,9 @@ beforeAll(async () => {
     'rollback_156_website_checkout_attribution_admission.sql',
     '156_website_checkout_attribution_admission.sql',
     '157_payment_webhook_method_evidence.sql',
+    '158_website_checkout_customer_notices.sql',
     '159_payment_terminal_card_retry.sql',
+    '160_payment_chaos_observability.sql',
   ])
     await pool.query(sql(migration));
   await transaction(async (client) => {
@@ -660,6 +666,14 @@ afterAll(async () => {
 });
 
 describe('complete isolated English card TEST checkout service', () => {
+  it('passes production readiness checks on the exact migration chain', async () => {
+    await expect(
+      verifyWebsiteCheckoutLiveSchema(pool, database),
+    ).resolves.toBeUndefined();
+    await expect(
+      verifyPaymentChaosObservabilitySchema(pool),
+    ).resolves.toBeUndefined();
+  });
   it('runs signed identity, Session, return, event and canonical admission with exact replay', async () => {
     const identityOperationId = randomUUID();
     const preparationId = randomUUID();

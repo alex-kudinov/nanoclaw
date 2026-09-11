@@ -44,6 +44,18 @@ const ref = z
   .max(200)
   .regex(/^[A-Za-z0-9_:.\/-]+$/);
 const absolutePath = z.string().min(1).max(1024).refine(isAbsolute);
+const senderHeader = z
+  .string()
+  .min(3)
+  .max(320)
+  .refine((value) => {
+    if (/[\r\n]/u.test(value)) return false;
+    const trimmed = value.trim();
+    const address = (trimmed.match(/<([^<>]+)>$/u)?.[1] ?? trimmed)
+      .trim()
+      .toLowerCase();
+    return z.email().safeParse(address).success;
+  });
 const activationReceiptSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -164,7 +176,7 @@ const privateConfigSchema = z
           productName: z.literal('Mentor Coaching Foundations'),
           courseUrl: z.url(),
           senderAccount: z.email(),
-          senderAddress: z.email(),
+          senderAddress: senderHeader,
           decisionReference: ref,
           approvedAt: z.iso.datetime({ offset: true }),
           activationReceiptSha256: digest,
@@ -307,9 +319,7 @@ export function parseWebsiteCheckoutLivePrivateConfig(
         courseUrl.username ||
         courseUrl.password ||
         parsed.receiptWelcome.senderAccount !==
-          parsed.receiptWelcome.senderAccount.toLowerCase() ||
-        parsed.receiptWelcome.senderAddress !==
-          parsed.receiptWelcome.senderAddress.toLowerCase())) ||
+          parsed.receiptWelcome.senderAccount.toLowerCase())) ||
     (parsed.chaosObservability.enabled &&
       (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-160' ||
         parsed.chaosObservability.webhookToken ===
@@ -368,7 +378,7 @@ const requiredRelations = [
   'student_projection_receipts',
   'payment_attempts',
   'payment_operations',
-  'payment_request_admissions',
+  'payment_request_nonces',
   'payment_events',
   'payment_method_bindings',
   'payment_session_result_operations',

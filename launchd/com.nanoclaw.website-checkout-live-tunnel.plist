@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nanoclaw.website-checkout-live-tunnel</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-NT</string>
+    <string>-i</string>
+    <string>{{VPS_SSH_IDENTITY_PATH}}</string>
+    <string>-p</string>
+    <string>2225</string>
+    <string>-o</string>
+    <string>BatchMode=yes</string>
+    <string>-o</string>
+    <string>StrictHostKeyChecking=yes</string>
+    <string>-o</string>
+    <string>ExitOnForwardFailure=yes</string>
+    <string>-o</string>
+    <string>ServerAliveInterval=30</string>
+    <string>-o</string>
+    <string>ServerAliveCountMax=3</string>
+    <string>-R</string>
+    <string>127.0.0.1:15680:127.0.0.1:3445</string>
+    <string>tca@100.115.115.15</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>{{RUNTIME_WORKING_DIRECTORY}}</string>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>{{LOG_ROOT}}/website-checkout-live-tunnel.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_ROOT}}/website-checkout-live-tunnel.stderr.log</string>
+</dict>
+</plist>

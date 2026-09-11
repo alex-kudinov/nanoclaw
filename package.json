@@ -36,7 +36,7 @@
     "healer:company-work-plan": "./scripts/with-pinned-node.sh node dist/healer/company-work-projection-cli.js",
     "checkout-recovery:report": "./scripts/with-pinned-node.sh node dist/checkout-recovery-report-cli.js",
     "checkout-test:serve": "./scripts/with-pinned-node.sh tsx scripts/run-website-checkout-test-service.ts",
-    "checkout-live:serve": "./scripts/with-pinned-node.sh tsx scripts/run-website-checkout-live-service.ts",
+    "checkout-live:serve": "./scripts/with-pinned-node.sh node dist/website-checkout-live-entrypoint.js",
     "relationship-context:prepare-encharge": "./scripts/with-pinned-node.sh tsx scripts/prepare-encharge-identity-snapshot.ts",
     "company-gmail:coverage": "./scripts/with-pinned-node.sh node dist/gmail-historical-coverage-cli.js",
     "company-gmail:bootstrap": "./scripts/with-pinned-node.sh node dist/company-gmail-source-bootstrap-cli.js",

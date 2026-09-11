@@ -496,6 +496,82 @@ describe('CanonicalGmailWebsiteCheckoutNoticeSender', () => {
       }),
     ).toEqual({ messageId: 'm1', threadId: 't1' });
   });
+
+  it('separately verifies the OAuth profile and one accepted Send-As alias', async () => {
+    const listAliases = vi.fn(async () => ({
+      data: {
+        sendAs: [
+          {
+            sendAsEmail: 'receipts@tandemcoach.co',
+            verificationStatus: 'accepted',
+            treatAsAlias: true,
+          },
+        ],
+      },
+    }));
+    const getAlias = vi.fn(async () => ({
+      data: {
+        sendAsEmail: 'receipts@tandemcoach.co',
+        verificationStatus: 'accepted',
+      },
+    }));
+    const client = {
+      users: {
+        getProfile: vi.fn(async () => ({
+          data: { emailAddress: 'profile@tandemcoach.co' },
+        })),
+        settings: { sendAs: { list: listAliases, get: getAlias } },
+      },
+    } as never;
+    const gmail = new CanonicalGmailWebsiteCheckoutNoticeSender(
+      client,
+      'profile@tandemcoach.co',
+      'Tandem Coaching <receipts@tandemcoach.co>',
+      vi.fn() as never,
+      vi.fn() as never,
+    );
+    await expect(gmail.verifyAccount()).resolves.toBeUndefined();
+    expect(listAliases).toHaveBeenCalledWith({ userId: 'me' });
+    expect(getAlias).toHaveBeenCalledWith({
+      userId: 'me',
+      sendAsEmail: 'receipts@tandemcoach.co',
+    });
+  });
+
+  it('rejects an unaccepted configured Send-As alias', async () => {
+    const client = {
+      users: {
+        getProfile: vi.fn(async () => ({
+          data: { emailAddress: 'profile@tandemcoach.co' },
+        })),
+        settings: {
+          sendAs: {
+            list: vi.fn(async () => ({
+              data: {
+                sendAs: [
+                  {
+                    sendAsEmail: 'receipts@tandemcoach.co',
+                    verificationStatus: 'pending',
+                  },
+                ],
+              },
+            })),
+            get: vi.fn(),
+          },
+        },
+      },
+    } as never;
+    const gmail = new CanonicalGmailWebsiteCheckoutNoticeSender(
+      client,
+      'profile@tandemcoach.co',
+      'Tandem Coaching <receipts@tandemcoach.co>',
+      vi.fn() as never,
+      vi.fn() as never,
+    );
+    await expect(gmail.verifyAccount()).rejects.toThrow(
+      'notice_gmail_send_as_mismatch',
+    );
+  });
 });
 
 describe('PgWebsiteCheckoutNoticeAuthorityReader', () => {
