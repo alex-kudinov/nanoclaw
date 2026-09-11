@@ -11,7 +11,12 @@ import {
   ADYEN_LIVE_REFERENCE_PREFIX,
 } from './adyen-environment.js';
 import { resolveCheckoutCustomerIdentityWithClient } from './checkout-customer-identity.js';
+import {
+  PaymentChaosObservabilityStore,
+  PaymentChaosObservabilityWorker,
+} from './payment-chaos-observability.js';
 import { PaymentDomainError, type PaymentScope } from './payment-domain.js';
+import { PaymentPayloadVault } from './payment-payload-vault.js';
 import {
   LIVE_MCS_CARD_CALLER,
   LIVE_MCS_CARD_QUOTE_AUTHORITY,
@@ -77,7 +82,10 @@ const privateConfigSchema = z
         user: ref,
         ssl: z.enum(['require', 'disable']),
         role: z.literal('nanoclaw_admin'),
-        schemaContract: z.literal('nanoclaw-v2:148,149-159'),
+        schemaContract: z.enum([
+          'nanoclaw-v2:148,149-159',
+          'nanoclaw-v2:148,149-160',
+        ]),
       })
       .strict(),
     adyen: z
@@ -169,6 +177,22 @@ const privateConfigSchema = z
         batchSize: z.number().int().min(1).max(100),
       })
       .strict(),
+    chaosObservability: z
+      .discriminatedUnion('enabled', [
+        z.object({ enabled: z.literal(false) }).strict(),
+        z
+          .object({
+            enabled: z.literal(true),
+            environment: z.literal('live'),
+            endpoint: z.url(),
+            webhookToken: z.string().min(32).max(512),
+            identityHmacSecret: z.string().min(32).max(512),
+            batchSize: z.number().int().min(1).max(100),
+            pollIntervalMs: z.number().int().min(1000).max(60000),
+          })
+          .strict(),
+      ])
+      .default({ enabled: false }),
   })
   .strict();
 
@@ -286,6 +310,12 @@ export function parseWebsiteCheckoutLivePrivateConfig(
           parsed.receiptWelcome.senderAccount.toLowerCase() ||
         parsed.receiptWelcome.senderAddress !==
           parsed.receiptWelcome.senderAddress.toLowerCase())) ||
+    (parsed.chaosObservability.enabled &&
+      (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-160' ||
+        parsed.chaosObservability.webhookToken ===
+          parsed.chaosObservability.identityHmacSecret ||
+        keys.includes(parsed.chaosObservability.webhookToken) ||
+        keys.includes(parsed.chaosObservability.identityHmacSecret))) ||
     (parsed.activation.newAttemptsEnabled &&
       (!parsed.activation.serviceEnabled ||
         !parsed.activation.recoverExisting)) ||
@@ -409,6 +439,28 @@ export async function verifyWebsiteCheckoutLiveSchema(
     throw new PaymentDomainError('website_checkout_live_schema_mismatch');
 }
 
+export async function verifyPaymentChaosObservabilitySchema(
+  client: Pick<PoolClient, 'query'>,
+): Promise<void> {
+  const result = await client.query(
+    `SELECT c.relname,pg_get_userbyid(c.relowner) owner
+     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+     WHERE n.nspname='business_v2' AND c.relkind='r'
+       AND c.relname=ANY($1::text[])`,
+    [
+      [
+        'payment_chaos_observability_outbox',
+        'payment_chaos_observability_receipts',
+      ],
+    ],
+  );
+  if (
+    result.rowCount !== 2 ||
+    result.rows.some((row) => row.owner !== 'nanoclaw_admin')
+  )
+    throw new PaymentDomainError('website_checkout_live_schema_mismatch');
+}
+
 function derive(root: Buffer, label: string): Buffer {
   return Buffer.from(
     hkdfSync(
@@ -428,6 +480,7 @@ export async function startWebsiteCheckoutLiveService(
     serverFactory?: typeof createServer;
     heartbeatToolbox?: RegisteredHeartbeatToolboxRunner;
     receiptWelcomeOwner?: WebsiteCheckoutReceiptWelcomeOwner;
+    chaosTransport?: typeof fetch;
   } = {},
 ): Promise<{
   host: '127.0.0.1';
@@ -456,6 +509,7 @@ export async function startWebsiteCheckoutLiveService(
   let stopped = false;
   let ready = false;
   let fulfillmentWorker: WebsiteCheckoutLiveFulfillmentWorker | null = null;
+  let chaosWorker: PaymentChaosObservabilityWorker | null = null;
   const guard = async (client: PoolClient) =>
     verifyWebsiteCheckoutLiveSchema(client, config.database.name);
   const transaction: PaymentTransaction = async (work) => {
@@ -474,10 +528,29 @@ export async function startWebsiteCheckoutLiveService(
       client.release();
     }
   };
+  // Observability schema/transactions are deliberately isolated: an absent or
+  // unhealthy optional outbox must never make payment work or readiness fail.
+  const observabilityTransaction: PaymentTransaction = async (work) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+      await client.query('SET LOCAL ROLE nanoclaw_admin');
+      await verifyPaymentChaosObservabilitySchema(client);
+      const result = await work(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
   const stop = async () => {
     if (stopped) return;
     stopped = true;
     ready = false;
+    if (chaosWorker) await chaosWorker.stop();
     if (fulfillmentWorker) await fulfillmentWorker.stop();
     if (server)
       await new Promise<void>((done) => {
@@ -493,6 +566,7 @@ export async function startWebsiteCheckoutLiveService(
   };
   try {
     const payloadKeyId = 'live-payload-v1';
+    const payloadKey = derive(config.encryptionKeyBytes, 'payload');
     const receiptWelcomeOwner = config.receiptWelcome.enabled
       ? (injected.receiptWelcomeOwner ??
         createGmailWebsiteCheckoutReceiptWelcomeOwner(
@@ -547,9 +621,7 @@ export async function startWebsiteCheckoutLiveService(
               },
             },
             payloadKeyId,
-            payloadKeys: new Map([
-              [payloadKeyId, derive(config.encryptionKeyBytes, 'payload')],
-            ]),
+            payloadKeys: new Map([[payloadKeyId, payloadKey]]),
             returnBindingKey: derive(
               config.encryptionKeyBytes,
               'session-return-binding',
@@ -710,6 +782,23 @@ export async function startWebsiteCheckoutLiveService(
         config.fulfillment.batchSize,
       );
       fulfillmentWorker.start(config.fulfillment.pollIntervalMs);
+    }
+    if (config.chaosObservability.enabled) {
+      const vault = new PaymentPayloadVault(
+        payloadKeyId,
+        new Map([[payloadKeyId, payloadKey]]),
+      );
+      chaosWorker = new PaymentChaosObservabilityWorker(
+        new PaymentChaosObservabilityStore(
+          observabilityTransaction,
+          LIVE_MCS_CARD_CALLER,
+          config.scope,
+          vault,
+        ),
+        config.chaosObservability,
+        injected.chaosTransport,
+      );
+      chaosWorker.start();
     }
     server.on('error', () => void stop());
     return { host: config.listener.host, port: config.listener.port, stop };

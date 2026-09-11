@@ -942,6 +942,20 @@ activation receipts remain external gates. TEST adds an explicit
 the prior protected-preview profile as the default. See
 `docs/WEBSITE-CHECKOUT-LIVE-SERVICE.md`.
 
+The same LIVE runner now has a default-off, separately isolated payment-
+observability worker (`payment-chaos-observability.ts`, tentative local
+migration160). It projects only committed exact-caller/English-MCS attempt,
+Session, terminal/review, verified authorization and canonical enrollment facts
+into a minimized leased outbox; it never runs on the payment/webhook path.
+External Chaos delivery additionally requires granted immutable tracking
+consent and transiently derives the canonical payer's site-compatible person
+HMAC, including for gifts. TEST, other callers/products/scopes and unmatched
+exception hints cannot emit. Attempts/problems use `checkout_started`; only
+verified authorization plus enrollment uses `purchase_completed`, with
+settlement explicitly unproven. The optional schema check and transport failures
+cannot fail the base payment schema guard or transaction. Source is reviewed-
+pending, default-off and unapplied; see `docs/WEBSITE-CHECKOUT-LIVE-SERVICE.md`.
+
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
 PostgreSQL store and projection outbox (migrations146-148). See

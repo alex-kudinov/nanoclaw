@@ -12079,3 +12079,51 @@ only after each boundary is actually crossed.
 - No LIVE/private config read, production DB/migration, provider write, payment,
   Heartbeat action, invite, Gmail send, commit, push, deploy or activation was
   performed in this backend slice.
+
+## 2026-09-11 — NC-20260909-003 default-off Adyen payment observability
+
+- Added a source-only, browser-independent LIVE projection from committed
+  accepted website attempts, Session/retry results, terminal/review evidence,
+  verified HMAC authorization and canonical enrollment into the existing Chaos
+  lifecycle vocabulary. Exact caller, scope, attribution and English MCS offer
+  filters prevent shared-merchant noise; unmatched exception hints remain in
+  their payment ledger without blocking valid projection.
+- Tentative local migration160 adds a distinct minimized admin-only outbox and
+  append-only delivery receipts because migration117 is Stripe-specific. It
+  stores no contact/card/provider identifier, signature, raw payload or secret;
+  populated rollback refuses. Delivery uses deterministic opaque source IDs,
+  one-row leases, bounded retry/dead-letter categories, redirect refusal and
+  exact Chaos recorded/duplicate acceptance.
+- External emission is default-off, LIVE-only and requires granted immutable
+  attribution tracking consent. The sender transiently resolves the canonical
+  payer, including gifts, and applies Chaos's exact person-key HMAC semantics;
+  email is never stored, sent or logged. Attempts/problems map to
+  `checkout_started`; `purchase_completed` requires verified authorization plus
+  canonical enrollment and still reports settlement unproven.
+- Observability schema/transactions and transport are isolated from payment
+  readiness, webhook ACK and fulfillment. TEST external emission is not
+  representable; injected transport and a generated disposable database provide
+  the tests.
+- Verification: focused 22/22, broader payment/checkout 312/312, typecheck and
+  build pass. Combined review is pending. Documentation continuity reached only
+  the expected Git-tracking gate for the two new migration files; root retains
+  exact staging ownership after review.
+- Deployment/migration: none beyond generated disposable PostgreSQL. No real or
+  private configuration, existing database migration, provider/Chaos request,
+  runtime start, payment, commit, push, deployment or activation occurred.
+
+### 2026-09-11T20:22Z root review and verification addendum
+
+- Final independent Sonnet/high review `dc8a0f10-d8df-4f47-8a03-130b23272d1b`
+  found no material defects after root's scope/redirect/lease/hint corrections.
+  The source remains default-off and no existing database was migrated.
+- Root independently reran 312/312 payment/checkout checks and typecheck;
+  formatting passes. Full suite: 400 files passed, 10 skipped, three failed;
+  4,264 tests passed, 32 skipped, three failed. Failures are in unchanged
+  `academy-capacity-operator-disposable`, `cnpc-prompt-contract`, and
+  `relationship-context-trafft-shadow` tests, outside this diff. These are
+  recorded rather than hidden or called a globally green build.
+- Tandemweb's separate localhost TEST presentation now reads its course link
+  from the catalog-owned course object and writes minimized private diagnostic
+  receipts. This does not activate this LIVE-only Chaos projection or change a
+  payment, enrollment, Heartbeat membership, or production Stripe path.

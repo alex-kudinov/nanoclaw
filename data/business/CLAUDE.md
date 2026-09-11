@@ -59,6 +59,22 @@ student projection target. No migration apply, Gmail send, daemon wiring or
 activation follows from source presence. See
 `docs/WEBSITE-CHECKOUT-CUSTOMER-NOTICES.md`.
 
+Migration 160 is the tentative local-only Adyen payment-observability outbox.
+It follows migration 159 and is separate from the Stripe-only migration117
+table. Two admin-only relations retain minimized deterministic source hashes,
+exact scope/attempt classification, bounded action/outcome/reason/sequence,
+leases and append-only queue/claim/delivery receipts; they contain no contact,
+card, provider identifier, signature, raw payload or credential. Exact scope,
+accepted website caller, immutable attribution and English MCS offer constrain
+projection. External delivery additionally requires granted immutable tracking
+consent and derives the canonical payer person HMAC transiently. The isolated
+worker cannot fail payment transactions/readiness, rejects redirects, retries
+with one-row leases and accepts only the Chaos recorded/duplicate receipt.
+Schema/source presence does not enable the worker, configure Chaos, apply the
+migration, or prove purchase settlement. Populated rollback refuses. This
+migration has run only in a generated disposable database and is pending review;
+do not regenerate the live structure-only schema reference from it.
+
 Migration 150 adds source-only admin-owned payment request nonces, guest-status
 capabilities and append-only revocations over migration 149. Authentication uses
 an exact signed-body/header contract and DB-clock replay admission; status tokens

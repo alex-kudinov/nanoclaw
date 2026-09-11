@@ -195,6 +195,32 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-11T20:22Z root review/verification addendum: independent Sonnet/high
+  final review `dc8a0f10-d8df-4f47-8a03-130b23272d1b` found no material defects.
+  Root independently repeated 312/312 payment/checkout tests, typecheck and
+  formatting. Full root suite: 4,264 passed, 32 skipped, three failures in
+  unchanged Academy Capacity, CNPC prompt and Trafft shadow tests (not a green
+  full-suite claim). Normal source commit/push is root-owned; migration160,
+  LIVE configuration and Chaos activation remain unapplied/default-off.
+- 2026-09-11T19:55Z payment-observability source continuation: implement a
+  default-off LIVE-only Chaos projection from committed Adyen attempt, webhook,
+  retry/review and canonical enrollment facts. Tentative local migration160 is
+  approved for a separate minimized outbox because migration117 is Stripe-only
+  and persists/sends identifiers forbidden by this boundary. The scanner and
+  sender are browser-independent; exact tracking consent gates external Chaos
+  delivery, the financial journey subject is the canonical payer (including
+  gifts), and the Chaos person key must use its exact normalization/HMAC
+  semantics. TEST external delivery, real configuration, migration apply,
+  provider/network calls, deployment, commit and push remain prohibited.
+- 2026-09-11T20:14Z payment-observability source is frozen pending the combined
+  review. The optional LIVE runner uses a separately guarded migration160
+  outbox/receipt worker; exact scope/caller/MCS/attribution filters, payer
+  tracking-consent authority, redirect refusal, one-row leases, unmatched-hint
+  exclusion and restart dedupe are fixture-proven. Focused 22/22 and broader
+  payment/checkout 312/312 pass; typecheck and build pass. Migration160 was
+  applied only to a generated disposable database. No external Chaos/provider,
+  existing database, private configuration, runtime, commit, push or deployment
+  action occurred. Root retains review and exact migration staging ownership.
 - 2026-09-11T19:05Z final isolated TEST acceptance: reviewed source fixes and
   the frozen browser artifact are active only in the preserved TEST fixture.
   Migration159 enforces same-attempt adjacent predecessor/receipt lineage and

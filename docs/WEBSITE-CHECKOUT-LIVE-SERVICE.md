@@ -145,10 +145,58 @@ course URL, decision and activation receipt plus the Heartbeat/publication/
 payment gates. No raw SMTP path exists, and no message, Gmail lookup, provider
 configuration or production notice row was created while preparing this source.
 
+## Payment observability
+
+The optional Adyen-to-Chaos projection is source-only and default-off. It scans
+committed checkout admission, attempt/Session, authorization, terminal-
+nonpayment/review and canonical enrollment facts independently of the browser.
+It never runs inside payment or webhook transactions. Its schema check,
+transaction and retry loop are isolated so an absent table, route outage or
+delivery failure cannot fail payment readiness, webhook acknowledgment or
+fulfillment.
+
+Tentative local migration 160 adds a separate admin-only minimized outbox and
+append-only delivery receipts. Migration 117 cannot be reused because its
+schema is restricted to Stripe `pi_` purchases/refunds and retains provider
+identifiers. Migration 160 stores an internal attempt foreign key, scope and
+deterministic evidence hashes, bounded action/outcome/reason/sequence fields,
+lease/retry state and HTTP/error categories. It stores no email, name, card,
+Session result, return binding, provider Session/PSP/reference, signature,
+request/response body or Chaos credential. Populated rollback refuses.
+
+Projection is restricted to the exact LIVE scope, accepted
+`tandem-wordpress-live` checkout plus attribution admission and English MCS
+offer. Other products sharing a merchant/store scope cannot be labeled as MCS.
+Owned exceptions project only when their attempt resolves inside that exact
+population; unmatched hints remain in the payment exception ledger and do not
+starve valid candidates.
+
+External delivery requires the immutable attribution snapshot to say tracking
+consent was granted. Denied or unknown consent remains operationally visible
+in the authoritative payment ledgers but cannot reach Chaos. Immediately before
+delivery, the worker resolves the current canonical payer Party (also for a
+gift) and derives only Chaos's exact lowercase-email `chaos-person-v1` HMAC;
+email is transient and is never stored, sent or logged. The Chaos webhook token
+and identity-HMAC secret are separate purposes.
+
+Attempts, Session/retry transitions and failures/review map to
+`checkout_started`. `purchase_completed` requires both a verified HMAC
+authorization and canonical enrollment admission and still declares settlement
+unproven. There is no refund, settlement, notice, access or learner-login claim.
+Delivery claims one row at a time under a two-minute lease, bounds each request
+to ten seconds, rejects redirects, accepts only Chaos `recorded|duplicate`, and
+records bounded retry/dead-letter receipts without raw error text.
+
+Activation requires an applied/read-back migration 160, schema contract
+`nanoclaw-v2:148,149-160`, the exact HTTPS Chaos lifecycle endpoint and distinct
+secrets in an owner-only LIVE config. Omission resolves to disabled. TEST has no
+external-emission path; fixture transports and generated disposable databases
+are the only TEST evidence in this source boundary.
+
 ## Deployment gates still outside this source
 
 - approved exact database/host/port and encrypted proxy configuration;
-- migrations 148 and 149-159 applied and read back through the established
+- migrations 148 and 149-160 applied and read back through the established
   release procedure; startup never applies them;
 - private LIVE keys, company/merchant/store and provider webhook settings;
 - accepted publication and Heartbeat activation receipts;
