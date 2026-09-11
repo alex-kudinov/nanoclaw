@@ -87,6 +87,180 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 
+#### 2026-09-10T12:05Z addendum — approved shared TEST feed filtering
+
+- State: validating. Node22 network gate is resolved. The reviewed real MCS
+  USD299 TEST Session/store proof returned one201 and reused the exact encrypted
+  Session after pool reopen. No SDK/payment authorization or enrollment occurred.
+- Owner approved shared-platform TEST webhook transit/filtering. New explicit
+  default-off flag verifies all HMACs and exact merchant before acknowledging
+  and discarding signed non-Tandem references with no payload/ID retention.
+  Store metadata cannot decide discard; Tandem store/event guards and LIVE
+  rejection remain. No source or provider scope is broadened to LIVE.
+- Verification:82 focused receiver/config/route/n8n cases pass; final full
+  suite3863 pass/32skip/same three established baseline failures. Typecheck,
+  build, runtime doctor, email-critical803 plus runner45, replay13 and docs
+  continuity pass. No unhandled test error.
+- Filter review: fresh Sonnet/high with actual Read,Write and strict empty MCP;
+  one bounded round, no material findings. Codex independently checked source,
+  batch-before-write behavior, log negative assertions and caller empty-array
+  behavior. Exact review receipt is in docs/reports at commit boundary.
+- Private first-key helper passed separate bounded Sonnet/high R1 and a narrow
+  R2 after Codex reproduced/fixed partial-temp-write residue and added durable
+  backup-directory fsync. All8 fixture tests and real-path read-only dry-run pass.
+  It does not
+  rotate keys or restart services. Configuration/provider activation and real
+  HMAC round-trip proof remain distinct gates. Production migrations149-151,
+  actual durable API/WordPress wiring and MCS traffic cutover remain unapplied.
+- Rollback: receiver flag defaults off; deactivate the TEST provider/n8n paths
+  before returning to strict mode or removing configuration. No existing shared
+  webhook, customer communication or financial operation was changed.
+
+#### 2026-09-10T06:11Z addendum — signed command composition and critical gate
+
+- State: blocked — reviewed source is complete at the internal API boundary;
+  actual provider proof awaits owner network-rule access. No routine owner code
+  review is requested. No gateway/listener, WordPress route, migration or secret
+  installation is enabled by this source.
+- Controller binds exact signed bytes/caller/path/operation to strict commands,
+  validates offer/scope before acceptance, issues a scoped capability before
+  provider dispatch, reloads stored attempts for permitted resume, and minimizes
+  no-store status. No paid/access claim is made from authorization.
+- R1 Sonnet/high accepted. Codex's final check then moved in-memory signature
+  preflight ahead of authenticated quota (still before DB nonce admission), and
+  made missing scoped evidence503 rather than misleading awaiting_payment.
+  R2 accepted both corrections. Raw gateway flood control remains a deployment
+  requirement; preflight alone never authorizes an effect.
+- Final full suite:3848 pass/32skip/three exact-baseline failures, zero unhandled
+  errors. All153 payment-focused cases pass; the 13 controller cases and actual
+  PostgreSQL composed flow exercise all kernel layers together. Root and separate
+  CLI strict typecheck, build and continuity pass. Minor formatter-only carryover
+  in payment-checkout-evidence.ts is included without semantic change.
+- Read-only production health still verifies00d66184 / Node22.23.2 with the TEST
+  receiver unconfigured. All generated payment fixture databases are removed.
+  One unused real TEST Session attempt timed out before HTTP; no SDK payment,
+  enrollment, live configuration or production database change occurred.
+- Exact continuation and review/usage receipts are maintained in Peri's program
+  evidence and handoff; resume only after the critical network gate is cleared.
+
+#### 2026-09-10T05:48Z addendum — scoped PSP event ledger
+
+- Migration151 and HMAC-only TEST entrypoint persist immutable scoped PSP-to-
+  checkout bindings and events, append-only review exceptions and atomic evidence
+  projections. Failed sibling retries cannot erase authorization; contradictory
+  same-PSP facts or multiple successes hold, never auto-refund or fulfill.
+- 14 real Postgres ledger tests + prior HMAC9/adapter27/domain51 =101 focused
+  pass. Full suite at this slice:3834 pass/32skip/three existing baseline failures.
+  Typecheck/build/continuity pass. Tests include 25-way dedup, crossed-reference
+  concurrency, foreign/LIVE non-mutation, batch HMAC/key rotation, changed amount,
+  atomic rollback, bounded evidence, grants and guarded cleanup/reapply.
+- Sonnet/high review accepted without material findings. Codex independently
+  added redundant scope restrictions in projection rebuild as suggested defense
+  in depth; focused tests rerun. No contract or source-authority expansion.
+- No production migration, daemon/browser wiring, real payment/webhook proof,
+  settlement or fulfillment. The locked-Mac Node22 network gate is still pending.
+
+#### 2026-09-10T05:09Z addendum — request replay and scoped status capabilities
+
+- Migration150 + host helpers add signed caller/path/body/timestamp/nonce/operation
+  binding, DB-clock atomic replay admission, high-entropy attempt-bound guest
+  capabilities, hashed/encrypted token storage, replay without expiry extension,
+  and append-only same-caller revocation. No public route or production apply.
+- Sonnet/high bounded review accepted with no material findings. The future route
+  must still parse the signed body and bind action/attempt/operation parameters,
+  enforce trusted caller policy, minimize responses and rate-limit; these helpers
+  are not a public API or an enrollment/financial authority.
+- 16 pure authentication + 9 real Postgres tests pass, including 25-way nonce and
+  capability races, wrong-order/caller denial, expiry/revocation, immutable/admin-only
+  evidence, populated rollback refusal, empty reapply and generated DB cleanup.
+  Full suite after cleanup correction: 3,820 pass / 32 skip / three baseline
+  failures, zero unhandled errors. Typecheck/build/continuity pass.
+- Full-suite concurrency exposed pg-pool.end resolving before server-side sockets
+  finished closing. Test/proof cleanup now waits up to five seconds for this exact
+  generated DB's connections to drain, then drops WITHOUT FORCE. This removes
+  the two observed 57P01 fixture errors instead of suppressing them; no dependency,
+  production configuration or runtime payment code changed for that correction.
+- External proof remains blocked by local Node22 outbound HTTPS and locked-Mac
+  network-rule inspection. Continued local implementation; no security bypass.
+
+#### 2026-09-10T04:55Z addendum — TEST Sessions composition
+
+- Implemented fixed-endpoint TEST/card Sessions transport and provider-neutral
+  checkout preparation service over the durable store. No public/daemon route.
+  Exact scope/amount/return validation, response/timeout bounds, no raw key/token
+  logging, no ready claim until result+receipt commit, and in-flight resume after
+  new-offer disablement. Request body/key stays unchanged on uncertain outcomes.
+- Review: Sonnet/high R1 identified retry lifetime outliving quote expiry. The
+  store now clamps retryUntil to the absolute quote deadline using DB time; new
+  PostgreSQL regression proves replay cannot extend it. R2 accepted with no
+  remaining material finding. Root and standalone CLI strict typechecks/build pass.
+- Tests: 96 focused pass; final full suite including next-slice request-auth
+  tests is 3,811 pass/32 skip/three baseline failures. Service tests include 25
+  requests/one provider call, lost response after provider acceptance, failed
+  result commit and same-key recovery, plus forged-quote rejection on reuse.
+- Real TEST proof is NOT complete: one unused-Session attempt timed out before
+  any HTTP response in pinned Node22. Keyless curl and Node26 return 401 from the
+  same TEST URL; Node22 also times out on example.com. An active Little Snitch
+  extension and locked Mac require owner rule inspection; no network policy was
+  bypassed or changed. The generated local database was removed, with zero residue.
+- No payment authorization, HMAC event, enrollment, production migration or
+  deployment. Continue internal HMAC/nonce/capability source work while the owner
+  resolves the process-specific outbound network gate.
+
+#### 2026-09-10T04:33Z addendum — durable payment operation store
+
+- Migration 149 reserved after all-ref inventory proved enrollment owns 146-148.
+  Three admin-only tables hold immutable attempts/operations, encrypted session
+  payloads, DB-clock token/version leases and append-only state receipts.
+- Source tests: 14 real-Postgres disposable proofs, 4 encryption tests and 51
+  existing domain tests pass. Full suite: 3,764 pass / 32 skip / the same three
+  independently reproduced baseline failures. Typecheck/build pass.
+- Sonnet/high bounded review accepted without material findings. Raw PostgreSQL
+  uniqueness errors stay internal; future authenticated API must map them to
+  sanitized conflict responses. No live connection/configuration is loaded here.
+- Proof includes 25-worker contention, fresh-connection recovery, expired-worker
+  rejection, transaction/result rollback injection, immutable SQL contracts,
+  no non-admin grants, populated rollback refusal, empty rollback/reapply and
+  verified cleanup of generated local databases. No actual provider request yet.
+- Deployment: migration is unapplied to production; store is not daemon-wired.
+  Continue directly with the TEST Sessions adapter/service and durable round-trip
+  tests. Financial source admission/enrollment/cutover gates remain unchanged.
+
+- State: in_progress — reviewed unwired payment-domain source milestone; durable
+  caller/adapter and configured TEST event proof remain incomplete.
+
+#### 2026-09-10T03:46Z addendum — MCS reusable payment-domain source slice
+
+- Date: 2026-09-10T03:46Z. Owner/client: Codex with independent Sonnet/high review.
+- Scope: first unwired slice of the owner-requested, converged MCS Foundations
+  implementation plan. Strict immutable quotes, provider-pinned one-time attempts,
+  bounded same-key recovery and deterministic scoped financial evidence. No
+  database, provider, UI or enrollment consumer; no schema or service activation.
+- Verification: Node 22.23.2, 51/51 focused domain tests; typecheck and build pass.
+  Final full suite with four workers: 3,746 pass / 32 skip / 3 fail. Exact untouched
+  release 00d66184: 3,695 pass / 32 skip / the same 3 failures (capacity operator
+  disposable expectation, CNPC prompt contract, Trafft shadow freshness). An
+  initial unbounded run additionally timed out the capacity shadow disposable
+  fixture; it passed on both bounded full runs and untouched baseline.
+- Review: implementation R1 identified refund-after-refusal evidence incorrectly
+  pending. Codex verified and corrected it to an owned conflict with suppressed
+  totals; regression tests cover both orders plus failed-refund non-movement.
+  Narrow Sonnet/high R2 accepted the correction with no remaining material
+  findings in scope. No source changes followed that review.
+- Documentation: PAYMENT-DOMAIN.md, PROJECT-MAP.md, ACTIVE-WORK.md. Durable plan,
+  bounded review packets/responses and exact test logs are in Peri output.
+- Release boundary: source-only library milestone. It has no runtime entrypoint
+  to put into service; release with its reviewed durable caller/adapter slice.
+  Existing live receiver is 00d66184 and remains unconfigured. Stripe unchanged.
+- Live readback 2026-09-10T03:47Z: verified release identity 00d66184, matching
+  code root, Node 22.23.2 and adyenTestWebhook.configured=false. No deployment
+  or production mutation occurred in this slice.
+- Next: durable payment repository with immutable constraints, unique operation
+  keys and CAS/lease/crash tests on disposable Postgres before authenticated
+  TEST Sessions wiring. Refund/charge/enrollment authority is not granted here.
+
+#### Earlier receiver release evidence (superseded by dated addenda above)
+
 - Date: 2026-09-10T01:34Z
 - Owner/client: Codex + Claude reviewer
 - State: ready_for_deploy — receiver release `02073e66` is live and inert;

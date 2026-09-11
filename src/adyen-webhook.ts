@@ -6,6 +6,12 @@ export interface AdyenTestWebhookConfig {
   storeReference: string;
   referencePrefix: string;
   allowedEventCodes: string[];
+  /**
+   * TEST-only shared-feed escape hatch. When enabled, a notification from the
+   * exact configured merchant whose signed reference is not Tandem-owned is
+   * acknowledged and discarded after the whole batch passes HMAC verification.
+   */
+  discardVerifiedForeignReferences?: boolean;
 }
 
 interface AdyenAmount {
@@ -25,6 +31,21 @@ interface AdyenNotificationItem {
   success: string;
   paymentMethod?: string;
   reason?: string;
+}
+
+interface AdyenHmacFields {
+  additionalData: Record<string, unknown>;
+  amount: AdyenAmount;
+  pspReference: string;
+  originalReference: string;
+  merchantAccountCode: string;
+  merchantReference: string;
+  eventCode: string;
+  success: string;
+}
+
+interface AdyenSignedNotificationItem extends AdyenHmacFields {
+  raw: Record<string, unknown>;
 }
 
 export interface AdyenAdmittedNotification {
@@ -79,6 +100,15 @@ function optionalString(
   return value;
 }
 
+function signedMerchantReference(source: Record<string, unknown>): string {
+  const value = source.merchantReference;
+  if (value == null || value === '') return '';
+  if (typeof value !== 'string' || value.length > 128) {
+    throw new AdyenWebhookAdmissionError('Invalid merchantReference', 400);
+  }
+  return value;
+}
+
 function normalizeSuccess(value: unknown): string {
   if (value === true || value === 'true') return 'true';
   if (value === false || value === 'false') return 'false';
@@ -101,7 +131,7 @@ function parseAmount(value: unknown): AdyenAmount {
   return { value: Number(amount.value), currency };
 }
 
-function parseItem(value: unknown): AdyenNotificationItem {
+function parseSignedItem(value: unknown): AdyenSignedNotificationItem {
   const wrapper = record(value);
   const item = wrapper && record(wrapper.NotificationRequestItem);
   if (!item) {
@@ -115,28 +145,42 @@ function parseItem(value: unknown): AdyenNotificationItem {
   if (!/^[A-Z0-9_]+$/.test(eventCode)) {
     throw new AdyenWebhookAdmissionError('Invalid eventCode', 400);
   }
-  const eventDate = requiredString(item, 'eventDate', 80);
-  if (Number.isNaN(Date.parse(eventDate))) {
-    throw new AdyenWebhookAdmissionError('Invalid eventDate', 400);
-  }
   return {
     additionalData,
     amount: parseAmount(item.amount),
     pspReference: requiredString(item, 'pspReference', 128),
     originalReference: optionalString(item, 'originalReference', 128) || '',
     merchantAccountCode: requiredString(item, 'merchantAccountCode', 128),
-    merchantReference: requiredString(item, 'merchantReference', 128),
+    merchantReference: signedMerchantReference(item),
     eventCode,
-    eventDate,
     success: normalizeSuccess(item.success),
-    paymentMethod: optionalString(item, 'paymentMethod', 80),
-    reason: optionalString(item, 'reason', 512),
+    raw: item,
   };
 }
 
-export function standardWebhookSigningPayload(
-  item: AdyenNotificationItem,
-): string {
+function parseTandemItem(
+  signed: AdyenSignedNotificationItem,
+): AdyenNotificationItem {
+  const eventDate = requiredString(signed.raw, 'eventDate', 80);
+  if (Number.isNaN(Date.parse(eventDate))) {
+    throw new AdyenWebhookAdmissionError('Invalid eventDate', 400);
+  }
+  return {
+    additionalData: signed.additionalData,
+    amount: signed.amount,
+    pspReference: signed.pspReference,
+    originalReference: signed.originalReference,
+    merchantAccountCode: signed.merchantAccountCode,
+    merchantReference: signed.merchantReference,
+    eventCode: signed.eventCode,
+    eventDate,
+    success: signed.success,
+    paymentMethod: optionalString(signed.raw, 'paymentMethod', 80),
+    reason: optionalString(signed.raw, 'reason', 512),
+  };
+}
+
+export function standardWebhookSigningPayload(item: AdyenHmacFields): string {
   return [
     item.pspReference,
     item.originalReference,
@@ -167,7 +211,7 @@ function validBase64Signature(value: unknown): value is string {
 }
 
 export function verifyStandardWebhookHmac(
-  item: AdyenNotificationItem,
+  item: AdyenHmacFields,
   hmacKeys: string[],
 ): boolean {
   const received = item.additionalData.hmacSignature;
@@ -226,19 +270,27 @@ export function admitAdyenTestWebhook(
     throw new AdyenWebhookAdmissionError('Too many notificationItems', 400);
   }
 
-  const items = envelope.notificationItems.map(parseItem);
-  for (const item of items) {
+  const signedItems = envelope.notificationItems.map(parseSignedItem);
+  for (const item of signedItems) {
     if (!verifyStandardWebhookHmac(item, config.hmacKeys)) {
       throw new AdyenWebhookAdmissionError('Invalid HMAC signature', 401);
     }
+  }
+  for (const item of signedItems) {
     if (item.merchantAccountCode !== config.merchantAccount) {
       throw new AdyenWebhookAdmissionError('Merchant is not allowlisted', 403);
     }
+  }
+
+  const items: AdyenNotificationItem[] = [];
+  for (const signed of signedItems) {
+    if (!signed.merchantReference.startsWith(config.referencePrefix)) {
+      if (config.discardVerifiedForeignReferences === true) continue;
+      throw new AdyenWebhookAdmissionError('Reference is not allowlisted', 403);
+    }
+    const item = parseTandemItem(signed);
     if (item.additionalData.store !== config.storeReference) {
       throw new AdyenWebhookAdmissionError('Store is not allowlisted', 403);
-    }
-    if (!item.merchantReference.startsWith(config.referencePrefix)) {
-      throw new AdyenWebhookAdmissionError('Reference is not allowlisted', 403);
     }
     if (!config.allowedEventCodes.includes(item.eventCode)) {
       throw new AdyenWebhookAdmissionError(
@@ -246,6 +298,7 @@ export function admitAdyenTestWebhook(
         403,
       );
     }
+    items.push(item);
   }
 
   return items.map((item) => {

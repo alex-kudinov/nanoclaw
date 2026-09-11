@@ -545,6 +545,15 @@ events exclude the signature, shopper fields, and unrecognized additional data;
 `/health` exposes only whether the complete receiver configuration is present.
 Live Adyen keys or events are never valid on this route.
 
+For the owner-approved shared TEST merchant feed, an explicit default-off
+filter may acknowledge and discard HMAC-verified non-Tandem signed references.
+Every batch item must first pass signature and exact-merchant verification.
+No discarded payload or identifier reaches archive, agent, logs, or downstream
+payment state. Tandem-prefixed events still fail closed on store/event mismatch;
+the unsigned store field cannot suppress a Tandem event. n8n execution retention
+must remain disabled for success, failure, manual runs, and progress. This
+exception permits TEST transit only, never LIVE access or broad event admission.
+
 ## Network and browser boundary
 
 Agent network egress is unrestricted at the validated baseline. The

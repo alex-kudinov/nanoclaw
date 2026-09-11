@@ -9,8 +9,8 @@ outside the current client conversation.
 
 ## Active work
 
-| `NC-20260909-004` | Release and prove one bounded student-enrollment production pilot | Astra owner + Codex implementation + Claude reviewer | pushed `codex/student-enrollment-production-pilot-20260909` @ `a22dd150` from exact live `00d66184`; dirty primary preserved | `blocked` | C5/C4 | Reviewed local integration is committed/pushed; focused 143/143 plus typecheck/build/continuity pass and final Sonnet/high R3 has no material findings. Fresh P01 authority and P02 live lineage pass. P03 fails closed because three natural Sales/Chief containers remain active across two samples; one listener, healthy channels and zero waiting groups are verified. No backup, migration, deployment, config, Sheet/group/membership, payment, writer, student, or provider mutation ran. | Wait for natural work to drain, then require a fresh zero-work/live-lineage readback before P04-P10. Do not force-stop work or cross the first external mutation. | 2026-09-10T11:40Z |
-| `NC-20260909-003` | Admit Adyen TEST payment notifications into the durable webhook inbox with provider-native HMAC, exact environment/merchant/reference allowlists, and no fulfillment side effect | Codex + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `726f2c80`; inert receiver live at `02073e66`; stable n8n workflow identity correction `d3c390ce`; reviewed source commits `569170bd` and `3b618b41`; dirty primary preserved | `ready_for_deploy` | C5 | Dedicated TEST-only Standard webhook route, signed integration identity, defense-in-depth reported-store check, minimized durable envelope, deterministic event identity, configuration contract, focused/full tests, architecture/security/continuity evidence, immutable receiver release and readback. No live Adyen, Stripe, payment/refund/payout, customer communication, enrollment/lifecycle projection, bank account, or primary-checkout edit. | Build and deploy the reviewed stable-ID correction, import the workflow inactive, then configure n8n and the Adyen TEST webhook for one correlated synthetic notification. | 2026-09-10T01:55Z |
+| `NC-20260909-004` | Release and prove one bounded student-enrollment production pilot | Astra owner + Codex implementation + Claude reviewer | `codex/student-enrollment-production-pilot-20260909`; reviewed pilot `a22dd150`; integrating exact live `75d5b6c1`; dirty primary preserved | `in_progress` | C5/C4 | Owner rejected the global zero-container/global single-claim serialization after natural Sales/Chief work and a sibling Adyen release blocked the pilot. Correcting Company OS to bounded resource-scoped claims, host activation to permit adoptable conversation containers while blocking non-adoptable/queued work, and release apply to compare-and-swap the exact live commit. Existing one-event capacity-15, writer, provider, migration, rollback, and no-second-event boundaries remain unchanged. | Complete combined-lineage implementation and tests; obtain bounded Sonnet/high review; deploy the concurrency controls through the established release path; then resume the pilot from fresh resource-scoped P01-P10 evidence. | 2026-09-11T01:05Z |
+| `NC-20260909-003` | Build the reusable Adyen payment foundation for the first MCS Foundations pilot | Codex + Sol implementation + Claude reviewer | `codex/adyen-webhook-live-20260909` from exact live `00d66184`; reviewed backend through `76325884`; dirty primaries preserved | `in_progress` | C5 | Network gate cleared; real MCS USD299 TEST Session/encrypted durable reuse passed with one provider call and no charge. Owner approved shared merchant TEST transit with signed-reference filtering and no non-Tandem retention. Implementing opt-in filter; LIVE, migrations149-151 and product cutover remain unchanged. | Verify all batch HMACs and exact merchant before discarding signed foreign references; preserve Tandem store/event guards. Run focused/full tests and Sonnet/high review before protected TEST configuration and actual HMAC round trip. | 2026-09-10T12:00Z |
 
 | `NC-20260908-001` | Make customer-support threads quiet, literal, and bounded after the Pierre access incident | Codex + Claude reviewer | `codex/sales-support-thread-20260908` from exact live code `013b1d86` plus release docs `55c068d2`; dirty primary preserved | `ready_for_deploy` | C3 | Reviewed operator-instruction semantics/browser prohibition, resolved-support no-action, one processing receipt per exact input, private card repair feedback with fallback, Sales final-text suppression plus clean-empty notice, query-token redaction, and reply-subject normalization. Focused 174/174, email-critical 803/803 plus runner 45/45, replay 13/13, build/typecheck/format/runtime doctor pass; three full-root failures reproduce unchanged on base. No customer message, approval, provider/business-data mutation, migration, schedule, payment, or manufactured lead. | Commit/push, build and verify immutable release, safely activate after current work drains/adopts, verify exact health/prompt hashes and compiled non-sending canaries. | 2026-09-09T20:00Z |
 
@@ -220,6 +220,96 @@ outside the current client conversation.
   ten live preflights before crossing the first external mutation.
 
 ### NC-20260909-003
+
+- 2026-09-10T06:11Z checkpoint: controller R1 accepted; Codex independently
+  hardened authenticated-rate-budget ordering and null-evidence error handling;
+  Sonnet/high R2 accepted both. Full3848 pass/32skip/three known baseline failures,
+  no unhandled errors; root/standalone CLI strict types, build and continuity pass.
+  Composed real-DB test covers signed start, one Session, replay/token reuse,
+  HMAC event, minimized confirmation status, stored-attempt resume and wrong-order
+  rejection. Source ready at this verified boundary, but real-provider proof is
+  blocked by the locked-Mac Node22 HTTPS gate. Existing Mini remains verified
+  00d66184 and receiver unconfigured; no new deployment or real payment claimed.
+
+- 2026-09-10T05:48Z: event ledger151 accepted by Sonnet/high, no material
+  findings. Codex added redundant scope checks to evidence rebuild/read queries
+  as defense in depth and reran tests. 101 focused pass; full3834 pass/32skip/
+  three baseline failures. Continue `payment-api-controller.ts` plus tests,
+  `PaymentStore.readAttempt` and `PaymentSessionService.validateStart` for the
+  signed-body/action binding and capability-protected resume/status composition.
+  Controller is still unwired; no additional provider calls or production apply.
+
+- 2026-09-10T05:13Z: admission source pushed95595f53; refreshed all refs, max
+  migration150. Reserve151_payment_event_ledger.sql and rollback. Claim
+  `payment-checkout-evidence.ts`, `payment-event-store.ts`, HMAC bridge and tests.
+  Model separate scoped PSP payments under a checkout Session, immutable event/
+  reference evidence, durable exceptions and versioned evidence projection.
+  Initial AUTHORISATION only; no capture readiness, settlement, fulfillment,
+  public route, production apply or financial operation inferred.
+
+- 2026-09-10T05:09Z: HMAC/nonce/status-capability source and migration150 accepted
+  by Sonnet/high with no material findings. 25 focused tests pass; full 3,820
+  pass/32 skip/three unchanged baseline failures. Full concurrency exposed a
+  fixture cleanup race in pg-pool.end (server sockets still closing); bounded
+  server-side connection drain plus non-FORCE drop removes both unhandled errors.
+  No error suppression or dependency edit. Apply the same test cleanup to the
+  store suite/TEST proof command; no runtime payment behavior changed.
+  Next: scoped provider-payment event ledger (one Session may have failed retries
+  plus a successful PSP reference), then authenticated route composition. Network
+  gate still awaits the owner; no routine stop or production mutation.
+
+- 2026-09-10T04:54Z: Sessions source pushed as 12f22c35. All-ref refresh shows
+  149 as highest reserved migration; reserve 150_payment_request_admission.sql
+  and rollback for durable authenticated-request nonces, hashed/encrypted status
+  capabilities and append-only revocations. Claim `payment-request-auth.ts`,
+  `payment-admission-store.ts` and focused/disposable tests. No production apply,
+  public route, network policy change or broader financial/fulfillment action.
+
+- 2026-09-10T04:55Z: TEST Sessions adapter/service source accepted in Sonnet/high
+  R1/R2; absolute DB-clock retry expiry correction closes R1. 96 focused tests
+  (18 DB/service, 27 adapter, 51 domain) pass, root/CLI strict types and build pass.
+  Full suite including the pending 16-test request-auth module: 3,811 pass / 32
+  skip / three known baseline failures. Real unused-Session proof reached no HTTP
+  response under Node22; curl and Node26 reach Adyen, Node22 also times out on an
+  unrelated HTTPS site. Little Snitch active; Mac locked prevents rule inspection.
+  Owner asked asynchronously to unlock/check exact Node22 -> TEST Adyen HTTPS.
+  No firewall change, payment or production mutation. Continue local request
+  authentication, durable replay admission and status capabilities while awaiting
+  the critical network gate; do not claim real-provider proof from unit tests.
+
+- 2026-09-10T04:33Z: persistence source accepted by Sonnet/high, no material
+  findings. 69 focused pass; full 3,764 pass/32 skip/three baseline failures.
+  Continue without routine stop into `adyen-session-adapter.ts`,
+  `payment-session-service.ts`, and TEST provider/DB integration proof. 149 stays
+  unapplied to production; no browser/daemon entrypoint or live financial effect.
+
+- 2026-09-10T04:17Z continuation: owner requests no routine milestone stops.
+  Claim persistence source `src/payment-store*.ts`, disposable tests, and
+  migration/rollback 149_payment_attempt_store.sql. Refreshed all local/remote
+  refs: enrollment owns 146-148 on other branches; do not transplant them.
+  Production catalog readback has no payment-attempt store. This migration is
+  independent of those enrollment extensions; use only generated local test DBs.
+  Scope: immutable attempts/operations, encrypted request/response storage,
+  fenced leases, append-only operation receipts, crash/retry proof. Event-store
+  wiring and financial/enrollment effects remain later steps of the same plan.
+
+- 2026-09-10T03:47Z source milestone: `payment-domain.ts`, 51 behavioral tests
+  and PAYMENT-DOMAIN.md implemented. Sonnet/high R1's refund-after-refusal
+  finding fixed and accepted in R2. Full suite 3,746 pass / 32 skip / only
+  three exact-release baseline failures (baseline 3,695 pass / 32 skip / 3 fail).
+  Typecheck/build/continuity pass. No runtime imports, schema or deploy.
+  Production remains independently verified at 00d66184, receiver unconfigured.
+  Next: payment repository and disposable Postgres uniqueness/CAS/crash proof,
+  then authenticated TEST Sessions wiring. Do not call this a working live pilot.
+
+- 2026-09-10T03:34Z pickup: exact Mini release and branch HEAD are now
+  `00d66184`; stable-ID workflow imported inactive, receiver unconfigured.
+  The owner requested a detailed MCS Foundations plan, Claude convergence,
+  then implementation. Peri `docs/MCS-FOUNDATIONS-IMPLEMENTATION-PLAN.md`
+  accepted after Sonnet/high R1/R2. Begin the side-effect-free domain module
+  under this foundation task. Publication/source-admission, financial-record,
+  runtime-policy and deployment gates remain required before paid fulfillment.
+  Older deployment/next-action bullets below are historical, superseded here.
 
 - Exact-live integration: the reviewed receiver commits were transplanted onto
   verified production release `726f2c80` with the live side authoritative for

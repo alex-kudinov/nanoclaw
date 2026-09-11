@@ -6,6 +6,7 @@ import { WebhookServer, WebhookServerDeps } from './webhook-server.js';
 import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
 import { standardWebhookSigningPayload } from './adyen-webhook.js';
+import { logger } from './logger.js';
 
 const mockHandleStripePayment = vi.hoisted(() => vi.fn());
 const mockHandleChaosActivity = vi.hoisted(() => vi.fn());
@@ -87,8 +88,11 @@ const testGroup = {
 const adyenKey =
   '44782DEF547AAA06C910C43932B1EB0C71FC68D9D0C057550C48EC2ACF6BA056';
 
-function adyenPayload() {
-  const notification = {
+function adyenNotification(
+  overrides: Record<string, unknown> = {},
+  signingKey = adyenKey,
+) {
+  const base = {
     additionalData: { store: 'tandem_test_ecom_v1' } as Record<string, unknown>,
     amount: { value: 39900, currency: 'USD' },
     pspReference: '7914073381342284',
@@ -100,13 +104,31 @@ function adyenPayload() {
     paymentMethod: 'visa',
     success: 'true',
   };
+  const notification = {
+    ...base,
+    ...overrides,
+    additionalData: {
+      ...base.additionalData,
+      ...((overrides.additionalData as Record<string, unknown> | undefined) ||
+        {}),
+    },
+  };
   notification.additionalData.hmacSignature = crypto
-    .createHmac('sha256', Buffer.from(adyenKey, 'hex'))
+    .createHmac('sha256', Buffer.from(signingKey, 'hex'))
     .update(standardWebhookSigningPayload(notification as never), 'utf8')
     .digest('base64');
+  return notification;
+}
+
+function adyenPayload(
+  ...notifications: ReturnType<typeof adyenNotification>[]
+) {
+  const items = notifications.length ? notifications : [adyenNotification()];
   return {
     live: 'false',
-    notificationItems: [{ NotificationRequestItem: notification }],
+    notificationItems: items.map((notification) => ({
+      NotificationRequestItem: notification,
+    })),
   };
 }
 
@@ -116,6 +138,10 @@ const adyenConfig = {
   storeReference: 'tandem_test_ecom_v1',
   referencePrefix: 'tandem-poc-tsv1-',
   allowedEventCodes: ['AUTHORISATION'],
+};
+const adyenSharedFeedConfig = {
+  ...adyenConfig,
+  discardVerifiedForeignReferences: true,
 };
 
 function makeDeps(overrides?: Partial<WebhookServerDeps>): WebhookServerDeps {
@@ -271,6 +297,125 @@ describe('WebhookServer', () => {
       });
       expect(res.status).toBe(401);
       expect(archiveWebhook).not.toHaveBeenCalled();
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('acknowledges a verified foreign-only TEST batch without retaining or dispatching it', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
+    const markWebhookHandled = vi.fn(async () => {});
+    const runAgent = vi.fn(async () => ({
+      status: 'success' as const,
+      result: null,
+    }));
+    const enqueueAgentTask = vi.fn();
+    const foreign = adyenNotification({
+      pspReference: 'foreign-psp-reference',
+      merchantReference: 'another-platform-attempt-1',
+      eventCode: 'REFUND',
+      additionalData: { store: 'another_store' },
+      reason: 'x'.repeat(2_000),
+    });
+    delete (foreign as unknown as Record<string, unknown>).eventDate;
+    const d = makeDeps({
+      adyenTestWebhook: adyenSharedFeedConfig,
+      archiveWebhook,
+      markWebhookHandled,
+      runAgent,
+      enqueueAgentTask,
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/adyen-test-payments',
+        body: JSON.stringify(adyenPayload(foreign)),
+      });
+      expect(res).toEqual({ status: 202, body: '[accepted]' });
+      expect(archiveWebhook).not.toHaveBeenCalled();
+      expect(markWebhookHandled).not.toHaveBeenCalled();
+      expect(runAgent).not.toHaveBeenCalled();
+      expect(enqueueAgentTask).not.toHaveBeenCalled();
+      const logged = JSON.stringify([
+        ...vi.mocked(logger.info).mock.calls,
+        ...vi.mocked(logger.warn).mock.calls,
+        ...vi.mocked(logger.error).mock.calls,
+        ...vi.mocked(logger.debug).mock.calls,
+      ]);
+      expect(logged).not.toContain('foreign-psp-reference');
+      expect(logged).not.toContain('another-platform-attempt-1');
+      expect(logged).not.toContain('another_store');
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('archives only the Tandem item from a verified mixed TEST batch', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
+    const markWebhookHandled = vi.fn(async () => {});
+    const d = makeDeps({
+      adyenTestWebhook: adyenSharedFeedConfig,
+      archiveWebhook,
+      markWebhookHandled,
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/adyen-test-payments',
+        body: JSON.stringify(
+          adyenPayload(
+            adyenNotification({
+              pspReference: 'foreign-psp-reference',
+              merchantReference: 'another-platform-attempt-1',
+              eventCode: 'REFUND',
+              additionalData: { store: 'another_store' },
+            }),
+            adyenNotification({ pspReference: 'tandem-psp-reference' }),
+          ),
+        ),
+      });
+      expect(res).toEqual({ status: 202, body: '[accepted]' });
+      expect(archiveWebhook).toHaveBeenCalledTimes(1);
+      expect(archiveWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event_id: 'tandem-psp-reference:AUTHORISATION:true',
+        }),
+      );
+      expect(markWebhookHandled).toHaveBeenCalledTimes(1);
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  });
+
+  it('rejects a mixed TEST batch atomically when any HMAC is invalid', async () => {
+    const archiveWebhook = vi.fn(async () => ({ id: 71, isDuplicate: false }));
+    const markWebhookHandled = vi.fn(async () => {});
+    const foreign = adyenNotification({
+      pspReference: 'foreign-psp-reference',
+      merchantReference: 'another-platform-attempt-1',
+    });
+    const invalidOwned = adyenNotification({
+      pspReference: 'invalid-owned-reference',
+    });
+    invalidOwned.additionalData.hmacSignature =
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+    const d = makeDeps({
+      adyenTestWebhook: adyenSharedFeedConfig,
+      archiveWebhook,
+      markWebhookHandled,
+    });
+    const s = new WebhookServer(d);
+    await s.start();
+    try {
+      const res = await makeRequest(d.port, {
+        path: '/hook/adyen-test-payments',
+        body: JSON.stringify(adyenPayload(foreign, invalidOwned)),
+      });
+      expect(res.status).toBe(401);
+      expect(archiveWebhook).not.toHaveBeenCalled();
+      expect(markWebhookHandled).not.toHaveBeenCalled();
     } finally {
       await s.stop().catch(() => {});
     }

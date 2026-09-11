@@ -18,8 +18,9 @@ Adyen TEST
   -> https://webhooks.tandemcoach.co/webhook/adyen-test-payments
   -> n8n raw JSON relay
   -> http://100.115.115.206:8088/hook/adyen-test-payments
-  -> provider-native HMAC and exact allowlists
-  -> minimized business_v2.webhook_inbox row
+  -> provider-native whole-batch HMAC and exact-merchant verification
+  -> discard verified non-Tandem TEST references when explicitly enabled
+  -> minimized business_v2.webhook_inbox row for Tandem references only
   -> 202 [accepted]
 ```
 
@@ -46,6 +47,23 @@ The host fails closed unless all of these are true:
 - `eventCode` is currently `AUTHORISATION` only; and
 - the durable archive and terminal-state update both succeed.
 
+The shared-feed filter is a separate TEST-only opt-in. Its default is off, so a
+signed reference outside the Tandem prefix is rejected exactly as before. When
+enabled, the receiver first parses every item's HMAC-signed fields and verifies
+every HMAC and exact merchant across the complete batch. Only then may it
+acknowledge and discard items whose signed `merchantReference` does not use the
+Tandem prefix, including an empty signed reference. Those items produce no
+archive row, identifier retention, log entry, agent dispatch, or downstream
+payment-event write. Optional foreign metadata such as store, event date,
+payment method, and reason is not parsed or retained.
+
+Filtering never uses the unsigned reported store to decide ownership. Any item
+with a Tandem-prefixed reference still has to pass the store, event-code, date,
+and bounded optional-field checks above. A bad HMAC, wrong merchant, LIVE
+envelope, or invalid Tandem item rejects the entire batch before any write. A
+verified mixed batch archives only its valid Tandem items; a verified
+foreign-only batch returns `202 [accepted]` with zero writes.
+
 The deterministic event identity is
 `pspReference:eventCode:success`. A retry reuses the existing inbox row.
 Storage drops the HMAC, shopper fields, card details, and unrecognized
@@ -62,7 +80,12 @@ TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT=<exact TEST merchant account>
 TANDEM_ADYEN_TEST_STORE_REFERENCE=tandem_test_ecom_v1
 TANDEM_ADYEN_TEST_REFERENCE_PREFIX=tandem-poc-tsv1-
 TANDEM_ADYEN_TEST_EVENT_CODES=AUTHORISATION
+TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED=0
 ```
+
+Set `TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED=1` only when this TEST webhook
+must share an Adyen merchant feed with other platforms. Leave it `0` for a
+dedicated Tandem feed. The setting accepts only `true`, `false`, `1`, or `0`.
 
 Never put values in Git, review packets, logs, or task handoffs. The `/health`
 response exposes only `adyenTestWebhook.configured`.
@@ -77,15 +100,41 @@ response exposes only `adyenTestWebhook.configured`.
 3. In Adyen TEST, create a Standard webhook for the public URL, JSON format,
    `AUTHORISATION`, HMAC, and Include Store. Store the generated HMAC key only in
    the private Peri and Mini configuration.
-4. Restart the exact NanoClaw release and verify `/health` now reports
+4. If and only if the TEST webhook is shared, set
+   `TANDEM_ADYEN_TEST_SHARED_FEED_FILTER_ENABLED=1`. Restart the exact NanoClaw
+   release and verify `/health` now reports
    `configured: true`.
-5. Activate the n8n workflow and use Adyen's configuration test. Read back one
-   `source='adyen-test-payment'` inbox row with status `handled`, the exact TEST
-   merchant/store/reference, and no HMAC or shopper data.
-6. Create a TEST Session from the accepted Tandem Components POC. A browser
-   result remains provisional; the inbox event is the receiver proof.
+5. Activate the n8n workflow and use Adyen's configuration test. A `202` proves
+   the signed delivery reached the receiver. If Adyen uses a default/non-Tandem
+   reference, verify that it produced zero inbox rows; that proves the discard
+   path, not durable Tandem admission.
+6. Create and complete a TEST Session from the accepted Tandem Components POC.
+   Read back one `source='adyen-test-payment'` inbox row with status `handled`,
+   the exact TEST merchant/store/Tandem reference, and no HMAC or shopper data.
+   A browser result remains provisional; this owned inbox event is the receiver
+   proof.
 
 ## Rollback
+
+### Private first-key installation
+
+`scripts/configure-adyen-test-webhook.py` is an operator-only first-install
+helper, not a daemon dependency. Invoke its dry-run against the exact private
+Peri or Mini env path first. Applied mode requires `--apply --confirm-host`
+matching that host and a native TTY; it reads the key without echo. Never put a
+key in command arguments, chat, review files, or logs. It refuses existing
+plural/legacy HMAC assignments rather than rotating a credential, preserves
+unrelated bytes and matching quoted fixed settings, and creates a private
+backup outside the repository before an atomic0600 update. A cooperative lock
+and final re-read detect concurrent changes; keep other config editors stopped
+during the operation. The helper does not restart or activate anything.
+
+The helper is distributed as an exact-hash, tracked operator artifact separately
+from the host runtime archive. Verify its source hash after transfer before use.
+It adds only the HMAC key plus missing fixed TEST merchant/store/reference/event
+settings and the explicitly approved shared-feed opt-in.
+
+### Disable delivery
 
 Deactivate the n8n workflow and the Adyen TEST webhook. The NanoClaw route then
 has no public sender. If necessary, clear the TEST HMAC configuration and

@@ -672,6 +672,11 @@ allowlist, plus a defense-in-depth reported-store check, then archives a
 minimized terminal event with no
 agent or fulfillment dispatch. See [ADYEN-TEST-WEBHOOK.md](ADYEN-TEST-WEBHOOK.md).
 
+The approved shared TEST feed supports an explicit default-off signed-reference
+filter: whole-batch HMAC and exact merchant verification precede non-Tandem
+discard, and foreign-only batches return202 without archive or dispatch. This
+does not relax any Tandem store/event check or enable LIVE ingress.
+
 ---
 
 ## Gotchas & Design Decisions
