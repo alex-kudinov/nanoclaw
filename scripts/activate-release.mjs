@@ -21,6 +21,10 @@ Options:
   --dry-run                     Validate and print the plan without mutation (default)
   --apply                       Perform one activation attempt
   --recover-from-down           With --apply, allow an unhealthy/stopped current service
+  --allow-admission-barrier-bootstrap
+                                One-time apply from a pre-barrier release; requires zero containers
+  --expected-current-commit <full-commit>
+                                Required with normal --apply; exact live-release compare-and-swap
   --confirm-host <hostname>     Required with --apply; must equal ${os.hostname()}
 `);
   process.exit(message ? 1 : 0);
@@ -30,6 +34,7 @@ const args = process.argv.slice(2);
 const values = new Map();
 let apply = false;
 let recoverFromDown = false;
+let allowAdmissionBarrierBootstrap = false;
 for (let i = 0; i < args.length; i += 1) {
   const arg = args[i];
   if (arg === '--help' || arg === '-h') usage();
@@ -43,6 +48,10 @@ for (let i = 0; i < args.length; i += 1) {
   }
   if (arg === '--recover-from-down') {
     recoverFromDown = true;
+    continue;
+  }
+  if (arg === '--allow-admission-barrier-bootstrap') {
+    allowAdmissionBarrierBootstrap = true;
     continue;
   }
   if (!arg.startsWith('--') || i + 1 >= args.length)
@@ -62,7 +71,9 @@ const result = await activateRelease({
   timeoutMs: Number(values.get('--timeout-ms') ?? '30000'),
   apply,
   recoverFromDown,
+  allowAdmissionBarrierBootstrap,
   confirmHost: values.get('--confirm-host'),
+  expectedCurrentCommit: values.get('--expected-current-commit'),
 });
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

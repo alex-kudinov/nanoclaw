@@ -657,6 +657,19 @@ close-handler result: cleanup after streamed output logs at info and succeeds;
 a true no-output hard timeout still logs at error and fails. Stop/kill behavior
 and timeout duration are unchanged.
 
+Release activation uses that lifecycle contract instead of waiting for a
+globally empty container fleet. Active message containers are safe only when
+the health snapshot identifies them as non-task containers with concrete
+container identities, queue/runtime counts agree, no waiting group or pending
+task closure exists, and outgoing delivery is empty. In-process task
+containers and host jobs remain a hard stop. The activator claims a durable
+mode-0600 task-admission barrier while holding the exclusive activation lock;
+the scheduler, host-job loop and webhook-agent dispatch refuse new task work,
+while conversational messages continue. The target daemon must observe the
+same barrier before it becomes active, after which the activator releases it.
+The locked path also compare-and-swaps the exact current release commit before
+changing the service pointer.
+
 ### Credential lifecycle
 
 The runner supports Claude OAuth and API-key pools, cooldowns, and group-level

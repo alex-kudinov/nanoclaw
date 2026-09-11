@@ -3,7 +3,7 @@
   "packet_id": "NC-20260909-002",
   "status": "prepared_not_authorized",
   "prepared_at_utc": "2026-09-10T01:45:49Z",
-  "safety_contract_sha256": "e5b3a931707700810772e0354e5fda71d40d7abd1b7fc8baafc4e529fb4682e4",
+  "safety_contract_sha256": "1acf8a6e90b11f27ea0d55ad0dc08aebebed8a699d08aa19ed23c12dc59d495b",
   "objective": "Prepare, but do not execute, one future natural fully settled self-purchased supervision-inaugural v1 enrollment and its immediate Student Roster plus Heartbeat projections for supervision:2026-10-07.",
   "authority": {
     "work_item": "work:student-enrollment-production-admission-preparation",
@@ -280,7 +280,7 @@
   "migration_runbook": {
     "required_order": [146, 147, 148],
     "prerequisite_shape": "Migrations 142 through 145 must match the reviewed structure, ownership, constraints, indexes, views, and zero non-admin target grants before apply.",
-    "backup": "After a natural zero-work drain, create a mode-0600 custom-format PostgreSQL backup containing the complete business_v2 schema and data in private storage outside the repository; verify restore-list readability, size, SHA-256, owner, mode, database identity, and capture the exact pre-migration catalog fingerprint.",
+    "backup": "After the scoped restart/mutation gate passes under the exact task-admission barrier, create a mode-0600 custom-format PostgreSQL backup containing the complete business_v2 schema and data in private storage outside the repository; verify restore-list readability, size, SHA-256, owner, mode, database identity, and capture the exact pre-migration catalog fingerprint. Adoptable conversational containers are unrelated and do not block this backup; active enrollment/payment transitions, non-adoptable task containers, host jobs, waiting in-memory work, pending outbound delivery, and queue/runtime mismatch do.",
     "apply": "From the exact verified candidate release root, re-hash each source file and invoke psql -X -v ON_ERROR_STOP=1 -f separately in numeric order. Do not use the replay-all run_migration.sh against the populated production schema.",
     "ownership_and_grants": "Every affected table, view, sequence, index, constraint, and trigger remains owned by nanoclaw_admin. PUBLIC and every non-admin role have zero privileges on the enrollment, capacity, receipt, writer-claim, and projection targets.",
     "readback": "Use pg_catalog/information_schema only for structure, constraint validity, triggers, indexes, owners, grants, and extension columns; then run the release-bound no-provider migration contract tests. Do not select student rows for migration acceptance.",
@@ -301,8 +301,8 @@
         "abort_code": "release_lineage_drift"
       },
       {
-        "id": "P03_zero_work_and_backups",
-        "required_evidence": "No active/waiting/outgoing payment work, one healthy listener, required channels connected, private PostgreSQL/SQLite/plist/release backups verified, and rollback release retained.",
+        "id": "P03_scoped_restart_and_backups",
+        "required_evidence": "The exact enrollment/payment transition resources are idle and exclusively leased to this task; the live daemon has validly observed the owner-bound task-admission barrier; no non-adoptable task container, host job, waiting in-memory work, pending outbound delivery, or queue/runtime mismatch exists; any active conversational containers are demonstrably sidecar-adoptable; one healthy listener and required channels are connected; private PostgreSQL/SQLite/plist/release backups are verified; and the rollback release is retained.",
         "abort_code": "unsafe_activation_state"
       },
       {

@@ -37,10 +37,13 @@ review is evidence, not action or release authority.
    worker for a materially different slice or after a durable handoff.
 5. Every dispatch states the model and effort. Report an unavailable or rejected
    selection; do not silently perform the execution slice on Astra.
-6. One Company OS `.program` claim covers Astra and workers on the same slice.
-   The project-local child ceiling does not authorize multiple program claims,
-   releases, or writers. Resource-scoped concurrent claims remain an unimplemented
-   strategy proposal.
+6. One Company OS `.program` work claim covers Astra and workers on the same
+   slice. Up to the owner-approved bounded program capacity may run
+   concurrently. Consequential shared transitions require short-lived
+   resource leases: an exclusive production-release lease still permits only
+   one release writer, while unrelated development, review, and provider work
+   can continue. The project-local child ceiling does not itself grant a work
+   claim, resource lease, release, or mutation authority.
 
 The project defaults in [`.codex/config.toml`](../.codex/config.toml) set Sol,
 high effort, and a maximum of two child threads. Codex loads project settings

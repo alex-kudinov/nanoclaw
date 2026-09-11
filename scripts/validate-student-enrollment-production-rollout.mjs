@@ -16,7 +16,7 @@ export const defaultSchemaPath = path.join(
 const SHA256 = /^[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 const EXPECTED_SAFETY_CONTRACT_SHA256 =
-  'e5b3a931707700810772e0354e5fda71d40d7abd1b7fc8baafc4e529fb4682e4';
+  '1acf8a6e90b11f27ea0d55ad0dc08aebebed8a699d08aa19ed23c12dc59d495b';
 
 function add(condition, message, findings) {
   if (!condition) findings.push(message);
@@ -495,7 +495,7 @@ export function validateStudentEnrollmentProductionRollout(
       JSON.stringify([
         'P01_owner_authority',
         'P02_current_lineage',
-        'P03_zero_work_and_backups',
+        'P03_scoped_restart_and_backups',
         'P04_schema_and_permissions',
         'P05_writer_exclusion',
         'P06_capacity_and_assignment',

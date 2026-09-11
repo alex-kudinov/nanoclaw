@@ -33,6 +33,7 @@ import {
   endProcurementTaskRun,
 } from './procurement-task-run.js';
 import { RegisteredGroup, ScheduledTask, SendMessageFn } from './types.js';
+import { isReleaseTaskAdmissionPaused } from './release-task-admission.js';
 
 export interface SchedulerDependencies {
   registeredGroups: () => Record<string, RegisteredGroup>;
@@ -55,12 +56,26 @@ export interface SchedulerDependencies {
     task: ScheduledTask,
     scheduledFor: string,
   ) => Promise<unknown>;
+  taskAdmissionPaused?: () => boolean;
 }
 
 export interface HostJobDeps {
   sendMessage: SendMessageFn;
   reportChannel: string;
   writeJobsSnapshot: () => void;
+  taskAdmissionPaused?: () => boolean;
+}
+
+let activeHostJobs = 0;
+
+export function getSchedulerRuntimeStatus(): {
+  activeHostJobs: number;
+  taskAdmissionPaused: boolean;
+} {
+  return {
+    activeHostJobs,
+    taskAdmissionPaused: isReleaseTaskAdmissionPaused(),
+  };
 }
 
 export async function processHostJobs(deps: HostJobDeps): Promise<void> {
@@ -68,6 +83,13 @@ export async function processHostJobs(deps: HostJobDeps): Promise<void> {
   const dueJobs = getDueJobs(now);
 
   for (const job of dueJobs) {
+    if (deps.taskAdmissionPaused?.() ?? isReleaseTaskAdmissionPaused()) {
+      logger.info(
+        { job: job.name },
+        'Release activation paused host-job admission',
+      );
+      break;
+    }
     // Fire-and-forget with error catch
     const runnerDeps: JobRunnerDeps = {
       sendMessage: deps.sendMessage,
@@ -75,40 +97,45 @@ export async function processHostJobs(deps: HostJobDeps): Promise<void> {
       writeJobsSnapshot: deps.writeJobsSnapshot,
     };
 
-    runJob(job, 'cron', runnerDeps).catch((err) => {
-      logger.error({ err, job: job.name }, 'Host job dispatch failed');
-      // Record dispatch error
-      const runId = crypto.randomUUID();
-      insertJobRunLog({
-        id: runId,
-        job_name: job.name,
-        triggered_by: 'cron',
-        started_at: new Date().toISOString(),
-        status: 'dispatch_error',
-        pid: null,
-        retry_attempt: 0,
-        error: err instanceof Error ? err.message : String(err),
-        finished_at: new Date().toISOString(),
-        duration_ms: 0,
-      });
-      reportJobResult(
-        {
-          name: job.name,
+    activeHostJobs += 1;
+    runJob(job, 'cron', runnerDeps)
+      .catch((err) => {
+        logger.error({ err, job: job.name }, 'Host job dispatch failed');
+        // Record dispatch error
+        const runId = crypto.randomUUID();
+        insertJobRunLog({
+          id: runId,
+          job_name: job.name,
+          triggered_by: 'cron',
+          started_at: new Date().toISOString(),
           status: 'dispatch_error',
-          duration_ms: 0,
-          output: null,
+          pid: null,
+          retry_attempt: 0,
           error: err instanceof Error ? err.message : String(err),
-          exit_code: null,
-          retry_attempts: 0,
-          run_id: runId,
-          log_file: null,
-        },
-        deps.reportChannel,
-        deps.sendMessage,
-      ).catch(() => {
-        /* best effort */
+          finished_at: new Date().toISOString(),
+          duration_ms: 0,
+        });
+        reportJobResult(
+          {
+            name: job.name,
+            status: 'dispatch_error',
+            duration_ms: 0,
+            output: null,
+            error: err instanceof Error ? err.message : String(err),
+            exit_code: null,
+            retry_attempts: 0,
+            run_id: runId,
+            log_file: null,
+          },
+          deps.reportChannel,
+          deps.sendMessage,
+        ).catch(() => {
+          /* best effort */
+        });
+      })
+      .finally(() => {
+        activeHostJobs = Math.max(0, activeHostJobs - 1);
       });
-    });
   }
 }
 
@@ -421,12 +448,22 @@ export function startSchedulerLoop(
 
   const loop = async () => {
     try {
+      const admissionPaused = () =>
+        deps.taskAdmissionPaused?.() ?? isReleaseTaskAdmissionPaused();
+      if (admissionPaused()) {
+        logger.info(
+          'Release activation paused scheduled task and host-job admission',
+        );
+        setTimeout(loop, SCHEDULER_POLL_INTERVAL);
+        return;
+      }
       const dueTasks = getDueTasks();
       if (dueTasks.length > 0) {
         logger.info({ count: dueTasks.length }, 'Found due tasks');
       }
 
       for (const task of dueTasks) {
+        if (admissionPaused()) break;
         // Re-check task status in case it was paused/cancelled
         const currentTask = getTaskById(task.id);
         if (!currentTask || currentTask.status !== 'active') {
@@ -438,8 +475,11 @@ export function startSchedulerLoop(
         );
       }
 
-      if (hostJobDeps) {
-        await processHostJobs(hostJobDeps);
+      if (hostJobDeps && !admissionPaused()) {
+        await processHostJobs({
+          ...hostJobDeps,
+          taskAdmissionPaused: admissionPaused,
+        });
       }
     } catch (err) {
       logger.error({ err }, 'Error in scheduler loop');
@@ -454,4 +494,5 @@ export function startSchedulerLoop(
 /** @internal - for tests only. */
 export function _resetSchedulerLoopForTests(): void {
   schedulerRunning = false;
+  activeHostJobs = 0;
 }

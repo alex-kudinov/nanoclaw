@@ -84,6 +84,40 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   containers remain active across two samples. No backup, migration, provider
   preflight write, deployment, or configuration change began. Resume only from
   a fresh zero-work readback of the unchanged live release.
+- 2026-09-11T01:05Z owner-correction addendum: the global drain and single
+  Company OS work slot were rejected as needless serialization. The accepted
+  override raises bounded work-claim capacity to three and enables one-hour
+  shared/exclusive resource leases; current state is valid at revision 282 and
+  exposes an unrelated eligible work item while NC-004 remains active. Exact
+  live `75d5b6c1` was merged into the pilot branch. The candidate release gate
+  now permits sidecar-adoptable conversation containers, blocks task/waiting/
+  outbound/mismatched work, and requires exact-current-commit compare-and-swap
+  under the activation lock. Review, commit, deployment and live proof remain
+  pending; no production, migration, provider, student, financial, Sheet,
+  Heartbeat or configuration mutation occurred in this correction so far.
+- 2026-09-11T01:26Z review-correction addendum: bounded Sonnet/high R1 found
+  one material TOCTOU gap—an unsafe task container could start after the
+  locked health sample and before unload. The correction adds a durable
+  owner-bound task-admission barrier observed through health by both daemons;
+  scheduled tasks, host jobs and webhook-agent dispatch pause without stopping
+  ordinary conversations. Active host jobs are now counted in health and the
+  gate. Webhook rows refused during the barrier remain retryable. Focused
+  barrier/scheduler/webhook/activation checks are 101/101 and typecheck passes;
+  load-bearing correction review remains pending.
+- 2026-09-11T01:41Z correction-review addendum: Sonnet/high R2 found no defect
+  in the steady-state barrier, host-job accounting, webhook retry, ownership,
+  rollback or future bootstrap refusal. It confirmed one inherent transition
+  limit: the pre-barrier daemon cannot honor the new file during its own first
+  upgrade. That one bootstrap is now explicitly isolated as an empty-container,
+  watched, no-migration/no-provider/no-writer/no-arming release. After it, the
+  standing admission barrier closes the TOCTOU window for ordinary releases.
+- 2026-09-11T01:45Z final-validation addendum: post-correction program-control
+  tests are 25/25 and skill validation passes. NanoClaw barrier/concurrency/
+  activator/scheduler/webhook checks are 101/101; the combined enrollment and
+  release slice is 153/153; typecheck, build, rollout validation and
+  documentation continuity pass. The full root suite is 4,031 pass / 32 skip /
+  four unchanged baseline failures on files untouched from exact live
+  `75d5b6c1`; the parallel-load-only shadow timeout passes alone.
 
 ### NC-20260909-003 — Admit only HMAC-verified Adyen TEST payment events
 

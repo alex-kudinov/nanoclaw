@@ -116,12 +116,32 @@ function makeFixture() {
   };
 }
 
-function health(commit: string, codeRoot?: string) {
+function health(
+  commit: string,
+  codeRoot?: string,
+  barrierExpectedCommit?: string,
+) {
   return {
     release: {
       verified: true,
       commit,
       ...(codeRoot ? { codeRoot, codeRootMatchesRelease: true } : {}),
+    },
+    activeContainers: 0,
+    queue: {
+      activeCount: 0,
+      waitingGroups: [],
+      groupStates: {},
+    },
+    channels: {
+      slack: { diagnostics: { outgoingQueueDepth: 0 } },
+    },
+    releaseActivation: {
+      taskAdmissionPaused: Boolean(barrierExpectedCommit),
+      valid: true,
+      expectedCurrentCommit: barrierExpectedCommit ?? null,
+      createdAt: barrierExpectedCommit ? '2026-09-11T01:00:00.000Z' : null,
+      activeHostJobs: 0,
     },
   };
 }
@@ -187,6 +207,158 @@ describe('release activation executor', () => {
     });
   });
 
+  it('allows restart-safe conversational work during dry-run', async () => {
+    const fixture = makeFixture();
+    const current = health(oldCommit) as Record<string, any>;
+    current.activeContainers = 1;
+    current.queue = {
+      activeCount: 1,
+      waitingGroups: [],
+      groupStates: {
+        sales: {
+          active: true,
+          containerName: 'nanoclaw-sales-1',
+          isTaskContainer: false,
+          pendingTaskCount: 0,
+        },
+      },
+    };
+    state.health = [current];
+
+    const result = await activateRelease({
+      releaseDir: fixture.newRoot,
+      plistPath: fixture.plistPath,
+      healthUrl: 'http://127.0.0.1:8088/health',
+      timeoutMs: 1_000,
+      apply: false,
+    });
+
+    expect(result.restartConcurrency).toMatchObject({
+      safeForRestart: true,
+      adoptableMessageContainers: 1,
+      blockingTaskContainers: 0,
+    });
+  });
+
+  it('blocks non-adoptable task work before any installed mutation', async () => {
+    const fixture = makeFixture();
+    const current = health(oldCommit) as Record<string, any>;
+    current.activeContainers = 1;
+    current.queue = {
+      activeCount: 1,
+      waitingGroups: [],
+      groupStates: {
+        scheduler: {
+          active: true,
+          containerName: 'nanoclaw-task-1',
+          isTaskContainer: true,
+          pendingTaskCount: 0,
+        },
+      },
+    };
+    state.health = [current];
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: false,
+      }),
+    ).rejects.toThrow(/task_container_active/);
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+  });
+
+  it('requires exact-current-release compare-and-swap for normal apply', async () => {
+    const fixture = makeFixture();
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: true,
+        confirmHost: os.hostname(),
+      }),
+    ).rejects.toThrow(/requires --expected-current-commit/);
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+  });
+
+  it('requires explicit one-time bootstrap from a pre-barrier release', async () => {
+    const fixture = makeFixture();
+    const current = health(oldCommit) as Record<string, unknown>;
+    delete current.releaseActivation;
+    state.health = [current];
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: true,
+        expectedCurrentCommit: oldCommit,
+        confirmHost: os.hostname(),
+      }),
+    ).rejects.toThrow(
+      /first activation requires --allow-admission-barrier-bootstrap/,
+    );
+  });
+
+  it('bootstraps once only from a fully empty pre-barrier release', async () => {
+    const fixture = makeFixture();
+    const initial = health(oldCommit) as Record<string, unknown>;
+    const locked = health(oldCommit) as Record<string, unknown>;
+    delete initial.releaseActivation;
+    delete locked.releaseActivation;
+    state.health = [
+      initial,
+      locked,
+      health(newCommit, fixture.newRoot, oldCommit),
+    ];
+    state.printResults = ['pid = 2147483647'];
+
+    const result = await activateRelease({
+      releaseDir: fixture.newRoot,
+      plistPath: fixture.plistPath,
+      healthUrl: 'http://127.0.0.1:8088/health',
+      timeoutMs: 1_000,
+      apply: true,
+      expectedCurrentCommit: oldCommit,
+      allowAdmissionBarrierBootstrap: true,
+      confirmHost: os.hostname(),
+    });
+
+    expect(result.mode).toBe('applied');
+  });
+
+  it('refuses a sibling release that lands after rehearsal but before apply', async () => {
+    const fixture = makeFixture();
+    const siblingCommit = 'e'.repeat(40);
+    state.health = [health(oldCommit), health(siblingCommit)];
+    state.printResults = ['pid = 2147483647'];
+
+    await expect(
+      activateRelease({
+        releaseDir: fixture.newRoot,
+        plistPath: fixture.plistPath,
+        healthUrl: 'http://127.0.0.1:8088/health',
+        timeoutMs: 1_000,
+        apply: true,
+        expectedCurrentCommit: oldCommit,
+        confirmHost: os.hostname(),
+      }),
+    ).rejects.toThrow(/does not match the rollback release identity/);
+    expect(fs.readFileSync(fixture.plistPath, 'utf8')).toBe(fixture.original);
+    expect(
+      state.calls.some(
+        (call) => call.file === '/bin/launchctl' && call.args[0] === 'unload',
+      ),
+    ).toBe(false);
+  });
+
   it('refuses activation when the effective operational knowledge is stale', async () => {
     const fixture = makeFixture();
     state.failKnowledgeCheck = true;
@@ -208,7 +380,11 @@ describe('release activation executor', () => {
 
   it('performs exactly one legacy unload/load and proves target health', async () => {
     const fixture = makeFixture();
-    state.health = [health(oldCommit), health(newCommit, fixture.newRoot)];
+    state.health = [
+      health(oldCommit),
+      health(oldCommit, undefined, oldCommit),
+      health(newCommit, fixture.newRoot, oldCommit),
+    ];
     state.printResults = ['pid = 2147483647'];
 
     const result = await activateRelease({
@@ -217,6 +393,7 @@ describe('release activation executor', () => {
       healthUrl: 'http://127.0.0.1:8088/health',
       timeoutMs: 1_000,
       apply: true,
+      expectedCurrentCommit: oldCommit,
       confirmHost: os.hostname(),
     });
 
@@ -238,7 +415,7 @@ describe('release activation executor', () => {
 
   it('requires an explicit recovery flag to activate a stopped service', async () => {
     const fixture = makeFixture();
-    state.health = [health(newCommit, fixture.newRoot)];
+    state.health = [health(newCommit, fixture.newRoot, oldCommit)];
     state.printResults = [''];
 
     const result = await activateRelease({
@@ -257,7 +434,7 @@ describe('release activation executor', () => {
 
   it('refuses a second activator while a live foreign PID holds the lock', async () => {
     const fixture = makeFixture();
-    state.health = [health(oldCommit)];
+    state.health = [health(oldCommit), health(oldCommit, undefined, oldCommit)];
     state.printResults = ['pid = 2147483647'];
     fs.writeFileSync(
       `${fixture.plistPath}.activation.lock`,
@@ -271,6 +448,7 @@ describe('release activation executor', () => {
         healthUrl: 'http://127.0.0.1:8088/health',
         timeoutMs: 1_000,
         apply: true,
+        expectedCurrentCommit: oldCommit,
         confirmHost: os.hostname(),
       }),
     ).rejects.toThrow(`lock is held by live PID ${process.ppid}`);
@@ -296,6 +474,7 @@ describe('release activation executor', () => {
         healthUrl: 'http://127.0.0.1:8088/health',
         timeoutMs: 1_000,
         apply: true,
+        expectedCurrentCommit: oldCommit,
         confirmHost: os.hostname(),
       }),
     ).rejects.toThrow('lock is stale from dead PID 2147483647');
@@ -326,6 +505,7 @@ describe('release activation executor', () => {
         healthUrl: 'http://127.0.0.1:8088/health',
         timeoutMs: 1_000,
         apply: true,
+        expectedCurrentCommit: oldCommit,
         confirmHost: os.hostname(),
       }),
     ).rejects.toThrow('lock has an unreadable or missing owner (unknown)');
@@ -442,7 +622,7 @@ describe('release activation executor', () => {
 
   it('restores the exact plist and attempts one rollback load on failed health', async () => {
     const fixture = makeFixture();
-    state.health = [health(oldCommit)];
+    state.health = [health(oldCommit), health(oldCommit, undefined, oldCommit)];
     state.printResults = ['pid = 2147483647', ''];
     state.healthFallback = health(oldCommit, fixture.oldRoot);
 
@@ -453,6 +633,7 @@ describe('release activation executor', () => {
         healthUrl: 'http://127.0.0.1:8088/health',
         timeoutMs: 1_000,
         apply: true,
+        expectedCurrentCommit: oldCommit,
         confirmHost: os.hostname(),
       }),
     ).rejects.toThrow(

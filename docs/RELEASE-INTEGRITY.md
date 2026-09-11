@@ -749,7 +749,17 @@ injects automatically; backup and synchronization remain explicit deployment
 steps.
 
 1. Inspect the current service, health response, listener count, pending work,
-   installed Node runtime, and production checkout without changing them.
+   installed Node runtime, and production checkout without changing them. The
+   restart gate is resource-scoped, not a global container drain:
+   sidecar-backed conversational containers may remain active because shutdown
+   leaves them running and the next daemon adopts them. Block non-adoptable
+   task containers, pending task closures, waiting in-memory groups, pending
+   outgoing Slack delivery, or any queue/runtime count mismatch. Task-specific
+   enrollment, payment, migration, provider, and approval transitions retain
+   their own exact idle/lease checks. During apply, an owner-bound mode-0600
+   admission barrier pauses scheduled tasks, host jobs, and webhook-agent task
+   dispatch before the final locked health check. The target daemon must start
+   with that exact barrier observed before the activator releases it.
    Before the first NC-009 activation, query only the aggregate count in the
    operational working directory's `store/messages.db` and require
    `pending_sends` to be empty; do not inspect customer rows. Existing rows use
@@ -776,7 +786,9 @@ steps.
    ```bash
    node <release>/scripts/activate-release.mjs \
      --release-dir <absolute-release-directory> \
-     --apply --confirm-host <exact-hostname>
+     --apply \
+     --expected-current-commit <full-commit-from-the-locked-preflight> \
+     --confirm-host <exact-hostname>
    ```
 
 The activator parses the installed plist rather than rendering a tracked
@@ -790,7 +802,14 @@ bounded unload/load cycle, and requires `/health` to prove the target full
 commit, resolved code root, and `codeRootMatchesRelease=true`. Failure after
 replacement restores the rollback plist, performs one bounded rollback load,
 and health-checks the restored release without masking the original activation
-error. A fixed exclusive lock prevents overlapping activators. macOS `shlock`
+error. A normal apply requires the exact current full commit and repeats both
+the release-identity and scoped restart-safety checks after acquiring the
+activation lock. It first claims the host task-admission barrier; the live
+daemon then refuses new scheduled, host-job, and webhook-agent task work while
+ordinary conversational containers continue. A sibling deployment therefore
+fails compare-and-swap and must be integrated; it cannot be silently
+overwritten by a stale reviewed branch. A fixed exclusive lock prevents
+overlapping activators. macOS `shlock`
 records the activator PID and atomically claims the final path with `link(2)`;
 it refuses every extant lock, including a stale one. The activator reports
 whether a numeric holder PID is live or dead, and cleanup removes only a lock
@@ -834,6 +853,16 @@ This skips only the current-health and current-PID requirements. It still
 verifies both bundles, the actual interpreter, candidate plist, exact hostname,
 listener release, target health identity, and rollback behavior. The target is
 never rebuilt or retried.
+
+The first activation from a release that predates the task-admission health
+contract additionally requires `--allow-admission-barrier-bootstrap` and a
+fully empty current container snapshot. This is a one-time compatibility gate,
+not the continuing release policy; once a barrier-aware release is live, active
+adoptable conversations no longer block activation. The pre-barrier daemon
+cannot honor a mechanism it does not contain, so this one bootstrap remains a
+change-controlled, operator-watched quiet-window transition with a residual
+snapshot-to-unload race. Do not combine that bootstrap with a migration,
+provider mutation, writer cutover, or pilot arming.
 
 `--apply` is an external state change and still requires explicit deployment
 authorization. The command does not replace the channel, listener, prompt-hash,

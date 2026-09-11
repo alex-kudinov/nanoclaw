@@ -32,6 +32,37 @@ describe('task scheduler', () => {
     vi.useRealTimers();
   });
 
+  it('does not claim or enqueue due tasks while release admission is paused', async () => {
+    const nextRun = new Date(Date.now() - 60_000).toISOString();
+    createTask({
+      id: 'task-release-paused',
+      group_folder: 'sales',
+      chat_jid: 'sales@example.test',
+      prompt: 'wait for release',
+      schedule_type: 'once',
+      schedule_value: '',
+      context_mode: 'isolated',
+      next_run: nextRun,
+      status: 'active',
+      created_at: '2026-09-11T00:00:00.000Z',
+    });
+    const enqueueTask = vi.fn();
+
+    startSchedulerLoop({
+      registeredGroups: () => ({}),
+      getSessions: () => ({}),
+      queue: { enqueueTask } as any,
+      onProcess: () => {},
+      sendMessage: async () => {},
+      validateTaskCompletion: async () => {},
+      taskAdmissionPaused: () => true,
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+    expect(enqueueTask).not.toHaveBeenCalled();
+    expect(getTaskById('task-release-paused')?.next_run).toBe(nextRun);
+  });
+
   it('pauses due tasks with invalid group folders to prevent retry churn', async () => {
     createTask({
       id: 'task-invalid-folder',

@@ -1,4 +1,5 @@
 import { execFileSync } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -11,6 +12,17 @@ import {
   type LaunchdPlist,
 } from './release-activation.js';
 import type { ReleaseManifest } from './release-integrity.js';
+import {
+  assertReleaseConcurrencySafe,
+  assertTaskAdmissionBarrierObserved,
+  assessReleaseConcurrency,
+  taskAdmissionBarrierSupported,
+  type ReleaseConcurrencyAssessment,
+} from './release-concurrency.js';
+import {
+  createTaskAdmissionBarrier,
+  releaseTaskAdmissionBarrier,
+} from './release-task-admission.js';
 
 export interface ActivationOptions {
   releaseDir: string;
@@ -20,6 +32,8 @@ export interface ActivationOptions {
   apply: boolean;
   confirmHost?: string;
   recoverFromDown?: boolean;
+  expectedCurrentCommit?: string;
+  allowAdmissionBarrierBootstrap?: boolean;
 }
 
 export interface ActivationResult {
@@ -32,6 +46,7 @@ export interface ActivationResult {
   changedPaths: string[];
   rollbackPath: string | null;
   healthVerified: boolean;
+  restartConcurrency: ReleaseConcurrencyAssessment | null;
 }
 
 function run(
@@ -244,29 +259,6 @@ function atomicReplace(plistPath: string, contents: Buffer): void {
   }
 }
 
-async function waitForHealth(
-  options: ActivationOptions,
-  plan: ActivationPlan,
-): Promise<void> {
-  let lastError: unknown;
-  await waitUntil(
-    async () => {
-      try {
-        assertHealthyRelease(
-          await getHealth(options.healthUrl, 2_000),
-          plan.target,
-        );
-        return true;
-      } catch (error) {
-        lastError = error;
-        return false;
-      }
-    },
-    options.timeoutMs,
-    `healthy release ${plan.target.commit}: ${String(lastError ?? '')}`,
-  );
-}
-
 async function waitForRollbackHealth(
   options: ActivationOptions,
   plan: ActivationPlan,
@@ -310,6 +302,26 @@ export async function activateRelease(
   if (options.recoverFromDown && !options.apply) {
     throw new Error('--recover-from-down requires --apply');
   }
+  if (options.allowAdmissionBarrierBootstrap && !options.apply) {
+    throw new Error('--allow-admission-barrier-bootstrap requires --apply');
+  }
+  if (
+    options.apply &&
+    !options.recoverFromDown &&
+    !options.expectedCurrentCommit
+  ) {
+    throw new Error(
+      '--apply requires --expected-current-commit for exact live-release compare-and-swap',
+    );
+  }
+  if (
+    options.expectedCurrentCommit &&
+    !/^[0-9a-f]{40}$/i.test(options.expectedCurrentCommit)
+  ) {
+    throw new Error(
+      '--expected-current-commit must be a full 40-character Git commit',
+    );
+  }
   const releaseDir = fs.realpathSync(options.releaseDir);
   const plistPath = fs.realpathSync(options.plistPath);
   const installed = readPlist(plistPath);
@@ -335,11 +347,35 @@ export async function activateRelease(
   verifyBundle(nodePath, releaseDir);
   verifyBundle(nodePath, plan.current.releaseDir);
   verifyOperationalKnowledge(releaseDir, plan.installed);
+  let restartConcurrency: ReleaseConcurrencyAssessment | null = null;
+  let currentSupportsAdmissionBarrier = false;
   if (!options.recoverFromDown) {
-    assertHealthyRollbackRelease(
-      await getHealth(options.healthUrl, Math.min(options.timeoutMs, 5_000)),
-      plan.current,
+    const currentHealth = await getHealth(
+      options.healthUrl,
+      Math.min(options.timeoutMs, 5_000),
     );
+    assertHealthyRollbackRelease(currentHealth, plan.current);
+    if (
+      options.expectedCurrentCommit &&
+      options.expectedCurrentCommit !== plan.current.commit
+    ) {
+      throw new Error(
+        `current release ${plan.current.commit} does not match expected ${options.expectedCurrentCommit}`,
+      );
+    }
+    assertReleaseConcurrencySafe(currentHealth);
+    restartConcurrency = assessReleaseConcurrency(currentHealth);
+    currentSupportsAdmissionBarrier =
+      taskAdmissionBarrierSupported(currentHealth);
+    if (
+      options.apply &&
+      !currentSupportsAdmissionBarrier &&
+      !options.allowAdmissionBarrierBootstrap
+    ) {
+      throw new Error(
+        'current release does not expose the task-admission barrier; first activation requires --allow-admission-barrier-bootstrap and a fully empty container snapshot',
+      );
+    }
   }
 
   if (options.apply && options.confirmHost !== os.hostname()) {
@@ -372,6 +408,7 @@ export async function activateRelease(
       ...baseResult,
       rollbackPath: null,
       healthVerified: true,
+      restartConcurrency,
     };
   }
 
@@ -386,8 +423,44 @@ export async function activateRelease(
   const rollbackPath = rollbackName(plistPath, plan.current.commit);
   const lockPath = `${plistPath}.activation.lock`;
   acquireActivationLock(lockPath);
+  const barrierToken = `${process.pid}:${crypto.randomUUID()}`;
+  const operationalRoot = String(plan.installed.WorkingDirectory);
+  let barrierHeld = false;
 
   try {
+    createTaskAdmissionBarrier({
+      workingDirectory: operationalRoot,
+      ownerToken: barrierToken,
+      expectedCurrentCommit: plan.current.commit,
+    });
+    barrierHeld = true;
+    if (!options.recoverFromDown) {
+      // Re-read under the exclusive activation lock. This is the actual
+      // compare-and-swap boundary: a sibling release or unsafe task start
+      // between rehearsal and apply fails before the installed plist changes.
+      const lockedHealth = await getHealth(
+        options.healthUrl,
+        Math.min(options.timeoutMs, 5_000),
+      );
+      assertHealthyRollbackRelease(lockedHealth, plan.current);
+      if (options.expectedCurrentCommit !== plan.current.commit) {
+        throw new Error(
+          `current release ${plan.current.commit} does not match expected ${options.expectedCurrentCommit}`,
+        );
+      }
+      if (currentSupportsAdmissionBarrier) {
+        assertTaskAdmissionBarrierObserved(lockedHealth, plan.current.commit);
+      } else if (
+        !options.allowAdmissionBarrierBootstrap ||
+        assessReleaseConcurrency(lockedHealth).activeContainers !== 0
+      ) {
+        throw new Error(
+          'task-admission barrier bootstrap requires a fully empty current container snapshot',
+        );
+      }
+      assertReleaseConcurrencySafe(lockedHealth);
+      restartConcurrency = assessReleaseConcurrency(lockedHealth);
+    }
     fs.copyFileSync(plistPath, rollbackPath, fs.constants.COPYFILE_EXCL);
     run('/usr/bin/plutil', ['-lint', rollbackPath]);
 
@@ -406,12 +479,34 @@ export async function activateRelease(
         `prior service and listener ${port} to exit`,
       );
       run('/bin/launchctl', ['load', plistPath]);
-      await waitForHealth(options, plan);
+      await waitUntil(
+        async () => {
+          try {
+            const targetHealth = await getHealth(options.healthUrl, 2_000);
+            assertHealthyRelease(targetHealth, plan.target);
+            assertTaskAdmissionBarrierObserved(
+              targetHealth,
+              plan.current.commit,
+            );
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        options.timeoutMs,
+        `healthy release ${plan.target.commit} with task admission paused`,
+      );
+      releaseTaskAdmissionBarrier({
+        workingDirectory: operationalRoot,
+        ownerToken: barrierToken,
+      });
+      barrierHeld = false;
       return {
         mode: 'applied',
         ...baseResult,
         rollbackPath,
         healthVerified: true,
+        restartConcurrency,
       };
     } catch (error) {
       if (!replaced) throw error;
@@ -455,6 +550,17 @@ export async function activateRelease(
       );
     }
   } finally {
+    if (barrierHeld) {
+      try {
+        releaseTaskAdmissionBarrier({
+          workingDirectory: operationalRoot,
+          ownerToken: barrierToken,
+        });
+      } catch {
+        // A fail-closed barrier is safer than deleting an unreadable or
+        // foreign claim. Preserve it for explicit operator recovery.
+      }
+    }
     try {
       releaseActivationLock(lockPath);
     } catch {

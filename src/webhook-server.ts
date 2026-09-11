@@ -122,6 +122,13 @@ export interface HealthPayload {
     }
   >;
   activeContainers: number;
+  releaseActivation?: {
+    taskAdmissionPaused: boolean;
+    valid: boolean;
+    expectedCurrentCommit: string | null;
+    createdAt: string | null;
+    activeHostJobs: number;
+  };
   lastMessageAt: string | null;
   actionSafety?: ReturnType<
     typeof import('./action-safety.js').getActionSafetyStatus
@@ -247,7 +254,7 @@ export interface WebhookServerDeps {
     groupJid: string,
     taskId: string,
     fn: () => Promise<void>,
-  ) => void;
+  ) => boolean | void;
   // Registers the spawned container with the queue for liveness/cleanup.
   registerProcess?: (
     groupJid: string,
@@ -2028,7 +2035,7 @@ export class WebhookServer {
     // ||root keys it to the group's non-threaded slot so it also serializes
     // against the message loop's root-thread processing for the channel.
     const groupQueueKey = `${webhook.chat_jid}||root`;
-    this.deps.enqueueAgentTask(
+    const admitted = this.deps.enqueueAgentTask(
       groupQueueKey,
       `webhook:${requestId}`,
       async () => {
@@ -2207,5 +2214,17 @@ export class WebhookServer {
         }
       },
     );
+    if (admitted === false) {
+      logger.info(
+        { hookId, requestId, inboxId },
+        'Release activation paused webhook-agent admission',
+      );
+      if (inboxId !== null && this.deps.markWebhookFailed) {
+        await this.deps.markWebhookFailed(
+          inboxId,
+          'release_task_admission_paused',
+        );
+      }
+    }
   }
 }

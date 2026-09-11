@@ -303,7 +303,14 @@ import {
   seoCommandReply,
   SEO_COMMAND_FOLDER,
 } from './seo-stats.js';
-import { startSchedulerLoop } from './task-scheduler.js';
+import {
+  getSchedulerRuntimeStatus,
+  startSchedulerLoop,
+} from './task-scheduler.js';
+import {
+  isReleaseTaskAdmissionPaused,
+  taskAdmissionBarrierHealth,
+} from './release-task-admission.js';
 import {
   Channel,
   NewMessage,
@@ -2294,6 +2301,10 @@ async function main(): Promise<void> {
         release: releaseIdentity,
         channels: channelHealth,
         activeContainers,
+        releaseActivation: {
+          ...taskAdmissionBarrierHealth(process.cwd()),
+          activeHostJobs: getSchedulerRuntimeStatus().activeHostJobs,
+        },
         lastMessageAt: getRouterState('last_timestamp') ?? null,
         queue: queueStatus,
         circuitBreaker: circuitBreakerStatus,
@@ -2354,8 +2365,11 @@ async function main(): Promise<void> {
       };
     },
     runAgent: runContainerAgent,
-    enqueueAgentTask: (groupJid, taskId, fn) =>
-      queue.enqueueTask(groupJid, taskId, fn),
+    enqueueAgentTask: (groupJid, taskId, fn) => {
+      if (isReleaseTaskAdmissionPaused()) return false;
+      queue.enqueueTask(groupJid, taskId, fn);
+      return true;
+    },
     registerProcess: (
       groupJid,
       proc,

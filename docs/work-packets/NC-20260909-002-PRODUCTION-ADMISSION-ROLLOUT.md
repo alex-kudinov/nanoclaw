@@ -92,10 +92,21 @@ Production structurally contains migrations 142-145 and exposes only
 and 148 are absent. Their exact source and rollback SHA-256 values are pinned in
 the machine packet.
 
-After a zero-work drain and verified mode-0600 private custom-format backup,
-apply 146, 147 and 148 separately from the exact candidate release, then read
-back columns, constraints, indexes, triggers, owners and zero non-admin grants.
-The all-migrations runner must not be replayed over the populated schema.
+After the scoped restart/mutation gate and a verified mode-0600 private
+custom-format backup, apply 146, 147 and 148 separately from the exact candidate
+release, then read back columns, constraints, indexes, triggers, owners and
+zero non-admin grants. The gate blocks active enrollment/payment transitions,
+non-adoptable task containers, waiting in-memory work, pending outbound
+delivery and queue/runtime disagreement. The owner-bound task-admission barrier
+also pauses new scheduled, host-job and webhook-agent task work across the
+locked restart window. It does not block sidecar-backed conversational
+containers, which remain running and are adopted by the next daemon. The task
+holds exact release, migration, Roster and Heartbeat leases only for their
+mutation windows: `release:nanoclaw:production`,
+`schema:nanoclaw-business:student-enrollment`,
+`provider:google-sheets:student-roster-css`, and
+`provider:heartbeat:student-markers`. The all-migrations runner must not be
+replayed over the populated schema.
 
 Before an event, guarded SQL rollback runs 148, 147, 146 only while every
 evidence guard is empty. After the event, never use SQL rollback or a database

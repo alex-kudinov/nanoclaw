@@ -1070,6 +1070,29 @@ describe('WebhookServer — host-side booking write (T03b)', () => {
     expect(markWebhookHandled).not.toHaveBeenCalled();
   });
 
+  it('keeps an agent webhook retryable while release admission is paused', async () => {
+    const malformed = { ...bookedFixture } as Record<string, unknown>;
+    delete malformed.appointmentId;
+    const markWebhookHandled = vi.fn(async () => {});
+    const markWebhookFailed = vi.fn(async () => {});
+    const d = makeDeps({
+      getRegisteredGroups: () => ({ 'slack:CBOOKING': bookingGroup }),
+      archiveWebhook: vi.fn(async () => ({ id: 82, isDuplicate: false })),
+      enqueueAgentTask: vi.fn(() => false),
+      markWebhookHandled,
+      markWebhookFailed,
+    });
+
+    await fireTrafft(malformed, d);
+
+    expect(d.runAgent).not.toHaveBeenCalled();
+    expect(markWebhookHandled).not.toHaveBeenCalled();
+    expect(markWebhookFailed).toHaveBeenCalledWith(
+      82,
+      'release_task_admission_paused',
+    );
+  });
+
   it('enqueues a persisted canceled event before marking the inbox handled', async () => {
     const enqueueBookingPlutioActivity = vi.fn(async () => ({
       outboxId: 702,
