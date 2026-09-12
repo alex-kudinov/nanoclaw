@@ -2,6 +2,34 @@
 
 ## 2026-09-12 — NC-20260909-003 MCS receipt and paid-invoice document self-service
 
+- Production v2 release: immutable `d160195d660fd0d1ca777bb59718954f459bcbe7`
+  passed805 host and45 runner release tests with source tree
+  `819ca85cbc559a35`, artifact SHA-256 `1524fda61e73778d`/1,308 files and archive
+  SHA-256 `3a1233190a3bc712`. A fresh 13,633,637-byte `business_v2` custom backup
+  (`business_v2-pre164-2026-09-12T16-00-00-Z.dump`) has SHA-256
+  `5510fcc9b6b2db17` and1,786 verified catalog lines. Migration164 applied only
+  after zero document/email rows and now exposes two admin-owned tables, six
+  enabled immutability/purge guards, five required retention columns, one
+  admin-owned SECURITY DEFINER purge function, zero non-admin grants and zero
+  rows across documents/capabilities/email/sequence/hold/tombstone state.
+- Activation: the first attempt updated only the executable pointer, correctly
+  failed the expected-release/code-root integrity gate and automatically
+  restored the prior config/plist/service. The corrected attempt atomically
+  aligned executable, expected commit and code root, then loaded schema164 and
+  the owner-approved paid-invoice hash `abafcfa00d934e37`. One exact process is
+  healthy/ready; the current private config/plist hashes are
+  `3761c072cf70aa1f` and `22398e745b87f75d`. The prior config/plist and database
+  backup are retained privately. No document row or invoice number was created.
+- WordPress/live UI: merged source/main/VPS `f439cece659e` preserves newer main
+  work and the existing untracked VPS files. Hosted design-system CI
+  run34703698118 succeeded; cache flush/warm and both public routes return200.
+  Live assets are JS `b177b029e4888219` and CSS `c01a946b71d586b7`. Hidden
+  desktop and390x844 browser checks pass all four checkbox combinations,
+  conditional-section visibility, step renumbering, disabled incomplete
+  submission, Back preservation, no mobile overflow and zero console warnings/
+  errors. Payment stayed hidden and no provider Session/payment/email/document
+  side effect was created. Natural post-payment proof remains owner-operated;
+  ordinary MCS traffic remains Stripe.
 - Owner-approved v2 source adds two independent Information-page gift/business
   choices, one conditional Additional details page with active-section-only
   validation and dynamic step numbering, immediate automatic-capture Paid

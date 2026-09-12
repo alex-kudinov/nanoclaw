@@ -213,6 +213,28 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-12T16:06Z paid-document v2 is deployed and activated. Immutable
+  backend `d160195d660f` passed the 805-host/45-runner release gate and verified
+  locally/on Mini (artifact `1524fda61e73778d`, archive
+  `3a1233190a3bc712b`). Fresh pre164 `business_v2` backup SHA-256 is
+  `5510fcc9b6b2db17`; migration164 readback shows two new admin-owned tables,
+  six enabled guards, one admin-owned SECURITY DEFINER purge function, five
+  retention columns, zero non-admin grants and zero rows across all document,
+  sequence, email, hold and tombstone stores. The first launch attempt changed
+  only the executable pointer and failed the release-identity gate; its trap
+  restored the old config/plist/service. The corrected three-pointer activation
+  changed executable, expected commit and code root together, then loaded the
+  approved schema164/private invoice policy. Health/ready pass on one exact
+  process; config hash is `3761c072cf70aa1f` and activation hash is
+  `abafcfa00d934e37`. Tandemweb main/VPS `f439cece6` and CI run34703698118 pass;
+  cache flush/warm returned200. Hidden desktop and390x844 browser checks cover
+  neither/recipient/business/both paths, dynamic2/3 versus3/4 numbering,
+  selected-section visibility, disabled incomplete submit, Back preservation,
+  no horizontal overflow and zero warnings/errors. No payment, provider
+  Session, email, document, capability or invoice number was created. Natural
+  post-payment document/download/email and ESD/3DS proof remains owner-operated;
+  ordinary MCS traffic remains Stripe.
+
 - 2026-09-12T15:51Z source review converged for the approved paid-document
   release. Bounded Sonnet/high backend R1
   `4524cde9-7fc3-475a-9ec9-635cc304ea00` found two material issues: a

@@ -977,10 +977,12 @@ classification, omit the seller EIN and use the Red Oak seller address.
 Information now owns independent gift and business-invoice checkboxes; one
 conditional Additional details step contains only the selected sections and is
 skipped with dynamic numbering when unused. Paid invoice allocation remains
-hash-gated until the exact private policy is activated. Backend `b0c2ca2d`,
-migration163 and tandemweb `5f0e1c65d` remain live predecessors during review;
-ordinary MCS routing remains Stripe and no payment, document, invoice number or
-email is created by this source change.
+hash-gated. Backend `d160195d`, migration164 and tandemweb `f439cece6` are now
+live with the exact approved private policy activated and all document/
+sequence/email/hold/tombstone tables empty. Desktop and390x844 browser checks
+verified all conditional paths without starting payment. Ordinary MCS routing
+remains Stripe, and natural document/download/email proof still requires an
+owner-operated purchase.
 
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical

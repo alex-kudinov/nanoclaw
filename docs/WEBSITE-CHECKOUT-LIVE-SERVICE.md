@@ -286,8 +286,10 @@ recipient rows and capabilities, and leaves only an immutable non-customer
 tombstone containing document identity, date, amount, currency and hashes. A
 current legal hold blocks purge, and the tombstone prevents regeneration.
 
-Backend immutable `b0c2ca2d` and tandemweb `5f0e1c65d` remain the deployed
-predecessors while the approved v2 release is under review. No real payment,
-document, invoice number or email is created by source, migration or
-nonfinancial browser verification; natural post-payment proof remains owner-
-operated.
+Backend immutable `d160195d` with migration164 and tandemweb `f439cece6` are
+deployed. The private activation hash binds the approved seller, capture, tax,
+retention and correction policy; paid invoice generation is enabled, while no
+document or sequence row exists until an eligible business-invoice purchase
+requests the artifact. Desktop/mobile nonfinancial browser verification passed.
+No real payment, document, invoice number or email was created; natural post-
+payment proof remains owner-operated and ordinary MCS traffic remains Stripe.
