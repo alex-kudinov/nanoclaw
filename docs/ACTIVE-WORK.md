@@ -217,10 +217,16 @@ outside the current client conversation.
   payment/runtime130/130 and frontend/PHP checks pass. Typecheck/build/format/
   continuity pass. Full root:4295 pass/32 skip/5 fail; two parallel disposable
   timeouts pass3/3 isolated and the three established unrelated Capacity/CNPC/
-  Trafft failures remain. Next: commit/release migrations161-162 and both
-  worktrees, update private schema contract, deploy once, and verify live UI/
-  health without a payment. PDF receipt/invoice generation and email actions
-  remain the next finance-gated slice.
+  Trafft failures remain. NanoClaw `e3c21b9e` and tandemweb `8c02c38a0` are
+  now pushed and live. Migrations161-162 applied after a fresh full backup;
+  readback shows the two new billing columns, admin-owned supplemental table,
+  zero rows and zero non-admin grants. The dedicated service is healthy/ready
+  on exact `e3c21b9e`; the prior owner-test exclusion remains exact. VPS and a
+  clean hidden browser read back tandemweb `8c02c38a0`, USD299, all three steps,
+  and the complete collapsed/expanded optional invoice fields without creating
+  an intent. PDF receipt/invoice generation and email actions remain the next
+  finance-gated slice; actual ESD/3DS/Confirmation outcome proof requires a
+  future owner-operated transaction.
 
 - 2026-09-12T04:08Z continuation: implement the accepted MCS confirmation and
   optimization phase beginning with the backend provider boundary. This slice

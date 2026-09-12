@@ -34,6 +34,15 @@
   Trafft failures remain. Invoice numbering, PDF generation and document email
   activation remain behind finance/legal acceptance. No real payment,
   customer email, fulfillment replay or Stripe routing change occurred.
+- Release: NanoClaw `e3c21b9ebfc2ecc9ff6dd211bab9be924c001959`
+  passed the immutable 803-host/45-runner gate and is live on the dedicated
+  checkout service with `/health` and `/ready` passing. Fresh full backup SHA
+  `d4bd91e589092d992fcad779af41c5ff10cde90384e93747a514355139f19cec`
+  preceded migrations161-162; production readback is two billing columns, one
+  admin-owned supplemental table, zero new rows and zero non-admin grants.
+  Tandemweb `8c02c38a0cf8d0a3df17e5b0eae8fc3b750eaa49` is live on the VPS.
+  Hidden-browser readback showed USD299, all three steps and the complete
+  optional invoice disclosure without entering data or creating an intent.
 
 ## 2026-09-11 — NC-20260909-003 LIVE shared-feed filter wiring correction
 
