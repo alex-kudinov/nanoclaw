@@ -1,16 +1,19 @@
 # NanoClaw active work
 
-2026-09-12T21:38Z — NC-20260909-003 simple checkout replacement is locally
-implemented and validating. LIVE identity preparation now creates only an
+2026-09-12T22:01Z — NC-20260909-003 simple checkout replacement is deployed
+and nonfinancially verified. LIVE identity preparation now creates only an
 encrypted deletable submission plus purchase-scoped references; it creates no
 Party, interaction, order, enrollment, document, access job or notice. Exact
 confirmed payment materializes a new Party per deliberate purchase (including
 repeated identical email), then the existing atomic order/enrollment/access
 path runs. Terminal nonpayment purges temporary PII; pending/ambiguous evidence
 is retained and cannot start a second payment. Migration165 and focused
-disposable proof pass. Tandemweb removes the browser pre-submit round trip,
-successor retry UI and buyer-facing draft recovery. Full verification, Claude
-review, production migration/release, and nonfinancial live proof remain.
+disposable proof passes. Tandemweb removes the browser pre-submit round trip,
+successor retry UI and buyer-facing draft recovery. Claude R2 has no material
+findings. Nano release `60e1ff16` and schema165 are healthy/ready on Mini;
+Tandemweb `937fc0179` is deployed with caches purged. Direct-checkout UI and
+console readback pass without creating a Session or payment; main MCS remains
+Stripe. The next natural purchase is outcome proof; do not manufacture one.
 
 2026-09-12T20:52Z — NC-20260909-003 owner-directed checkout simplification,
 source owner Codex: every deliberate submitted form is a new purchase even when

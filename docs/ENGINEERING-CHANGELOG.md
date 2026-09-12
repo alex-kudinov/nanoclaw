@@ -17,8 +17,22 @@
   the accepted Adyen Session, has no pre-submit status request or same-order
   successor retry, automatically discards unfinished setup, and returns a
   failed payment to its still-editable form.
-- State: validating locally. Migration165 is not yet applied and these changes
-  are not yet deployed; main MCS remains Stripe.
+- Deployment: immutable Nano release
+  `60e1ff16ce04834e9374325ff69ee4a779a363b1` passed 805/805 host and 45/45
+  runner tests; artifact hash `8ea482023fd2b3bd522116ebccd61cd97a31c85529876ae918a0b78e01d74d9f`
+  across 1,308 files and archive hash
+  `0b6681397c63e16b76b2127056e8bd19ae626ffc6b67a61eb8675b8bad194f59`.
+  A 13,740,668-byte pre165 `business_v2` backup has SHA-256
+  `8f24565cdc0524b4` and 1,813 catalog lines. Migration165 applied and read back
+  both admin-owned tables with zero submission/materialization rows; the exact
+  release is healthy and ready on Mini.
+- Tandemweb `937fc017938f9bd6bef1274187b177fe0587060f` is live after design/catalog
+  gates plus LiteSpeed and Cloudflare purge. The direct checkout serves JS
+  `c21dd2d406c60cd7`, step links have no underline, Apply code is present, and
+  an untouched form has no status error or console log. No form submission,
+  provider Session, payment, Party, enrollment, document or notice was created
+  for live verification. Main MCS page still reports `data-new-routing="0"`
+  and uses Stripe; the next natural purchase remains the outcome proof.
 - Independent Claude Sonnet/high R1 found one material cleanup race: any old
   terminal sub-session could purge PII while a successor on the same attempt
   remained live. The corrected query requires a current refused/failed
