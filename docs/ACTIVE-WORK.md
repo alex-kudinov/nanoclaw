@@ -1,16 +1,20 @@
 # NanoClaw active work
 
-2026-09-12T23:14Z — NC-20260909-003 successful-return confirmation repair,
-source owner Codex: the first natural simplified-checkout payment was authorized,
-materialized and enrolled, but the immediate `/internal/payments/returns`
-response omitted the already-available minimized confirmation summary. WordPress
-therefore rendered enrollment success while leaving Payment active and hiding
-receipt/paid-invoice actions. The return path now includes the same capability-
-protected confirmation summary as status, only for `confirming_payment`;
-terminal and review paths are unchanged. Focused 43/43, WordPress contract
-111/111 and typecheck pass. Independent Claude Sonnet/high reports no material
-findings. Release/deployment and live readback remain in progress; the successful
-payment record must not be replayed or replaced.
+2026-09-12T23:20Z — NC-20260909-003 successful-return confirmation repair is
+deployed and live-verified. The first natural simplified-checkout payment was
+authorized, materialized and enrolled, but the immediate
+`/internal/payments/returns` response omitted the already-available minimized
+confirmation summary. WordPress therefore rendered enrollment success while
+leaving Payment active and hiding receipt/paid-invoice actions. The return path
+now includes the same capability-protected confirmation summary as status, only
+for `confirming_payment`; terminal and review paths are unchanged. Focused
+43/43, WordPress contract 111/111, typecheck, immutable release 805/805 plus
+runner 45/45, and independent Claude Sonnet/high review pass. Exact release
+`d1704c30` is healthy/ready on Mini. Reloading the original successful checkout
+advanced it to Confirmation with the exact $1 purchase summary and all four
+receipt/invoice download/email actions. No document/email was generated and no
+payment was replayed. Production remains one authorization, one admission and
+one active enrollment for the attempt.
 
 2026-09-12T22:01Z — NC-20260909-003 simple checkout replacement is deployed
 and nonfinancially verified. LIVE identity preparation now creates only an

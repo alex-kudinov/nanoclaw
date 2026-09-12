@@ -290,6 +290,9 @@ The authenticated successful Session return includes that same minimized
 summary immediately. This lets the browser activate Confirmation and present
 the existing receipt and paid-invoice actions without waiting for a later status
 poll. Review and terminal-nonpayment returns never receive the summary.
+The correction is live in immutable backend `d1704c30`; health/readiness and
+the original authorized attempt's recovered Confirmation view are verified
+without replaying payment or generating a document.
 
 Optional company, invoice-email, address and tax/VAT details are normalized in
 WordPress, bound into the exact signed identity request and stored only as an

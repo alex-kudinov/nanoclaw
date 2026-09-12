@@ -15,6 +15,20 @@
 - Focused payment tests pass 43/43, WordPress coordinator/BFF contracts pass
   111/111, typecheck passes, and independent Claude Sonnet/high review reports
   `NO MATERIAL FINDINGS`.
+- Immutable release `d1704c301cb026265c9b4bbcee02f20254c1e57a` passed
+  805/805 host and 45/45 runner tests. Artifact SHA-256 is
+  `c87f129f882c98d58d9aaffd4ac664d74a69803a408842d0fc90a1f1873f145b`
+  across 1,308 files; archive SHA-256 is
+  `262bf54b84d646339ae8f88a72858009e248eeda22fb233f02d05d8c3e3aa46f`.
+  Mini activated all three release pointers together and reports healthy/ready.
+  The first sub-second probe correctly restored the prior release; the second
+  activation waited for listener startup and succeeded.
+- Production readback for the original successful attempt remains exactly one
+  authorization-recorded projection, one admission and one active enrollment,
+  with zero generated documents. Reloading its original browser tab recovered
+  Confirmation, the exact $1 paid summary and all four receipt/paid-invoice
+  download/email actions. No action was invoked, no email was sent, and no
+  payment was replayed.
 
 ## 2026-09-12 — NC-20260909-003 Promo/new-learner incident and owner-directed simplification
 
