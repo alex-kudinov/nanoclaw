@@ -26,7 +26,8 @@
   `8f24565cdc0524b4` and 1,813 catalog lines. Migration165 applied and read back
   both admin-owned tables with zero submission/materialization rows; the exact
   release is healthy and ready on Mini.
-- Tandemweb `e4ada3df99299ec95150dfead1644b5b649eb1e5` is live after design/catalog
+- Tandemweb checkout implementation `e4ada3df99299ec95150dfead1644b5b649eb1e5`
+  is live in current descendant `08c46677849c854f4f7b97dcb5ddd968cc062b09` after design/catalog
   gates plus LiteSpeed and Cloudflare purge. The direct checkout serves JS
   `c21dd2d406c60cd7`, step links have no underline, Apply code is present, and
   an untouched form has no status error or console log. A synthetic no-card

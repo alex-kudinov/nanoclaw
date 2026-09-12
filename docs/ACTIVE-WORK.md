@@ -11,7 +11,8 @@ is retained and cannot start a second payment. Migration165 and focused
 disposable proof passes. Tandemweb removes the browser pre-submit round trip,
 successor retry UI and buyer-facing draft recovery. Claude R2 has no material
 findings. Nano release `60e1ff16` and schema165 are healthy/ready on Mini;
-Tandemweb `e4ada3df9` is deployed with caches purged. A live no-card submission
+Tandemweb checkout implementation `e4ada3df9` is live in current descendant
+`08c466778`, with caches purged. A live no-card submission
 opened the $299 Adyen form while PostgreSQL showed one encrypted submission,
 zero materializations and zero synthetic Parties/interactions; the synthetic
 temporary PII was then deleted and final counts returned to zero. Back unlock,
