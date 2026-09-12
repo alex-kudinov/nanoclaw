@@ -221,6 +221,13 @@ outside the current client conversation.
   exact local compiled help now passes. Recommit, rebuild and install a new
   immutable release before migration or config mutation.
 
+- 2026-09-12T13:35Z second packaging correction: immutable `ea7fcdb8` also
+  remained pre-activation after its help probe showed that `release:build`
+  directly recompiled over the already bundled ordinary-build output. The
+  immutable builder now runs the same checked bundler after its own compile and
+  before help/refusal verification. Recommit and install a new immutable
+  archive; live, schema and config are still unchanged.
+
 - 2026-09-12T13:20Z document self-service source is review-complete. Migration163
   stores one immutable encrypted snapshot and separately encrypted deterministic
   PDF per attempt/kind; download capabilities are short-lived and exact-attempt

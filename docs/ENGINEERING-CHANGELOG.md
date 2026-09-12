@@ -50,6 +50,13 @@
   module. `scripts/bundle-payment-documents.mjs` rejects unexpected bundled
   packages and the release includes the font license. The compiled checkout CLI
   now runs without those packages installed in its release/parent runtime.
+- A second pre-activation archive at `ea7fcdb8` exposed that the immutable
+  builder invoked TypeScript directly after the ordinary build had bundled the
+  module, replacing the bundled output before packaging. It also passed manifest
+  verification and failed only the help probe; production again remained
+  unchanged. The immutable builder now invokes the checked bundler immediately
+  after its own TypeScript compile and before the existing help/refusal probes;
+  the release contract test pins that order.
 
 ## 2026-09-12 — NC-20260909-003 MCS confirmation and provider contracts
 

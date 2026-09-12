@@ -81,6 +81,11 @@ execFileSync(
   ],
   { cwd: root, stdio: 'inherit' },
 );
+execFileSync(
+  process.execPath,
+  [path.join(root, 'scripts', 'bundle-payment-documents.mjs')],
+  { cwd: root, stdio: 'inherit' },
+);
 
 // The dedicated checkout supervisor runs compiled release code only. Prove the
 // executable help and pre-config refusal paths without opening a database or
