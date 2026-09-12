@@ -990,6 +990,19 @@ rendering. A complete street address no longer fails solely because that line
 is empty; all other company, email, street, city, postal, country and applicable
 state requirements remain unchanged.
 
+The owner has directed NC-20260909-003 to replace its pre-payment identity and
+draft machinery before main-page cutover. The accepted target keeps only an
+editable validated browser form plus one temporary encrypted submission before
+payment; every deliberate submission is a distinct purchase, and idempotency is
+limited to replay of that exact submission/provider event. Party, order,
+invoice and enrollment materialization occur only after confirmed Adyen
+payment. Terminal unconfirmed payment purges the temporary PII submission;
+pending or ambiguous payment retains it only until provider resolution. The
+current compatibility path remains live during this replacement. Its immediate
+repair no longer blocks a purchase on multiple Party candidates, resolves a
+new Party through the schema-qualified function without a search-path-dependent
+`citext` cast, and retains exact-token/different-email replay refusal.
+
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
 PostgreSQL store and projection outbox (migrations146-148). See

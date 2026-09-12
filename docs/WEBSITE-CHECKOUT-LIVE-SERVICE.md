@@ -233,6 +233,30 @@ are the only TEST evidence in this source boundary.
 Build, tests, listener receipt, provider acceptance, deployment, membership
 readback and learner outcome remain distinct evidence.
 
+## Owner-directed pre-payment replacement
+
+Before main-page cutover, the public MCS path will stop materializing or
+deduplicating Party/identity, order and enrollment state before Adyen confirms
+payment. The replacement contract is deliberately small:
+
+1. validate the editable browser form, email and promotion;
+2. store one temporary encrypted submitted-form snapshot and create one Adyen
+   Session from the server-owned price;
+3. treat every deliberate submission as a new purchase even when all fields
+   match a prior order;
+4. use idempotency only for replay of that exact submission or provider event;
+5. on confirmed payment, materialize people/order/documents/enrollment and
+   deliver access;
+6. on terminal unconfirmed payment, purge the temporary PII and return to the
+   editable form; on pending/ambiguous payment, retain it only until provider
+   resolution and do not invite another payment.
+
+The existing compatibility path remains active only until this replacement is
+implemented, reviewed and proven on the direct canary. Its immediate incident
+fix removes the search-path-dependent new-Party cast and the multi-candidate
+email purchase hold; neither change is represented as completion of the larger
+replacement.
+
 ## Confirmation and billing preparation
 
 Capability-protected status can now return a minimized purchase summary only

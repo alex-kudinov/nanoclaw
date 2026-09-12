@@ -1,5 +1,32 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 Promo/new-learner incident and owner-directed simplification
+
+- A LIVE buying-for-someone-else attempt with a new learner email stopped
+  before Payment. Production PostgreSQL logged `type "citext" does not exist`
+  because the schema-qualified Party function was called with an unqualified
+  `$2::citext` cast while the payment transaction pinned
+  `search_path=pg_catalog`. The caller now passes the parameter without a
+  textual cast, letting the function's stored argument type resolve
+  independently of search path.
+- Multiple canonical Party candidates for one email no longer block a
+  deliberate purchase; the exact-token/different-email replay conflict remains.
+  Every later deliberate checkout remains a distinct order/enrollment even when
+  the entered details repeat.
+- Focused identity unit and disposable PostgreSQL suites pass19/19; typecheck
+  and diff check pass. Tandemweb owns the separately reviewed Apply-code and
+  field-preserving copy changes.
+- The owner rejected the broader pre-payment state machine. The accepted Peri
+  decision now requires one editable validated form plus a temporary encrypted
+  submission before payment, then Party/order/document/enrollment materialization
+  only after confirmed Adyen payment. Terminal unconfirmed submissions purge
+  temporary PII; ambiguous provider outcomes remain held until resolved. This
+  larger replacement remains in progress and is not implied by the incident
+  repair.
+- Deployment: pending immutable release and live non-payment verification.
+- Rollback: retain the current `7ab97df4` checkout release and main-page Stripe
+  routing until the reviewed replacement is proven on the direct canary.
+
 ## 2026-09-12 — NC-20260909-004 Optional business address line
 
 - The MCS business billing contract now accepts a complete street address with

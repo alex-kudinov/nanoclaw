@@ -1,5 +1,20 @@
 # NanoClaw active work
 
+2026-09-12T20:52Z — NC-20260909-003 owner-directed checkout simplification,
+source owner Codex: every deliberate submitted form is a new purchase even when
+all identity/course fields repeat. Same-request replay remains idempotent, but
+email/Party ambiguity and prior checkout state must not block a new purchase.
+The accepted Peri decision is
+`.program/decisions/decision-mcs-prepayment-simplification-2026-09-12.json`.
+Immediate incident repair qualifies the new-Party email parameter without
+depending on `search_path`, removes the ambiguous-email purchase hold, adds an
+explicit promo Apply action, and removes buyer-visible previous-draft language.
+The larger target removes Party/order/enrollment materialization before payment:
+pre-payment retains only the editable browser form plus one temporary encrypted
+submission; confirmed Adyen payment triggers materialization, terminal
+unconfirmed purges the temporary PII, and ambiguous payment remains held until
+resolved. Main-page routing stays Stripe; no autonomous payment is authorized.
+
 2026-09-12T12:31Z — NC-20260909-003 document self-service continuation,
 source owner Codex: implement the immutable English MCS receipt/paid-invoice
 snapshot, deterministic PDF, short-lived download capability and Gmail-backed

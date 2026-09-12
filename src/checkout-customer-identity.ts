@@ -355,15 +355,12 @@ export async function resolveCheckoutCustomerIdentityWithClient(input: {
   }
 
   const candidates = await strictPartyCandidates(client, request.email);
-  if (candidates.length > 1) {
-    throw new CheckoutCustomerIdentityError('checkout_party_ambiguous', 409);
-  }
   let partyId = candidates[0] ?? null;
   let resolution: 'created' | 'existing' = 'existing';
   if (partyId === null) {
     const created = await client.query<{ id: string }>(
       `SELECT business_v2.fn_create_party(
-         'person',$1,$2::citext,'wordpress',$3::jsonb
+         'person',$1,$2,'wordpress',$3::jsonb
        )::text AS id`,
       [
         request.displayName,
