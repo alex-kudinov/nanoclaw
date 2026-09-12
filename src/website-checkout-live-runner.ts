@@ -11,6 +11,7 @@ import {
   ADYEN_LIVE_REFERENCE_PREFIX,
 } from './adyen-environment.js';
 import { resolveCheckoutCustomerIdentityWithClient } from './checkout-customer-identity.js';
+import { logger } from './logger.js';
 import {
   PaymentChaosObservabilityStore,
   PaymentChaosObservabilityWorker,
@@ -22,6 +23,7 @@ import {
   LIVE_MCS_CARD_QUOTE_AUTHORITY,
 } from './payment-live-runtime.js';
 import {
+  PaymentCheckoutDocumentRetentionWorker,
   createCanonicalWebsiteCheckoutDocumentGmail,
   parseWebsiteCheckoutDocumentConfig,
   websiteCheckoutDocumentConfigSchema,
@@ -106,6 +108,7 @@ const privateConfigSchema = z
           'nanoclaw-v2:148,149-161',
           'nanoclaw-v2:148,149-162',
           'nanoclaw-v2:148,149-163',
+          'nanoclaw-v2:148,149-164',
         ]),
       })
       .strict(),
@@ -299,6 +302,12 @@ export function parseWebsiteCheckoutLivePrivateConfig(
     );
     try {
       parsed.documents = parseWebsiteCheckoutDocumentConfig(parsed.documents);
+      if (
+        parsed.documents.paidInvoice.enabled &&
+        parsed.documents.paidInvoice.capturePolicy.evidenceReference !==
+          parsed.backend.cardCaptureConfigurationEvidence
+      )
+        throw new Error('document capture policy mismatch');
     } catch {
       throw new Error('invalid document activation receipt');
     }
@@ -337,13 +346,17 @@ export function parseWebsiteCheckoutLivePrivateConfig(
         parsed.receiptWelcome.senderAccount !==
           parsed.receiptWelcome.senderAccount.toLowerCase())) ||
     (parsed.chaosObservability.enabled &&
-      (!['nanoclaw-v2:148,149-162', 'nanoclaw-v2:148,149-163'].includes(
-        parsed.database.schemaContract,
-      ) ||
+      (![
+        'nanoclaw-v2:148,149-162',
+        'nanoclaw-v2:148,149-163',
+        'nanoclaw-v2:148,149-164',
+      ].includes(parsed.database.schemaContract) ||
         parsed.chaosObservability.webhookToken ===
           parsed.chaosObservability.identityHmacSecret ||
         keys.includes(parsed.chaosObservability.webhookToken) ||
         keys.includes(parsed.chaosObservability.identityHmacSecret))) ||
+    (parsed.documents.paidInvoice.enabled &&
+      parsed.database.schemaContract !== 'nanoclaw-v2:148,149-164') ||
     (parsed.activation.newAttemptsEnabled &&
       (!parsed.activation.serviceEnabled ||
         !parsed.activation.recoverExisting)) ||
@@ -417,6 +430,8 @@ const requiredRelations = [
   'payment_checkout_document_capabilities',
   'payment_checkout_document_email_jobs',
   'payment_checkout_document_email_receipts',
+  'payment_checkout_document_retention_events',
+  'payment_checkout_document_tombstones',
 ] as const;
 
 export async function verifyWebsiteCheckoutLiveSchema(
@@ -469,10 +484,12 @@ export async function verifyWebsiteCheckoutLiveSchema(
        (table_name='payment_provider_references' AND column_name IN
          ('payment_operation_id','session_sequence')) OR
        (table_name='payment_enrollment_admissions' AND column_name IN
-         ('method_source_kind','method_event_id'))
+         ('method_source_kind','method_event_id')) OR
+       (table_name='payment_checkout_documents' AND column_name IN
+         ('retention_until','retention_policy_version','amount_minor','currency','attempt_id_sha256'))
      )`,
   );
-  if (Number(columns.rows[0]?.count) !== 30)
+  if (Number(columns.rows[0]?.count) !== 35)
     throw new PaymentDomainError('website_checkout_live_schema_mismatch');
 }
 
@@ -548,6 +565,8 @@ export async function startWebsiteCheckoutLiveService(
   let ready = false;
   let fulfillmentWorker: WebsiteCheckoutLiveFulfillmentWorker | null = null;
   let chaosWorker: PaymentChaosObservabilityWorker | null = null;
+  let documentRetentionWorker: PaymentCheckoutDocumentRetentionWorker | null =
+    null;
   const guard = async (client: PoolClient) =>
     verifyWebsiteCheckoutLiveSchema(client, config.database.name);
   const transaction: PaymentTransaction = async (work) => {
@@ -588,6 +607,7 @@ export async function startWebsiteCheckoutLiveService(
     if (stopped) return;
     stopped = true;
     ready = false;
+    if (documentRetentionWorker) await documentRetentionWorker.stop();
     if (chaosWorker) await chaosWorker.stop();
     if (fulfillmentWorker) await fulfillmentWorker.stop();
     if (server)
@@ -827,6 +847,17 @@ export async function startWebsiteCheckoutLiveService(
       });
     });
     ready = true;
+    if (service.documentStore) {
+      documentRetentionWorker = new PaymentCheckoutDocumentRetentionWorker(
+        config.documents,
+        service.documentStore,
+        documentGmail,
+        undefined,
+        (event) =>
+          logger.error(event, 'checkout document retention purge held'),
+      );
+      documentRetentionWorker.start();
+    }
     if (config.heartbeatAccess.enabled || receiptWelcomeOwner) {
       fulfillmentWorker = new WebsiteCheckoutLiveFulfillmentWorker(
         pool,

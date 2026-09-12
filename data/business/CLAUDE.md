@@ -445,6 +445,18 @@ keeps payer identity unknown, and atomically populates five capacity blocks,
 and exactly three held exceptions. Batch-scoped readback must pass and replay
 must insert zero. No runtime consumer or provider/public authority is enabled.
 
+Migration 164 extends the migration163 checkout-document store only after an
+empty-store precondition. It pins document v2, the seven-year retention date,
+amount/currency and an attempt-ID hash; adds append-only legal-hold events; and
+provides one admin-only purge function. Eligible purge first creates an
+immutable non-customer tombstone, then removes document email receipts/jobs,
+download capabilities, retention events and the encrypted snapshot/PDF row in
+one transaction. Per-table triggers permit deletion only inside that exact
+document-bound purge function. The tombstone blocks regeneration. Rollback164
+refuses after any document, hold or tombstone exists. Runtime code must delete
+an exact retained Gmail message before invoking local purge; a current legal
+hold or external deletion uncertainty keeps the document intact for retry.
+
 ## Connection
 
 ```bash

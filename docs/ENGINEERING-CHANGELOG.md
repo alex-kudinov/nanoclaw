@@ -2,6 +2,34 @@
 
 ## 2026-09-12 — NC-20260909-003 MCS receipt and paid-invoice document self-service
 
+- Owner-approved v2 source adds two independent Information-page gift/business
+  choices, one conditional Additional details page with active-section-only
+  validation and dynamic step numbering, immediate automatic-capture Paid
+  document semantics, factual `Tax: $0.00 USD` without a legal classification,
+  seller-EIN omission, the approved Red Oak seller address, and polished
+  Tandem-logo receipt/invoice PDFs. Migration164 pins the seven-year retention
+  window, append-only legal-hold events, exact Gmail-first deletion, local
+  encrypted PII/PDF/recipient purge and a minimal immutable tombstone that
+  prevents document regeneration.
+- Review: bounded Sonnet/high R1
+  `4524cde9-7fc3-475a-9ec9-635cc304ea00` found a caller-settable purge-GUC
+  bypass and silent/dedup-blocked retention failures. Both were corrected.
+  Combined correction/checkout R2
+  `1a378ade-390c-4608-a56a-a1c642bea079` verified the database correction and
+  reported no checkout-flow material finding. Its sole remaining reporting
+  branch omission was a low-impact one-line correction with direct regression
+  coverage; no third Claude round was used. R1 measured5 calls/87,500 cache-
+  create/194,166 cache-read/29,929 output/max92,341 context; R2 measured4 calls/
+  83,756 cache-create/145,475 cache-read/24,114 output/max93,643 context.
+- Verification before release: pinned Node22.23.2 doctor/typecheck/build/format/
+  continuity pass; focused backend46/46 including populated rollback refusal,
+  direct old-GUC bypass refusal, legal hold/release, seven-year purge,
+  tombstone/regeneration refusal, duplicate deletion evidence, failure
+  reporting and shutdown types; frontend85/85 plus PHP26/26 and7/7; full root
+  4,317 pass/32 skip/4 unchanged unrelated Capacity/CNPC/Trafft failures. Two
+  deterministic production-renderer PDFs pass Poppler render/text inspection.
+  No payment, email, document row, invoice number, migration, private config,
+  release or website deployment occurred in this source/review phase.
 - Source: migration163 plus `payment-checkout-documents.ts` add one immutable
   encrypted snapshot and separately encrypted deterministic PDF per verified
   English MCS attempt/document kind. Receipt self-service is enabled; paid

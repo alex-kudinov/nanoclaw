@@ -1,0 +1,1375 @@
+diff --git a/config-examples/website-checkout-live.private.template.json b/config-examples/website-checkout-live.private.template.json
+index decab5af..52e6b968 100644
+--- a/config-examples/website-checkout-live.private.template.json
++++ b/config-examples/website-checkout-live.private.template.json
+@@ -19,3 +19,3 @@
+     "role": "nanoclaw_admin",
+-    "schemaContract": "nanoclaw-v2:148,149-163"
++    "schemaContract": "nanoclaw-v2:148,149-164"
+   },
+@@ -87,2 +87,11 @@
+     "downloadCapabilityTtlMs": 300000,
++    "retentionPolicy": {
++      "version": "mcs-checkout-documents-7y-v1",
++      "years": 7,
++      "legalHold": "explicit_hold_blocks_purge",
++      "purge": "customer_pdf_recipient_and_sent_message",
++      "tombstone": "number_date_amount_currency_hashes_and_purge_receipt",
++      "sweepIntervalMs": 86400000,
++      "batchSize": 25
++    },
+     "paidInvoice": {
+diff --git a/data/business/migrations/nanoclaw-v2/164_payment_checkout_document_retention.sql b/data/business/migrations/nanoclaw-v2/164_payment_checkout_document_retention.sql
+new file mode 100644
+index 00000000..e4d310c8
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/164_payment_checkout_document_retention.sql
+@@ -0,0 +1,253 @@
++-- NC-20260909-003. Seven-year checkout-document retention, legal holds and
++-- privacy-minimized immutable purge tombstones. Requires an empty v1 document
++-- store so the approved v2 Paid semantics and branded bytes cannot be confused
++-- with already-issued v1 artifacts.
++BEGIN;
++SET LOCAL search_path TO pg_catalog;
++
++DO $$ BEGIN
++  IF to_regclass('business_v2.payment_checkout_documents') IS NULL OR
++     to_regclass('business_v2.payment_checkout_document_email_jobs') IS NULL THEN
++    RAISE EXCEPTION 'migration 163 required';
++  END IF;
++  IF EXISTS (SELECT 1 FROM business_v2.payment_checkout_documents) OR
++     EXISTS (SELECT 1 FROM business_v2.payment_checkout_document_email_jobs) THEN
++    RAISE EXCEPTION 'document v2 migration requires empty document and email stores';
++  END IF;
++END; $$;
++
++ALTER TABLE business_v2.payment_checkout_documents
++  DROP CONSTRAINT payment_checkout_documents_document_version_check,
++  ADD CONSTRAINT payment_checkout_documents_document_version_check
++    CHECK (document_version='mcs-checkout-document-v2'),
++  ADD COLUMN retention_until timestamptz NOT NULL,
++  ADD COLUMN retention_policy_version text NOT NULL
++    CHECK (retention_policy_version='mcs-checkout-documents-7y-v1'),
++  ADD COLUMN amount_minor bigint NOT NULL CHECK (amount_minor>0),
++  ADD COLUMN currency text NOT NULL CHECK (currency='USD'),
++  ADD COLUMN attempt_id_sha256 text NOT NULL
++    CHECK (attempt_id_sha256 ~ '^[a-f0-9]{64}$'),
++  ADD CONSTRAINT payment_checkout_documents_retention_window_check
++    CHECK (retention_until=issued_at+interval '7 years');
++
++CREATE INDEX payment_checkout_documents_retention_due
++  ON business_v2.payment_checkout_documents(retention_until,document_id);
++
++CREATE TABLE business_v2.payment_checkout_document_retention_events (
++  event_id uuid PRIMARY KEY,
++  document_id uuid NOT NULL REFERENCES business_v2.payment_checkout_documents(document_id),
++  event_kind text NOT NULL CHECK (event_kind IN ('hold_placed','hold_released')),
++  decision_reference text NOT NULL CHECK (
++    decision_reference ~ '^[A-Za-z0-9_:.\/-]{1,200}$'
++  ),
++  receipt_sha256 text NOT NULL CHECK (receipt_sha256 ~ '^[a-f0-9]{64}$'),
++  occurred_at timestamptz NOT NULL,
++  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
++  UNIQUE(document_id,occurred_at,event_id)
++);
++CREATE INDEX payment_checkout_document_retention_event_order
++  ON business_v2.payment_checkout_document_retention_events
++    (document_id,occurred_at DESC,event_id DESC);
++
++CREATE TABLE business_v2.payment_checkout_document_tombstones (
++  document_id uuid PRIMARY KEY,
++  attempt_id_sha256 text NOT NULL CHECK (attempt_id_sha256 ~ '^[a-f0-9]{64}$'),
++  document_kind text NOT NULL CHECK (document_kind IN ('receipt','paid_invoice')),
++  document_number text NOT NULL UNIQUE CHECK (
++    document_number ~ '^(TCA-[A-F0-9]{12}-R|TCA-[0-9]{4}-[0-9]{6})$'
++  ),
++  issued_at timestamptz NOT NULL,
++  amount_minor bigint NOT NULL CHECK (amount_minor>0),
++  currency text NOT NULL CHECK (currency='USD'),
++  snapshot_sha256 text NOT NULL CHECK (snapshot_sha256 ~ '^[a-f0-9]{64}$'),
++  pdf_sha256 text NOT NULL CHECK (pdf_sha256 ~ '^[a-f0-9]{64}$'),
++  retention_policy_version text NOT NULL
++    CHECK (retention_policy_version='mcs-checkout-documents-7y-v1'),
++  purge_receipt_sha256 text NOT NULL UNIQUE
++    CHECK (purge_receipt_sha256 ~ '^[a-f0-9]{64}$'),
++  purged_at timestamptz NOT NULL,
++  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
++  CHECK (purged_at>=issued_at+interval '7 years')
++);
++CREATE UNIQUE INDEX payment_checkout_document_tombstone_attempt_kind
++  ON business_v2.payment_checkout_document_tombstones(attempt_id_sha256,document_kind);
++
++CREATE FUNCTION business_v2.fn_payment_checkout_document_body_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
++BEGIN
++  IF TG_OP='DELETE' AND
++     current_setting('business_v2.checkout_document_purge',true)=OLD.document_id::text THEN
++    RETURN OLD;
++  END IF;
++  RAISE EXCEPTION 'payment checkout document immutable';
++END;
++$$;
++
++CREATE FUNCTION business_v2.fn_payment_checkout_document_capability_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
++BEGIN
++  IF TG_OP='DELETE' AND
++     current_setting('business_v2.checkout_document_purge',true)=OLD.document_id::text THEN
++    RETURN OLD;
++  END IF;
++  RAISE EXCEPTION 'payment checkout document capability immutable';
++END;
++$$;
++
++CREATE OR REPLACE FUNCTION business_v2.fn_payment_checkout_document_email_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
++BEGIN
++  IF TG_OP='DELETE' THEN
++    IF current_setting('business_v2.checkout_document_purge',true)=OLD.document_id::text THEN
++      RETURN OLD;
++    END IF;
++    RAISE EXCEPTION 'payment checkout document email deletion refused';
++  END IF;
++  IF (to_jsonb(NEW)-ARRAY['state','uncertain_acceptance','attempt_count','lease_token','lease_expires_at','gmail_message_id','gmail_thread_id','last_error_code','version','updated_at'])
++     IS DISTINCT FROM
++     (to_jsonb(OLD)-ARRAY['state','uncertain_acceptance','attempt_count','lease_token','lease_expires_at','gmail_message_id','gmail_thread_id','last_error_code','version','updated_at']) THEN
++    RAISE EXCEPTION 'payment checkout document email immutable contract';
++  END IF;
++  IF NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'payment checkout document email version fence'; END IF;
++  IF OLD.state='confirmed' THEN RAISE EXCEPTION 'payment checkout document email terminal state'; END IF;
++  RETURN NEW;
++END;
++$$;
++
++CREATE FUNCTION business_v2.fn_payment_checkout_document_email_receipt_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog,business_v2 AS $$
++DECLARE purge_document_id text;
++BEGIN
++  IF TG_OP='DELETE' THEN
++    SELECT j.document_id::text INTO purge_document_id
++      FROM business_v2.payment_checkout_document_email_jobs j
++      WHERE j.job_id=OLD.job_id;
++    IF current_setting('business_v2.checkout_document_purge',true)=purge_document_id THEN
++      RETURN OLD;
++    END IF;
++  END IF;
++  RAISE EXCEPTION 'payment checkout document email receipt immutable';
++END;
++$$;
++
++CREATE FUNCTION business_v2.fn_payment_checkout_document_retention_event_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
++BEGIN
++  IF TG_OP='DELETE' AND
++     current_setting('business_v2.checkout_document_purge',true)=OLD.document_id::text THEN
++    RETURN OLD;
++  END IF;
++  RAISE EXCEPTION 'payment checkout document retention event immutable';
++END;
++$$;
++
++DROP TRIGGER payment_checkout_documents_immutable
++  ON business_v2.payment_checkout_documents;
++CREATE TRIGGER payment_checkout_documents_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_documents
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_body_guard();
++
++DROP TRIGGER payment_checkout_document_capabilities_immutable
++  ON business_v2.payment_checkout_document_capabilities;
++CREATE TRIGGER payment_checkout_document_capabilities_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_capabilities
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_capability_guard();
++
++DROP TRIGGER payment_checkout_document_email_receipts_immutable
++  ON business_v2.payment_checkout_document_email_receipts;
++CREATE TRIGGER payment_checkout_document_email_receipts_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_email_receipts
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_email_receipt_guard();
++
++CREATE TRIGGER payment_checkout_document_retention_events_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_retention_events
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_retention_event_guard();
++CREATE TRIGGER payment_checkout_document_tombstones_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_tombstones
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_immutable();
++
++CREATE FUNCTION business_v2.purge_payment_checkout_document(
++  target_document_id uuid,
++  target_purge_receipt_sha256 text,
++  target_purged_at timestamptz
++) RETURNS text
++LANGUAGE plpgsql
++SECURITY DEFINER
++SET search_path=pg_catalog,business_v2 AS $$
++DECLARE
++  document_row business_v2.payment_checkout_documents%ROWTYPE;
++  latest_retention_event text;
++  existing_receipt text;
++BEGIN
++  IF target_purge_receipt_sha256 !~ '^[a-f0-9]{64}$' THEN
++    RAISE EXCEPTION 'invalid payment checkout document purge receipt';
++  END IF;
++  SELECT purge_receipt_sha256 INTO existing_receipt
++    FROM business_v2.payment_checkout_document_tombstones
++    WHERE document_id=target_document_id;
++  IF FOUND THEN
++    IF existing_receipt=target_purge_receipt_sha256 THEN RETURN 'already_purged'; END IF;
++    RAISE EXCEPTION 'payment checkout document purge receipt conflict';
++  END IF;
++  SELECT * INTO document_row
++    FROM business_v2.payment_checkout_documents
++    WHERE document_id=target_document_id FOR UPDATE;
++  IF NOT FOUND THEN RAISE EXCEPTION 'payment checkout document not found'; END IF;
++  IF target_purged_at<document_row.retention_until THEN
++    RAISE EXCEPTION 'payment checkout document retention active';
++  END IF;
++  SELECT event_kind INTO latest_retention_event
++    FROM business_v2.payment_checkout_document_retention_events
++    WHERE document_id=target_document_id
++    ORDER BY occurred_at DESC,event_id DESC LIMIT 1;
++  IF latest_retention_event='hold_placed' THEN
++    RAISE EXCEPTION 'payment checkout document legal hold active';
++  END IF;
++  INSERT INTO business_v2.payment_checkout_document_tombstones
++    (document_id,attempt_id_sha256,document_kind,document_number,issued_at,amount_minor,currency,
++     snapshot_sha256,pdf_sha256,retention_policy_version,purge_receipt_sha256,purged_at)
++  VALUES
++    (document_row.document_id,document_row.attempt_id_sha256,document_row.document_kind,document_row.document_number,
++     document_row.issued_at,document_row.amount_minor,document_row.currency,
++     document_row.snapshot_sha256,document_row.pdf_sha256,
++     document_row.retention_policy_version,target_purge_receipt_sha256,target_purged_at);
++  PERFORM set_config('business_v2.checkout_document_purge',target_document_id::text,true);
++  DELETE FROM business_v2.payment_checkout_document_email_receipts
++    WHERE job_id IN (
++      SELECT job_id FROM business_v2.payment_checkout_document_email_jobs
++      WHERE document_id=target_document_id
++    );
++  DELETE FROM business_v2.payment_checkout_document_email_jobs
++    WHERE document_id=target_document_id;
++  DELETE FROM business_v2.payment_checkout_document_capabilities
++    WHERE document_id=target_document_id;
++  DELETE FROM business_v2.payment_checkout_document_retention_events
++    WHERE document_id=target_document_id;
++  DELETE FROM business_v2.payment_checkout_documents
++    WHERE document_id=target_document_id;
++  RETURN 'purged';
++END;
++$$;
++
++ALTER TABLE business_v2.payment_checkout_document_retention_events OWNER TO nanoclaw_admin;
++ALTER TABLE business_v2.payment_checkout_document_tombstones OWNER TO nanoclaw_admin;
++ALTER FUNCTION business_v2.fn_payment_checkout_document_body_guard() OWNER TO nanoclaw_admin;
++ALTER FUNCTION business_v2.fn_payment_checkout_document_capability_guard() OWNER TO nanoclaw_admin;
++ALTER FUNCTION business_v2.fn_payment_checkout_document_email_receipt_guard() OWNER TO nanoclaw_admin;
++ALTER FUNCTION business_v2.fn_payment_checkout_document_retention_event_guard() OWNER TO nanoclaw_admin;
++ALTER FUNCTION business_v2.purge_payment_checkout_document(uuid,text,timestamptz) OWNER TO nanoclaw_admin;
++REVOKE ALL ON business_v2.payment_checkout_document_retention_events,
++  business_v2.payment_checkout_document_tombstones FROM PUBLIC;
++REVOKE ALL ON FUNCTION business_v2.fn_payment_checkout_document_body_guard(),
++  business_v2.fn_payment_checkout_document_capability_guard(),
++  business_v2.fn_payment_checkout_document_email_receipt_guard(),
++  business_v2.fn_payment_checkout_document_retention_event_guard(),
++  business_v2.purge_payment_checkout_document(uuid,text,timestamptz) FROM PUBLIC;
++DO $$ DECLARE role_name text; BEGIN
++  FOR role_name IN SELECT rolname FROM pg_roles
++    WHERE rolname<>'nanoclaw_admin' AND rolname NOT LIKE 'pg_%' LOOP
++    EXECUTE format('REVOKE ALL ON business_v2.payment_checkout_document_retention_events,business_v2.payment_checkout_document_tombstones FROM %I',role_name);
++    EXECUTE format('REVOKE ALL ON FUNCTION business_v2.fn_payment_checkout_document_body_guard(),business_v2.fn_payment_checkout_document_capability_guard(),business_v2.fn_payment_checkout_document_email_receipt_guard(),business_v2.fn_payment_checkout_document_retention_event_guard(),business_v2.purge_payment_checkout_document(uuid,text,timestamptz) FROM %I',role_name);
++  END LOOP;
++END; $$;
++COMMIT;
+diff --git a/data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql b/data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql
+new file mode 100644
+index 00000000..c1e75f6d
+--- /dev/null
++++ b/data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql
+@@ -0,0 +1,69 @@
++-- Rollback for migration164. Refuse once a v2 document, legal-hold event or
++-- purge tombstone exists; issued customer documents must never be reinterpreted.
++BEGIN;
++SET LOCAL search_path TO pg_catalog;
++
++DO $$ BEGIN
++  IF EXISTS (SELECT 1 FROM business_v2.payment_checkout_documents) OR
++     EXISTS (SELECT 1 FROM business_v2.payment_checkout_document_retention_events) OR
++     EXISTS (SELECT 1 FROM business_v2.payment_checkout_document_tombstones) THEN
++    RAISE EXCEPTION 'rollback refused: payment checkout document retention state exists';
++  END IF;
++END; $$;
++
++DROP FUNCTION business_v2.purge_payment_checkout_document(uuid,text,timestamptz);
++DROP TRIGGER payment_checkout_document_tombstones_immutable
++  ON business_v2.payment_checkout_document_tombstones;
++DROP TRIGGER payment_checkout_document_retention_events_immutable
++  ON business_v2.payment_checkout_document_retention_events;
++DROP FUNCTION business_v2.fn_payment_checkout_document_retention_event_guard();
++DROP TABLE business_v2.payment_checkout_document_tombstones;
++DROP TABLE business_v2.payment_checkout_document_retention_events;
++
++DROP TRIGGER payment_checkout_documents_immutable
++  ON business_v2.payment_checkout_documents;
++DROP TRIGGER payment_checkout_document_capabilities_immutable
++  ON business_v2.payment_checkout_document_capabilities;
++DROP TRIGGER payment_checkout_document_email_receipts_immutable
++  ON business_v2.payment_checkout_document_email_receipts;
++DROP FUNCTION business_v2.fn_payment_checkout_document_body_guard();
++DROP FUNCTION business_v2.fn_payment_checkout_document_capability_guard();
++DROP FUNCTION business_v2.fn_payment_checkout_document_email_receipt_guard();
++
++CREATE TRIGGER payment_checkout_documents_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_documents
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_immutable();
++CREATE TRIGGER payment_checkout_document_capabilities_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_capabilities
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_immutable();
++CREATE TRIGGER payment_checkout_document_email_receipts_immutable
++  BEFORE UPDATE OR DELETE ON business_v2.payment_checkout_document_email_receipts
++  FOR EACH ROW EXECUTE FUNCTION business_v2.fn_payment_checkout_document_immutable();
++
++CREATE OR REPLACE FUNCTION business_v2.fn_payment_checkout_document_email_guard()
++RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
++BEGIN
++  IF TG_OP='DELETE' THEN RAISE EXCEPTION 'payment checkout document email deletion refused'; END IF;
++  IF (to_jsonb(NEW)-ARRAY['state','uncertain_acceptance','attempt_count','lease_token','lease_expires_at','gmail_message_id','gmail_thread_id','last_error_code','version','updated_at'])
++     IS DISTINCT FROM
++     (to_jsonb(OLD)-ARRAY['state','uncertain_acceptance','attempt_count','lease_token','lease_expires_at','gmail_message_id','gmail_thread_id','last_error_code','version','updated_at']) THEN
++    RAISE EXCEPTION 'payment checkout document email immutable contract';
++  END IF;
++  IF NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'payment checkout document email version fence'; END IF;
++  IF OLD.state='confirmed' THEN RAISE EXCEPTION 'payment checkout document email terminal state'; END IF;
++  RETURN NEW;
++END;
++$$;
++
++DROP INDEX business_v2.payment_checkout_documents_retention_due;
++ALTER TABLE business_v2.payment_checkout_documents
++  DROP CONSTRAINT payment_checkout_documents_retention_window_check,
++  DROP COLUMN retention_until,
++  DROP COLUMN retention_policy_version,
++  DROP COLUMN amount_minor,
++  DROP COLUMN currency,
++  DROP COLUMN attempt_id_sha256,
++  DROP CONSTRAINT payment_checkout_documents_document_version_check,
++  ADD CONSTRAINT payment_checkout_documents_document_version_check
++    CHECK (document_version='mcs-checkout-document-v1');
++COMMIT;
+diff --git a/scripts/build-release.mjs b/scripts/build-release.mjs
+index fa88001c..be05c223 100644
+--- a/scripts/build-release.mjs
++++ b/scripts/build-release.mjs
+@@ -310,2 +310,4 @@ try {
+     'data/business/migrations/nanoclaw-v2/rollback_163_payment_checkout_documents.sql',
++    'data/business/migrations/nanoclaw-v2/164_payment_checkout_document_retention.sql',
++    'data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql',
+     'scripts/verify-release.mjs',
+@@ -313,2 +315,3 @@ try {
+     'docs/licenses/Roboto-OFL-1.1.txt',
++    'assets/checkout-documents/tandem-logo-horizontal.png',
+     'scripts/build-student-catalog-publication.mjs',
+diff --git a/src/payment-checkout-document-api-controller.ts b/src/payment-checkout-document-api-controller.ts
+index 1cbb9f28..63276ed7 100644
+--- a/src/payment-checkout-document-api-controller.ts
++++ b/src/payment-checkout-document-api-controller.ts
+@@ -141,2 +141,4 @@ export class PaymentCheckoutDocumentApiController {
+         return this.response(403, { error: 'document_access_denied' });
++      if (code === 'checkout_document_expired')
++        return this.response(410, { error: 'document_expired' });
+       return this.response(503, { error: 'document_service_unavailable' });
+diff --git a/src/payment-checkout-documents.ts b/src/payment-checkout-documents.ts
+index c13fc1b7..a0ad3355 100644
+--- a/src/payment-checkout-documents.ts
++++ b/src/payment-checkout-documents.ts
+@@ -7,2 +7,4 @@ import {
+ } from 'node:crypto';
++import { readFileSync } from 'node:fs';
++import { fileURLToPath } from 'node:url';
+ 
+@@ -34,3 +36,11 @@ const LOCALE = 'en-US';
+ const PRODUCT = 'Mentor Coaching Foundations';
+-const DOCUMENT_VERSION = 'mcs-checkout-document-v1';
++const DOCUMENT_VERSION = 'mcs-checkout-document-v2';
++const TANDEM_LOGO_PNG = readFileSync(
++  fileURLToPath(
++    new URL(
++      '../assets/checkout-documents/tandem-logo-horizontal.png',
++      import.meta.url,
++    ),
++  ),
++);
+ // The PDF is base64-encoded into the signed inner JSON, then that JSON is
+@@ -44,2 +54,7 @@ const RECEIPT_SELLER = Object.freeze({
+   country: 'US' as const,
++  addressLines: [
++    '104 E Ovilla Rd, Ste 1278',
++    'Red Oak, TX 75154, United States',
++  ],
++  taxId: null,
+ });
+@@ -63,2 +78,11 @@ export type PaymentCheckoutDocumentKind = 'receipt' | 'paid_invoice';
+ const paidInvoiceDisabled = z.object({ enabled: z.literal(false) }).strict();
++const RETENTION_POLICY = Object.freeze({
++  version: 'mcs-checkout-documents-7y-v1',
++  years: 7 as const,
++  legalHold: 'explicit_hold_blocks_purge' as const,
++  purge: 'customer_pdf_recipient_and_sent_message' as const,
++  tombstone: 'number_date_amount_currency_hashes_and_purge_receipt' as const,
++  sweepIntervalMs: 24 * 60 * 60_000,
++  batchSize: 25,
++});
+ const paidInvoiceEnabled = z
+@@ -76,3 +100,3 @@ const paidInvoiceEnabled = z
+         country: z.string().regex(/^[A-Z]{2}$/),
+-        taxId: printable(64).nullable(),
++        taxId: z.null(),
+         supportEmail: email,
+@@ -80,11 +104,19 @@ const paidInvoiceEnabled = z
+       .strict(),
++    capturePolicy: z
++      .object({
++        version: z.literal('adyen-immediate-auto-capture-v1'),
++        mode: z.literal('immediate_automatic_capture'),
++        evidenceReference: ref,
++      })
++      .strict(),
+     taxPolicy: z
+       .object({
+-        version: ref,
+-        jurisdiction: ref,
++        version: z.literal('mcs-foundations-zero-tax-display-v1'),
++        jurisdiction: z.literal('US-TX'),
+         taxMinor: z.literal(0),
+-        taxLabel: z.literal('No tax charged'),
++        taxLabel: z.literal('Tax'),
++        classification: z.literal('not_stated'),
+       })
+       .strict(),
+-    retentionPolicy: ref,
++    retentionPolicyVersion: z.literal('mcs-checkout-documents-7y-v1'),
+     correctionPolicy: z.literal('credit_note_or_replacement_only'),
+@@ -102,2 +134,27 @@ export const websiteCheckoutDocumentConfigSchema = z
+       .default(5 * 60_000),
++    retentionPolicy: z
++      .object({
++        version: z
++          .literal('mcs-checkout-documents-7y-v1')
++          .default('mcs-checkout-documents-7y-v1'),
++        years: z.literal(7).default(7),
++        legalHold: z
++          .literal('explicit_hold_blocks_purge')
++          .default('explicit_hold_blocks_purge'),
++        purge: z
++          .literal('customer_pdf_recipient_and_sent_message')
++          .default('customer_pdf_recipient_and_sent_message'),
++        tombstone: z
++          .literal('number_date_amount_currency_hashes_and_purge_receipt')
++          .default('number_date_amount_currency_hashes_and_purge_receipt'),
++        sweepIntervalMs: z
++          .number()
++          .int()
++          .min(60 * 60_000)
++          .max(24 * 60 * 60_000)
++          .default(24 * 60 * 60_000),
++        batchSize: z.number().int().min(1).max(100).default(25),
++      })
++      .strict()
++      .default(RETENTION_POLICY),
+     paidInvoice: z
+@@ -110,2 +167,3 @@ export const websiteCheckoutDocumentConfigSchema = z
+     downloadCapabilityTtlMs: 5 * 60_000,
++    retentionPolicy: RETENTION_POLICY,
+     paidInvoice: { enabled: false },
+@@ -152,3 +210,4 @@ export function parseWebsiteCheckoutDocumentConfig(
+       activationReceiptSha256 !==
+-      websiteCheckoutPaidInvoiceActivationHash(content)
++        websiteCheckoutPaidInvoiceActivationHash(content) ||
++      content.retentionPolicyVersion !== parsed.data.retentionPolicy.version
+     )
+@@ -180,3 +239,3 @@ export const checkoutDocumentSnapshotSchema = z
+   .object({
+-    schemaVersion: z.literal(1),
++    schemaVersion: z.literal(2),
+     documentVersion: z.literal(DOCUMENT_VERSION),
+@@ -221,3 +280,5 @@ export const checkoutDocumentSnapshotSchema = z
+         method: z.literal('card'),
+-        status: z.literal('authorized_for_automatic_capture'),
++        status: z.literal('paid'),
++        captureMode: z.literal('immediate_automatic_capture'),
++        providerEvent: z.literal('authorisation'),
+         tandemReference: z.string().regex(/^TCA-[A-F0-9]{12}$/),
+@@ -225,3 +286,2 @@ export const checkoutDocumentSnapshotSchema = z
+         recordedAt: z.iso.datetime({ offset: true }),
+-        settlement: z.literal('unproven'),
+       })
+@@ -236,2 +296,5 @@ export const checkoutDocumentSnapshotSchema = z
+         taxJurisdiction: ref.nullable(),
++        taxClassification: z.literal('not_stated').nullable(),
++        retentionPolicyVersion: ref,
++        purgeAfter: z.iso.datetime({ offset: true }),
+         correctionPolicy: ref,
+@@ -258,4 +321,10 @@ export function parseCheckoutDocumentSnapshot(
+       (value.purchase.discountPolicyReference !== null) ||
++    value.seller.taxId !== null ||
++    value.policy.purgeAfter !== retentionUntil(value.issuedAt, 7) ||
+     (value.documentKind === 'receipt') !==
+       value.documentNumber.endsWith('-R') ||
++    (value.documentKind === 'receipt' &&
++      (value.policy.taxPolicyVersion !== null ||
++        value.policy.taxJurisdiction !== null ||
++        value.policy.taxClassification !== null)) ||
+     (value.documentKind === 'paid_invoice') !==
+@@ -264,2 +333,3 @@ export function parseCheckoutDocumentSnapshot(
+         value.policy.taxJurisdiction !== null &&
++        value.policy.taxClassification === 'not_stated' &&
+         value.seller.addressLines.length > 0)
+@@ -304,2 +374,10 @@ function money(minor: number): string {
+ 
++function retentionUntil(issuedAt: string, years: number): string {
++  const value = new Date(issuedAt);
++  if (Number.isNaN(value.getTime()) || !Number.isInteger(years) || years < 1)
++    throw new PaymentDomainError('invalid_checkout_document_configuration');
++  value.setUTCFullYear(value.getUTCFullYear() + years);
++  return value.toISOString();
++}
++
+ export async function renderCheckoutDocumentPdf(
+@@ -307,2 +385,3 @@ export async function renderCheckoutDocumentPdf(
+   fontBytes: Buffer = Buffer.from(ROBOTO_REGULAR_TTF_BASE64, 'base64'),
++  logoBytes: Buffer = TANDEM_LOGO_PNG,
+ ): Promise<Buffer> {
+@@ -312,2 +391,3 @@ export async function renderCheckoutDocumentPdf(
+   const font = await document.embedFont(fontBytes, { subset: true });
++  const logo = await document.embedPng(logoBytes);
+   document.setTitle(
+@@ -322,96 +402,276 @@ export async function renderCheckoutDocumentPdf(
+   const page = document.addPage([612, 792]);
+-  const left = 54;
+-  const right = 558;
+-  const width = right - left;
+-  const green = rgb(0.075, 0.341, 0.251);
+-  const ink = rgb(0.08, 0.16, 0.12);
+-  const muted = rgb(0.32, 0.39, 0.35);
+-  let y = 738;
+-  const line = (value: string, size = 10, color = ink, gap = 15) => {
+-    for (const part of wrap(value, font, size, width)) {
+-      page.drawText(part, { x: left, y, size, font, color });
+-      y -= gap;
++  const left = 52;
++  const right = 560;
++  const green = rgb(0.031, 0.443, 0.247);
++  const navy = rgb(0, 0.239, 0.376);
++  const ink = rgb(0.09, 0.21, 0.165);
++  const muted = rgb(0.39, 0.46, 0.42);
++  const lineColor = rgb(0.84, 0.89, 0.86);
++  const pale = rgb(0.953, 0.976, 0.961);
++  const paleBlue = rgb(0.937, 0.965, 0.98);
++  const text = (value: string, x: number, y: number, size = 9, color = ink) =>
++    page.drawText(safePdfText(value, font), { x, y, size, font, color });
++  const rightText = (
++    value: string,
++    x: number,
++    y: number,
++    size = 9,
++    color = ink,
++  ) => {
++    const safe = safePdfText(value, font);
++    page.drawText(safe, {
++      x: x - font.widthOfTextAtSize(safe, size),
++      y,
++      size,
++      font,
++      color,
++    });
++  };
++  const label = (value: string, x: number, y: number) =>
++    text(value.toUpperCase(), x, y, 7.5, green);
++  const columnText = (
++    value: string,
++    x: number,
++    y: number,
++    width: number,
++    size = 8.5,
++    maxLines = 2,
++  ) => {
++    const lines = wrap(value, font, size, width).slice(0, maxLines);
++    for (const line of lines) {
++      text(line, x, y, size);
++      y -= 15;
+     }
++    return y;
+   };
+-  page.drawText(safePdfText(snapshot.seller.displayName, font), {
++  const issued = new Date(snapshot.issuedAt);
++  const months = [
++    'January',
++    'February',
++    'March',
++    'April',
++    'May',
++    'June',
++    'July',
++    'August',
++    'September',
++    'October',
++    'November',
++    'December',
++  ];
++  const issuedDate = `${months[issued.getUTCMonth()]} ${issued.getUTCDate()}, ${issued.getUTCFullYear()}`;
++
++  page.drawRectangle({
++    x: 0,
++    y: 0,
++    width: 612,
++    height: 792,
++    color: rgb(0.97, 0.985, 0.977),
++  });
++  page.drawRectangle({
++    x: 30,
++    y: 42,
++    width: 552,
++    height: 712,
++    color: rgb(1, 1, 1),
++    borderColor: lineColor,
++    borderWidth: 0.8,
++  });
++  const logoSize = logo.scaleToFit(222, 40);
++  page.drawImage(logo, {
+     x: left,
+-    y,
+-    size: 18,
+-    font,
+-    color: green,
++    y: 688,
++    width: logoSize.width,
++    height: logoSize.height,
+   });
+-  y -= 32;
+-  line(
+-    snapshot.documentKind === 'receipt' ? 'PAYMENT RECEIPT' : 'PAID INVOICE',
+-    22,
+-    ink,
+-    28,
+-  );
+-  line(snapshot.documentNumber, 11, muted, 20);
+-  line(`Issued: ${new Date(snapshot.issuedAt).toISOString()}`, 9, muted, 18);
++  page.drawRectangle({ x: 485, y: 696, width: 68, height: 22, color: green });
++  const paid = 'PAID';
++  text(paid, 519 - font.widthOfTextAtSize(paid, 8) / 2, 703, 8, rgb(1, 1, 1));
+   page.drawLine({
+-    start: { x: left, y },
+-    end: { x: right, y },
+-    thickness: 1,
+-    color: green,
++    start: { x: left, y: 670 },
++    end: { x: right, y: 670 },
++    thickness: 0.8,
++    color: lineColor,
+   });
+-  y -= 24;
+-  line('Seller', 11, green, 17);
+-  line(snapshot.seller.legalName);
+-  for (const addressLine of snapshot.seller.addressLines) line(addressLine);
+-  line(snapshot.seller.supportEmail, 9, muted, 15);
+-  y -= 8;
+-  line(
+-    snapshot.documentKind === 'paid_invoice' ? 'Bill to' : 'Purchaser',
+-    11,
+-    green,
+-    17,
++  text(
++    snapshot.documentKind === 'receipt' ? 'Payment receipt' : 'Paid invoice',
++    left,
++    626,
++    24,
++    ink,
+   );
+-  line(snapshot.buyer.billingProfile?.companyLegalName ?? snapshot.buyer.name);
+-  line(
+-    snapshot.buyer.billingProfile?.invoiceEmail ?? snapshot.buyer.email,
+-    9,
++  text(
++    snapshot.documentKind === 'receipt'
++      ? 'Confirmation of your completed card payment'
++      : 'Business invoice - balance due $0.00 USD',
++    left,
++    606,
++    8.5,
+     muted,
+-    15,
+   );
+-  if (snapshot.buyer.billingProfile) {
+-    const billing = snapshot.buyer.billingProfile;
+-    line(`${billing.address.street} ${billing.address.houseNumberOrName}`);
+-    line(
+-      `${billing.address.city}, ${billing.address.stateOrProvince ? `${billing.address.stateOrProvince} ` : ''}${billing.address.postalCode}`,
++  rightText(snapshot.documentNumber, right, 626, 9, navy);
++  rightText(`Issued ${issuedDate}`, right, 607, 8, muted);
++
++  label('Seller', left, 568);
++  text(snapshot.seller.legalName, left, 548, 10);
++  let sellerY = 531;
++  for (const addressLine of snapshot.seller.addressLines) {
++    text(addressLine, left, sellerY, 8.5);
++    sellerY -= 15;
++  }
++  text(snapshot.seller.supportEmail, left, sellerY, 8.5);
++
++  const buyerX = 344;
++  label(
++    snapshot.documentKind === 'paid_invoice' ? 'Bill to' : 'Paid by',
++    buyerX,
++    568,
++  );
++  const billing = snapshot.buyer.billingProfile;
++  let buyerY = columnText(
++    billing?.companyLegalName ?? snapshot.buyer.name,
++    buyerX,
++    548,
++    210,
++    10,
++    2,
++  );
++  if (snapshot.documentKind === 'paid_invoice' && billing) {
++    buyerY = columnText(`Attn: ${snapshot.buyer.name}`, buyerX, buyerY, 210);
++    buyerY = columnText(
++      `${billing.address.street} ${billing.address.houseNumberOrName}`,
++      buyerX,
++      buyerY,
++      210,
++      8.5,
+     );
+-    line(billing.address.country);
+-    if (billing.taxId) line(`Tax/VAT ID: ${billing.taxId}`);
++    buyerY = columnText(
++      `${billing.address.city}, ${billing.address.stateOrProvince ? `${billing.address.stateOrProvince} ` : ''}${billing.address.postalCode}, ${billing.address.country}`,
++      buyerX,
++      buyerY,
++      210,
++      8.5,
++    );
++    if (billing.taxId)
++      columnText(`Tax/VAT ID: ${billing.taxId}`, buyerX, buyerY, 210);
++  } else {
++    columnText(snapshot.buyer.email, buyerX, buyerY, 210, 8.5, 2);
+   }
+-  y -= 12;
+-  line('Purchase', 11, green, 17);
+-  line(`${snapshot.purchase.productName} × 1`);
+-  line(`Original amount: ${money(snapshot.purchase.unitAmountMinor)}`);
++
++  page.drawRectangle({ x: left, y: 444, width: 508, height: 28, color: pale });
++  text('DESCRIPTION', 64, 454, 7.5, muted);
++  if (snapshot.documentKind === 'paid_invoice')
++    text('QTY', 411, 454, 7.5, muted);
++  rightText('AMOUNT', 548, 454, 7.5, muted);
++  text(snapshot.purchase.productName, 64, 420, 9.5);
++  text(
++    snapshot.documentKind === 'paid_invoice'
++      ? 'Online professional education'
++      : 'Quantity 1  |  English  |  Online course',
++    64,
++    404,
++    8,
++    muted,
++  );
++  if (snapshot.documentKind === 'paid_invoice') text('1', 418, 420, 9);
++  rightText(money(snapshot.purchase.unitAmountMinor), 548, 420, 9.5);
++  page.drawLine({
++    start: { x: left, y: 384 },
++    end: { x: right, y: 384 },
++    thickness: 0.8,
++    color: lineColor,
++  });
++  const amountRow = (rowLabel: string, value: string, y: number, size = 9) => {
++    text(rowLabel, 392, y, size);
++    rightText(value, right, y, size);
++  };
++  amountRow('Subtotal', money(snapshot.purchase.unitAmountMinor), 356);
+   if (snapshot.purchase.discountMinor)
+-    line(`Discount: -${money(snapshot.purchase.discountMinor)}`);
+-  line(`Tax: ${money(snapshot.purchase.taxMinor)}`);
+-  line(`Total: ${money(snapshot.purchase.totalMinor)}`, 12, ink, 20);
+-  y -= 8;
+-  line('Payment', 11, green, 17);
+-  line('Card — authorized for automatic capture');
+-  line(`Recorded: ${new Date(snapshot.payment.recordedAt).toISOString()}`);
+-  line(`Reference: ${snapshot.payment.tandemReference}`);
+-  line('Settlement status is not represented by this document.', 8, muted, 13);
+-  if (snapshot.documentKind === 'paid_invoice') {
+-    y -= 8;
+-    line(`Tax policy: ${snapshot.policy.taxPolicyVersion}`, 8, muted, 13);
+-    line(`Jurisdiction: ${snapshot.policy.taxJurisdiction}`, 8, muted, 13);
+-    line(
+-      'Corrections require a replacement document or credit note.',
++    amountRow('Discount', `-${money(snapshot.purchase.discountMinor)}`, 334);
++  amountRow(
++    'Tax',
++    money(snapshot.purchase.taxMinor),
++    snapshot.purchase.discountMinor ? 312 : 334,
++  );
++  const totalY = snapshot.purchase.discountMinor ? 282 : 305;
++  if (snapshot.documentKind === 'receipt') {
++    amountRow('Total paid', money(snapshot.purchase.totalMinor), totalY, 10.5);
++  } else {
++    amountRow('Total', money(snapshot.purchase.totalMinor), totalY, 9);
++    amountRow(
++      'Amount paid',
++      money(snapshot.purchase.totalMinor),
++      totalY - 30,
++      9,
++    );
++    amountRow('Balance due', '$0.00 USD', totalY - 56, 10.5);
++  }
++
++  const paymentY = snapshot.documentKind === 'receipt' ? 208 : 174;
++  page.drawRectangle({
++    x: left,
++    y: paymentY,
++    width: 508,
++    height: snapshot.documentKind === 'receipt' ? 66 : 54,
++    color: paleBlue,
++  });
++  text(
++    'PAYMENT STATUS',
++    68,
++    paymentY + (snapshot.documentKind === 'receipt' ? 42 : 33),
++    8,
++    navy,
++  );
++  text(
++    snapshot.documentKind === 'receipt'
++      ? 'Paid by card'
++      : `Paid by card on ${issuedDate}`,
++    68,
++    paymentY + 15,
++    10,
++  );
++  if (snapshot.documentKind === 'receipt')
++    text(
++      `${issuedDate}  |  Reference ${snapshot.payment.tandemReference}`,
++      169,
++      paymentY + 15,
++      8.5,
++      muted,
++    );
++
++  if (snapshot.documentKind === 'receipt') {
++    text('Thank you for learning with Tandem.', left, 164, 12, green);
++    text(
++      `Questions about this payment? Contact ${snapshot.seller.supportEmail}.`,
++      left,
++      145,
++      8.5,
++      muted,
++    );
++  } else {
++    text(
++      'Tandem seller EIN is not displayed. A Form W-9 is available securely when required.',
++      left,
++      137,
++      8,
++      muted,
++    );
++    text(
++      'Corrections are issued as a replacement document or credit note; the original invoice is not rewritten.',
++      left,
++      117,
+       8,
+       muted,
+-      13,
+     );
+   }
+-  page.drawText(
+-    safePdfText(
+-      `Document ${snapshot.documentVersion} · Terms ${snapshot.policy.enrollmentTermsVersion} · Privacy ${snapshot.policy.privacyVersion}`,
+-      font,
+-    ),
+-    { x: left, y: 34, size: 7, font, color: muted },
++  page.drawLine({
++    start: { x: left, y: 66 },
++    end: { x: right, y: 66 },
++    thickness: 0.6,
++    color: lineColor,
++  });
++  const footerValue = `Document ${snapshot.documentVersion}  |  Terms ${snapshot.policy.enrollmentTermsVersion}  |  Privacy ${snapshot.policy.privacyVersion}`;
++  const footerLines = wrap(footerValue, font, 6.8, right - left).slice(0, 2);
++  footerLines.forEach((value, index) =>
++    text(value, left, 50 - index * 9, 6.8, muted),
+   );
+@@ -623,2 +883,3 @@ type DocumentRow = {
+   issued_at: Date | string;
++  retention_until: Date | string;
+ };
+@@ -638,2 +899,12 @@ export interface PaymentCheckoutDocumentEmailJob {
+ 
++export interface PaymentCheckoutDocumentPurgeCandidate {
++  document: PaymentCheckoutDocumentRecord;
++  emailJobs: readonly {
++    jobId: string;
++    recipient: string;
++    gmailMessageId: string | null;
++    gmailThreadId: string | null;
++  }[];
++}
++
+ function emailJob(row: EmailRow): PaymentCheckoutDocumentEmailJob {
+@@ -780,2 +1051,9 @@ export class PgPaymentCheckoutDocumentStore {
+         );
++        const purged = await client.query(
++          `SELECT 1 FROM business_v2.payment_checkout_document_tombstones
++           WHERE attempt_id_sha256=$1 AND document_kind=$2`,
++          [sha(authority.attemptId), kind],
++        );
++        if (purged.rowCount)
++          throw new PaymentDomainError('checkout_document_expired');
+         const prior = await client.query<DocumentRow>(
+@@ -805,3 +1083,3 @@ export class PgPaymentCheckoutDocumentStore {
+         const snapshot = parseCheckoutDocumentSnapshot({
+-          schemaVersion: 1,
++          schemaVersion: 2,
+           documentVersion: DOCUMENT_VERSION,
+@@ -813,3 +1091,3 @@ export class PgPaymentCheckoutDocumentStore {
+               ? { ...invoice.seller }
+-              : { ...RECEIPT_SELLER, addressLines: [], taxId: null },
++              : { ...RECEIPT_SELLER },
+           buyer: {
+@@ -840,3 +1118,5 @@ export class PgPaymentCheckoutDocumentStore {
+             method: 'card',
+-            status: 'authorized_for_automatic_capture',
++            status: 'paid',
++            captureMode: 'immediate_automatic_capture',
++            providerEvent: 'authorisation',
+             tandemReference: authority.tandemReference,
+@@ -844,3 +1124,2 @@ export class PgPaymentCheckoutDocumentStore {
+             recordedAt: authority.paymentRecordedAt,
+-            settlement: 'unproven',
+           },
+@@ -853,2 +1132,8 @@ export class PgPaymentCheckoutDocumentStore {
+             taxJurisdiction: invoice?.taxPolicy.jurisdiction ?? null,
++            taxClassification: invoice?.taxPolicy.classification ?? null,
++            retentionPolicyVersion: config.retentionPolicy.version,
++            purgeAfter: retentionUntil(
++              authority.paymentRecordedAt,
++              config.retentionPolicy.years,
++            ),
+             correctionPolicy:
+@@ -863,4 +1148,5 @@ export class PgPaymentCheckoutDocumentStore {
+            (document_id,scope_sha256,caller,attempt_id,document_kind,document_version,
+-            document_number,snapshot_sha256,encrypted_snapshot,pdf_sha256,encrypted_pdf,issued_at)
+-           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
++            document_number,snapshot_sha256,encrypted_snapshot,pdf_sha256,encrypted_pdf,
++            issued_at,retention_until,retention_policy_version,amount_minor,currency,attempt_id_sha256)
++           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+           [
+@@ -881,2 +1167,7 @@ export class PgPaymentCheckoutDocumentStore {
+             authority.paymentRecordedAt,
++            snapshot.policy.purgeAfter,
++            config.retentionPolicy.version,
++            snapshot.purchase.totalMinor,
++            snapshot.purchase.currency,
++            sha(authority.attemptId),
+           ],
+@@ -1196,2 +1487,144 @@ export class PgPaymentCheckoutDocumentStore {
+   }
++
++  async recordRetentionEvent(
++    documentId: string,
++    eventKind: 'hold_placed' | 'hold_released',
++    decisionReference: string,
++    receiptSha256: string,
++    occurredAt: string,
++  ): Promise<void> {
++    ref.parse(decisionReference);
++    digest.parse(receiptSha256);
++    z.iso.datetime({ offset: true }).parse(occurredAt);
++    await this.transaction(async (client) => {
++      const document = await client.query(
++        `SELECT document_id FROM business_v2.payment_checkout_documents
++         WHERE document_id=$1 FOR UPDATE`,
++        [documentId],
++      );
++      if (document.rowCount !== 1)
++        throw new PaymentDomainError('checkout_document_access_denied');
++      const latest = await client.query<{ event_kind: string }>(
++        `SELECT event_kind FROM business_v2.payment_checkout_document_retention_events
++         WHERE document_id=$1 ORDER BY occurred_at DESC,event_id DESC LIMIT 1`,
++        [documentId],
++      );
++      const expected =
++        eventKind === 'hold_placed'
++          ? ['hold_released', undefined]
++          : ['hold_placed'];
++      if (!expected.includes(latest.rows[0]?.event_kind))
++        throw new PaymentDomainError('checkout_document_retention_conflict');
++      const inserted = await client.query(
++        `INSERT INTO business_v2.payment_checkout_document_retention_events
++         (event_id,document_id,event_kind,decision_reference,receipt_sha256,occurred_at)
++         VALUES($1,$2,$3,$4,$5,$6)`,
++        [
++          this.uuid(),
++          documentId,
++          eventKind,
++          decisionReference,
++          receiptSha256,
++          occurredAt,
++        ],
++      );
++      if (inserted.rowCount !== 1)
++        throw new PaymentDomainError('checkout_document_retention_conflict');
++    });
++  }
++
++  async dueForPurge(
++    now: string,
++    limit: number,
++  ): Promise<readonly PaymentCheckoutDocumentPurgeCandidate[]> {
++    z.iso.datetime({ offset: true }).parse(now);
++    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
++      throw new PaymentDomainError('invalid_checkout_document_configuration');
++    return this.transaction(async (client) => {
++      const documents = await client.query<DocumentRow>(
++        `SELECT d.* FROM business_v2.payment_checkout_documents d
++         WHERE d.retention_until<=$1
++           AND COALESCE((
++             SELECT e.event_kind
++             FROM business_v2.payment_checkout_document_retention_events e
++             WHERE e.document_id=d.document_id
++             ORDER BY e.occurred_at DESC,e.event_id DESC LIMIT 1
++           ),'hold_released')<>'hold_placed'
++         ORDER BY d.retention_until,d.document_id LIMIT $2`,
++        [now, limit],
++      );
++      const result: PaymentCheckoutDocumentPurgeCandidate[] = [];
++      for (const row of documents.rows) {
++        const document = this.record(row);
++        const emailRows = await client.query<EmailRow>(
++          `SELECT job_id,encrypted_recipient_email,gmail_message_id,gmail_thread_id
++           FROM business_v2.payment_checkout_document_email_jobs
++           WHERE document_id=$1 ORDER BY job_id`,
++          [document.documentId],
++        );
++        const emailJobs = emailRows.rows.map((emailRow) => ({
++          jobId: String(emailRow.job_id),
++          recipient: email.parse(
++            this.vault.open(
++              String(emailRow.encrypted_recipient_email),
++              `${document.documentId}:document-email-recipient`,
++            ),
++          ),
++          gmailMessageId:
++            emailRow.gmail_message_id === null
++              ? null
++              : String(emailRow.gmail_message_id),
++          gmailThreadId:
++            emailRow.gmail_thread_id === null
++              ? null
++              : String(emailRow.gmail_thread_id),
++        }));
++        result.push({ document, emailJobs });
++      }
++      return result;
++    });
++  }
++
++  async purge(
++    candidate: PaymentCheckoutDocumentPurgeCandidate,
++    externalDeletionEvidenceSha256: readonly string[],
++    purgedAt: string,
++  ): Promise<'purged' | 'already_purged'> {
++    z.iso.datetime({ offset: true }).parse(purgedAt);
++    for (const value of externalDeletionEvidenceSha256) digest.parse(value);
++    if (
++      externalDeletionEvidenceSha256.length !== candidate.emailJobs.length ||
++      new Set(externalDeletionEvidenceSha256).size !==
++        externalDeletionEvidenceSha256.length
++    )
++      throw new PaymentDomainError('checkout_document_retention_conflict');
++    const purgeReceiptSha256 = sha(
++      stableJson({
++        schemaVersion: 1,
++        documentId: candidate.document.documentId,
++        documentKind: candidate.document.kind,
++        documentNumber: candidate.document.documentNumber,
++        issuedAt: candidate.document.issuedAt,
++        amountMinor: candidate.document.snapshot.purchase.totalMinor,
++        currency: candidate.document.snapshot.purchase.currency,
++        snapshotSha256: candidate.document.snapshotSha256,
++        pdfSha256: candidate.document.pdfSha256,
++        retentionPolicyVersion:
++          candidate.document.snapshot.policy.retentionPolicyVersion,
++        externalDeletionEvidenceSha256: [
++          ...externalDeletionEvidenceSha256,
++        ].sort(),
++      }),
++    );
++    return this.transaction(async (client) => {
++      const result = await client.query<{ outcome: string }>(
++        `SELECT business_v2.purge_payment_checkout_document($1,$2,$3) outcome`,
++        [candidate.document.documentId, purgeReceiptSha256, purgedAt],
++      );
++      const outcome = result.rows[0]?.outcome;
++      if (outcome !== 'purged' && outcome !== 'already_purged')
++        throw new PaymentDomainError('checkout_document_retention_conflict');
++      return outcome;
++    });
++  }
+ }
+@@ -1221,2 +1654,10 @@ export interface WebsiteCheckoutDocumentGmail {
+   }): Promise<{ messageId: string; threadId: string; evidenceSha256: string }>;
++  deleteExact(input: {
++    messageId: string | null;
++    threadId: string | null;
++    to: string;
++    subject: string;
++    filename: string;
++    pdfSha256: string;
++  }): Promise<{ evidenceSha256: string }>;
+ }
+@@ -1407,2 +1848,143 @@ export class CanonicalGmailWebsiteCheckoutDocumentSender implements WebsiteCheck
+   }
++
++  async deleteExact(input: {
++    messageId: string | null;
++    threadId: string | null;
++    to: string;
++    subject: string;
++    filename: string;
++    pdfSha256: string;
++  }) {
++    let messageId = input.messageId;
++    let threadId = input.threadId;
++    if ((messageId === null) !== (threadId === null))
++      throw new Error('document_gmail_sent_match_invalid');
++    if (messageId && threadId) {
++      try {
++        await this.exact({ ...input, messageId, threadId });
++      } catch (error) {
++        const status =
++          error && typeof error === 'object' && 'code' in error
++            ? Number(error.code)
++            : 0;
++        if (status !== 404) throw error;
++        return {
++          evidenceSha256: sha(
++            stableJson({
++              outcome: 'already_absent',
++              messageIdSha256: sha(messageId),
++              threadIdSha256: sha(threadId),
++              pdfSha256: input.pdfSha256,
++            }),
++          ),
++        };
++      }
++    } else {
++      const found = await this.findExact(input);
++      if (!found)
++        return {
++          evidenceSha256: sha(
++            stableJson({
++              outcome: 'no_sent_match',
++              toSha256: sha(input.to.toLowerCase()),
++              subjectSha256: sha(input.subject),
++              filename: input.filename,
++              pdfSha256: input.pdfSha256,
++            }),
++          ),
++        };
++      messageId = found.messageId;
++      threadId = found.threadId;
++    }
++    this.writeGuard({
++      system: 'gmail',
++      actionClass: 'c3_external_communication',
++      source: 'host:website-checkout-document-retention',
++    });
++    await this.gmail.users.messages.delete({ userId: 'me', id: messageId });
++    return {
++      evidenceSha256: sha(
++        stableJson({
++          outcome: 'deleted',
++          messageIdSha256: sha(messageId),
++          threadIdSha256: sha(threadId),
++          pdfSha256: input.pdfSha256,
++        }),
++      ),
++    };
++  }
++}
++
++export class PaymentCheckoutDocumentRetentionWorker {
++  private timer: ReturnType<typeof setInterval> | null = null;
++  private running = false;
++
++  constructor(
++    private readonly config: WebsiteCheckoutDocumentConfig,
++    private readonly store: PgPaymentCheckoutDocumentStore,
++    private readonly gmail?: WebsiteCheckoutDocumentGmail,
++    private readonly now: () => Date = () => new Date(),
++  ) {}
++
++  async sweep(): Promise<{ examined: number; purged: number; held: number }> {
++    if (this.running) return { examined: 0, purged: 0, held: 0 };
++    this.running = true;
++    let examined = 0;
++    let purged = 0;
++    let held = 0;
++    try {
++      const now = this.now().toISOString();
++      const candidates = await this.store.dueForPurge(
++        now,
++        this.config.retentionPolicy.batchSize,
++      );
++      for (const candidate of candidates) {
++        examined++;
++        try {
++          const evidence: string[] = [];
++          if (candidate.emailJobs.length && !this.gmail) {
++            held++;
++            continue;
++          }
++          for (const job of candidate.emailJobs) {
++            const filename = `${candidate.document.documentNumber}-${candidate.document.kind === 'receipt' ? 'receipt' : 'paid-invoice'}.pdf`;
++            const label =
++              candidate.document.kind === 'receipt'
++                ? 'receipt'
++                : 'paid invoice';
++            const deleted = await this.gmail!.deleteExact({
++              messageId: job.gmailMessageId,
++              threadId: job.gmailThreadId,
++              to: job.recipient,
++              subject: `Your ${PRODUCT} ${label} — ${candidate.document.documentNumber}`,
++              filename,
++              pdfSha256: candidate.document.pdfSha256,
++            });
++            evidence.push(deleted.evidenceSha256);
++          }
++          await this.store.purge(candidate, evidence, now);
++          purged++;
++        } catch {
++          held++;
++        }
++      }
++      return { examined, purged, held };
++    } finally {
++      this.running = false;
++    }
++  }
++
++  start(): void {
++    if (this.timer) return;
++    this.timer = setInterval(
++      () => void this.sweep(),
++      this.config.retentionPolicy.sweepIntervalMs,
++    );
++    this.timer.unref();
++  }
++
++  stop(): void {
++    if (this.timer) clearInterval(this.timer);
++    this.timer = null;
++  }
+ }
+diff --git a/src/website-checkout-live-runner.ts b/src/website-checkout-live-runner.ts
+index 47dc0061..02297aa4 100644
+--- a/src/website-checkout-live-runner.ts
++++ b/src/website-checkout-live-runner.ts
+@@ -24,2 +24,3 @@ import {
+ import {
++  PaymentCheckoutDocumentRetentionWorker,
+   createCanonicalWebsiteCheckoutDocumentGmail,
+@@ -108,2 +109,3 @@ const privateConfigSchema = z
+           'nanoclaw-v2:148,149-163',
++          'nanoclaw-v2:148,149-164',
+         ]),
+@@ -301,2 +303,8 @@ export function parseWebsiteCheckoutLivePrivateConfig(
+       parsed.documents = parseWebsiteCheckoutDocumentConfig(parsed.documents);
++      if (
++        parsed.documents.paidInvoice.enabled &&
++        parsed.documents.paidInvoice.capturePolicy.evidenceReference !==
++          parsed.backend.cardCaptureConfigurationEvidence
++      )
++        throw new Error('document capture policy mismatch');
+     } catch {
+@@ -339,5 +347,7 @@ export function parseWebsiteCheckoutLivePrivateConfig(
+     (parsed.chaosObservability.enabled &&
+-      (!['nanoclaw-v2:148,149-162', 'nanoclaw-v2:148,149-163'].includes(
+-        parsed.database.schemaContract,
+-      ) ||
++      (![
++        'nanoclaw-v2:148,149-162',
++        'nanoclaw-v2:148,149-163',
++        'nanoclaw-v2:148,149-164',
++      ].includes(parsed.database.schemaContract) ||
+         parsed.chaosObservability.webhookToken ===
+@@ -346,2 +356,4 @@ export function parseWebsiteCheckoutLivePrivateConfig(
+         keys.includes(parsed.chaosObservability.identityHmacSecret))) ||
++    (parsed.documents.paidInvoice.enabled &&
++      parsed.database.schemaContract !== 'nanoclaw-v2:148,149-164') ||
+     (parsed.activation.newAttemptsEnabled &&
+@@ -419,2 +431,4 @@ const requiredRelations = [
+   'payment_checkout_document_email_receipts',
++  'payment_checkout_document_retention_events',
++  'payment_checkout_document_tombstones',
+ ] as const;
+@@ -471,6 +485,8 @@ export async function verifyWebsiteCheckoutLiveSchema(
+        (table_name='payment_enrollment_admissions' AND column_name IN
+-         ('method_source_kind','method_event_id'))
++         ('method_source_kind','method_event_id')) OR
++       (table_name='payment_checkout_documents' AND column_name IN
++         ('retention_until','retention_policy_version','amount_minor','currency','attempt_id_sha256'))
+      )`,
+   );
+-  if (Number(columns.rows[0]?.count) !== 30)
++  if (Number(columns.rows[0]?.count) !== 35)
+     throw new PaymentDomainError('website_checkout_live_schema_mismatch');
+@@ -550,2 +566,4 @@ export async function startWebsiteCheckoutLiveService(
+   let chaosWorker: PaymentChaosObservabilityWorker | null = null;
++  let documentRetentionWorker: PaymentCheckoutDocumentRetentionWorker | null =
++    null;
+   const guard = async (client: PoolClient) =>
+@@ -590,2 +608,3 @@ export async function startWebsiteCheckoutLiveService(
+     ready = false;
++    documentRetentionWorker?.stop();
+     if (chaosWorker) await chaosWorker.stop();
+@@ -829,2 +848,10 @@ export async function startWebsiteCheckoutLiveService(
+     ready = true;
++    if (service.documentStore) {
++      documentRetentionWorker = new PaymentCheckoutDocumentRetentionWorker(
++        config.documents,
++        service.documentStore,
++        documentGmail,
++      );
++      documentRetentionWorker.start();
++    }
+     if (config.heartbeatAccess.enabled || receiptWelcomeOwner) {
+diff --git a/src/website-checkout-service.ts b/src/website-checkout-service.ts
+index b7e5fd8c..758d4b2f 100644
+--- a/src/website-checkout-service.ts
++++ b/src/website-checkout-service.ts
+@@ -326,2 +326,12 @@ export function createWebsiteCheckoutService(
+   );
++  const documentStore =
++    !isTest && config.documents
++      ? new PgPaymentCheckoutDocumentStore(
++          dependencies.transaction,
++          values.caller,
++          payment.scope,
++          vault,
++          config.documentEncryptionKey!,
++        )
++      : null;
+   const checkout = new PaymentHttpAdapter(
+@@ -373,9 +383,3 @@ export function createWebsiteCheckoutService(
+                 ),
+-                new PgPaymentCheckoutDocumentStore(
+-                  dependencies.transaction,
+-                  values.caller,
+-                  payment.scope,
+-                  vault,
+-                  config.documentEncryptionKey!,
+-                ),
++                documentStore!,
+                 dependencies.documentGmail,
+@@ -432,2 +436,3 @@ export function createWebsiteCheckoutService(
+     fulfillAttempt,
++    documentStore,
+   });

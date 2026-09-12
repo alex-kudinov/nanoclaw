@@ -139,6 +139,8 @@ export class PaymentCheckoutDocumentApiController {
         return this.response(409, { error: 'receipt_unavailable' });
       if (code === 'checkout_document_access_denied')
         return this.response(403, { error: 'document_access_denied' });
+      if (code === 'checkout_document_expired')
+        return this.response(410, { error: 'document_expired' });
       return this.response(503, { error: 'document_service_unavailable' });
     } finally {
       release?.();

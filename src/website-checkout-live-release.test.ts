@@ -27,6 +27,7 @@ describe('website checkout immutable release packaging', () => {
       '161_payment_checkout_billing_profile',
       '162_payment_provider_optimization_evidence',
       '163_payment_checkout_documents',
+      '164_payment_checkout_document_retention',
     ];
     for (const migration of expected) {
       expect(builder).toContain(
@@ -39,6 +40,9 @@ describe('website checkout immutable release packaging', () => {
     expect(builder).not.toContain("'data/business/migrations/nanoclaw-v2',");
     expect(builder).toContain('website-checkout-live-entrypoint.js');
     expect(builder).toContain('scripts/bundle-payment-documents.mjs');
+    expect(builder).toContain(
+      'assets/checkout-documents/tandem-logo-horizontal.png',
+    );
     expect(
       builder.indexOf("'scripts', 'bundle-payment-documents.mjs'"),
     ).toBeLessThan(builder.indexOf("[checkoutEntrypoint, '--help']"));
@@ -109,7 +113,7 @@ describe('website checkout immutable release packaging', () => {
       name: 'nanoclaw_business',
       user: 'xbohdpukc',
       role: 'nanoclaw_admin',
-      schemaContract: 'nanoclaw-v2:148,149-163',
+      schemaContract: 'nanoclaw-v2:148,149-164',
     });
     expect(template.activation).toEqual({
       serviceEnabled: false,
@@ -124,6 +128,15 @@ describe('website checkout immutable release packaging', () => {
     expect(template.documents).toEqual({
       receiptEnabled: true,
       downloadCapabilityTtlMs: 300000,
+      retentionPolicy: {
+        version: 'mcs-checkout-documents-7y-v1',
+        years: 7,
+        legalHold: 'explicit_hold_blocks_purge',
+        purge: 'customer_pdf_recipient_and_sent_message',
+        tombstone: 'number_date_amount_currency_hashes_and_purge_receipt',
+        sweepIntervalMs: 86400000,
+        batchSize: 25,
+      },
       paidInvoice: { enabled: false },
     });
     expect(template.chaosObservability).toEqual({ enabled: false });

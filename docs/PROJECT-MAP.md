@@ -967,19 +967,20 @@ capability-protected Confirmation summary uses a derived Tandem reference, not
 the PSP reference. Invoice numbering/document/email activation remains under
 the finance/legal gate; ordinary MCS routing remains Stripe.
 
-The NC-20260909-003 document slice is deployed under
-migration163. It freezes one encrypted canonical snapshot and separately
-encrypted deterministic PDF per attempt/kind, gives receipt self-service an
-attempt-bound short-lived download capability, and deduplicates Gmail PDF
-delivery through exact Sent/readback receipts. Paid invoices remain strictly
-disabled unless the private finance/legal activation hash binds seller,
-numbering, tax, retention and correction policy; missing pre-payment business
-details also refuse. WordPress has separate receipt/invoice download/email
-actions and validates the signed PDF envelope before a local blob download.
-Backend `b0c2ca2d`, migration163 and tandemweb `5f0e1c65d` are live with the
-invoice gate off and all new tables empty. Ordinary MCS routing remains Stripe;
-no document email, payment, invoice number or production document row has been
-created, so natural post-payment proof remains pending.
+The NC-20260909-003 document predecessor is deployed under migration163. The
+owner-approved v2 source adds migration164's seven-year retention, append-only
+legal holds, exact retained-Gmail deletion, encrypted customer/PDF purge and
+minimal immutable tombstone. Deterministic customer PDFs use the approved
+Tandem logo and structured receipt/invoice layout, say Paid under the bound
+immediate automatic-capture policy, show factual Tax USD0 without a legal
+classification, omit the seller EIN and use the Red Oak seller address.
+Information now owns independent gift and business-invoice checkboxes; one
+conditional Additional details step contains only the selected sections and is
+skipped with dynamic numbering when unused. Paid invoice allocation remains
+hash-gated until the exact private policy is activated. Backend `b0c2ca2d`,
+migration163 and tandemweb `5f0e1c65d` remain live predecessors during review;
+ordinary MCS routing remains Stripe and no payment, document, invoice number or
+email is created by this source change.
 
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical

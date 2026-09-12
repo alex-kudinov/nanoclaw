@@ -214,7 +214,7 @@ to ten seconds, rejects redirects, accepts only Chaos `recorded|duplicate`, and
 records bounded retry/dead-letter receipts without raw error text.
 
 Activation requires an applied/read-back migration 160, schema contract
-`nanoclaw-v2:148,149-162` or its exact migration163 descendant, the exact HTTPS Chaos lifecycle endpoint and distinct
+`nanoclaw-v2:148,149-162` or its exact migration163-164 descendants, the exact HTTPS Chaos lifecycle endpoint and distinct
 secrets in an owner-only LIVE config. Omission resolves to disabled. TEST has no
 external-emission path; fixture transports and generated disposable databases
 are the only TEST evidence in this source boundary.
@@ -222,7 +222,7 @@ are the only TEST evidence in this source boundary.
 ## Deployment gates still outside this source
 
 - approved exact database/host/port and encrypted proxy configuration;
-- migrations 148 and 149-163 applied and read back through the established
+- migrations 148 and 149-164 applied and read back through the established
   release procedure; startup never applies them;
 - private LIVE keys, company/merchant/store and provider webhook settings;
 - accepted publication and Heartbeat activation receipts;
@@ -238,9 +238,10 @@ readback and learner outcome remain distinct evidence.
 Capability-protected status can now return a minimized purchase summary only
 from one conflict-free durable authorization projection. It contains the exact
 offer, quote amount/currency, server-recorded timestamp and a SHA-derived Tandem
-reference; it never exposes the PSP reference. The public checkout renders that
-summary as the third Confirmation step after the existing enrollment/access
-readback.
+reference; it never exposes the PSP reference. Information presents independent
+gift and business-invoice checkboxes. One Additional details page appears only
+when either is selected, contains only the selected sections, and is otherwise
+skipped; Payment and Confirmation numbering follows the active path.
 
 Optional company, invoice-email, address and tax/VAT details are normalized in
 WordPress, bound into the exact signed identity request and stored only as an
@@ -249,23 +250,24 @@ metadata and are not emitted to Adyen in this slice.
 
 ## Receipt and paid-invoice document self-service
 
-Migration163 and `payment-checkout-documents.ts` provide the deployed
-document boundary. One authorized English MCS payment can own one immutable
-receipt and one immutable paid-invoice version. The canonical snapshot binds
-the server quote, discount arithmetic, zero-tax fact, card authorization,
-derived Tandem reference, payer, optional pre-payment billing profile and exact
-Terms/Privacy versions. Snapshot JSON and deterministic PDF bytes are encrypted
-under separate purpose keys; the tables retain only ciphertext, hashes and
-bounded operational identifiers.
+Migrations163-164 and `payment-checkout-documents.ts` provide the document
+boundary. One successful English MCS payment under the exact immediate
+automatic-capture policy can own one immutable receipt and one immutable paid-
+invoice version. The v2 canonical snapshot binds the server quote, discount
+arithmetic, factual USD0 tax amount, successful provider event/capture mode,
+derived Tandem reference, payer, optional pre-payment billing profile, seven-
+year purge date and exact Terms/Privacy versions. Snapshot JSON and the polished
+Tandem-logo PDF bytes are encrypted under separate purpose keys; no card number
+is stored.
 
 Receipt generation is enabled for the consumer path. Paid-invoice generation
-is disabled by default and cannot allocate a number unless a private
-finance/legal activation receipt exactly binds seller identity/address, annual
-sequence prefix, tax jurisdiction and policy, retention, and replacement or
-credit-note correction semantics. Missing business billing details remain a
-separate refusal even after that gate is activated. Existing documents are
-returned byte-for-byte; no replay mutates payment evidence or consumes another
-invoice number.
+remains disabled by default and cannot allocate a number unless a private
+activation hash exactly binds the owner-approved seller/address, omitted seller
+EIN, annual `TCA-YYYY-######` sequence, immediate-capture evidence, USD0 tax
+policy with no printed legal classification, seven-year retention and
+replacement-or-credit-note correction semantics. Missing business billing
+details remain a separate refusal. Existing documents are returned byte-for-
+byte; no replay mutates payment evidence or consumes another invoice number.
 
 Downloads require both the original checkout status capability and a fresh
 attempt/document-bound opaque capability that expires within fifteen minutes.
@@ -277,8 +279,15 @@ Email actions create one recipient-hash-bound job per document, reconcile Gmail
 Sent before any retry, attach the exact stored PDF, and require message/thread,
 recipient, sender, subject, filename and attachment-digest readback. A lost or
 ambiguous acknowledgement becomes an immutable hold and is never blindly
-resent. Backend immutable `b0c2ca2d` and tandemweb `5f0e1c65d` are deployed;
-the schema/config/start page and hidden actions are live-verified without a
-payment. Natural post-payment document/download/email proof still requires an
-owner-operated transaction, and paid-invoice activation remains finance/legal
-blocked.
+resent. Migration164 adds ordered legal-hold events and a daily bounded
+retention sweep. At seven years, the worker verifies and permanently removes
+any exact retained Gmail attachment, deletes encrypted customer/snapshot/PDF/
+recipient rows and capabilities, and leaves only an immutable non-customer
+tombstone containing document identity, date, amount, currency and hashes. A
+current legal hold blocks purge, and the tombstone prevents regeneration.
+
+Backend immutable `b0c2ca2d` and tandemweb `5f0e1c65d` remain the deployed
+predecessors while the approved v2 release is under review. No real payment,
+document, invoice number or email is created by source, migration or
+nonfinancial browser verification; natural post-payment proof remains owner-
+operated.

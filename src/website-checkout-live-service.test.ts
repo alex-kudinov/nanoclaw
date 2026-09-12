@@ -451,7 +451,7 @@ describe('managed LIVE private config and schema gates', () => {
         user: 'approved_user',
         ssl: 'require',
         role: 'nanoclaw_admin',
-        schemaContract: 'nanoclaw-v2:148,149-159',
+        schemaContract: 'nanoclaw-v2:148,149-164',
       },
       adyen: {
         environment: 'live',
@@ -556,18 +556,27 @@ describe('managed LIVE private config and schema gates', () => {
       seller: {
         displayName: 'Tandem Coaching Academy',
         legalName: 'Tandem Coaching Partners, LLC',
-        addressLines: ['123 Example St', 'Austin, TX 78701'],
+        addressLines: [
+          '104 E Ovilla Rd, Ste 1278',
+          'Red Oak, TX 75154, United States',
+        ],
         country: 'US',
         taxId: null,
         supportEmail: 'hello@tandemcoach.co',
       },
-      taxPolicy: {
-        version: 'tax-v1',
-        jurisdiction: 'US-TX',
-        taxMinor: 0 as const,
-        taxLabel: 'No tax charged' as const,
+      capturePolicy: {
+        version: 'adyen-immediate-auto-capture-v1' as const,
+        mode: 'immediate_automatic_capture' as const,
+        evidenceReference: 'capture-policy-live-v1',
       },
-      retentionPolicy: 'retention-v1',
+      taxPolicy: {
+        version: 'mcs-foundations-zero-tax-display-v1' as const,
+        jurisdiction: 'US-TX' as const,
+        taxMinor: 0 as const,
+        taxLabel: 'Tax' as const,
+        classification: 'not_stated' as const,
+      },
+      retentionPolicyVersion: 'mcs-checkout-documents-7y-v1' as const,
       correctionPolicy: 'credit_note_or_replacement_only' as const,
     };
     expect(() =>
@@ -694,7 +703,7 @@ describe('managed LIVE private config and schema gates', () => {
         rows: [{ database: 'approved_database', role_exists: true }],
       })
       .mockResolvedValueOnce({
-        rowCount: 23,
+        rowCount: 25,
         rows: [
           'student_projection_outbox',
           'student_projection_receipts',
@@ -719,9 +728,11 @@ describe('managed LIVE private config and schema gates', () => {
           'payment_checkout_document_capabilities',
           'payment_checkout_document_email_jobs',
           'payment_checkout_document_email_receipts',
+          'payment_checkout_document_retention_events',
+          'payment_checkout_document_tombstones',
         ].map((relname) => ({ relname, owner: 'nanoclaw_admin' })),
       })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 30 }] });
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 35 }] });
     await expect(
       verifyWebsiteCheckoutLiveSchema({ query } as never, 'approved_database'),
     ).resolves.toBeUndefined();
@@ -747,7 +758,7 @@ describe('managed LIVE private config and schema gates', () => {
           };
         if (sql.includes('FROM pg_class'))
           return {
-            rowCount: 23,
+            rowCount: 25,
             rows: [
               'student_projection_outbox',
               'student_projection_receipts',
@@ -772,13 +783,15 @@ describe('managed LIVE private config and schema gates', () => {
               'payment_checkout_document_capabilities',
               'payment_checkout_document_email_jobs',
               'payment_checkout_document_email_receipts',
+              'payment_checkout_document_retention_events',
+              'payment_checkout_document_tombstones',
             ].map((relname) => ({
               relname,
               owner: 'nanoclaw_admin',
             })),
           };
         if (sql.includes('information_schema.columns'))
-          return { rowCount: 1, rows: [{ count: 30 }] };
+          return { rowCount: 1, rows: [{ count: 35 }] };
         throw new Error(`unexpected query: ${sql}`);
       });
       const release = vi.fn();

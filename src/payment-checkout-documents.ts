@@ -5,6 +5,8 @@ import {
   randomBytes,
   randomUUID,
 } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import fontkit from '@pdf-lib/fontkit';
 import type { gmail_v1 } from 'googleapis';
@@ -32,7 +34,15 @@ import { ROBOTO_REGULAR_TTF_BASE64 } from './payment-checkout-roboto-font.js';
 const OFFER = 'mcq-program-a-foundations';
 const LOCALE = 'en-US';
 const PRODUCT = 'Mentor Coaching Foundations';
-const DOCUMENT_VERSION = 'mcs-checkout-document-v1';
+const DOCUMENT_VERSION = 'mcs-checkout-document-v2';
+const TANDEM_LOGO_PNG = readFileSync(
+  fileURLToPath(
+    new URL(
+      '../assets/checkout-documents/tandem-logo-horizontal.png',
+      import.meta.url,
+    ),
+  ),
+);
 // The PDF is base64-encoded into the signed inner JSON, then that JSON is
 // base64-encoded again by the private response envelope. 500 kB leaves bounded
 // headroom under WordPress's 1 MiB response limit at both layers.
@@ -42,6 +52,11 @@ const RECEIPT_SELLER = Object.freeze({
   legalName: 'Tandem Coaching Partners, LLC',
   supportEmail: 'hello@tandemcoach.co',
   country: 'US' as const,
+  addressLines: [
+    '104 E Ovilla Rd, Ste 1278',
+    'Red Oak, TX 75154, United States',
+  ],
+  taxId: null,
 });
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
 const ref = z
@@ -61,6 +76,15 @@ const printable = (maximum: number) =>
 export type PaymentCheckoutDocumentKind = 'receipt' | 'paid_invoice';
 
 const paidInvoiceDisabled = z.object({ enabled: z.literal(false) }).strict();
+const RETENTION_POLICY = Object.freeze({
+  version: 'mcs-checkout-documents-7y-v1',
+  years: 7 as const,
+  legalHold: 'explicit_hold_blocks_purge' as const,
+  purge: 'customer_pdf_recipient_and_sent_message' as const,
+  tombstone: 'number_date_amount_currency_hashes_and_purge_receipt' as const,
+  sweepIntervalMs: 24 * 60 * 60_000,
+  batchSize: 25,
+});
 const paidInvoiceEnabled = z
   .object({
     enabled: z.literal(true),
@@ -74,19 +98,27 @@ const paidInvoiceEnabled = z
         legalName: printable(160),
         addressLines: z.array(printable(180)).min(1).max(5),
         country: z.string().regex(/^[A-Z]{2}$/),
-        taxId: printable(64).nullable(),
+        taxId: z.null(),
         supportEmail: email,
+      })
+      .strict(),
+    capturePolicy: z
+      .object({
+        version: z.literal('adyen-immediate-auto-capture-v1'),
+        mode: z.literal('immediate_automatic_capture'),
+        evidenceReference: ref,
       })
       .strict(),
     taxPolicy: z
       .object({
-        version: ref,
-        jurisdiction: ref,
+        version: z.literal('mcs-foundations-zero-tax-display-v1'),
+        jurisdiction: z.literal('US-TX'),
         taxMinor: z.literal(0),
-        taxLabel: z.literal('No tax charged'),
+        taxLabel: z.literal('Tax'),
+        classification: z.literal('not_stated'),
       })
       .strict(),
-    retentionPolicy: ref,
+    retentionPolicyVersion: z.literal('mcs-checkout-documents-7y-v1'),
     correctionPolicy: z.literal('credit_note_or_replacement_only'),
   })
   .strict();
@@ -100,6 +132,31 @@ export const websiteCheckoutDocumentConfigSchema = z
       .min(30_000)
       .max(15 * 60_000)
       .default(5 * 60_000),
+    retentionPolicy: z
+      .object({
+        version: z
+          .literal('mcs-checkout-documents-7y-v1')
+          .default('mcs-checkout-documents-7y-v1'),
+        years: z.literal(7).default(7),
+        legalHold: z
+          .literal('explicit_hold_blocks_purge')
+          .default('explicit_hold_blocks_purge'),
+        purge: z
+          .literal('customer_pdf_recipient_and_sent_message')
+          .default('customer_pdf_recipient_and_sent_message'),
+        tombstone: z
+          .literal('number_date_amount_currency_hashes_and_purge_receipt')
+          .default('number_date_amount_currency_hashes_and_purge_receipt'),
+        sweepIntervalMs: z
+          .number()
+          .int()
+          .min(60 * 60_000)
+          .max(24 * 60 * 60_000)
+          .default(24 * 60 * 60_000),
+        batchSize: z.number().int().min(1).max(100).default(25),
+      })
+      .strict()
+      .default(RETENTION_POLICY),
     paidInvoice: z
       .discriminatedUnion('enabled', [paidInvoiceDisabled, paidInvoiceEnabled])
       .default({ enabled: false }),
@@ -108,6 +165,7 @@ export const websiteCheckoutDocumentConfigSchema = z
   .default({
     receiptEnabled: true,
     downloadCapabilityTtlMs: 5 * 60_000,
+    retentionPolicy: RETENTION_POLICY,
     paidInvoice: { enabled: false },
   });
 
@@ -150,7 +208,8 @@ export function parseWebsiteCheckoutDocumentConfig(
     const { activationReceiptSha256, ...content } = parsed.data.paidInvoice;
     if (
       activationReceiptSha256 !==
-      websiteCheckoutPaidInvoiceActivationHash(content)
+        websiteCheckoutPaidInvoiceActivationHash(content) ||
+      content.retentionPolicyVersion !== parsed.data.retentionPolicy.version
     )
       throw new PaymentDomainError('invalid_checkout_document_configuration');
   }
@@ -178,7 +237,7 @@ const billingSchema = z
 
 export const checkoutDocumentSnapshotSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     documentVersion: z.literal(DOCUMENT_VERSION),
     documentKind: z.enum(['receipt', 'paid_invoice']),
     documentNumber: z
@@ -219,11 +278,12 @@ export const checkoutDocumentSnapshotSchema = z
     payment: z
       .object({
         method: z.literal('card'),
-        status: z.literal('authorized_for_automatic_capture'),
+        status: z.literal('paid'),
+        captureMode: z.literal('immediate_automatic_capture'),
+        providerEvent: z.literal('authorisation'),
         tandemReference: z.string().regex(/^TCA-[A-F0-9]{12}$/),
         providerReferenceSha256: digest,
         recordedAt: z.iso.datetime({ offset: true }),
-        settlement: z.literal('unproven'),
       })
       .strict(),
     policy: z
@@ -234,6 +294,9 @@ export const checkoutDocumentSnapshotSchema = z
         privacySha256: digest,
         taxPolicyVersion: ref.nullable(),
         taxJurisdiction: ref.nullable(),
+        taxClassification: z.literal('not_stated').nullable(),
+        retentionPolicyVersion: ref,
+        purgeAfter: z.iso.datetime({ offset: true }),
         correctionPolicy: ref,
       })
       .strict(),
@@ -256,12 +319,19 @@ export function parseCheckoutDocumentSnapshot(
       value.purchase.totalMinor ||
     value.purchase.discountMinor > 0 !==
       (value.purchase.discountPolicyReference !== null) ||
+    value.seller.taxId !== null ||
+    value.policy.purgeAfter !== retentionUntil(value.issuedAt, 7) ||
     (value.documentKind === 'receipt') !==
       value.documentNumber.endsWith('-R') ||
+    (value.documentKind === 'receipt' &&
+      (value.policy.taxPolicyVersion !== null ||
+        value.policy.taxJurisdiction !== null ||
+        value.policy.taxClassification !== null)) ||
     (value.documentKind === 'paid_invoice') !==
       (value.buyer.billingProfile !== null &&
         value.policy.taxPolicyVersion !== null &&
         value.policy.taxJurisdiction !== null &&
+        value.policy.taxClassification === 'not_stated' &&
         value.seller.addressLines.length > 0)
   )
     throw new PaymentDomainError('invalid_checkout_document_snapshot');
@@ -302,14 +372,24 @@ function money(minor: number): string {
   return `$${(minor / 100).toFixed(2)} USD`;
 }
 
+function retentionUntil(issuedAt: string, years: number): string {
+  const value = new Date(issuedAt);
+  if (Number.isNaN(value.getTime()) || !Number.isInteger(years) || years < 1)
+    throw new PaymentDomainError('invalid_checkout_document_configuration');
+  value.setUTCFullYear(value.getUTCFullYear() + years);
+  return value.toISOString();
+}
+
 export async function renderCheckoutDocumentPdf(
   input: unknown,
   fontBytes: Buffer = Buffer.from(ROBOTO_REGULAR_TTF_BASE64, 'base64'),
+  logoBytes: Buffer = TANDEM_LOGO_PNG,
 ): Promise<Buffer> {
   const snapshot = parseCheckoutDocumentSnapshot(input);
   const document = await PDFDocument.create({ updateMetadata: false });
   document.registerFontkit(fontkit);
   const font = await document.embedFont(fontBytes, { subset: true });
+  const logo = await document.embedPng(logoBytes);
   document.setTitle(
     `${snapshot.documentKind === 'receipt' ? 'Receipt' : 'Paid invoice'} ${snapshot.documentNumber}`,
   );
@@ -320,100 +400,280 @@ export async function renderCheckoutDocumentPdf(
   document.setCreationDate(fixedDate);
   document.setModificationDate(fixedDate);
   const page = document.addPage([612, 792]);
-  const left = 54;
-  const right = 558;
-  const width = right - left;
-  const green = rgb(0.075, 0.341, 0.251);
-  const ink = rgb(0.08, 0.16, 0.12);
-  const muted = rgb(0.32, 0.39, 0.35);
-  let y = 738;
-  const line = (value: string, size = 10, color = ink, gap = 15) => {
-    for (const part of wrap(value, font, size, width)) {
-      page.drawText(part, { x: left, y, size, font, color });
-      y -= gap;
-    }
+  const left = 52;
+  const right = 560;
+  const green = rgb(0.031, 0.443, 0.247);
+  const navy = rgb(0, 0.239, 0.376);
+  const ink = rgb(0.09, 0.21, 0.165);
+  const muted = rgb(0.39, 0.46, 0.42);
+  const lineColor = rgb(0.84, 0.89, 0.86);
+  const pale = rgb(0.953, 0.976, 0.961);
+  const paleBlue = rgb(0.937, 0.965, 0.98);
+  const text = (value: string, x: number, y: number, size = 9, color = ink) =>
+    page.drawText(safePdfText(value, font), { x, y, size, font, color });
+  const rightText = (
+    value: string,
+    x: number,
+    y: number,
+    size = 9,
+    color = ink,
+  ) => {
+    const safe = safePdfText(value, font);
+    page.drawText(safe, {
+      x: x - font.widthOfTextAtSize(safe, size),
+      y,
+      size,
+      font,
+      color,
+    });
   };
-  page.drawText(safePdfText(snapshot.seller.displayName, font), {
+  const label = (value: string, x: number, y: number) =>
+    text(value.toUpperCase(), x, y, 7.5, green);
+  const columnText = (
+    value: string,
+    x: number,
+    y: number,
+    width: number,
+    size = 8.5,
+    maxLines = 2,
+  ) => {
+    const lines = wrap(value, font, size, width).slice(0, maxLines);
+    for (const line of lines) {
+      text(line, x, y, size);
+      y -= 15;
+    }
+    return y;
+  };
+  const issued = new Date(snapshot.issuedAt);
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const issuedDate = `${months[issued.getUTCMonth()]} ${issued.getUTCDate()}, ${issued.getUTCFullYear()}`;
+
+  page.drawRectangle({
+    x: 0,
+    y: 0,
+    width: 612,
+    height: 792,
+    color: rgb(0.97, 0.985, 0.977),
+  });
+  page.drawRectangle({
+    x: 30,
+    y: 42,
+    width: 552,
+    height: 712,
+    color: rgb(1, 1, 1),
+    borderColor: lineColor,
+    borderWidth: 0.8,
+  });
+  const logoSize = logo.scaleToFit(222, 40);
+  page.drawImage(logo, {
     x: left,
-    y,
-    size: 18,
-    font,
-    color: green,
+    y: 688,
+    width: logoSize.width,
+    height: logoSize.height,
   });
-  y -= 32;
-  line(
-    snapshot.documentKind === 'receipt' ? 'PAYMENT RECEIPT' : 'PAID INVOICE',
-    22,
-    ink,
-    28,
-  );
-  line(snapshot.documentNumber, 11, muted, 20);
-  line(`Issued: ${new Date(snapshot.issuedAt).toISOString()}`, 9, muted, 18);
+  page.drawRectangle({ x: 485, y: 696, width: 68, height: 22, color: green });
+  const paid = 'PAID';
+  text(paid, 519 - font.widthOfTextAtSize(paid, 8) / 2, 703, 8, rgb(1, 1, 1));
   page.drawLine({
-    start: { x: left, y },
-    end: { x: right, y },
-    thickness: 1,
-    color: green,
+    start: { x: left, y: 670 },
+    end: { x: right, y: 670 },
+    thickness: 0.8,
+    color: lineColor,
   });
-  y -= 24;
-  line('Seller', 11, green, 17);
-  line(snapshot.seller.legalName);
-  for (const addressLine of snapshot.seller.addressLines) line(addressLine);
-  line(snapshot.seller.supportEmail, 9, muted, 15);
-  y -= 8;
-  line(
-    snapshot.documentKind === 'paid_invoice' ? 'Bill to' : 'Purchaser',
-    11,
-    green,
-    17,
+  text(
+    snapshot.documentKind === 'receipt' ? 'Payment receipt' : 'Paid invoice',
+    left,
+    626,
+    24,
+    ink,
   );
-  line(snapshot.buyer.billingProfile?.companyLegalName ?? snapshot.buyer.name);
-  line(
-    snapshot.buyer.billingProfile?.invoiceEmail ?? snapshot.buyer.email,
-    9,
+  text(
+    snapshot.documentKind === 'receipt'
+      ? 'Confirmation of your completed card payment'
+      : 'Business invoice - balance due $0.00 USD',
+    left,
+    606,
+    8.5,
     muted,
-    15,
   );
-  if (snapshot.buyer.billingProfile) {
-    const billing = snapshot.buyer.billingProfile;
-    line(`${billing.address.street} ${billing.address.houseNumberOrName}`);
-    line(
-      `${billing.address.city}, ${billing.address.stateOrProvince ? `${billing.address.stateOrProvince} ` : ''}${billing.address.postalCode}`,
-    );
-    line(billing.address.country);
-    if (billing.taxId) line(`Tax/VAT ID: ${billing.taxId}`);
+  rightText(snapshot.documentNumber, right, 626, 9, navy);
+  rightText(`Issued ${issuedDate}`, right, 607, 8, muted);
+
+  label('Seller', left, 568);
+  text(snapshot.seller.legalName, left, 548, 10);
+  let sellerY = 531;
+  for (const addressLine of snapshot.seller.addressLines) {
+    text(addressLine, left, sellerY, 8.5);
+    sellerY -= 15;
   }
-  y -= 12;
-  line('Purchase', 11, green, 17);
-  line(`${snapshot.purchase.productName} × 1`);
-  line(`Original amount: ${money(snapshot.purchase.unitAmountMinor)}`);
+  text(snapshot.seller.supportEmail, left, sellerY, 8.5);
+
+  const buyerX = 344;
+  label(
+    snapshot.documentKind === 'paid_invoice' ? 'Bill to' : 'Paid by',
+    buyerX,
+    568,
+  );
+  const billing = snapshot.buyer.billingProfile;
+  let buyerY = columnText(
+    billing?.companyLegalName ?? snapshot.buyer.name,
+    buyerX,
+    548,
+    210,
+    10,
+    2,
+  );
+  if (snapshot.documentKind === 'paid_invoice' && billing) {
+    buyerY = columnText(`Attn: ${snapshot.buyer.name}`, buyerX, buyerY, 210);
+    buyerY = columnText(
+      `${billing.address.street} ${billing.address.houseNumberOrName}`,
+      buyerX,
+      buyerY,
+      210,
+      8.5,
+    );
+    buyerY = columnText(
+      `${billing.address.city}, ${billing.address.stateOrProvince ? `${billing.address.stateOrProvince} ` : ''}${billing.address.postalCode}, ${billing.address.country}`,
+      buyerX,
+      buyerY,
+      210,
+      8.5,
+    );
+    if (billing.taxId)
+      columnText(`Tax/VAT ID: ${billing.taxId}`, buyerX, buyerY, 210);
+  } else {
+    columnText(snapshot.buyer.email, buyerX, buyerY, 210, 8.5, 2);
+  }
+
+  page.drawRectangle({ x: left, y: 444, width: 508, height: 28, color: pale });
+  text('DESCRIPTION', 64, 454, 7.5, muted);
+  if (snapshot.documentKind === 'paid_invoice')
+    text('QTY', 411, 454, 7.5, muted);
+  rightText('AMOUNT', 548, 454, 7.5, muted);
+  text(snapshot.purchase.productName, 64, 420, 9.5);
+  text(
+    snapshot.documentKind === 'paid_invoice'
+      ? 'Online professional education'
+      : 'Quantity 1  |  English  |  Online course',
+    64,
+    404,
+    8,
+    muted,
+  );
+  if (snapshot.documentKind === 'paid_invoice') text('1', 418, 420, 9);
+  rightText(money(snapshot.purchase.unitAmountMinor), 548, 420, 9.5);
+  page.drawLine({
+    start: { x: left, y: 384 },
+    end: { x: right, y: 384 },
+    thickness: 0.8,
+    color: lineColor,
+  });
+  const amountRow = (rowLabel: string, value: string, y: number, size = 9) => {
+    text(rowLabel, 392, y, size);
+    rightText(value, right, y, size);
+  };
+  amountRow('Subtotal', money(snapshot.purchase.unitAmountMinor), 356);
   if (snapshot.purchase.discountMinor)
-    line(`Discount: -${money(snapshot.purchase.discountMinor)}`);
-  line(`Tax: ${money(snapshot.purchase.taxMinor)}`);
-  line(`Total: ${money(snapshot.purchase.totalMinor)}`, 12, ink, 20);
-  y -= 8;
-  line('Payment', 11, green, 17);
-  line('Card — authorized for automatic capture');
-  line(`Recorded: ${new Date(snapshot.payment.recordedAt).toISOString()}`);
-  line(`Reference: ${snapshot.payment.tandemReference}`);
-  line('Settlement status is not represented by this document.', 8, muted, 13);
-  if (snapshot.documentKind === 'paid_invoice') {
-    y -= 8;
-    line(`Tax policy: ${snapshot.policy.taxPolicyVersion}`, 8, muted, 13);
-    line(`Jurisdiction: ${snapshot.policy.taxJurisdiction}`, 8, muted, 13);
-    line(
-      'Corrections require a replacement document or credit note.',
+    amountRow('Discount', `-${money(snapshot.purchase.discountMinor)}`, 334);
+  amountRow(
+    'Tax',
+    money(snapshot.purchase.taxMinor),
+    snapshot.purchase.discountMinor ? 312 : 334,
+  );
+  const totalY = snapshot.purchase.discountMinor ? 282 : 305;
+  if (snapshot.documentKind === 'receipt') {
+    amountRow('Total paid', money(snapshot.purchase.totalMinor), totalY, 10.5);
+  } else {
+    amountRow('Total', money(snapshot.purchase.totalMinor), totalY, 9);
+    amountRow(
+      'Amount paid',
+      money(snapshot.purchase.totalMinor),
+      totalY - 30,
+      9,
+    );
+    amountRow('Balance due', '$0.00 USD', totalY - 56, 10.5);
+  }
+
+  const paymentY = snapshot.documentKind === 'receipt' ? 208 : 174;
+  page.drawRectangle({
+    x: left,
+    y: paymentY,
+    width: 508,
+    height: snapshot.documentKind === 'receipt' ? 66 : 54,
+    color: paleBlue,
+  });
+  text(
+    'PAYMENT STATUS',
+    68,
+    paymentY + (snapshot.documentKind === 'receipt' ? 42 : 33),
+    8,
+    navy,
+  );
+  text(
+    snapshot.documentKind === 'receipt'
+      ? 'Paid by card'
+      : `Paid by card on ${issuedDate}`,
+    68,
+    paymentY + 15,
+    10,
+  );
+  if (snapshot.documentKind === 'receipt')
+    text(
+      `${issuedDate}  |  Reference ${snapshot.payment.tandemReference}`,
+      169,
+      paymentY + 15,
+      8.5,
+      muted,
+    );
+
+  if (snapshot.documentKind === 'receipt') {
+    text('Thank you for learning with Tandem.', left, 164, 12, green);
+    text(
+      `Questions about this payment? Contact ${snapshot.seller.supportEmail}.`,
+      left,
+      145,
+      8.5,
+      muted,
+    );
+  } else {
+    text(
+      'Tandem seller EIN is not displayed. A Form W-9 is available securely when required.',
+      left,
+      137,
       8,
       muted,
-      13,
+    );
+    text(
+      'Corrections are issued as a replacement document or credit note; the original invoice is not rewritten.',
+      left,
+      117,
+      8,
+      muted,
     );
   }
-  page.drawText(
-    safePdfText(
-      `Document ${snapshot.documentVersion} · Terms ${snapshot.policy.enrollmentTermsVersion} · Privacy ${snapshot.policy.privacyVersion}`,
-      font,
-    ),
-    { x: left, y: 34, size: 7, font, color: muted },
+  page.drawLine({
+    start: { x: left, y: 66 },
+    end: { x: right, y: 66 },
+    thickness: 0.6,
+    color: lineColor,
+  });
+  const footerValue = `Document ${snapshot.documentVersion}  |  Terms ${snapshot.policy.enrollmentTermsVersion}  |  Privacy ${snapshot.policy.privacyVersion}`;
+  const footerLines = wrap(footerValue, font, 6.8, right - left).slice(0, 2);
+  footerLines.forEach((value, index) =>
+    text(value, left, 50 - index * 9, 6.8, muted),
   );
   const bytes = await document.save({
     useObjectStreams: false,
@@ -621,6 +881,7 @@ type DocumentRow = {
   pdf_sha256: string;
   encrypted_pdf: string;
   issued_at: Date | string;
+  retention_until: Date | string;
 };
 
 type EmailRow = Record<string, unknown>;
@@ -634,6 +895,16 @@ export interface PaymentCheckoutDocumentEmailJob {
   gmailMessageId: string | null;
   gmailThreadId: string | null;
   version: number;
+}
+
+export interface PaymentCheckoutDocumentPurgeCandidate {
+  document: PaymentCheckoutDocumentRecord;
+  emailJobs: readonly {
+    jobId: string;
+    recipient: string;
+    gmailMessageId: string | null;
+    gmailThreadId: string | null;
+  }[];
 }
 
 function emailJob(row: EmailRow): PaymentCheckoutDocumentEmailJob {
@@ -778,6 +1049,13 @@ export class PgPaymentCheckoutDocumentStore {
           'SELECT pg_advisory_xact_lock(hashtextextended($1,0))',
           [`checkout-document:${authority.attemptId}:${kind}`],
         );
+        const purged = await client.query(
+          `SELECT 1 FROM business_v2.payment_checkout_document_tombstones
+           WHERE attempt_id_sha256=$1 AND document_kind=$2`,
+          [sha(authority.attemptId), kind],
+        );
+        if (purged.rowCount)
+          throw new PaymentDomainError('checkout_document_expired');
         const prior = await client.query<DocumentRow>(
           `SELECT * FROM business_v2.payment_checkout_documents
            WHERE attempt_id=$1 AND document_kind=$2`,
@@ -803,7 +1081,7 @@ export class PgPaymentCheckoutDocumentStore {
               );
         const invoice = config.paidInvoice.enabled ? config.paidInvoice : null;
         const snapshot = parseCheckoutDocumentSnapshot({
-          schemaVersion: 1,
+          schemaVersion: 2,
           documentVersion: DOCUMENT_VERSION,
           documentKind: kind,
           documentNumber,
@@ -811,7 +1089,7 @@ export class PgPaymentCheckoutDocumentStore {
           seller:
             kind === 'paid_invoice' && invoice
               ? { ...invoice.seller }
-              : { ...RECEIPT_SELLER, addressLines: [], taxId: null },
+              : { ...RECEIPT_SELLER },
           buyer: {
             name: authority.payer.name,
             email: authority.payer.email,
@@ -838,11 +1116,12 @@ export class PgPaymentCheckoutDocumentStore {
           },
           payment: {
             method: 'card',
-            status: 'authorized_for_automatic_capture',
+            status: 'paid',
+            captureMode: 'immediate_automatic_capture',
+            providerEvent: 'authorisation',
             tandemReference: authority.tandemReference,
             providerReferenceSha256: sha(authority.paymentReference),
             recordedAt: authority.paymentRecordedAt,
-            settlement: 'unproven',
           },
           policy: {
             enrollmentTermsVersion: authority.termsVersion,
@@ -851,6 +1130,12 @@ export class PgPaymentCheckoutDocumentStore {
             privacySha256: authority.privacySha256,
             taxPolicyVersion: invoice?.taxPolicy.version ?? null,
             taxJurisdiction: invoice?.taxPolicy.jurisdiction ?? null,
+            taxClassification: invoice?.taxPolicy.classification ?? null,
+            retentionPolicyVersion: config.retentionPolicy.version,
+            purgeAfter: retentionUntil(
+              authority.paymentRecordedAt,
+              config.retentionPolicy.years,
+            ),
             correctionPolicy:
               invoice?.correctionPolicy ??
               'original_payment_evidence_immutable',
@@ -861,8 +1146,9 @@ export class PgPaymentCheckoutDocumentStore {
         const inserted = await client.query<DocumentRow>(
           `INSERT INTO business_v2.payment_checkout_documents
            (document_id,scope_sha256,caller,attempt_id,document_kind,document_version,
-            document_number,snapshot_sha256,encrypted_snapshot,pdf_sha256,encrypted_pdf,issued_at)
-           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+            document_number,snapshot_sha256,encrypted_snapshot,pdf_sha256,encrypted_pdf,
+            issued_at,retention_until,retention_policy_version,amount_minor,currency,attempt_id_sha256)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
           [
             documentId,
             this.scopeSha256,
@@ -879,6 +1165,11 @@ export class PgPaymentCheckoutDocumentStore {
             sha(pdf),
             this.sealPdf(pdf, documentId),
             authority.paymentRecordedAt,
+            snapshot.policy.purgeAfter,
+            config.retentionPolicy.version,
+            snapshot.purchase.totalMinor,
+            snapshot.purchase.currency,
+            sha(authority.attemptId),
           ],
         );
         if (inserted.rowCount !== 1)
@@ -1194,6 +1485,144 @@ export class PgPaymentCheckoutDocumentStore {
       return emailJob(updated.rows[0]);
     });
   }
+
+  async recordRetentionEvent(
+    documentId: string,
+    eventKind: 'hold_placed' | 'hold_released',
+    decisionReference: string,
+    receiptSha256: string,
+    occurredAt: string,
+  ): Promise<void> {
+    ref.parse(decisionReference);
+    digest.parse(receiptSha256);
+    z.iso.datetime({ offset: true }).parse(occurredAt);
+    await this.transaction(async (client) => {
+      const document = await client.query(
+        `SELECT document_id FROM business_v2.payment_checkout_documents
+         WHERE document_id=$1 FOR UPDATE`,
+        [documentId],
+      );
+      if (document.rowCount !== 1)
+        throw new PaymentDomainError('checkout_document_access_denied');
+      const latest = await client.query<{ event_kind: string }>(
+        `SELECT event_kind FROM business_v2.payment_checkout_document_retention_events
+         WHERE document_id=$1 ORDER BY occurred_at DESC,event_id DESC LIMIT 1`,
+        [documentId],
+      );
+      const expected =
+        eventKind === 'hold_placed'
+          ? ['hold_released', undefined]
+          : ['hold_placed'];
+      if (!expected.includes(latest.rows[0]?.event_kind))
+        throw new PaymentDomainError('checkout_document_retention_conflict');
+      const inserted = await client.query(
+        `INSERT INTO business_v2.payment_checkout_document_retention_events
+         (event_id,document_id,event_kind,decision_reference,receipt_sha256,occurred_at)
+         VALUES($1,$2,$3,$4,$5,$6)`,
+        [
+          this.uuid(),
+          documentId,
+          eventKind,
+          decisionReference,
+          receiptSha256,
+          occurredAt,
+        ],
+      );
+      if (inserted.rowCount !== 1)
+        throw new PaymentDomainError('checkout_document_retention_conflict');
+    });
+  }
+
+  async dueForPurge(
+    now: string,
+    limit: number,
+  ): Promise<readonly PaymentCheckoutDocumentPurgeCandidate[]> {
+    z.iso.datetime({ offset: true }).parse(now);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new PaymentDomainError('invalid_checkout_document_configuration');
+    return this.transaction(async (client) => {
+      const documents = await client.query<DocumentRow>(
+        `SELECT d.* FROM business_v2.payment_checkout_documents d
+         WHERE d.retention_until<=$1
+           AND COALESCE((
+             SELECT e.event_kind
+             FROM business_v2.payment_checkout_document_retention_events e
+             WHERE e.document_id=d.document_id
+             ORDER BY e.occurred_at DESC,e.event_id DESC LIMIT 1
+           ),'hold_released')<>'hold_placed'
+         ORDER BY d.retention_until,d.document_id LIMIT $2`,
+        [now, limit],
+      );
+      const result: PaymentCheckoutDocumentPurgeCandidate[] = [];
+      for (const row of documents.rows) {
+        const document = this.record(row);
+        const emailRows = await client.query<EmailRow>(
+          `SELECT job_id,encrypted_recipient_email,gmail_message_id,gmail_thread_id
+           FROM business_v2.payment_checkout_document_email_jobs
+           WHERE document_id=$1 ORDER BY job_id`,
+          [document.documentId],
+        );
+        const emailJobs = emailRows.rows.map((emailRow) => ({
+          jobId: String(emailRow.job_id),
+          recipient: email.parse(
+            this.vault.open(
+              String(emailRow.encrypted_recipient_email),
+              `${document.documentId}:document-email-recipient`,
+            ),
+          ),
+          gmailMessageId:
+            emailRow.gmail_message_id === null
+              ? null
+              : String(emailRow.gmail_message_id),
+          gmailThreadId:
+            emailRow.gmail_thread_id === null
+              ? null
+              : String(emailRow.gmail_thread_id),
+        }));
+        result.push({ document, emailJobs });
+      }
+      return result;
+    });
+  }
+
+  async purge(
+    candidate: PaymentCheckoutDocumentPurgeCandidate,
+    externalDeletionEvidenceSha256: readonly string[],
+    purgedAt: string,
+  ): Promise<'purged' | 'already_purged'> {
+    z.iso.datetime({ offset: true }).parse(purgedAt);
+    for (const value of externalDeletionEvidenceSha256) digest.parse(value);
+    if (externalDeletionEvidenceSha256.length !== candidate.emailJobs.length)
+      throw new PaymentDomainError('checkout_document_retention_conflict');
+    const purgeReceiptSha256 = sha(
+      stableJson({
+        schemaVersion: 1,
+        documentId: candidate.document.documentId,
+        documentKind: candidate.document.kind,
+        documentNumber: candidate.document.documentNumber,
+        issuedAt: candidate.document.issuedAt,
+        amountMinor: candidate.document.snapshot.purchase.totalMinor,
+        currency: candidate.document.snapshot.purchase.currency,
+        snapshotSha256: candidate.document.snapshotSha256,
+        pdfSha256: candidate.document.pdfSha256,
+        retentionPolicyVersion:
+          candidate.document.snapshot.policy.retentionPolicyVersion,
+        externalDeletionEvidenceSha256: [
+          ...externalDeletionEvidenceSha256,
+        ].sort(),
+      }),
+    );
+    return this.transaction(async (client) => {
+      const result = await client.query<{ outcome: string }>(
+        `SELECT business_v2.purge_payment_checkout_document($1,$2,$3) outcome`,
+        [candidate.document.documentId, purgeReceiptSha256, purgedAt],
+      );
+      const outcome = result.rows[0]?.outcome;
+      if (outcome !== 'purged' && outcome !== 'already_purged')
+        throw new PaymentDomainError('checkout_document_retention_conflict');
+      return outcome;
+    });
+  }
 }
 
 export interface WebsiteCheckoutDocumentGmail {
@@ -1219,6 +1648,14 @@ export interface WebsiteCheckoutDocumentGmail {
     filename: string;
     pdfSha256: string;
   }): Promise<{ messageId: string; threadId: string; evidenceSha256: string }>;
+  deleteExact(input: {
+    messageId: string | null;
+    threadId: string | null;
+    to: string;
+    subject: string;
+    filename: string;
+    pdfSha256: string;
+  }): Promise<{ evidenceSha256: string }>;
 }
 
 function header(
@@ -1404,6 +1841,177 @@ export class CanonicalGmailWebsiteCheckoutDocumentSender implements WebsiteCheck
     pdfSha256: string;
   }) {
     return this.exact(input);
+  }
+
+  async deleteExact(input: {
+    messageId: string | null;
+    threadId: string | null;
+    to: string;
+    subject: string;
+    filename: string;
+    pdfSha256: string;
+  }) {
+    let messageId = input.messageId;
+    let threadId = input.threadId;
+    if ((messageId === null) !== (threadId === null))
+      throw new Error('document_gmail_sent_match_invalid');
+    if (messageId && threadId) {
+      try {
+        await this.exact({ ...input, messageId, threadId });
+      } catch (error) {
+        const status =
+          error && typeof error === 'object' && 'code' in error
+            ? Number(error.code)
+            : 0;
+        if (status !== 404) throw error;
+        return {
+          evidenceSha256: sha(
+            stableJson({
+              outcome: 'already_absent',
+              messageIdSha256: sha(messageId),
+              threadIdSha256: sha(threadId),
+              pdfSha256: input.pdfSha256,
+            }),
+          ),
+        };
+      }
+    } else {
+      const found = await this.findExact(input);
+      if (!found)
+        return {
+          evidenceSha256: sha(
+            stableJson({
+              outcome: 'no_sent_match',
+              toSha256: sha(input.to.toLowerCase()),
+              subjectSha256: sha(input.subject),
+              filename: input.filename,
+              pdfSha256: input.pdfSha256,
+            }),
+          ),
+        };
+      messageId = found.messageId;
+      threadId = found.threadId;
+    }
+    this.writeGuard({
+      system: 'gmail',
+      actionClass: 'c3_external_communication',
+      source: 'host:website-checkout-document-retention',
+    });
+    await this.gmail.users.messages.delete({ userId: 'me', id: messageId });
+    return {
+      evidenceSha256: sha(
+        stableJson({
+          outcome: 'deleted',
+          messageIdSha256: sha(messageId),
+          threadIdSha256: sha(threadId),
+          pdfSha256: input.pdfSha256,
+        }),
+      ),
+    };
+  }
+}
+
+export class PaymentCheckoutDocumentRetentionWorker {
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private running = false;
+  private inFlight: Promise<unknown> | null = null;
+
+  constructor(
+    private readonly config: WebsiteCheckoutDocumentConfig,
+    private readonly store: PgPaymentCheckoutDocumentStore,
+    private readonly gmail?: WebsiteCheckoutDocumentGmail,
+    private readonly now: () => Date = () => new Date(),
+    private readonly reportFailure: (input: {
+      documentId: string | null;
+      documentKind: PaymentCheckoutDocumentKind | null;
+      code: string;
+    }) => void = () => undefined,
+  ) {}
+
+  async sweep(): Promise<{ examined: number; purged: number; held: number }> {
+    if (this.running) return { examined: 0, purged: 0, held: 0 };
+    this.running = true;
+    let examined = 0;
+    let purged = 0;
+    let held = 0;
+    try {
+      const now = this.now().toISOString();
+      const candidates = await this.store.dueForPurge(
+        now,
+        this.config.retentionPolicy.batchSize,
+      );
+      for (const candidate of candidates) {
+        examined++;
+        try {
+          const evidence: string[] = [];
+          if (candidate.emailJobs.length && !this.gmail) {
+            held++;
+            this.reportFailure({
+              documentId: candidate.document.documentId,
+              documentKind: candidate.document.kind,
+              code: 'checkout_document_retention_gmail_unconfigured',
+            });
+            continue;
+          }
+          for (const job of candidate.emailJobs) {
+            const filename = `${candidate.document.documentNumber}-${candidate.document.kind === 'receipt' ? 'receipt' : 'paid-invoice'}.pdf`;
+            const label =
+              candidate.document.kind === 'receipt'
+                ? 'receipt'
+                : 'paid invoice';
+            const deleted = await this.gmail!.deleteExact({
+              messageId: job.gmailMessageId,
+              threadId: job.gmailThreadId,
+              to: job.recipient,
+              subject: `Your ${PRODUCT} ${label} — ${candidate.document.documentNumber}`,
+              filename,
+              pdfSha256: candidate.document.pdfSha256,
+            });
+            evidence.push(deleted.evidenceSha256);
+          }
+          await this.store.purge(candidate, evidence, now);
+          purged++;
+        } catch (error) {
+          held++;
+          this.reportFailure({
+            documentId: candidate.document.documentId,
+            documentKind: candidate.document.kind,
+            code:
+              error instanceof PaymentDomainError
+                ? error.code
+                : 'checkout_document_retention_sweep_failed',
+          });
+        }
+      }
+      return { examined, purged, held };
+    } finally {
+      this.running = false;
+    }
+  }
+
+  start(): void {
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      if (this.inFlight) return;
+      this.inFlight = this.sweep()
+        .catch(() =>
+          this.reportFailure({
+            documentId: null,
+            documentKind: null,
+            code: 'checkout_document_retention_scan_failed',
+          }),
+        )
+        .finally(() => {
+          this.inFlight = null;
+        });
+    }, this.config.retentionPolicy.sweepIntervalMs);
+    this.timer.unref();
+  }
+
+  async stop(): Promise<void> {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    await this.inFlight;
   }
 }
 

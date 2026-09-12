@@ -17,7 +17,7 @@
     "user": "xbohdpukc",
     "ssl": "disable",
     "role": "nanoclaw_admin",
-    "schemaContract": "nanoclaw-v2:148,149-163"
+    "schemaContract": "nanoclaw-v2:148,149-164"
   },
   "adyen": {
     "environment": "live",
@@ -85,6 +85,15 @@
   "documents": {
     "receiptEnabled": true,
     "downloadCapabilityTtlMs": 300000,
+    "retentionPolicy": {
+      "version": "mcs-checkout-documents-7y-v1",
+      "years": 7,
+      "legalHold": "explicit_hold_blocks_purge",
+      "purge": "customer_pdf_recipient_and_sent_message",
+      "tombstone": "number_date_amount_currency_hashes_and_purge_receipt",
+      "sweepIntervalMs": 86400000,
+      "batchSize": 25
+    },
     "paidInvoice": {
       "enabled": false
     }

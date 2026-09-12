@@ -44,6 +44,8 @@ const scope = {
   store: 'store',
   endpointRegion: 'eu',
 };
+const snapshotKey = randomBytes(32);
+const pdfKey = randomBytes(32);
 const receiptConfig = parseWebsiteCheckoutDocumentConfig(undefined);
 
 function authority(
@@ -141,10 +143,13 @@ beforeAll(async () => {
     '154_payment_identity_preparation.sql',
     '155_website_checkout_admission_evidence.sql',
     '163_payment_checkout_documents.sql',
+    '164_payment_checkout_document_retention.sql',
   ])
     await pool.query(sql(migration));
+  await pool.query(sql('rollback_164_payment_checkout_document_retention.sql'));
   await pool.query(sql('rollback_163_payment_checkout_documents.sql'));
   await pool.query(sql('163_payment_checkout_documents.sql'));
+  await pool.query(sql('164_payment_checkout_document_retention.sql'));
   transaction = async (work) => {
     const client = await pool.connect();
     try {
@@ -181,11 +186,8 @@ describe('migration 163 checkout document store', () => {
       transaction,
       'tandem-wordpress-live',
       scope,
-      new PaymentPayloadVault(
-        'docs-v1',
-        new Map([['docs-v1', randomBytes(32)]]),
-      ),
-      randomBytes(32),
+      new PaymentPayloadVault('docs-v1', new Map([['docs-v1', snapshotKey]])),
+      pdfKey,
     );
     const input = authority(attemptId, 'ABCDEF123456');
     const rows = await Promise.all(
@@ -238,11 +240,8 @@ describe('migration 163 checkout document store', () => {
       transaction,
       'tandem-wordpress-live',
       scope,
-      new PaymentPayloadVault(
-        'docs-v1',
-        new Map([['docs-v1', randomBytes(32)]]),
-      ),
-      randomBytes(32),
+      new PaymentPayloadVault('docs-v1', new Map([['docs-v1', snapshotKey]])),
+      pdfKey,
     );
     await expect(
       store.ensure(
@@ -259,18 +258,27 @@ describe('migration 163 checkout document store', () => {
       seller: {
         displayName: 'Tandem Coaching Academy',
         legalName: 'Tandem Coaching Partners, LLC',
-        addressLines: ['123 Example St', 'Austin, TX 78701'],
+        addressLines: [
+          '104 E Ovilla Rd, Ste 1278',
+          'Red Oak, TX 75154, United States',
+        ],
         country: 'US',
         taxId: null,
         supportEmail: 'hello@tandemcoach.co',
       },
-      taxPolicy: {
-        version: 'tax-v1',
-        jurisdiction: 'US-TX',
-        taxMinor: 0 as const,
-        taxLabel: 'No tax charged' as const,
+      capturePolicy: {
+        version: 'adyen-immediate-auto-capture-v1' as const,
+        mode: 'immediate_automatic_capture' as const,
+        evidenceReference: 'capture-policy-live-v1',
       },
-      retentionPolicy: 'retention-v1',
+      taxPolicy: {
+        version: 'mcs-foundations-zero-tax-display-v1' as const,
+        jurisdiction: 'US-TX' as const,
+        taxMinor: 0 as const,
+        taxLabel: 'Tax' as const,
+        classification: 'not_stated' as const,
+      },
+      retentionPolicyVersion: 'mcs-checkout-documents-7y-v1' as const,
       correctionPolicy: 'credit_note_or_replacement_only' as const,
     };
     const config = parseWebsiteCheckoutDocumentConfig({
@@ -298,7 +306,7 @@ describe('migration 163 checkout document store', () => {
       new Set(['TCA-2026-000001', 'TCA-2026-000002']),
     );
     await expect(
-      pool.query(sql('rollback_163_payment_checkout_documents.sql')),
+      pool.query(sql('rollback_164_payment_checkout_document_retention.sql')),
     ).rejects.toThrow(/rollback refused/);
   }, 30_000);
 
@@ -309,11 +317,8 @@ describe('migration 163 checkout document store', () => {
       transaction,
       'tandem-wordpress-live',
       scope,
-      new PaymentPayloadVault(
-        'docs-v1',
-        new Map([['docs-v1', randomBytes(32)]]),
-      ),
-      randomBytes(32),
+      new PaymentPayloadVault('docs-v1', new Map([['docs-v1', snapshotKey]])),
+      pdfKey,
     );
     const document = await store.ensure(
       'receipt',
@@ -361,5 +366,117 @@ describe('migration 163 checkout document store', () => {
         )
       ).rows.map((row) => row.stage),
     ).toEqual(['queued', 'claimed', 'held', 'sent_acknowledged', 'readback']);
+  }, 30_000);
+
+  it('blocks legal-hold deletion, then purges expired customer bytes into a minimal tombstone', async () => {
+    const attemptId = randomUUID();
+    await insertAttempt(attemptId);
+    const store = new PgPaymentCheckoutDocumentStore(
+      transaction,
+      'tandem-wordpress-live',
+      scope,
+      new PaymentPayloadVault('docs-v1', new Map([['docs-v1', snapshotKey]])),
+      pdfKey,
+    );
+    const document = await store.ensure(
+      'receipt',
+      authority(attemptId, 'FACEB00C1234'),
+      receiptConfig,
+    );
+    const purgeEmail = await store.ensureEmailJob(
+      document,
+      'purge@example.test',
+      '9'.repeat(64),
+      '2026-09-12T12:00:00Z',
+    );
+    const bypass = await pool.connect();
+    try {
+      await bypass.query('BEGIN');
+      await bypass.query(
+        `SELECT set_config('business_v2.checkout_document_purge',$1,true)`,
+        [document.documentId],
+      );
+      await expect(
+        bypass.query(
+          'DELETE FROM business_v2.payment_checkout_documents WHERE document_id=$1',
+          [document.documentId],
+        ),
+      ).rejects.toThrow(/immutable/);
+      await bypass.query('ROLLBACK');
+    } finally {
+      bypass.release();
+    }
+    await store.recordRetentionEvent(
+      document.documentId,
+      'hold_placed',
+      'decision:legal-hold-fixture',
+      'e'.repeat(64),
+      '2033-09-12T11:59:58Z',
+    );
+    expect(
+      (await store.dueForPurge('2033-09-12T12:00:00Z', 100)).some(
+        (candidate) => candidate.document.documentId === document.documentId,
+      ),
+    ).toBe(false);
+    await store.recordRetentionEvent(
+      document.documentId,
+      'hold_released',
+      'decision:legal-hold-release-fixture',
+      'f'.repeat(64),
+      '2033-09-12T11:59:59Z',
+    );
+    const candidate = (
+      await store.dueForPurge('2033-09-12T12:00:00Z', 100)
+    ).find((value) => value.document.documentId === document.documentId);
+    expect(candidate).toBeDefined();
+    await expect(
+      store.purge(candidate!, ['8'.repeat(64)], '2033-09-12T12:00:00Z'),
+    ).resolves.toBe('purged');
+    expect(
+      (
+        await pool.query(
+          `SELECT document_number,amount_minor,currency,snapshot_sha256,pdf_sha256,
+            purge_receipt_sha256
+           FROM business_v2.payment_checkout_document_tombstones
+           WHERE document_id=$1`,
+          [document.documentId],
+        )
+      ).rows[0],
+    ).toMatchObject({
+      document_number: document.documentNumber,
+      amount_minor: '29900',
+      currency: 'USD',
+      snapshot_sha256: document.snapshotSha256,
+      pdf_sha256: document.pdfSha256,
+    });
+    expect(
+      (
+        await pool.query(
+          'SELECT count(*)::int count FROM business_v2.payment_checkout_documents WHERE document_id=$1',
+          [document.documentId],
+        )
+      ).rows[0].count,
+    ).toBe(0);
+    expect(
+      (
+        await pool.query(
+          'SELECT count(*)::int count FROM business_v2.payment_checkout_document_email_jobs WHERE job_id=$1',
+          [purgeEmail.jobId],
+        )
+      ).rows[0].count,
+    ).toBe(0);
+    await expect(
+      store.ensure(
+        'receipt',
+        authority(attemptId, 'FACEB00C1234'),
+        receiptConfig,
+      ),
+    ).rejects.toThrow('checkout_document_expired');
+    await expect(
+      pool.query(
+        'DELETE FROM business_v2.payment_checkout_document_tombstones WHERE document_id=$1',
+        [document.documentId],
+      ),
+    ).rejects.toThrow(/immutable/);
   }, 30_000);
 });

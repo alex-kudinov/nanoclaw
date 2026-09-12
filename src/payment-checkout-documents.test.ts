@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import {
   CanonicalGmailWebsiteCheckoutDocumentSender,
   CHECKOUT_DOCUMENT_MAX_PDF_BYTES,
+  PaymentCheckoutDocumentRetentionWorker,
   PgPaymentCheckoutDocumentAuthorityReader,
   checkoutDocumentSnapshotSha256,
   parseCheckoutDocumentSnapshot,
@@ -17,8 +18,8 @@ import {
 } from './payment-domain.js';
 
 const receipt = {
-  schemaVersion: 1,
-  documentVersion: 'mcs-checkout-document-v1',
+  schemaVersion: 2,
+  documentVersion: 'mcs-checkout-document-v2',
   documentKind: 'receipt',
   documentNumber: 'TCA-0123456789AB-R',
   issuedAt: '2026-09-12T12:00:00.000Z',
@@ -27,7 +28,10 @@ const receipt = {
     legalName: 'Tandem Coaching Partners, LLC',
     supportEmail: 'hello@tandemcoach.co',
     country: 'US',
-    addressLines: [],
+    addressLines: [
+      '104 E Ovilla Rd, Ste 1278',
+      'Red Oak, TX 75154, United States',
+    ],
     taxId: null,
   },
   buyer: {
@@ -49,12 +53,13 @@ const receipt = {
   },
   payment: {
     method: 'card',
-    status: 'authorized_for_automatic_capture',
+    status: 'paid',
+    captureMode: 'immediate_automatic_capture',
+    providerEvent: 'authorisation',
     tandemReference: 'TCA-0123456789AB',
     providerReferenceSha256:
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     recordedAt: '2026-09-12T12:00:00.000Z',
-    settlement: 'unproven',
   },
   policy: {
     enrollmentTermsVersion: 'terms-2026-09-11',
@@ -65,6 +70,9 @@ const receipt = {
       '2123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     taxPolicyVersion: null,
     taxJurisdiction: null,
+    taxClassification: null,
+    retentionPolicyVersion: 'mcs-checkout-documents-7y-v1',
+    purgeAfter: '2033-09-12T12:00:00.000Z',
     correctionPolicy: 'original_payment_evidence_immutable',
   },
 } as const;
@@ -74,6 +82,15 @@ describe('checkout payment documents', () => {
     expect(parseWebsiteCheckoutDocumentConfig(undefined)).toEqual({
       receiptEnabled: true,
       downloadCapabilityTtlMs: 300000,
+      retentionPolicy: {
+        version: 'mcs-checkout-documents-7y-v1',
+        years: 7,
+        legalHold: 'explicit_hold_blocks_purge',
+        purge: 'customer_pdf_recipient_and_sent_message',
+        tombstone: 'number_date_amount_currency_hashes_and_purge_receipt',
+        sweepIntervalMs: 86400000,
+        batchSize: 25,
+      },
       paidInvoice: { enabled: false },
     });
   });
@@ -122,18 +139,27 @@ describe('checkout payment documents', () => {
       seller: {
         displayName: 'Tandem Coaching Academy',
         legalName: 'Tandem Coaching Partners, LLC',
-        addressLines: ['123 Example St', 'Austin, TX 78701'],
+        addressLines: [
+          '104 E Ovilla Rd, Ste 1278',
+          'Red Oak, TX 75154, United States',
+        ],
         country: 'US',
         taxId: null,
         supportEmail: 'hello@tandemcoach.co',
       },
-      taxPolicy: {
-        version: 'tax-policy-v1',
-        jurisdiction: 'US-TX',
-        taxMinor: 0 as const,
-        taxLabel: 'No tax charged' as const,
+      capturePolicy: {
+        version: 'adyen-immediate-auto-capture-v1' as const,
+        mode: 'immediate_automatic_capture' as const,
+        evidenceReference: 'capture-policy-live-v1',
       },
-      retentionPolicy: 'finance-retention-v1',
+      taxPolicy: {
+        version: 'mcs-foundations-zero-tax-display-v1' as const,
+        jurisdiction: 'US-TX' as const,
+        taxMinor: 0 as const,
+        taxLabel: 'Tax' as const,
+        classification: 'not_stated' as const,
+      },
+      retentionPolicyVersion: 'mcs-checkout-documents-7y-v1' as const,
       correctionPolicy: 'credit_note_or_replacement_only' as const,
     };
     expect(() =>
@@ -337,5 +363,181 @@ describe('checkout payment documents', () => {
     await expect(reader.read(attemptId)).rejects.toThrow(
       'checkout_document_authority_conflict',
     );
+  });
+
+  it('deletes exact sent copies before purging an expired local document', async () => {
+    const document = {
+      documentId: randomUUID(),
+      attemptId: randomUUID(),
+      kind: 'receipt' as const,
+      documentNumber: receipt.documentNumber,
+      snapshot: parseCheckoutDocumentSnapshot(receipt),
+      snapshotSha256: checkoutDocumentSnapshotSha256(receipt),
+      pdfSha256: '3'.repeat(64),
+      pdf: Buffer.from('%PDF-1.7 fixture'),
+      issuedAt: receipt.issuedAt,
+    };
+    const candidate = {
+      document,
+      emailJobs: [
+        {
+          jobId: randomUUID(),
+          recipient: 'jose@example.test',
+          gmailMessageId: 'message-1',
+          gmailThreadId: 'thread-1',
+        },
+        {
+          jobId: randomUUID(),
+          recipient: 'accounts@example.test',
+          gmailMessageId: 'message-1',
+          gmailThreadId: 'thread-1',
+        },
+      ],
+    };
+    const store = {
+      dueForPurge: async () => [candidate],
+      purge: async (_candidate: unknown, evidence: readonly string[]) => {
+        expect(evidence).toEqual(['4'.repeat(64), '4'.repeat(64)]);
+        return 'purged' as const;
+      },
+    };
+    const gmail = {
+      deleteExact: async (input: { to: string; subject: string }) => {
+        expect(['jose@example.test', 'accounts@example.test']).toContain(
+          input.to,
+        );
+        expect(input.subject).toContain(document.documentNumber);
+        return { evidenceSha256: '4'.repeat(64) };
+      },
+    };
+    const worker = new PaymentCheckoutDocumentRetentionWorker(
+      parseWebsiteCheckoutDocumentConfig(undefined),
+      store as never,
+      gmail as never,
+      () => new Date('2033-09-12T12:00:00Z'),
+    );
+    await expect(worker.sweep()).resolves.toEqual({
+      examined: 1,
+      purged: 1,
+      held: 0,
+    });
+  });
+
+  it('reports a privacy-minimized retention hold instead of swallowing purge failure', async () => {
+    const document = {
+      documentId: randomUUID(),
+      attemptId: randomUUID(),
+      kind: 'receipt' as const,
+      documentNumber: receipt.documentNumber,
+      snapshot: parseCheckoutDocumentSnapshot(receipt),
+      snapshotSha256: checkoutDocumentSnapshotSha256(receipt),
+      pdfSha256: '3'.repeat(64),
+      pdf: Buffer.from('%PDF-1.7 fixture'),
+      issuedAt: receipt.issuedAt,
+    };
+    const reports: unknown[] = [];
+    const worker = new PaymentCheckoutDocumentRetentionWorker(
+      parseWebsiteCheckoutDocumentConfig(undefined),
+      {
+        dueForPurge: async () => [{ document, emailJobs: [] }],
+        purge: async () => {
+          throw new Error('raw private failure must not be reported');
+        },
+      } as never,
+      undefined,
+      () => new Date('2033-09-12T12:00:00Z'),
+      (event) => reports.push(event),
+    );
+    await expect(worker.sweep()).resolves.toEqual({
+      examined: 1,
+      purged: 0,
+      held: 1,
+    });
+    expect(reports).toEqual([
+      {
+        documentId: document.documentId,
+        documentKind: 'receipt',
+        code: 'checkout_document_retention_sweep_failed',
+      },
+    ]);
+    expect(JSON.stringify(reports)).not.toContain('raw private failure');
+  });
+
+  it('reports an expired emailed document when Gmail retention deletion is unavailable', async () => {
+    const document = {
+      documentId: randomUUID(),
+      attemptId: randomUUID(),
+      kind: 'paid_invoice' as const,
+      documentNumber: 'TCA-2026-000001',
+      snapshot: parseCheckoutDocumentSnapshot({
+        ...receipt,
+        documentKind: 'paid_invoice',
+        documentNumber: 'TCA-2026-000001',
+        buyer: {
+          ...receipt.buyer,
+          billingProfile: {
+            companyLegalName: 'Example Coaching LLC',
+            invoiceEmail: 'accounts@example.test',
+            taxId: null,
+            address: {
+              street: 'Main Street',
+              houseNumberOrName: '42',
+              city: 'Austin',
+              postalCode: '78701',
+              stateOrProvince: 'TX',
+              country: 'US',
+            },
+          },
+        },
+        policy: {
+          ...receipt.policy,
+          taxPolicyVersion: 'mcs-foundations-zero-tax-display-v1',
+          taxJurisdiction: 'US-TX',
+          taxClassification: 'not_stated',
+          correctionPolicy: 'credit_note_or_replacement_only',
+        },
+      }),
+      snapshotSha256: '5'.repeat(64),
+      pdfSha256: '6'.repeat(64),
+      pdf: Buffer.from('%PDF-1.7 fixture'),
+      issuedAt: receipt.issuedAt,
+    };
+    const reports: unknown[] = [];
+    const worker = new PaymentCheckoutDocumentRetentionWorker(
+      parseWebsiteCheckoutDocumentConfig(undefined),
+      {
+        dueForPurge: async () => [
+          {
+            document,
+            emailJobs: [
+              {
+                jobId: randomUUID(),
+                recipient: 'accounts@example.test',
+                gmailMessageId: 'message-1',
+                gmailThreadId: 'thread-1',
+              },
+            ],
+          },
+        ],
+        purge: async () => {
+          throw new Error('must not purge without Gmail deletion');
+        },
+      } as never,
+      undefined,
+      () => new Date('2033-09-12T12:00:00Z'),
+      (event) => reports.push(event),
+    );
+    await expect(worker.sweep()).resolves.toEqual({
+      examined: 1,
+      purged: 0,
+      held: 1,
+    });
+    expect(reports).toEqual([
+      {
+        documentId: document.documentId,
+        documentKind: 'paid_invoice',
+        code: 'checkout_document_retention_gmail_unconfigured',
+      },
+    ]);
   });
 });

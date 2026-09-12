@@ -324,6 +324,16 @@ export function createWebsiteCheckoutService(
     values.scope,
     config.promotionPolicyReferences,
   );
+  const documentStore =
+    !isTest && config.documents
+      ? new PgPaymentCheckoutDocumentStore(
+          dependencies.transaction,
+          values.caller,
+          payment.scope,
+          vault,
+          config.documentEncryptionKey!,
+        )
+      : null;
   const checkout = new PaymentHttpAdapter(
     new PaymentCheckoutAdmissionController(
       values.caller,
@@ -371,13 +381,7 @@ export function createWebsiteCheckoutService(
                   payment.scope,
                   identity.readPrivateBindings,
                 ),
-                new PgPaymentCheckoutDocumentStore(
-                  dependencies.transaction,
-                  values.caller,
-                  payment.scope,
-                  vault,
-                  config.documentEncryptionKey!,
-                ),
+                documentStore!,
                 dependencies.documentGmail,
               ),
             ),
@@ -430,5 +434,6 @@ export function createWebsiteCheckoutService(
     recordWebhook: core.recordWebhook,
     readPrivateIdentityBindings: identity.readPrivateBindings,
     fulfillAttempt,
+    documentStore,
   });
 }

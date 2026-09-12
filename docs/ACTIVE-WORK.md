@@ -213,6 +213,40 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-12T15:51Z source review converged for the approved paid-document
+  release. Bounded Sonnet/high backend R1
+  `4524cde9-7fc3-475a-9ec9-635cc304ea00` found two material issues: a
+  caller-settable purge GUC and silent/dedup-blocked retention failures. The
+  implementation now validates every tombstone independently against the
+  locked source, retention window and current legal hold; child deletion
+  requires that exact tombstone; duplicate external-deletion evidence is
+  allowed; failures are privacy-minimized structured events; and shutdown
+  awaits an in-flight sweep. Combined correction/checkout R2
+  `1a378ade-390c-4608-a56a-a1c642bea079` confirmed the load-bearing database
+  correction and found no checkout-flow material issue. Its remaining one-line
+  missing report on the Gmail-unconfigured hold was corrected and mechanically
+  covered without a third review round. Current focused backend is 46/46; the
+  frontend is 85/85 plus PHP26+7. Full NanoClaw is4317 pass/32 skip/4 unchanged
+  unrelated Capacity/CNPC/Trafft failures. Runtime receipt and invoice PDFs
+  visually pass and contain Paid, factual USD0 tax, approved address/logo and
+  no authorization/settlement wording. Immutable release build and deployment
+  remain next; no live mutation, payment, email, document or invoice number has
+  occurred.
+
+- 2026-09-12T14:47Z owner approved the final paid-document and checkout
+  decisions under
+  `decision:mcs-paid-invoice-activation-and-checkout-flow-2026-09-12`:
+  independent gift/business choices on Information, one conditional Additional
+  details page, immediate automatic-capture `Paid` semantics, factual USD0 tax
+  without a legal classification, seller EIN omission, seven-year encrypted
+  retention followed by controlled PII/PDF/delivery purge with legal-hold
+  protection, the approved seller address and annual sequence/correction
+  policy, and the polished Tandem-branded receipt/invoice layout. Implementation,
+  bounded Sonnet/high review, normal release/deployment, private finance-policy
+  activation and live nonfinancial verification are in progress. Preserve
+  ordinary MCS Stripe routing and do not manufacture a payment or customer
+  email; a natural post-payment proof remains owner-operated.
+
 - 2026-09-12T13:27Z pre-activation packaging correction: installed immutable
   `ece233ad` passed manifest verification but its help probe exposed missing new
   PDF/font packages in the established shared dependency layout. It was never

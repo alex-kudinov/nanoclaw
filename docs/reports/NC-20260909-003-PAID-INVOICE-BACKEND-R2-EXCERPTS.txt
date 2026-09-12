@@ -1,0 +1,237 @@
+              `${document.documentId}:document-email-recipient`,
+            ),
+          ),
+          gmailMessageId:
+            emailRow.gmail_message_id === null
+              ? null
+              : String(emailRow.gmail_message_id),
+          gmailThreadId:
+            emailRow.gmail_thread_id === null
+              ? null
+              : String(emailRow.gmail_thread_id),
+        }));
+        result.push({ document, emailJobs });
+      }
+      return result;
+    });
+  }
+
+  async purge(
+    candidate: PaymentCheckoutDocumentPurgeCandidate,
+    externalDeletionEvidenceSha256: readonly string[],
+    purgedAt: string,
+  ): Promise<'purged' | 'already_purged'> {
+    z.iso.datetime({ offset: true }).parse(purgedAt);
+    for (const value of externalDeletionEvidenceSha256) digest.parse(value);
+    if (externalDeletionEvidenceSha256.length !== candidate.emailJobs.length)
+      throw new PaymentDomainError('checkout_document_retention_conflict');
+    const purgeReceiptSha256 = sha(
+      stableJson({
+        schemaVersion: 1,
+        documentId: candidate.document.documentId,
+        documentKind: candidate.document.kind,
+        documentNumber: candidate.document.documentNumber,
+        issuedAt: candidate.document.issuedAt,
+        amountMinor: candidate.document.snapshot.purchase.totalMinor,
+        currency: candidate.document.snapshot.purchase.currency,
+        snapshotSha256: candidate.document.snapshotSha256,
+        pdfSha256: candidate.document.pdfSha256,
+        retentionPolicyVersion:
+          candidate.document.snapshot.policy.retentionPolicyVersion,
+        externalDeletionEvidenceSha256: [
+          ...externalDeletionEvidenceSha256,
+        ].sort(),
+      }),
+    );
+    return this.transaction(async (client) => {
+      const result = await client.query<{ outcome: string }>(
+        `SELECT business_v2.purge_payment_checkout_document($1,$2,$3) outcome`,
+        [candidate.document.documentId, purgeReceiptSha256, purgedAt],
+      );
+      const outcome = result.rows[0]?.outcome;
+      if (outcome !== 'purged' && outcome !== 'already_purged')
+        throw new PaymentDomainError('checkout_document_retention_conflict');
+      return outcome;
+    });
+  }
+  readback(input: {
+    messageId: string;
+    threadId: string;
+    to: string;
+    subject: string;
+    filename: string;
+    pdfSha256: string;
+  }) {
+    return this.exact(input);
+  }
+
+  async deleteExact(input: {
+    messageId: string | null;
+    threadId: string | null;
+    to: string;
+    subject: string;
+    filename: string;
+    pdfSha256: string;
+  }) {
+    let messageId = input.messageId;
+    let threadId = input.threadId;
+    if ((messageId === null) !== (threadId === null))
+      throw new Error('document_gmail_sent_match_invalid');
+    if (messageId && threadId) {
+      try {
+        await this.exact({ ...input, messageId, threadId });
+      } catch (error) {
+        const status =
+          error && typeof error === 'object' && 'code' in error
+            ? Number(error.code)
+            : 0;
+        if (status !== 404) throw error;
+        return {
+          evidenceSha256: sha(
+            stableJson({
+              outcome: 'already_absent',
+              messageIdSha256: sha(messageId),
+              threadIdSha256: sha(threadId),
+              pdfSha256: input.pdfSha256,
+            }),
+          ),
+        };
+      }
+    } else {
+      const found = await this.findExact(input);
+      if (!found)
+        return {
+          evidenceSha256: sha(
+            stableJson({
+              outcome: 'no_sent_match',
+              toSha256: sha(input.to.toLowerCase()),
+              subjectSha256: sha(input.subject),
+              filename: input.filename,
+              pdfSha256: input.pdfSha256,
+            }),
+          ),
+        };
+      messageId = found.messageId;
+      threadId = found.threadId;
+    }
+    this.writeGuard({
+      system: 'gmail',
+      actionClass: 'c3_external_communication',
+      source: 'host:website-checkout-document-retention',
+    });
+    await this.gmail.users.messages.delete({ userId: 'me', id: messageId });
+    return {
+      evidenceSha256: sha(
+        stableJson({
+          outcome: 'deleted',
+          messageIdSha256: sha(messageId),
+          threadIdSha256: sha(threadId),
+          pdfSha256: input.pdfSha256,
+        }),
+      ),
+    };
+  }
+}
+
+export class PaymentCheckoutDocumentRetentionWorker {
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private running = false;
+  private inFlight: Promise<unknown> | null = null;
+
+  constructor(
+    private readonly config: WebsiteCheckoutDocumentConfig,
+    private readonly store: PgPaymentCheckoutDocumentStore,
+    private readonly gmail?: WebsiteCheckoutDocumentGmail,
+    private readonly now: () => Date = () => new Date(),
+    private readonly reportFailure: (input: {
+      documentId: string | null;
+      documentKind: PaymentCheckoutDocumentKind | null;
+      code: string;
+    }) => void = () => undefined,
+  ) {}
+
+  async sweep(): Promise<{ examined: number; purged: number; held: number }> {
+    if (this.running) return { examined: 0, purged: 0, held: 0 };
+    this.running = true;
+    let examined = 0;
+    let purged = 0;
+    let held = 0;
+    try {
+      const now = this.now().toISOString();
+      const candidates = await this.store.dueForPurge(
+        now,
+        this.config.retentionPolicy.batchSize,
+      );
+      for (const candidate of candidates) {
+        examined++;
+        try {
+          const evidence: string[] = [];
+          if (candidate.emailJobs.length && !this.gmail) {
+            held++;
+            continue;
+          }
+          for (const job of candidate.emailJobs) {
+            const filename = `${candidate.document.documentNumber}-${candidate.document.kind === 'receipt' ? 'receipt' : 'paid-invoice'}.pdf`;
+            const label =
+              candidate.document.kind === 'receipt'
+                ? 'receipt'
+                : 'paid invoice';
+            const deleted = await this.gmail!.deleteExact({
+              messageId: job.gmailMessageId,
+              threadId: job.gmailThreadId,
+              to: job.recipient,
+              subject: `Your ${PRODUCT} ${label} — ${candidate.document.documentNumber}`,
+              filename,
+              pdfSha256: candidate.document.pdfSha256,
+            });
+            evidence.push(deleted.evidenceSha256);
+          }
+          await this.store.purge(candidate, evidence, now);
+          purged++;
+        } catch (error) {
+          held++;
+          this.reportFailure({
+            documentId: candidate.document.documentId,
+            documentKind: candidate.document.kind,
+            code:
+              error instanceof PaymentDomainError
+                ? error.code
+                : 'checkout_document_retention_sweep_failed',
+          });
+        }
+      }
+      return { examined, purged, held };
+    } finally {
+      this.running = false;
+    }
+  }
+
+  start(): void {
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      if (this.inFlight) return;
+      this.inFlight = this.sweep()
+        .catch(() =>
+          this.reportFailure({
+            documentId: null,
+            documentKind: null,
+            code: 'checkout_document_retention_scan_failed',
+          }),
+        )
+        .finally(() => {
+          this.inFlight = null;
+        });
+    }, this.config.retentionPolicy.sweepIntervalMs);
+    this.timer.unref();
+  }
+
+  async stop(): Promise<void> {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    await this.inFlight;
+  }
+}
+
+export class PaymentCheckoutDocumentOwner {
+  constructor(
+    private readonly config: WebsiteCheckoutDocumentConfig,
