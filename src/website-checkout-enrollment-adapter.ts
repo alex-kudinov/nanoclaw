@@ -155,8 +155,8 @@ type IdentityRow = {
   receipt_reference: string;
   offer_key: string;
   source_sha256: string;
-  payer_party_id: string;
-  participant_party_id: string;
+  payer_party_id: string | null;
+  participant_party_id: string | null;
   payer_reference: string;
   participant_reference: string;
   payer_role_proof: string;
@@ -335,6 +335,10 @@ export class WebsiteCheckoutEnrollmentAdapter {
     },
     private readonly enrollmentDatabaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
     private readonly excludedFulfillmentAttemptIds: ReadonlySet<string> = new Set(),
+    private readonly materializeIdentity?: (
+      client: PoolClient,
+      attemptId: string,
+    ) => Promise<unknown>,
   ) {
     this.scopeHash = paymentScopeFingerprint(scope);
     const parsed = publicationSchema.safeParse(publication);
@@ -536,9 +540,25 @@ export class WebsiteCheckoutEnrollmentAdapter {
       'checkout_admission_binding_conflict',
     );
     const identities = await client.query<IdentityRow>(
-      `SELECT * FROM business_v2.payment_identity_preparations
-       WHERE caller=$1 AND preparation_id=$2 AND origin_operation_id=$3
-         AND receipt_reference=$4 FOR UPDATE`,
+      this.materializeIdentity
+        ? `SELECT i.caller,i.preparation_id,i.origin_operation_id,
+             i.receipt_reference,i.offer_key,i.source_sha256,
+             COALESCE(m.payer_party_id,i.payer_party_id)::text payer_party_id,
+             COALESCE(m.participant_party_id,i.participant_party_id)::text participant_party_id,
+             i.payer_reference,i.participant_reference,i.payer_role_proof,
+             i.participant_role_proof,i.purchase_relationship
+           FROM business_v2.payment_identity_preparations i
+           LEFT JOIN business_v2.payment_identity_materializations m
+             ON m.caller=i.caller AND m.preparation_id=i.preparation_id
+           WHERE i.caller=$1 AND i.preparation_id=$2 AND i.origin_operation_id=$3
+             AND i.receipt_reference=$4 FOR UPDATE OF i`
+        : `SELECT caller,preparation_id,origin_operation_id,receipt_reference,
+             offer_key,source_sha256,payer_party_id::text,participant_party_id::text,
+             payer_reference,participant_reference,payer_role_proof,
+             participant_role_proof,purchase_relationship
+           FROM business_v2.payment_identity_preparations
+           WHERE caller=$1 AND preparation_id=$2 AND origin_operation_id=$3
+             AND receipt_reference=$4 FOR UPDATE`,
       [
         this.caller,
         checkout.identity_preparation_id,
@@ -730,7 +750,7 @@ export class WebsiteCheckoutEnrollmentAdapter {
           'checkout_admission_scope_denied',
         );
         const orderKey = this.orderKey(attempt);
-        const authority = await this.authority(client, attempt);
+        let authority = await this.authority(client, attempt);
         if (!authority)
           return { ...state, orderKey, disposition: 'held' as const };
         const current = await this.currentEvidence(client, attempt);
@@ -739,6 +759,15 @@ export class WebsiteCheckoutEnrollmentAdapter {
           current,
           authority.providerOperationId,
         );
+        if (
+          current.readiness.courseAccess === 'eligible' &&
+          authority.identity.payer_party_id === null &&
+          this.materializeIdentity
+        ) {
+          await this.materializeIdentity(client, attempt.attemptId);
+          authority = await this.authority(client, attempt);
+          ensure(authority !== null, 'checkout_identity_evidence_missing');
+        }
         const consumedRows = await client.query<ConsumedRow>(
           `SELECT * FROM business_v2.payment_enrollment_admissions
            WHERE scope_sha256=$1 AND attempt_id=$2 FOR UPDATE`,
@@ -768,7 +797,9 @@ export class WebsiteCheckoutEnrollmentAdapter {
         if (
           !current.method ||
           !current.projection ||
-          current.readiness.courseAccess !== 'eligible'
+          current.readiness.courseAccess !== 'eligible' ||
+          authority.identity.payer_party_id === null ||
+          authority.identity.participant_party_id === null
         ) {
           metadata = {
             ...metadata,

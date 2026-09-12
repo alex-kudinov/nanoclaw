@@ -28,6 +28,7 @@ describe('website checkout immutable release packaging', () => {
       '162_payment_provider_optimization_evidence',
       '163_payment_checkout_documents',
       '164_payment_checkout_document_retention',
+      '165_deferred_checkout_identity',
     ];
     for (const migration of expected) {
       expect(builder).toContain(

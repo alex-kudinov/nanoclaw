@@ -157,6 +157,20 @@ export class PaymentIdentityReferenceIssuer {
     return this.issue('party-ref', [partyId]);
   }
 
+  /** Stable purchase-scoped reference used before a Party exists. */
+  submissionParty(
+    preparationId: string,
+    role: 'payer' | 'participant',
+  ): string {
+    if (!uuid.safeParse(preparationId).success)
+      throw new PaymentDomainError('invalid_identity_evidence');
+    return this.issue('party-ref', [
+      'checkout-submission',
+      preparationId,
+      role,
+    ]);
+  }
+
   role(input: {
     caller: string;
     preparationId: string;

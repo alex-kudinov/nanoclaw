@@ -425,6 +425,7 @@ beforeAll(async () => {
     '160_payment_chaos_observability.sql',
     '163_payment_checkout_documents.sql',
     '164_payment_checkout_document_retention.sql',
+    '165_deferred_checkout_identity.sql',
   ])
     await pool.query(sql(migration));
   await transaction(async (client) => {

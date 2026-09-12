@@ -43,10 +43,10 @@ type IdentityRow = {
   identity_request_sha256: string;
   source: PaymentScope;
   source_sha256: string;
-  payer_party_id: string;
-  participant_party_id: string;
-  payer_interaction_id: string;
-  participant_interaction_id: string;
+  payer_party_id: string | null;
+  participant_party_id: string | null;
+  payer_interaction_id: string | null;
+  participant_interaction_id: string | null;
   payer_reference: string;
   participant_reference: string;
   payer_role_proof: string;
@@ -78,6 +78,7 @@ export class PaymentIdentityPreparationStore {
     tokenSecret: Buffer,
     private readonly resolver: IdentityResolver = resolveCheckoutCustomerIdentityWithClient,
     private readonly vault?: PaymentPayloadVault,
+    private readonly deferMaterialization = false,
   ) {
     this.#identitySecret = identitySecret;
     this.#tokenSecret = Buffer.from(tokenSecret);
@@ -278,6 +279,100 @@ export class PaymentIdentityPreparationStore {
       }
 
       const resolvedAt = await this.now(client);
+      if (this.deferMaterialization) {
+        ensure(this.vault !== undefined, 'invalid_identity_configuration');
+        const payerReference = this.issuer.submissionParty(
+          command.preparationId,
+          'payer',
+        );
+        const participantReference =
+          command.purchaseRelationship === 'self'
+            ? payerReference
+            : this.issuer.submissionParty(command.preparationId, 'participant');
+        const common = {
+          caller: this.caller,
+          preparationId: command.preparationId,
+          intentId: command.intentId,
+          operationId: command.requestId,
+          offerKey: command.offerKey,
+          relationship: command.purchaseRelationship,
+          requestSha256: input.identityRequestSha256,
+        } as const;
+        const payerRoleProof = this.issuer.role({
+          ...common,
+          role: 'payer',
+          partyReference: payerReference,
+          interactionId: 0,
+        });
+        const participantRoleProof = this.issuer.role({
+          ...common,
+          role: 'participant',
+          partyReference: participantReference,
+          interactionId: 0,
+        });
+        const receiptReference = this.issuer.receipt({
+          caller: this.caller,
+          preparationId: command.preparationId,
+          intentId: command.intentId,
+          operationId: command.requestId,
+          requestSha256: input.identityRequestSha256,
+          payerRoleProof,
+          participantRoleProof,
+        });
+        const inserted = await client.query<IdentityRow>(
+          `INSERT INTO business_v2.payment_identity_preparations
+           (preparation_id,caller,origin_operation_id,intent_id,offer_key,
+            purchase_relationship,identity_request_sha256,source,source_sha256,
+            payer_party_id,participant_party_id,payer_interaction_id,
+            participant_interaction_id,payer_reference,participant_reference,
+            payer_role_proof,participant_role_proof,
+            payer_existing_stripe_customer_id,
+            participant_existing_stripe_customer_id,receipt_reference,resolved_at,
+            billing_profile_sha256,encrypted_billing_profile)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,NULL,NULL,NULL,NULL,$10,$11,
+                  $12,$13,NULL,NULL,$14,$15,NULL,NULL)
+           RETURNING *`,
+          [
+            command.preparationId,
+            this.caller,
+            command.requestId,
+            command.intentId,
+            command.offerKey,
+            command.purchaseRelationship,
+            input.identityRequestSha256,
+            JSON.stringify(this.issuer.source),
+            this.issuer.sourceSha256,
+            payerReference,
+            participantReference,
+            payerRoleProof,
+            participantRoleProof,
+            receiptReference,
+            resolvedAt,
+          ],
+        );
+        ensure(inserted.rowCount === 1, 'identity_write_unknown');
+        const serialized = JSON.stringify(command);
+        const payload = await client.query(
+          `INSERT INTO business_v2.payment_checkout_submission_payloads
+           (caller,preparation_id,payer_reference,payload_sha256,
+            encrypted_payload,created_at,expires_at)
+           VALUES($1,$2,$3,$4,$5,$6,$7)`,
+          [
+            this.caller,
+            command.preparationId,
+            payerReference,
+            input.identityRequestSha256,
+            this.vault.seal(
+              serialized,
+              `${command.preparationId}:identity-submission`,
+            ),
+            resolvedAt,
+            resolvedAt + 24 * 60 * 60 * 1000,
+          ],
+        );
+        ensure(payload.rowCount === 1, 'identity_write_unknown');
+        return this.resolved(inserted.rows[0]);
+      }
       const observedAt = new Date(resolvedAt).toISOString();
       const payer = await this.resolver({
         client,
@@ -426,25 +521,40 @@ export class PaymentIdentityPreparationStore {
     if (!z.uuid().safeParse(preparationId).success)
       throw new PaymentDomainError('invalid_identity_request');
     return this.durable(async (client) => {
-      const result = await client.query<IdentityRow>(
-        `SELECT * FROM business_v2.payment_identity_preparations
-         WHERE caller=$1 AND preparation_id=$2 AND source_sha256=$3`,
+      const result = await client.query<
+        IdentityRow & {
+          materialized_payer_party_id: string | null;
+          materialized_participant_party_id: string | null;
+          materialized_billing_profile_sha256: string | null;
+          materialized_encrypted_billing_profile: string | null;
+        }
+      >(
+        `SELECT i.*,m.payer_party_id::text materialized_payer_party_id,
+           m.participant_party_id::text materialized_participant_party_id,
+           m.billing_profile_sha256 materialized_billing_profile_sha256,
+           m.encrypted_billing_profile materialized_encrypted_billing_profile
+         FROM business_v2.payment_identity_preparations i
+         LEFT JOIN business_v2.payment_identity_materializations m
+           ON m.caller=i.caller AND m.preparation_id=i.preparation_id
+         WHERE i.caller=$1 AND i.preparation_id=$2 AND i.source_sha256=$3`,
         [this.caller, preparationId, this.issuer.sourceSha256],
       );
       if (result.rowCount !== 1) return null;
       const row = result.rows[0];
-      if (
-        (row.billing_profile_sha256 === null) !==
-        (row.encrypted_billing_profile === null)
-      )
+      const billingSha =
+        row.materialized_billing_profile_sha256 ?? row.billing_profile_sha256;
+      const encryptedBilling =
+        row.materialized_encrypted_billing_profile ??
+        row.encrypted_billing_profile;
+      if ((billingSha === null) !== (encryptedBilling === null))
         throw new PaymentDomainError('identity_evidence_corrupt');
       let billingProfile: CheckoutBillingProfile | null = null;
-      if (row.encrypted_billing_profile) {
+      if (encryptedBilling) {
         ensure(this.vault !== undefined, 'identity_evidence_corrupt');
         billingProfile = parseCheckoutBillingProfile(
           JSON.parse(
             this.vault.open(
-              row.encrypted_billing_profile,
+              encryptedBilling,
               `${preparationId}:billing-profile`,
             ),
           ),
@@ -452,18 +562,218 @@ export class PaymentIdentityPreparationStore {
       }
       if (
         billingProfile &&
-        checkoutBillingProfileSha256(billingProfile) !==
-          row.billing_profile_sha256
+        checkoutBillingProfileSha256(billingProfile) !== billingSha
       )
         throw new PaymentDomainError('identity_evidence_corrupt');
+      const payerPartyId = Number(
+        row.materialized_payer_party_id ?? row.payer_party_id,
+      );
+      const participantPartyId = Number(
+        row.materialized_participant_party_id ?? row.participant_party_id,
+      );
+      if (
+        !Number.isSafeInteger(payerPartyId) ||
+        payerPartyId < 1 ||
+        !Number.isSafeInteger(participantPartyId) ||
+        participantPartyId < 1
+      )
+        return null;
       return {
-        payerPartyId: Number(row.payer_party_id),
-        participantPartyId: Number(row.participant_party_id),
+        payerPartyId,
+        participantPartyId,
         payerExistingStripeCustomerId: row.payer_existing_stripe_customer_id,
         participantExistingStripeCustomerId:
           row.participant_existing_stripe_customer_id,
         billingProfile,
       };
     });
+  }
+
+  /** Materialize a paid submission exactly once; identical emails remain distinct purchases. */
+  async materializeForAttempt(
+    client: PoolClient,
+    attemptId: string,
+  ): Promise<{
+    preparationId: string;
+    payerPartyId: number;
+    participantPartyId: number;
+    payerInteractionId: number;
+    participantInteractionId: number;
+  } | null> {
+    ensure(this.deferMaterialization, 'identity_materialization_unavailable');
+    ensure(this.vault !== undefined, 'invalid_identity_configuration');
+    const attempt = await client.query<{ payer_reference: string | null }>(
+      `SELECT contract->'quote'->>'payerReference' payer_reference
+       FROM business_v2.payment_attempts WHERE attempt_id=$1 FOR UPDATE`,
+      [attemptId],
+    );
+    if (attempt.rowCount !== 1 || !attempt.rows[0].payer_reference) return null;
+    const identity = await client.query<IdentityRow>(
+      `SELECT i.* FROM business_v2.payment_identity_preparations i
+       WHERE i.caller=$1 AND i.payer_reference=$2 FOR UPDATE`,
+      [this.caller, attempt.rows[0].payer_reference],
+    );
+    if (identity.rowCount !== 1) return null;
+    const row = identity.rows[0];
+    const prior = await client.query<{
+      payer_party_id: string;
+      participant_party_id: string;
+      payer_interaction_id: string;
+      participant_interaction_id: string;
+    }>(
+      `SELECT payer_party_id::text,participant_party_id::text,
+         payer_interaction_id::text,participant_interaction_id::text
+       FROM business_v2.payment_identity_materializations
+       WHERE caller=$1 AND preparation_id=$2`,
+      [this.caller, row.preparation_id],
+    );
+    if (prior.rowCount === 1)
+      return {
+        preparationId: row.preparation_id,
+        payerPartyId: Number(prior.rows[0].payer_party_id),
+        participantPartyId: Number(prior.rows[0].participant_party_id),
+        payerInteractionId: Number(prior.rows[0].payer_interaction_id),
+        participantInteractionId: Number(
+          prior.rows[0].participant_interaction_id,
+        ),
+      };
+    const payload = await client.query<{
+      payload_sha256: string;
+      encrypted_payload: string;
+      expires_at: string;
+    }>(
+      `SELECT payload_sha256,encrypted_payload,expires_at::text
+       FROM business_v2.payment_checkout_submission_payloads
+       WHERE caller=$1 AND preparation_id=$2 FOR UPDATE`,
+      [this.caller, row.preparation_id],
+    );
+    ensure(payload.rowCount === 1, 'checkout_submission_missing');
+    const command = parsePaymentIdentityResolveCommand(
+      JSON.parse(
+        this.vault.open(
+          payload.rows[0].encrypted_payload,
+          `${row.preparation_id}:identity-submission`,
+        ),
+      ),
+    );
+    ensure(
+      payload.rows[0].payload_sha256 === row.identity_request_sha256,
+      'identity_evidence_corrupt',
+    );
+    const create = async (
+      role: 'payer' | 'participant',
+      candidate: { firstName: string; lastName: string; email: string },
+    ) => {
+      const party = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.parties
+         (party_type,display_name,primary_email,source_provider,last_updated_by)
+         VALUES('person',$1,$2,'wordpress','checkout-payment-confirmed')
+         RETURNING id::text`,
+        [`${candidate.firstName} ${candidate.lastName}`, candidate.email],
+      );
+      const partyId = Number(party.rows[0].id);
+      await client.query(
+        `INSERT INTO business_v2.party_emails(party_id,email,is_primary)
+         VALUES($1,$2,true)`,
+        [partyId, candidate.email],
+      );
+      await client.query(
+        `SELECT business_v2.fn_add_party_role($1,'prospect')`,
+        [partyId],
+      );
+      const interaction = await client.query<{ id: string }>(
+        `INSERT INTO business_v2.interactions
+         (party_id,channel,direction,subject,occurred_at,source_provider,source_id,
+          metadata,last_updated_by)
+         VALUES($1,'form-submission','inbound','Website checkout payment confirmed',
+          clock_timestamp(),'wordpress',$2,$3::jsonb,'checkout-payment-confirmed')
+         RETURNING id::text`,
+        [
+          partyId,
+          `checkout_identity:${row.preparation_id}:${role}`,
+          JSON.stringify({
+            source: 'checkout_payment_confirmed',
+            offer_key: row.offer_key,
+            preparation_id: row.preparation_id,
+            role,
+          }),
+        ],
+      );
+      await client.query(
+        `INSERT INTO business_v2.plutio_outbox
+         (operation,kind,party_id,payload,last_updated_by)
+         VALUES('sync','party',$1,$2::jsonb,'checkout-payment-confirmed')
+         ON CONFLICT (kind,party_id,operation) WHERE status IN ('pending','in_flight')
+         DO NOTHING`,
+        [
+          partyId,
+          JSON.stringify({
+            kind: 'party',
+            reason: 'confirmed_checkout_purchase',
+            source_provider: 'wordpress',
+          }),
+        ],
+      );
+      return { partyId, interactionId: Number(interaction.rows[0].id) };
+    };
+    const payer = await create('payer', command.payer.candidate);
+    const participant =
+      command.purchaseRelationship === 'self'
+        ? payer
+        : await create('participant', command.participant.candidate);
+    const materializedAt = await this.now(client);
+    const billing = command.billingProfile ?? null;
+    await client.query(
+      `INSERT INTO business_v2.payment_identity_materializations
+       (caller,preparation_id,payer_party_id,participant_party_id,
+        payer_interaction_id,participant_interaction_id,billing_profile_sha256,
+        encrypted_billing_profile,materialized_at)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [
+        this.caller,
+        row.preparation_id,
+        payer.partyId,
+        participant.partyId,
+        payer.interactionId,
+        participant.interactionId,
+        billing ? checkoutBillingProfileSha256(billing) : null,
+        billing
+          ? this.vault.seal(
+              JSON.stringify(billing),
+              `${row.preparation_id}:billing-profile`,
+            )
+          : null,
+        materializedAt,
+      ],
+    );
+    await client.query(
+      `DELETE FROM business_v2.payment_checkout_submission_payloads
+       WHERE caller=$1 AND preparation_id=$2`,
+      [this.caller, row.preparation_id],
+    );
+    return {
+      preparationId: row.preparation_id,
+      payerPartyId: payer.partyId,
+      participantPartyId: participant.partyId,
+      payerInteractionId: payer.interactionId,
+      participantInteractionId: participant.interactionId,
+    };
+  }
+
+  async purgeForAttempt(
+    client: PoolClient,
+    attemptId: string,
+  ): Promise<boolean> {
+    const result = await client.query(
+      `DELETE FROM business_v2.payment_checkout_submission_payloads p
+       USING business_v2.payment_identity_preparations i,
+             business_v2.payment_attempts a
+       WHERE p.caller=$1 AND i.caller=p.caller
+         AND i.preparation_id=p.preparation_id
+         AND a.attempt_id=$2
+         AND a.contract->'quote'->>'payerReference'=i.payer_reference`,
+      [this.caller, attemptId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }

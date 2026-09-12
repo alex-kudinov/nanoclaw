@@ -310,6 +310,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_163_payment_checkout_documents.sql',
     'data/business/migrations/nanoclaw-v2/164_payment_checkout_document_retention.sql',
     'data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql',
+    'data/business/migrations/nanoclaw-v2/165_deferred_checkout_identity.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_165_deferred_checkout_identity.sql',
     'scripts/verify-release.mjs',
     'scripts/bundle-payment-documents.mjs',
     'docs/licenses/Roboto-OFL-1.1.txt',

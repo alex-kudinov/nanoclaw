@@ -269,6 +269,7 @@ export function createWebsiteCheckoutService(
       identitySecret: config.identitySecret,
       identityTokenSecret: config.identityTokenSecret,
       identityReferenceSecret: config.identityReferenceSecret,
+      deferMaterialization: !isTest,
       limits: values.limits,
     },
     dependencies,
@@ -317,6 +318,7 @@ export function createWebsiteCheckoutService(
         },
     dependencies.enrollmentDatabaseGuard,
     dependencies.excludedFulfillmentAttemptIds,
+    isTest ? undefined : identity.materializeForAttempt,
   );
   const promotion = new PaymentPromotionConsumptionReceiptReader(
     dependencies.transaction,
@@ -428,12 +430,50 @@ export function createWebsiteCheckoutService(
       accessDelivery: dependencies.accessDelivery,
       receiptWelcomeOwner: dependencies.receiptWelcomeOwner,
     });
+  const cleanupCheckoutSubmissions = () =>
+    dependencies.transaction(async (client) => {
+      const orphaned = await client.query(
+        `DELETE FROM business_v2.payment_checkout_submission_payloads p
+         WHERE p.expires_at <= floor(extract(epoch FROM clock_timestamp())*1000)::bigint
+           AND NOT EXISTS (
+             SELECT 1 FROM business_v2.payment_attempts a
+             WHERE a.contract->'quote'->>'payerReference'=p.payer_reference
+           )`,
+      );
+      const terminal = await client.query<{ attempt_id: string }>(
+        `SELECT DISTINCT a.attempt_id::text
+         FROM business_v2.payment_attempts a
+         JOIN business_v2.payment_identity_preparations i
+           ON i.caller=$1
+          AND i.payer_reference=a.contract->'quote'->>'payerReference'
+         JOIN business_v2.payment_checkout_submission_payloads p
+           ON p.caller=i.caller AND p.preparation_id=i.preparation_id
+         LEFT JOIN business_v2.payment_checkout_evidence e
+           ON e.attempt_id=a.attempt_id
+         WHERE e.projection->>'state' IN ('refused','payment_failed')
+           AND NOT EXISTS (
+             SELECT 1 FROM business_v2.payment_operations o
+             WHERE o.attempt_id=a.attempt_id
+               AND NOT EXISTS (
+                 SELECT 1
+                 FROM business_v2.payment_session_terminal_nonpayment_receipts t
+                 WHERE t.payment_operation_id=o.operation_id
+               )
+           )`,
+        [values.caller],
+      );
+      let purged = orphaned.rowCount ?? 0;
+      for (const row of terminal.rows)
+        if (await identity.purgeForAttempt(client, row.attempt_id)) purged += 1;
+      return purged;
+    });
   return Object.freeze({
     environment: config.profile.environment,
     http: Object.freeze({ handle }),
     recordWebhook: core.recordWebhook,
     readPrivateIdentityBindings: identity.readPrivateBindings,
     fulfillAttempt,
+    cleanupCheckoutSubmissions,
     documentStore,
   });
 }

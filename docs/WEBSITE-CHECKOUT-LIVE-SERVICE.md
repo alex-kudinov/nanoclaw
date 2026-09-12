@@ -47,7 +47,7 @@ commit, wrong Node or mismatched root fail before config/DB/listener work.
 
 The clean-release builder executes that compiled entrypoint's `--help` and
 relative-config refusal paths before inventorying the archive, and packages the
-exact forward/rollback migrations 146-163. The inert
+exact forward/rollback migrations 146-165. The inert
 `launchd/com.nanoclaw.website-checkout-live.plist` template contains only
 unresolved node, immutable release, private config, non-release working
 directory and log-root placeholders. It supplies no port, remote host, tunnel,
@@ -222,7 +222,7 @@ are the only TEST evidence in this source boundary.
 ## Deployment gates still outside this source
 
 - approved exact database/host/port and encrypted proxy configuration;
-- migrations 148 and 149-164 applied and read back through the established
+- migrations 148 and 149-165 applied and read back through the established
   release procedure; startup never applies them;
 - private LIVE keys, company/merchant/store and provider webhook settings;
 - accepted publication and Heartbeat activation receipts;
@@ -235,9 +235,9 @@ readback and learner outcome remain distinct evidence.
 
 ## Owner-directed pre-payment replacement
 
-Before main-page cutover, the public MCS path will stop materializing or
-deduplicating Party/identity, order and enrollment state before Adyen confirms
-payment. The replacement contract is deliberately small:
+The source implementation now stops materializing or deduplicating
+Party/identity, order and enrollment state before Adyen confirms payment. The
+replacement contract is deliberately small:
 
 1. validate the editable browser form, email and promotion;
 2. store one temporary encrypted submitted-form snapshot and create one Adyen
@@ -251,11 +251,24 @@ payment. The replacement contract is deliberately small:
    editable form; on pending/ambiguous payment, retain it only until provider
    resolution and do not invite another payment.
 
-The existing compatibility path remains active only until this replacement is
-implemented, reviewed and proven on the direct canary. Its immediate incident
-fix removes the search-path-dependent new-Party cast and the multi-candidate
-email purchase hold; neither change is represented as completion of the larger
-replacement.
+Migration165 stores the submitted contact/business form only in an encrypted,
+deletable payload. Its purchase-scoped references bind the immutable payment
+attempt without pretending a Party already exists. Exact eligible card evidence
+causes the enrollment transaction to create new purchase-scoped Parties,
+record an immutable materialization receipt, delete the temporary payload, and
+continue into order, documents, enrollment, access and notices. A repeated
+identical email is a distinct deliberate purchase; only replay of the same
+attempt is idempotent. Terminal refused/failed payment purges the payload.
+Pending or ambiguous payment retains it until provider resolution and cannot
+start a second payment.
+
+The browser no longer calls a separate pre-submit status endpoint before
+submitting a valid card to the accepted Adyen Session, and it no longer offers
+same-order successor Sessions after failure. Terminal nonpayment returns to the
+editable form for a new deliberate submission. Unfinished pre-payment setup is
+discarded automatically instead of exposing draft/re-entry language. This is
+source-implemented and locally verified; production migration/release and live
+readback remain separate facts.
 
 ## Confirmation and billing preparation
 

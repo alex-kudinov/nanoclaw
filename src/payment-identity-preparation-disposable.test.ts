@@ -229,6 +229,7 @@ beforeAll(async () => {
     'rollback_154_payment_identity_preparation.sql',
     '154_payment_identity_preparation.sql',
     '161_payment_checkout_billing_profile.sql',
+    '165_deferred_checkout_identity.sql',
   ]) {
     try {
       await pool.query(sql(migration));

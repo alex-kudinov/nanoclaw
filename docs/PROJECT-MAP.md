@@ -942,6 +942,17 @@ activation receipts remain external gates. TEST adds an explicit
 the prior protected-preview profile as the default. See
 `docs/WEBSITE-CHECKOUT-LIVE-SERVICE.md`.
 
+Migration165 changes the LIVE pre-payment identity boundary without changing
+the TEST compatibility profile. A submitted LIVE form is encrypted in a
+deletable temporary payload and receives purchase-scoped references; no Party
+or interaction exists yet. The exact payment attempt remains the durable money
+record. Only eligible authenticated card evidence lets the enrollment
+transaction create distinct purchase-scoped Parties, record immutable
+materialization, delete temporary PII, and continue into order/enrollment/access.
+Terminal refused/failed payment deletes the temporary payload, while
+pending/ambiguous evidence keeps it for reconciliation. Email equality is not
+purchase idempotency; only exact request/attempt replay is.
+
 The same LIVE runner now has a default-off, separately isolated payment-
 observability worker (`payment-chaos-observability.ts`, tentative local
 migration160). It projects only committed exact-caller/English-MCS attempt,

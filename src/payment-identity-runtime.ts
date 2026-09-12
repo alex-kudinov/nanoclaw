@@ -35,6 +35,7 @@ export interface PaymentIdentityRuntimeConfig {
   identitySecret: string;
   identityTokenSecret: Buffer;
   identityReferenceSecret: Buffer;
+  deferMaterialization?: boolean;
   limits: {
     requestsPerWindow: number;
     maxActive: number;
@@ -115,6 +116,7 @@ export function createPaymentIdentityRuntime(
     config.identityTokenSecret,
     dependencies.identityResolver,
     vault,
+    config.deferMaterialization === true,
   );
   const controller = new PaymentIdentityApiController(
     config.caller,
@@ -134,5 +136,11 @@ export function createPaymentIdentityRuntime(
     ),
     readPrivateBindings: (preparationId: string) =>
       store.readPrivateBindings(preparationId),
+    materializeForAttempt: (
+      client: import('pg').PoolClient,
+      attemptId: string,
+    ) => store.materializeForAttempt(client, attemptId),
+    purgeForAttempt: (client: import('pg').PoolClient, attemptId: string) =>
+      store.purgeForAttempt(client, attemptId),
   });
 }

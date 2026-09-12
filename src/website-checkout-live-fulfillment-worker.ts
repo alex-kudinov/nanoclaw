@@ -23,6 +23,7 @@ export interface WebsiteCheckoutLiveFulfillmentService {
   fulfillAttempt(
     attemptId: string,
   ): Promise<WebsiteCheckoutLiveFulfillmentResult>;
+  cleanupCheckoutSubmissions?(): Promise<number>;
 }
 
 /**
@@ -107,6 +108,7 @@ export class WebsiteCheckoutLiveFulfillmentWorker {
   }> {
     if (this.activeDrain) return this.activeDrain;
     const drain = async () => {
+      await this.service.cleanupCheckoutSubmissions?.();
       let after: { acceptedAt: string; attemptId: string } | null = null;
       let scanned = 0;
       let materialized = 0;

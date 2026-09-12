@@ -454,7 +454,7 @@ describe('managed LIVE private config and schema gates', () => {
         user: 'approved_user',
         ssl: 'require',
         role: 'nanoclaw_admin',
-        schemaContract: 'nanoclaw-v2:148,149-164',
+        schemaContract: 'nanoclaw-v2:148,149-165',
       },
       adyen: {
         environment: 'live',
@@ -706,7 +706,7 @@ describe('managed LIVE private config and schema gates', () => {
         rows: [{ database: 'approved_database', role_exists: true }],
       })
       .mockResolvedValueOnce({
-        rowCount: 25,
+        rowCount: 27,
         rows: [
           'student_projection_outbox',
           'student_projection_receipts',
@@ -720,6 +720,8 @@ describe('managed LIVE private config and schema gates', () => {
           'payment_session_retry_exceptions',
           'student_financial_obligations',
           'payment_identity_preparations',
+          'payment_checkout_submission_payloads',
+          'payment_identity_materializations',
           'payment_checkout_admission_evidence',
           'payment_checkout_attribution_admissions',
           'payment_enrollment_admissions',
@@ -735,7 +737,7 @@ describe('managed LIVE private config and schema gates', () => {
           'payment_checkout_document_tombstones',
         ].map((relname) => ({ relname, owner: 'nanoclaw_admin' })),
       })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 35 }] });
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 49 }] });
     await expect(
       verifyWebsiteCheckoutLiveSchema({ query } as never, 'approved_database'),
     ).resolves.toBeUndefined();
@@ -761,13 +763,13 @@ describe('managed LIVE private config and schema gates', () => {
           };
         if (sql.includes('FROM pg_class'))
           return {
-            rowCount: 25,
+            rowCount: 27,
             rows: [
               'student_projection_outbox',
               'student_projection_receipts',
               'payment_attempts',
               'payment_operations',
-              'payment_request_admissions',
+              'payment_request_nonces',
               'payment_events',
               'payment_method_bindings',
               'payment_session_result_operations',
@@ -775,6 +777,8 @@ describe('managed LIVE private config and schema gates', () => {
               'payment_session_retry_exceptions',
               'student_financial_obligations',
               'payment_identity_preparations',
+              'payment_checkout_submission_payloads',
+              'payment_identity_materializations',
               'payment_checkout_admission_evidence',
               'payment_checkout_attribution_admissions',
               'payment_enrollment_admissions',
@@ -794,7 +798,7 @@ describe('managed LIVE private config and schema gates', () => {
             })),
           };
         if (sql.includes('information_schema.columns'))
-          return { rowCount: 1, rows: [{ count: 35 }] };
+          return { rowCount: 1, rows: [{ count: 49 }] };
         throw new Error(`unexpected query: ${sql}`);
       });
       const release = vi.fn();

@@ -2,6 +2,32 @@
 
 ## 2026-09-12 — NC-20260909-003 Promo/new-learner incident and owner-directed simplification
 
+- Local replacement implementation now defers all LIVE Party and fulfillment
+  creation until exact authenticated card-payment eligibility. Migration165
+  adds one encrypted, deletable checkout-submission payload and an immutable
+  post-confirm identity materialization receipt. The payment worker purges
+  terminal refused/failed submissions and expired submissions that never
+  acquired a payment attempt; pending/ambiguous attempts retain their payload
+  until resolution.
+- Confirmed purchases deliberately insert a new payer/learner Party instead of
+  email-deduplicating; replay of the same attempt returns the same
+  materialization. Disposable PostgreSQL proves zero pre-payment Parties, two
+  distinct confirmed Parties for two identical-email submissions, and failed
+  PII purge without Party creation. The public browser now submits directly to
+  the accepted Adyen Session, has no pre-submit status request or same-order
+  successor retry, automatically discards unfinished setup, and returns a
+  failed payment to its still-editable form.
+- State: validating locally. Migration165 is not yet applied and these changes
+  are not yet deployed; main MCS remains Stripe.
+- Independent Claude Sonnet/high R1 found one material cleanup race: any old
+  terminal sub-session could purge PII while a successor on the same attempt
+  remained live. The corrected query requires a current refused/failed
+  projection and terminal proof for every operation. Return/status also retain
+  authenticated payment truth when fulfillment must retry. R2 reported `NO
+  MATERIAL FINDINGS`. R1 used 13 turns, 180,869 cache-create, 574,417
+  cache-read and 21,422 output tokens; R2 used 11 turns, 90,126 cache-create,
+  509,053 cache-read and 12,843 output tokens.
+
 - A LIVE buying-for-someone-else attempt with a new learner email stopped
   before Payment. Production PostgreSQL logged `type "citext" does not exist`
   because the schema-qualified Party function was called with an unqualified
@@ -21,8 +47,8 @@
   submission before payment, then Party/order/document/enrollment materialization
   only after confirmed Adyen payment. Terminal unconfirmed submissions purge
   temporary PII; ambiguous provider outcomes remain held until resolved. This
-  larger replacement remains in progress and is not implied by the incident
-  repair.
+  replacement is implemented locally and remains pending full verification,
+  independent review, migration, release and live readback.
 - Deployment: pending immutable release and live non-payment verification.
 - Rollback: retain the current `7ab97df4` checkout release and main-page Stripe
   routing until the reviewed replacement is proven on the direct canary.

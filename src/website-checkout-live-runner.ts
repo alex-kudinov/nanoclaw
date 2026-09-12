@@ -109,6 +109,7 @@ const privateConfigSchema = z
           'nanoclaw-v2:148,149-162',
           'nanoclaw-v2:148,149-163',
           'nanoclaw-v2:148,149-164',
+          'nanoclaw-v2:148,149-165',
         ]),
       })
       .strict(),
@@ -350,15 +351,19 @@ export function parseWebsiteCheckoutLivePrivateConfig(
         'nanoclaw-v2:148,149-162',
         'nanoclaw-v2:148,149-163',
         'nanoclaw-v2:148,149-164',
+        'nanoclaw-v2:148,149-165',
       ].includes(parsed.database.schemaContract) ||
         parsed.chaosObservability.webhookToken ===
           parsed.chaosObservability.identityHmacSecret ||
         keys.includes(parsed.chaosObservability.webhookToken) ||
         keys.includes(parsed.chaosObservability.identityHmacSecret))) ||
     (parsed.documents.paidInvoice.enabled &&
-      parsed.database.schemaContract !== 'nanoclaw-v2:148,149-164') ||
+      !['nanoclaw-v2:148,149-164', 'nanoclaw-v2:148,149-165'].includes(
+        parsed.database.schemaContract,
+      )) ||
     (parsed.activation.newAttemptsEnabled &&
-      (!parsed.activation.serviceEnabled ||
+      (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-165' ||
+        !parsed.activation.serviceEnabled ||
         !parsed.activation.recoverExisting)) ||
     (parsed.activation.serviceEnabled && !parsed.activation.recoverExisting) ||
     (parsed.activation.serviceEnabled && !receipt) ||
@@ -419,6 +424,8 @@ const requiredRelations = [
   'payment_session_retry_exceptions',
   'student_financial_obligations',
   'payment_identity_preparations',
+  'payment_checkout_submission_payloads',
+  'payment_identity_materializations',
   'payment_checkout_admission_evidence',
   'payment_checkout_attribution_admissions',
   'payment_enrollment_admissions',
@@ -473,6 +480,12 @@ export async function verifyWebsiteCheckoutLiveSchema(
        (table_name='payment_identity_preparations' AND column_name IN
          ('caller','preparation_id','participant_party_id','participant_reference',
           'billing_profile_sha256','encrypted_billing_profile')) OR
+       (table_name='payment_checkout_submission_payloads' AND column_name IN
+         ('caller','preparation_id','payer_reference','payload_sha256',
+          'encrypted_payload','created_at','expires_at')) OR
+       (table_name='payment_identity_materializations' AND column_name IN
+         ('caller','preparation_id','payer_party_id','participant_party_id',
+          'payer_interaction_id','participant_interaction_id','materialized_at')) OR
        (table_name='payment_method_bindings' AND column_name IN
          ('source_kind','source_event_id')) OR
        (table_name='payment_operations' AND column_name IN
@@ -489,7 +502,7 @@ export async function verifyWebsiteCheckoutLiveSchema(
          ('retention_until','retention_policy_version','amount_minor','currency','attempt_id_sha256'))
      )`,
   );
-  if (Number(columns.rows[0]?.count) !== 35)
+  if (Number(columns.rows[0]?.count) !== 49)
     throw new PaymentDomainError('website_checkout_live_schema_mismatch');
 }
 
