@@ -2,6 +2,10 @@ import type { Pool } from 'pg';
 
 import type { resolveCheckoutCustomerIdentityWithClient } from './checkout-customer-identity.js';
 import type { CheckoutDocumentPolicy } from './payment-checkout-admission.js';
+import type {
+  WebsiteCheckoutDocumentConfig,
+  WebsiteCheckoutDocumentGmail,
+} from './payment-checkout-documents.js';
 import { PaymentDomainError } from './payment-domain.js';
 import type { PaymentLiveRuntimeConfig } from './payment-live-runtime.js';
 import type { PaymentTransaction } from './payment-store.js';
@@ -45,6 +49,8 @@ export interface WebsiteCheckoutLiveServiceConfig {
         activationReceiptSha256: string;
       };
   excludedFulfillmentAttemptIds: readonly string[];
+  documents: WebsiteCheckoutDocumentConfig;
+  documentEncryptionKey: Buffer;
 }
 
 export interface WebsiteCheckoutLiveServiceDependencies {
@@ -55,6 +61,7 @@ export interface WebsiteCheckoutLiveServiceDependencies {
   heartbeatToolbox?: HeartbeatLiveToolboxRunner;
   projectionDatabaseGuard: ProjectionDatabaseGuard;
   receiptWelcomeOwner?: WebsiteCheckoutReceiptWelcomeOwner;
+  documentGmail?: WebsiteCheckoutDocumentGmail;
 }
 
 function holdDisabled(enrollment: WebsiteCheckoutEnrollmentResult) {
@@ -128,6 +135,8 @@ export function createWebsiteCheckoutLiveService(
             }
           : undefined,
       cardCaptureConfigurationEvidence: config.cardCaptureConfigurationEvidence,
+      documents: config.documents,
+      documentEncryptionKey: config.documentEncryptionKey,
     },
     {
       ...dependencies,
@@ -136,6 +145,7 @@ export function createWebsiteCheckoutLiveService(
       excludedFulfillmentAttemptIds: new Set(
         config.excludedFulfillmentAttemptIds,
       ),
+      documentGmail: dependencies.documentGmail,
     },
   );
 }

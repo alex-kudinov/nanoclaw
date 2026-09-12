@@ -30,6 +30,9 @@ const controllerPaths = z.enum([
   '/internal/payments/returns',
   '/internal/payments/session-retries',
   '/internal/payments/session-submit-checks',
+  '/internal/payments/documents/prepare',
+  '/internal/payments/documents/download',
+  '/internal/payments/documents/email',
 ]);
 const responsePaths = z.enum([
   ...controllerPaths.options,

@@ -21,6 +21,12 @@ import {
   LIVE_MCS_CARD_CALLER,
   LIVE_MCS_CARD_QUOTE_AUTHORITY,
 } from './payment-live-runtime.js';
+import {
+  createCanonicalWebsiteCheckoutDocumentGmail,
+  parseWebsiteCheckoutDocumentConfig,
+  websiteCheckoutDocumentConfigSchema,
+  type WebsiteCheckoutDocumentGmail,
+} from './payment-checkout-documents.js';
 import type { PaymentTransaction } from './payment-store.js';
 import {
   websiteCheckoutActivationReceiptHash,
@@ -99,6 +105,7 @@ const privateConfigSchema = z
           'nanoclaw-v2:148,149-160',
           'nanoclaw-v2:148,149-161',
           'nanoclaw-v2:148,149-162',
+          'nanoclaw-v2:148,149-163',
         ]),
       })
       .strict(),
@@ -185,6 +192,7 @@ const privateConfigSchema = z
         })
         .strict(),
     ]),
+    documents: websiteCheckoutDocumentConfigSchema,
     fulfillment: z
       .object({
         pollIntervalMs: z.number().int().min(1000).max(60000),
@@ -289,6 +297,11 @@ export function parseWebsiteCheckoutLivePrivateConfig(
     parsed = privateConfigSchema.parse(
       JSON.parse(readFileSync(absolute, 'utf8')),
     );
+    try {
+      parsed.documents = parseWebsiteCheckoutDocumentConfig(parsed.documents);
+    } catch {
+      throw new Error('invalid document activation receipt');
+    }
     safePublicArtifact(parsed.publication.artifactPath);
     publicationArtifact = JSON.parse(
       readFileSync(parsed.publication.artifactPath, 'utf8'),
@@ -324,7 +337,9 @@ export function parseWebsiteCheckoutLivePrivateConfig(
         parsed.receiptWelcome.senderAccount !==
           parsed.receiptWelcome.senderAccount.toLowerCase())) ||
     (parsed.chaosObservability.enabled &&
-      (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-162' ||
+      (!['nanoclaw-v2:148,149-162', 'nanoclaw-v2:148,149-163'].includes(
+        parsed.database.schemaContract,
+      ) ||
         parsed.chaosObservability.webhookToken ===
           parsed.chaosObservability.identityHmacSecret ||
         keys.includes(parsed.chaosObservability.webhookToken) ||
@@ -397,6 +412,11 @@ const requiredRelations = [
   'website_checkout_customer_notice_jobs',
   'website_checkout_customer_notice_receipts',
   'payment_provider_optimization_evidence',
+  'payment_checkout_document_sequences',
+  'payment_checkout_documents',
+  'payment_checkout_document_capabilities',
+  'payment_checkout_document_email_jobs',
+  'payment_checkout_document_email_receipts',
 ] as const;
 
 export async function verifyWebsiteCheckoutLiveSchema(
@@ -497,6 +517,7 @@ export async function startWebsiteCheckoutLiveService(
     serverFactory?: typeof createServer;
     heartbeatToolbox?: RegisteredHeartbeatToolboxRunner;
     receiptWelcomeOwner?: WebsiteCheckoutReceiptWelcomeOwner;
+    documentGmail?: WebsiteCheckoutDocumentGmail;
     chaosTransport?: typeof fetch;
   } = {},
 ): Promise<{
@@ -603,6 +624,13 @@ export async function startWebsiteCheckoutLiveService(
               config.backend.cardCaptureConfigurationEvidence,
           },
           { transaction },
+        ))
+      : undefined;
+    const documentGmail = config.receiptWelcome.enabled
+      ? (injected.documentGmail ??
+        createCanonicalWebsiteCheckoutDocumentGmail(
+          config.receiptWelcome.senderAccount,
+          config.receiptWelcome.senderAddress,
         ))
       : undefined;
     const service = createWebsiteCheckoutLiveService(
@@ -721,6 +749,11 @@ export async function startWebsiteCheckoutLiveService(
           : { enabled: false },
         receiptWelcome: config.receiptWelcome,
         excludedFulfillmentAttemptIds: config.fulfillment.excludedAttemptIds,
+        documents: config.documents,
+        documentEncryptionKey: derive(
+          config.encryptionKeyBytes,
+          'checkout-document-pdf',
+        ),
       },
       {
         pool,
@@ -732,6 +765,7 @@ export async function startWebsiteCheckoutLiveService(
           : undefined,
         projectionDatabaseGuard: guard,
         receiptWelcomeOwner,
+        documentGmail,
       },
     );
     const client = await pool.connect();

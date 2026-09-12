@@ -17,7 +17,7 @@
     "user": "xbohdpukc",
     "ssl": "disable",
     "role": "nanoclaw_admin",
-    "schemaContract": "nanoclaw-v2:148,149-162"
+    "schemaContract": "nanoclaw-v2:148,149-163"
   },
   "adyen": {
     "environment": "live",
@@ -81,6 +81,13 @@
   "receiptWelcome": {
     "owner": "unassigned",
     "enabled": false
+  },
+  "documents": {
+    "receiptEnabled": true,
+    "downloadCapabilityTtlMs": 300000,
+    "paidInvoice": {
+      "enabled": false
+    }
   },
   "fulfillment": {
     "pollIntervalMs": 0,

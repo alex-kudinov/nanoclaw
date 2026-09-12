@@ -26,6 +26,7 @@ describe('website checkout immutable release packaging', () => {
       '160_payment_chaos_observability',
       '161_payment_checkout_billing_profile',
       '162_payment_provider_optimization_evidence',
+      '163_payment_checkout_documents',
     ];
     for (const migration of expected) {
       expect(builder).toContain(
@@ -104,7 +105,7 @@ describe('website checkout immutable release packaging', () => {
       name: 'nanoclaw_business',
       user: 'xbohdpukc',
       role: 'nanoclaw_admin',
-      schemaContract: 'nanoclaw-v2:148,149-162',
+      schemaContract: 'nanoclaw-v2:148,149-163',
     });
     expect(template.activation).toEqual({
       serviceEnabled: false,
@@ -115,6 +116,11 @@ describe('website checkout immutable release packaging', () => {
     expect(template.receiptWelcome).toEqual({
       owner: 'unassigned',
       enabled: false,
+    });
+    expect(template.documents).toEqual({
+      receiptEnabled: true,
+      downloadCapabilityTtlMs: 300000,
+      paidInvoice: { enabled: false },
     });
     expect(template.chaosObservability).toEqual({ enabled: false });
     expect(template.requestKey).toMatch(/^REQUIRED_/);

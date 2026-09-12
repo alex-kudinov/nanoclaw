@@ -301,6 +301,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_161_payment_checkout_billing_profile.sql',
     'data/business/migrations/nanoclaw-v2/162_payment_provider_optimization_evidence.sql',
     'data/business/migrations/nanoclaw-v2/rollback_162_payment_provider_optimization_evidence.sql',
+    'data/business/migrations/nanoclaw-v2/163_payment_checkout_documents.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_163_payment_checkout_documents.sql',
     'scripts/verify-release.mjs',
     'scripts/build-student-catalog-publication.mjs',
     'scripts/reconcile-supervision-checkout-source.mjs',

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Pool } from 'pg';
 
 import { createPaymentAttempt, type PaymentScope } from './payment-domain.js';
+import { websiteCheckoutPaidInvoiceActivationHash } from './payment-checkout-documents.js';
 import {
   WebsiteCheckoutEnrollmentAdapter,
   websiteCheckoutActivationReceiptHash,
@@ -546,6 +547,60 @@ describe('managed LIVE private config and schema gates', () => {
     ).toThrow('invalid_website_checkout_live_private_config');
   });
 
+  it('rejects any paid-invoice config whose finance activation hash does not bind its content', () => {
+    const approved = {
+      enabled: true as const,
+      decisionReference: 'decision:finance-fixture',
+      approvedAt: '2026-09-12T12:00:00Z',
+      sequencePrefix: 'TCA' as const,
+      seller: {
+        displayName: 'Tandem Coaching Academy',
+        legalName: 'Tandem Coaching Partners, LLC',
+        addressLines: ['123 Example St', 'Austin, TX 78701'],
+        country: 'US',
+        taxId: null,
+        supportEmail: 'hello@tandemcoach.co',
+      },
+      taxPolicy: {
+        version: 'tax-v1',
+        jurisdiction: 'US-TX',
+        taxMinor: 0 as const,
+        taxLabel: 'No tax charged' as const,
+      },
+      retentionPolicy: 'retention-v1',
+      correctionPolicy: 'credit_note_or_replacement_only' as const,
+    };
+    expect(() =>
+      parseWebsiteCheckoutLivePrivateConfig(
+        writeConfig({
+          documents: {
+            receiptEnabled: true,
+            downloadCapabilityTtlMs: 300000,
+            paidInvoice: {
+              ...approved,
+              activationReceiptSha256: '0'.repeat(64),
+            },
+          },
+        }),
+      ),
+    ).toThrow('invalid_website_checkout_live_private_config');
+    expect(
+      parseWebsiteCheckoutLivePrivateConfig(
+        writeConfig({
+          documents: {
+            receiptEnabled: true,
+            downloadCapabilityTtlMs: 300000,
+            paidInvoice: {
+              ...approved,
+              activationReceiptSha256:
+                websiteCheckoutPaidInvoiceActivationHash(approved),
+            },
+          },
+        }),
+      ).documents.paidInvoice.enabled,
+    ).toBe(true);
+  });
+
   it('keeps the executable service default-off without opening dependencies', async () => {
     const path = writeConfig();
     const inert = JSON.parse(readFileSync(path, 'utf8'));
@@ -639,7 +694,7 @@ describe('managed LIVE private config and schema gates', () => {
         rows: [{ database: 'approved_database', role_exists: true }],
       })
       .mockResolvedValueOnce({
-        rowCount: 18,
+        rowCount: 23,
         rows: [
           'student_projection_outbox',
           'student_projection_receipts',
@@ -659,6 +714,11 @@ describe('managed LIVE private config and schema gates', () => {
           'website_checkout_customer_notice_jobs',
           'website_checkout_customer_notice_receipts',
           'payment_provider_optimization_evidence',
+          'payment_checkout_document_sequences',
+          'payment_checkout_documents',
+          'payment_checkout_document_capabilities',
+          'payment_checkout_document_email_jobs',
+          'payment_checkout_document_email_receipts',
         ].map((relname) => ({ relname, owner: 'nanoclaw_admin' })),
       })
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 30 }] });
@@ -687,7 +747,7 @@ describe('managed LIVE private config and schema gates', () => {
           };
         if (sql.includes('FROM pg_class'))
           return {
-            rowCount: 18,
+            rowCount: 23,
             rows: [
               'student_projection_outbox',
               'student_projection_receipts',
@@ -707,6 +767,11 @@ describe('managed LIVE private config and schema gates', () => {
               'website_checkout_customer_notice_jobs',
               'website_checkout_customer_notice_receipts',
               'payment_provider_optimization_evidence',
+              'payment_checkout_document_sequences',
+              'payment_checkout_documents',
+              'payment_checkout_document_capabilities',
+              'payment_checkout_document_email_jobs',
+              'payment_checkout_document_email_receipts',
             ].map((relname) => ({
               relname,
               owner: 'nanoclaw_admin',

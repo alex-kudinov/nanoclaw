@@ -1,5 +1,16 @@
 # NanoClaw active work
 
+2026-09-12T12:31Z — NC-20260909-003 document self-service continuation,
+source owner Codex: implement the immutable English MCS receipt/paid-invoice
+snapshot, deterministic PDF, short-lived download capability and Gmail-backed
+deduplicated email boundaries. Paid-invoice generation and activation remain
+disabled unless the finance/legal configuration receipt is complete; consumer
+receipt source and self-service may proceed. Preserve ordinary MCS Stripe
+routing, the prior owner-test fulfillment exclusion, and owner operation of any
+real payment. Backend source/migration/tests first, then WordPress actions,
+bounded Sonnet/high review, immutable backend-first release and no-payment live
+verification under Peri `work:mcs-foundations-deploy-ready`.
+
 2026-09-11T23:05Z — NC-20260909-003 root continuation, source owner Codex:
 the authorized LIVE rollout exposed an unwired shared-feed filter. Patch only
 LIVE composition/runner plus regression tests; reuse existing whole-batch HMAC
@@ -201,6 +212,21 @@ outside the current client conversation.
 ## Task details
 
 ### NC-20260909-003
+
+- 2026-09-12T13:20Z document self-service source is review-complete. Migration163
+  stores one immutable encrypted snapshot and separately encrypted deterministic
+  PDF per attempt/kind; download capabilities are short-lived and exact-attempt
+  bound; Gmail attachment jobs reconcile exact Sent/readback and hold unknown
+  acceptance without resend. WordPress now exposes four separate Confirmation
+  actions and validates signed PDF bytes before local download. Sonnet/high R1
+  found two material gates; both are fixed and R2 returned GO. Root separately
+  replaced an invalid WOFF PDF font with an OFL TTF and proved extracted Unicode
+  text. Focused143, full4313/32 skip with one parallel-only timeout plus three
+  unchanged baselines, and frontend/PHP checks pass. Backend commit/push,
+  migration163, schema/config readback, backend restart/health, then WordPress
+  commit/deploy/live no-payment UI remain next. Paid invoice stays disabled
+  pending finance/legal acceptance; no payment/email/invoice/document row has
+  occurred.
 
 - 2026-09-12T04:41Z confirmation/provider-contract slice is review-complete.
   Exact MCS LIVE request construction now adds bounded non-sensitive metadata,

@@ -187,6 +187,50 @@ describe('buildRawMessage', () => {
     expect(decoded).toContain('Content-Type: text/html; charset=utf-8');
   });
 
+  it('builds one deterministic multipart message with a bounded PDF attachment', () => {
+    const input = {
+      to: 'test@example.com',
+      subject: 'Your receipt',
+      body: 'Attached is your receipt.',
+      attachments: [
+        {
+          filename: 'TCA-ABC123-receipt.pdf',
+          mimeType: 'application/pdf',
+          content: Buffer.from('%PDF-1.7\nreceipt bytes'),
+        },
+      ],
+    } as const;
+    const first = buildRawMessage(input);
+    const second = buildRawMessage(input);
+    const decoded = decodeRaw(first);
+    expect(second).toBe(first);
+    expect(decoded).toContain('Content-Type: multipart/mixed;');
+    expect(decoded).toContain('Content-Type: application/pdf;');
+    expect(decoded).toContain(
+      'Content-Disposition: attachment; filename="TCA-ABC123-receipt.pdf"',
+    );
+    expect(decoded.replace(/\s/gu, '')).toContain(
+      input.attachments[0].content.toString('base64'),
+    );
+  });
+
+  it('rejects attachment names that could inject MIME headers', () => {
+    expect(() =>
+      buildRawMessage({
+        to: 'test@example.com',
+        subject: 'Receipt',
+        body: 'Receipt',
+        attachments: [
+          {
+            filename: 'receipt.pdf\r\nBcc-evil',
+            mimeType: 'application/pdf',
+            content: Buffer.from('pdf'),
+          },
+        ],
+      }),
+    ).toThrow('gmail_attachment_invalid');
+  });
+
   it('includes Reply-To header', () => {
     const raw = buildRawMessage({
       to: 'test@example.com',

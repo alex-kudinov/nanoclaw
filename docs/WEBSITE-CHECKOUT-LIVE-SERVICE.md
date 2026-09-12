@@ -47,7 +47,7 @@ commit, wrong Node or mismatched root fail before config/DB/listener work.
 
 The clean-release builder executes that compiled entrypoint's `--help` and
 relative-config refusal paths before inventorying the archive, and packages the
-exact forward/rollback migrations 146-162. The inert
+exact forward/rollback migrations 146-163. The inert
 `launchd/com.nanoclaw.website-checkout-live.plist` template contains only
 unresolved node, immutable release, private config, non-release working
 directory and log-root placeholders. It supplies no port, remote host, tunnel,
@@ -214,7 +214,7 @@ to ten seconds, rejects redirects, accepts only Chaos `recorded|duplicate`, and
 records bounded retry/dead-letter receipts without raw error text.
 
 Activation requires an applied/read-back migration 160, schema contract
-`nanoclaw-v2:148,149-162`, the exact HTTPS Chaos lifecycle endpoint and distinct
+`nanoclaw-v2:148,149-162` or its exact migration163 descendant, the exact HTTPS Chaos lifecycle endpoint and distinct
 secrets in an owner-only LIVE config. Omission resolves to disabled. TEST has no
 external-emission path; fixture transports and generated disposable databases
 are the only TEST evidence in this source boundary.
@@ -222,7 +222,7 @@ are the only TEST evidence in this source boundary.
 ## Deployment gates still outside this source
 
 - approved exact database/host/port and encrypted proxy configuration;
-- migrations 148 and 149-162 applied and read back through the established
+- migrations 148 and 149-163 applied and read back through the established
   release procedure; startup never applies them;
 - private LIVE keys, company/merchant/store and provider webhook settings;
 - accepted publication and Heartbeat activation receipts;
@@ -245,6 +245,38 @@ readback.
 Optional company, invoice-email, address and tax/VAT details are normalized in
 WordPress, bound into the exact signed identity request and stored only as an
 encrypted payload with a digest under migration161. They are not provider
-metadata and are not emitted to Adyen in this slice. Receipt and paid-invoice
-PDF generation, numbering and email actions remain separately gated on the
-recorded finance/legal decisions.
+metadata and are not emitted to Adyen in this slice.
+
+## Receipt and paid-invoice document self-service
+
+Migration163 and `payment-checkout-documents.ts` add the release-pending
+document boundary. One authorized English MCS payment can own one immutable
+receipt and one immutable paid-invoice version. The canonical snapshot binds
+the server quote, discount arithmetic, zero-tax fact, card authorization,
+derived Tandem reference, payer, optional pre-payment billing profile and exact
+Terms/Privacy versions. Snapshot JSON and deterministic PDF bytes are encrypted
+under separate purpose keys; the tables retain only ciphertext, hashes and
+bounded operational identifiers.
+
+Receipt generation is enabled for the consumer path. Paid-invoice generation
+is disabled by default and cannot allocate a number unless a private
+finance/legal activation receipt exactly binds seller identity/address, annual
+sequence prefix, tax jurisdiction and policy, retention, and replacement or
+credit-note correction semantics. Missing business billing details remain a
+separate refusal even after that gate is activated. Existing documents are
+returned byte-for-byte; no replay mutates payment evidence or consumes another
+invoice number.
+
+Downloads require both the original checkout status capability and a fresh
+attempt/document-bound opaque capability that expires within fifteen minutes.
+Capabilities and customer/tax data never enter a URL. WordPress verifies the
+signed host response, PDF framing and digest before creating a local browser
+download.
+
+Email actions create one recipient-hash-bound job per document, reconcile Gmail
+Sent before any retry, attach the exact stored PDF, and require message/thread,
+recipient, sender, subject, filename and attachment-digest readback. A lost or
+ambiguous acknowledgement becomes an immutable hold and is never blindly
+resent. Migration163, WordPress routes/assets, private schema contract and the
+immutable release still require review, production apply and live no-payment
+readback before this source is called deployed.

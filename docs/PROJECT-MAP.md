@@ -967,6 +967,18 @@ capability-protected Confirmation summary uses a derived Tandem reference, not
 the PSP reference. Invoice numbering/document/email activation remains under
 the finance/legal gate; ordinary MCS routing remains Stripe.
 
+The next NC-20260909-003 document slice is implemented locally under
+migration163. It freezes one encrypted canonical snapshot and separately
+encrypted deterministic PDF per attempt/kind, gives receipt self-service an
+attempt-bound short-lived download capability, and deduplicates Gmail PDF
+delivery through exact Sent/readback receipts. Paid invoices remain strictly
+disabled unless the private finance/legal activation hash binds seller,
+numbering, tax, retention and correction policy; missing pre-payment business
+details also refuse. WordPress has separate receipt/invoice download/email
+actions and validates the signed PDF envelope before a local blob download.
+This source is review/release pending; ordinary MCS routing remains Stripe and
+no document email, payment, invoice number or production row has been created.
+
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
 PostgreSQL store and projection outbox (migrations146-148). See

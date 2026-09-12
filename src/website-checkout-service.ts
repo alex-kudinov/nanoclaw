@@ -10,6 +10,14 @@ import {
   PaymentCheckoutAdmissionController,
   type WebsiteCheckoutAccessDelivery,
 } from './payment-checkout-admission-controller.js';
+import { PaymentCheckoutDocumentApiController } from './payment-checkout-document-api-controller.js';
+import {
+  PaymentCheckoutDocumentOwner,
+  PgPaymentCheckoutDocumentAuthorityReader,
+  PgPaymentCheckoutDocumentStore,
+  type WebsiteCheckoutDocumentConfig,
+  type WebsiteCheckoutDocumentGmail,
+} from './payment-checkout-documents.js';
 import { PaymentCheckoutAdmissionStore } from './payment-checkout-admission-store.js';
 import { PaymentCheckoutAttributionStore } from './payment-checkout-attribution-store.js';
 import {
@@ -28,7 +36,11 @@ import {
 import { PaymentPayloadVault } from './payment-payload-vault.js';
 import { PaymentPromotionConsumptionReceiptReader } from './payment-promotion-consumption-receipt.js';
 import { PaymentRequestAuthenticator } from './payment-request-auth.js';
-import { PaymentResponseSigner } from './payment-signed-response-controller.js';
+import {
+  PaymentAttemptAcceptanceReceiptReader,
+  PaymentResponseSigner,
+  PaymentSignedResponseController,
+} from './payment-signed-response-controller.js';
 import {
   createPaymentTestRuntime,
   type PaymentTestRuntimeConfig,
@@ -71,6 +83,8 @@ export interface WebsiteCheckoutServiceConfig {
     receiptWelcomeOwnerConfigured: true;
   };
   cardCaptureConfigurationEvidence: string | null;
+  documents?: WebsiteCheckoutDocumentConfig;
+  documentEncryptionKey?: Buffer;
 }
 
 export interface WebsiteCheckoutServiceDependencies {
@@ -82,6 +96,7 @@ export interface WebsiteCheckoutServiceDependencies {
   receiptWelcomeOwner?: WebsiteCheckoutReceiptWelcomeOwner;
   enrollmentDatabaseGuard?: ProjectionDatabaseGuard;
   excludedFulfillmentAttemptIds?: ReadonlySet<string>;
+  documentGmail?: WebsiteCheckoutDocumentGmail;
 }
 
 export interface WebsiteCheckoutReceiptWelcomeOwner {
@@ -134,6 +149,11 @@ const identityPaths = new Set([
   '/internal/payments/identity/status',
 ]);
 const enrollmentPath = '/internal/payments/enrollment-admissions';
+const documentPaths = new Set([
+  '/internal/payments/documents/prepare',
+  '/internal/payments/documents/download',
+  '/internal/payments/documents/email',
+]);
 
 function normalized(config: WebsiteCheckoutServiceConfig) {
   const profile = config.profile;
@@ -195,6 +215,9 @@ export function createWebsiteCheckoutService(
             !config.liveNewAttemptPrerequisites.receiptWelcomeOwnerConfigured ||
             !dependencies.accessDelivery ||
             !dependencies.receiptWelcomeOwner))) ||
+    (config.documents &&
+      (!config.documentEncryptionKey ||
+        config.documentEncryptionKey.length !== 32)) ||
     (config.cardCaptureConfigurationEvidence !== null &&
       (typeof config.cardCaptureConfigurationEvidence !== 'string' ||
         config.cardCaptureConfigurationEvidence.length < 1))
@@ -326,6 +349,55 @@ export function createWebsiteCheckoutService(
     values.limits.maxBodyBytes,
     values.limits.bodyReadTimeoutMs,
   );
+  const documentHttp =
+    !isTest && config.documents
+      ? new PaymentHttpAdapter(
+          new PaymentSignedResponseController(
+            values.caller,
+            authenticator,
+            new PaymentCheckoutDocumentApiController(
+              LIVE_MCS_CARD_CALLER,
+              new PaymentRequestLimiter(
+                values.limits.requestsPerWindow,
+                values.limits.maxActive,
+                values.limits.windowMs,
+              ),
+              admission,
+              new PaymentCheckoutDocumentOwner(
+                config.documents,
+                new PgPaymentCheckoutDocumentAuthorityReader(
+                  dependencies.transaction,
+                  LIVE_MCS_CARD_CALLER,
+                  payment.scope,
+                  identity.readPrivateBindings,
+                ),
+                new PgPaymentCheckoutDocumentStore(
+                  dependencies.transaction,
+                  values.caller,
+                  payment.scope,
+                  vault,
+                  config.documentEncryptionKey!,
+                ),
+                dependencies.documentGmail,
+              ),
+            ),
+            new PaymentResponseSigner(
+              values.signedResponses.keyId,
+              values.signedResponses.key,
+              requestSecrets,
+              undefined,
+              1_048_576,
+            ),
+            new PaymentAttemptAcceptanceReceiptReader(
+              dependencies.transaction,
+              values.caller,
+              payment.scope,
+            ),
+          ),
+          values.limits.maxBodyBytes,
+          values.limits.bodyReadTimeoutMs,
+        )
+      : null;
   const webhook = new PaymentWebhookHttpAdapter(
     values.webhookPath,
     values.webhookConfigured,
@@ -342,6 +414,8 @@ export function createWebsiteCheckoutService(
     if (corePaths.has(path)) return core.http.handle(request, response);
     if (identityPaths.has(path)) return identity.http.handle(request, response);
     if (path === enrollmentPath) return checkout.handle(request, response);
+    if (documentHttp && documentPaths.has(path))
+      return documentHttp.handle(request, response);
     return core.http.handle(request, response);
   };
   const fulfillAttempt = (attemptId: string) =>

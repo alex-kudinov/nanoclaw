@@ -1,5 +1,46 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 MCS receipt and paid-invoice document self-service
+
+- Source: migration163 plus `payment-checkout-documents.ts` add one immutable
+  encrypted snapshot and separately encrypted deterministic PDF per verified
+  English MCS attempt/document kind. Receipt self-service is enabled; paid
+  invoice numbering remains disabled unless a private finance/legal activation
+  digest binds seller/address, annual sequence, tax jurisdiction/policy,
+  retention and replacement-or-credit-note correction rules. Missing
+  pre-payment business details still refuse invoice issuance.
+- Access/delivery: download requires the existing exact-attempt checkout
+  capability plus a new opaque document capability with a maximum 15-minute
+  lifetime. WordPress receives the PDF only through the signed private POST
+  envelope and validates kind, number, filename, MIME, bytes and SHA-256 before
+  making a local browser blob. Email jobs bind one encrypted recipient and
+  content/PDF hash, reconcile Gmail Sent before retry, attach the exact PDF, and
+  require message/thread/header/filename/attachment-digest readback; unknown
+  acceptance holds without resend.
+- Review: bounded Sonnet/high R1 `4bc7973b-aa5b-40bf-8ae6-a1f0aecab4ca`
+  found a missing live-loader activation-hash check and inconsistent theoretical
+  PDF/response ceilings. Both were corrected; narrow R2
+  `f1c2c183-7587-46ed-8eb3-441d49795d6d` returned GO. Root then found that the
+  browser WOFF asset produced invalid embedded-font warnings in Poppler,
+  replaced it with the OFL Roboto TTF package, and proved exact extracted text
+  including `José Žagar`. R1 used 9 model calls, 244,030 cache-create,
+  1,005,000 cache-read, 24,451 output and 248,871 maximum context; R2 used 8
+  calls, 113,830 cache-create, 533,145 cache-read, 8,222 output and 123,717
+  maximum context. Both exceeded the 100k bounded-review target; R2 also read
+  migration163 outside its declared four source paths. No credential, provider,
+  database or external-write surface was available to either review.
+- Verification: pinned Node22.23.2 focused 12 files/143 tests pass, including
+  generated disposable PostgreSQL empty rollback/reapply, five-way contention,
+  unique invoice sequencing, encrypted-at-rest proof, populated rollback
+  refusal, cross-attempt capability denial and lost-ACK adoption. Typecheck,
+  build, formatting, runtime doctor and documentation continuity pass. Full
+  root is 4,313 pass/32 skip/4 fail: one parallel-only Capacity disposable
+  timeout passes in isolation; the remaining Capacity/CNPC/Trafft failures are
+  the unchanged baseline. Tandemweb prototype is 85/85; affected PHP is
+  61+69+26+44+58+17 pass; both production bundles were rebuilt. No payment,
+  email, invoice number, document row, config, migration, release or website
+  deployment occurred in this local verification phase.
+
 ## 2026-09-12 — NC-20260909-003 MCS confirmation and provider contracts
 
 - Added the exact English MCS Adyen Session optimization profile: bounded

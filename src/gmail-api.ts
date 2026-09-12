@@ -3,6 +3,8 @@
  * Host process only; containers use IPC tools that delegate here.
  */
 
+import { createHash } from 'node:crypto';
+
 import { gmail_v1 } from 'googleapis';
 
 import {
@@ -232,6 +234,11 @@ export function buildRawMessage(opts: {
   html?: boolean;
   inReplyTo?: string;
   references?: string;
+  attachments?: readonly {
+    filename: string;
+    mimeType: string;
+    content: Buffer;
+  }[];
 }): string {
   // When the body carries an open-tracking pixel, never CC or BCC any
   // tandemcoach.co address — the user inevitably opens the self-copy in
@@ -266,11 +273,62 @@ export function buildRawMessage(opts: {
     );
   }
 
+  const attachments = opts.attachments ?? [];
+  if (
+    attachments.length > 4 ||
+    attachments.some(
+      (attachment) =>
+        !/^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/u.test(attachment.filename) ||
+        !/^[a-z0-9][a-z0-9.+-]{0,63}\/[a-z0-9][a-z0-9.+-]{0,63}$/u.test(
+          attachment.mimeType,
+        ) ||
+        !Buffer.isBuffer(attachment.content) ||
+        attachment.content.length < 1 ||
+        attachment.content.length > 2_000_000,
+    )
+  )
+    throw new Error('gmail_attachment_invalid');
   const contentType = opts.html ? 'text/html' : 'text/plain';
-  lines.push(`Content-Type: ${contentType}; charset=utf-8`);
-  lines.push('');
-
-  lines.push(opts.body);
+  if (attachments.length === 0) {
+    lines.push(`Content-Type: ${contentType}; charset=utf-8`);
+    lines.push('');
+    lines.push(opts.body);
+  } else {
+    const boundary = `=_tandem_${createHash('sha256')
+      .update(opts.body, 'utf8')
+      .update(
+        attachments
+          .map((attachment) =>
+            createHash('sha256').update(attachment.content).digest('hex'),
+          )
+          .join(':'),
+      )
+      .digest('hex')
+      .slice(0, 32)}`;
+    lines.push(`MIME-Version: 1.0`);
+    lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+    lines.push('');
+    lines.push(`--${boundary}`);
+    lines.push(`Content-Type: ${contentType}; charset=utf-8`);
+    lines.push('Content-Transfer-Encoding: 8bit');
+    lines.push('');
+    lines.push(opts.body);
+    for (const attachment of attachments) {
+      lines.push(`--${boundary}`);
+      lines.push(
+        `Content-Type: ${attachment.mimeType}; name="${attachment.filename}"`,
+      );
+      lines.push('Content-Transfer-Encoding: base64');
+      lines.push(
+        `Content-Disposition: attachment; filename="${attachment.filename}"`,
+      );
+      lines.push('');
+      const encoded = attachment.content.toString('base64');
+      for (let index = 0; index < encoded.length; index += 76)
+        lines.push(encoded.slice(index, index + 76));
+    }
+    lines.push(`--${boundary}--`);
+  }
 
   const raw = lines.join('\r\n');
   return Buffer.from(raw)
@@ -289,6 +347,11 @@ export async function sendEmail(
     cc?: string;
     html?: boolean;
     threadId?: string;
+    attachments?: readonly {
+      filename: string;
+      mimeType: string;
+      content: Buffer;
+    }[];
   },
   deps?: {
     /** Production defaults to getGmailClient; the installed safety drill injects a no-network tripwire. */
