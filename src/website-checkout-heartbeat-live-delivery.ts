@@ -330,7 +330,7 @@ export class WebsiteCheckoutHeartbeatLiveDelivery {
          JOIN business_v2.student_enrollments_v2 e
            ON e.enrollment_key=ea.enrollment_key AND e.state='active'
          JOIN business_v2.student_component_entitlements ce
-           ON ce.enrollment_key=e.enrollment_key AND ce.state='included'
+           ON ce.enrollment_id=e.id AND ce.state='included'
              AND ce.component_key='mcs.foundations'
          JOIN business_v2.parties p
            ON p.id=e.participant_party_id AND p.merged_into IS NULL

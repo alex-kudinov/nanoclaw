@@ -333,7 +333,7 @@ describe('production Heartbeat identity and membership driver', () => {
       },
     });
     const provider = vi.fn();
-    const poolQuery = vi.fn(async () => ({
+    const poolQuery = vi.fn(async (_sql: string) => ({
       rowCount: 1,
       rows: [
         {
@@ -419,6 +419,9 @@ describe('production Heartbeat identity and membership driver', () => {
       ]),
     });
     expect(provider).not.toHaveBeenCalled();
+    const authoritySql = String(poolQuery.mock.calls[0]?.[0] ?? '');
+    expect(authoritySql).toContain('ON ce.enrollment_id=e.id');
+    expect(authoritySql).not.toContain('ce.enrollment_key');
     expect(
       exceptionQuery.mock.calls.some(([sql]) =>
         sql.includes('student_enrollment_exceptions_v2'),
