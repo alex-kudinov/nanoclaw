@@ -1,5 +1,21 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 immediate confirmation response repair
+
+- The first natural successful simplified-checkout return proved payment,
+  materialization and enrollment, but exposed a response-shape mismatch: status
+  included the minimized purchase confirmation while the immediate return did
+  not. That kept the browser on Payment and withheld the existing receipt and
+  paid-invoice controls even though enrollment was complete.
+- `/internal/payments/returns` now reads and attaches the same minimized,
+  capability-protected confirmation summary used by `/status`, and only for the
+  existing `confirming_payment` state. Review and terminal-nonpayment behavior is
+  unchanged. The regression test asserts the exact returned summary and retains
+  PSP/session non-exposure assertions.
+- Focused payment tests pass 43/43, WordPress coordinator/BFF contracts pass
+  111/111, typecheck passes, and independent Claude Sonnet/high review reports
+  `NO MATERIAL FINDINGS`.
+
 ## 2026-09-12 — NC-20260909-003 Promo/new-learner incident and owner-directed simplification
 
 - Local replacement implementation now defers all LIVE Party and fulfillment
@@ -44,7 +60,7 @@
   remained live. The corrected query requires a current refused/failed
   projection and terminal proof for every operation. Return/status also retain
   authenticated payment truth when fulfillment must retry. R2 reported `NO
-  MATERIAL FINDINGS`. R1 used 13 turns, 180,869 cache-create, 574,417
+MATERIAL FINDINGS`. R1 used 13 turns, 180,869 cache-create, 574,417
   cache-read and 21,422 output tokens; R2 used 11 turns, 90,126 cache-create,
   509,053 cache-read and 12,843 output tokens.
 

@@ -286,6 +286,11 @@ gift and business-invoice checkboxes. One Additional details page appears only
 when either is selected, contains only the selected sections, and is otherwise
 skipped; Payment and Confirmation numbering follows the active path.
 
+The authenticated successful Session return includes that same minimized
+summary immediately. This lets the browser activate Confirmation and present
+the existing receipt and paid-invoice actions without waiting for a later status
+poll. Review and terminal-nonpayment returns never receive the summary.
+
 Optional company, invoice-email, address and tax/VAT details are normalized in
 WordPress, bound into the exact signed identity request and stored only as an
 encrypted payload with a digest under migration161. They are not provider

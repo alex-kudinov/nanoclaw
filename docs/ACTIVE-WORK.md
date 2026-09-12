@@ -1,5 +1,17 @@
 # NanoClaw active work
 
+2026-09-12T23:14Z — NC-20260909-003 successful-return confirmation repair,
+source owner Codex: the first natural simplified-checkout payment was authorized,
+materialized and enrolled, but the immediate `/internal/payments/returns`
+response omitted the already-available minimized confirmation summary. WordPress
+therefore rendered enrollment success while leaving Payment active and hiding
+receipt/paid-invoice actions. The return path now includes the same capability-
+protected confirmation summary as status, only for `confirming_payment`;
+terminal and review paths are unchanged. Focused 43/43, WordPress contract
+111/111 and typecheck pass. Independent Claude Sonnet/high reports no material
+findings. Release/deployment and live readback remain in progress; the successful
+payment record must not be replayed or replaced.
+
 2026-09-12T22:01Z — NC-20260909-003 simple checkout replacement is deployed
 and nonfinancially verified. LIVE identity preparation now creates only an
 encrypted deletable submission plus purchase-scoped references; it creates no
@@ -800,7 +812,7 @@ outside the current client conversation.
   three established baseline failures plus one parallel-only capacity-shadow
   timeout are unrelated, and the timeout passes alone. Sonnet/high R1's one
   material replay-order finding was fixed; narrow R2 returned `NO MATERIAL
-  FINDINGS`.
+FINDINGS`.
 - A separate TEST attribution-profile boundary preserves the legacy manifest
   digest by default and pins the approved English MCS card v2 ID/SHA through a
   code-owned registry. Its exact-hash switch backs up and rewrites only the

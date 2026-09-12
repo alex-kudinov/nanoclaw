@@ -286,14 +286,21 @@ export class PaymentApiController {
                 attempt.attemptId,
               )
             : null;
+        const state =
+          result.state === 'needs_review'
+            ? 'needs_review'
+            : result.state === 'terminal_nonpayment'
+              ? 'terminal_nonpayment'
+              : 'confirming_payment';
+        const confirmation =
+          state === 'confirming_payment'
+            ? await this.deps.events.readConfirmationSummary?.(
+                attempt.attemptId,
+              )
+            : null;
         return this.response(200, {
           attemptId: attempt.attemptId,
-          state:
-            result.state === 'needs_review'
-              ? 'needs_review'
-              : result.state === 'terminal_nonpayment'
-                ? 'terminal_nonpayment'
-                : 'confirming_payment',
+          state,
           ...(terminalRetry
             ? {
                 retry: {
@@ -302,6 +309,7 @@ export class PaymentApiController {
                 },
               }
             : {}),
+          ...(confirmation ? { confirmation } : {}),
         });
       }
       const reconciliationState = await this.deps.reconciliation?.readState(

@@ -479,7 +479,19 @@ describe('unwired signed payment HTTP controller', () => {
     expect(response.body).toEqual({
       attemptId: s.attempt.attemptId,
       state: 'confirming_payment',
+      confirmation: {
+        schemaVersion: 1,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29900,
+        currency: 'USD',
+        paymentStatus: 'authorized',
+        paymentRecordedAt: '2026-09-12T04:00:00.000Z',
+        paymentReference: 'TCA-1234567890AB',
+      },
     });
+    expect(s.deps.events.readConfirmationSummary).toHaveBeenCalledWith(
+      s.attempt.attemptId,
+    );
     expect(s.deps.reconciliation.verify).toHaveBeenCalledWith({
       operationId: command.requestId,
       attemptId: s.attempt.attemptId,
