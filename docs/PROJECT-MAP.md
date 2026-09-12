@@ -984,6 +984,12 @@ verified all conditional paths without starting payment. Ordinary MCS routing
 remains Stripe, and natural document/download/email proof still requires an
 owner-operated purchase.
 
+Business billing now treats the second address line as an optional apartment or
+suite throughout request normalization, immutable snapshots and invoice
+rendering. A complete street address no longer fails solely because that line
+is empty; all other company, email, street, city, postal, country and applicable
+state requirements remain unchanged.
+
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
 PostgreSQL store and projection outbox (migrations146-148). See

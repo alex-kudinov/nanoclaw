@@ -42,6 +42,21 @@ describe('immutable checkout billing profile', () => {
     );
   });
 
+  it('accepts a complete street address without an apartment or suite', () => {
+    const parsed = parseCheckoutBillingProfile({
+      ...valid,
+      address: {
+        ...valid.address,
+        street: '13507 Mooring Pointe Dr',
+        houseNumberOrName: '   ',
+      },
+    });
+    expect(parsed.address).toMatchObject({
+      street: '13507 Mooring Pointe Dr',
+      houseNumberOrName: '',
+    });
+  });
+
   it.each([
     { ...valid, companyLegalName: '' },
     { ...valid, invoiceEmail: 'not-an-email' },

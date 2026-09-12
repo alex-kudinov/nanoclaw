@@ -195,6 +195,40 @@ describe('checkout payment documents', () => {
     );
   });
 
+  it('renders a paid invoice when the optional apartment or suite is empty', async () => {
+    const parsed = parseCheckoutDocumentSnapshot({
+      ...receipt,
+      documentKind: 'paid_invoice',
+      documentNumber: 'TCA-2026-000001',
+      buyer: {
+        ...receipt.buyer,
+        billingProfile: {
+          companyLegalName: 'Hooves & Horns Inc',
+          invoiceEmail: 'accounts@example.test',
+          taxId: null,
+          address: {
+            street: '13507 Mooring Pointe Dr',
+            houseNumberOrName: '',
+            city: 'Pearland',
+            postalCode: '77584',
+            stateOrProvince: 'TX',
+            country: 'US',
+          },
+        },
+      },
+      policy: {
+        ...receipt.policy,
+        taxPolicyVersion: 'mcs-foundations-zero-tax-display-v1',
+        taxJurisdiction: 'US-TX',
+        taxClassification: 'not_stated',
+        correctionPolicy: 'credit_note_or_replacement_only',
+      },
+    });
+    const pdf = await renderCheckoutDocumentPdf(parsed);
+    expect(pdf.subarray(0, 8).toString('ascii')).toBe('%PDF-1.7');
+    expect(pdf.length).toBeGreaterThan(10000);
+  });
+
   it('rejects receipt arithmetic and invoice-shape drift', () => {
     expect(() =>
       parseCheckoutDocumentSnapshot({

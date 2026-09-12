@@ -11,6 +11,12 @@ const printable = (maximum: number) =>
     .min(1)
     .max(maximum)
     .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
+const printableOrEmpty = (maximum: number) =>
+  z
+    .string()
+    .trim()
+    .max(maximum)
+    .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
 
 const billingProfileSchema = z
   .object({
@@ -21,7 +27,7 @@ const billingProfileSchema = z
     address: z
       .object({
         street: printable(180),
-        houseNumberOrName: printable(40),
+        houseNumberOrName: printableOrEmpty(40),
         city: printable(100),
         postalCode: printable(20),
         stateOrProvince: printable(40).nullable(),

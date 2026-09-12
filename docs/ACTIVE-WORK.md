@@ -255,6 +255,14 @@ outside the current client conversation.
   remain next; no live mutation, payment, email, document or invoice number has
   occurred.
 
+- 2026-09-12T16:49Z MCS checkout usability follow-up: the backend business
+  billing contract and document renderer now treat apartment/suite as optional,
+  matching the repaired website form. Focused backend 28/28, typecheck and build
+  pass. Full root is 4,318 pass/32 skip with three reproducible unrelated
+  Capacity/CNPC/Trafft baselines; two parallel disposable timeouts passed on
+  immediate isolated rerun. Normal immutable release and live health/readback
+  remain in progress; no payment, email or document was created.
+
 - 2026-09-12T14:47Z owner approved the final paid-document and checkout
   decisions under
   `decision:mcs-paid-invoice-activation-and-checkout-flow-2026-09-12`:

@@ -72,6 +72,12 @@ const printable = (maximum: number) =>
     .min(1)
     .max(maximum)
     .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
+const printableOrEmpty = (maximum: number) =>
+  z
+    .string()
+    .trim()
+    .max(maximum)
+    .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
 
 export type PaymentCheckoutDocumentKind = 'receipt' | 'paid_invoice';
 
@@ -219,7 +225,7 @@ export function parseWebsiteCheckoutDocumentConfig(
 const addressSchema = z
   .object({
     street: printable(180),
-    houseNumberOrName: printable(40),
+    houseNumberOrName: printableOrEmpty(40),
     city: printable(100),
     postalCode: printable(20),
     stateOrProvince: printable(40).nullable(),
@@ -539,7 +545,9 @@ export async function renderCheckoutDocumentPdf(
   if (snapshot.documentKind === 'paid_invoice' && billing) {
     buyerY = columnText(`Attn: ${snapshot.buyer.name}`, buyerX, buyerY, 210);
     buyerY = columnText(
-      `${billing.address.street} ${billing.address.houseNumberOrName}`,
+      [billing.address.street, billing.address.houseNumberOrName]
+        .filter(Boolean)
+        .join(', '),
       buyerX,
       buyerY,
       210,

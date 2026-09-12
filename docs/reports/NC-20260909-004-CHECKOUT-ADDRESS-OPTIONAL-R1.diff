@@ -1,0 +1,134 @@
+diff --git a/src/payment-checkout-billing.test.ts b/src/payment-checkout-billing.test.ts
+index dd680ea9..d7c22acd 100644
+--- a/src/payment-checkout-billing.test.ts
++++ b/src/payment-checkout-billing.test.ts
+@@ -42,6 +42,21 @@ describe('immutable checkout billing profile', () => {
+     );
+   });
+ 
++  it('accepts a complete street address without an apartment or suite', () => {
++    const parsed = parseCheckoutBillingProfile({
++      ...valid,
++      address: {
++        ...valid.address,
++        street: '13507 Mooring Pointe Dr',
++        houseNumberOrName: '   ',
++      },
++    });
++    expect(parsed.address).toMatchObject({
++      street: '13507 Mooring Pointe Dr',
++      houseNumberOrName: '',
++    });
++  });
++
+   it.each([
+     { ...valid, companyLegalName: '' },
+     { ...valid, invoiceEmail: 'not-an-email' },
+diff --git a/src/payment-checkout-billing.ts b/src/payment-checkout-billing.ts
+index e6a094a8..c3ddd3ce 100644
+--- a/src/payment-checkout-billing.ts
++++ b/src/payment-checkout-billing.ts
+@@ -11,6 +11,12 @@ const printable = (maximum: number) =>
+     .min(1)
+     .max(maximum)
+     .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
++const printableOrEmpty = (maximum: number) =>
++  z
++    .string()
++    .trim()
++    .max(maximum)
++    .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
+ 
+ const billingProfileSchema = z
+   .object({
+@@ -21,7 +27,7 @@ const billingProfileSchema = z
+     address: z
+       .object({
+         street: printable(180),
+-        houseNumberOrName: printable(40),
++        houseNumberOrName: printableOrEmpty(40),
+         city: printable(100),
+         postalCode: printable(20),
+         stateOrProvince: printable(40).nullable(),
+diff --git a/src/payment-checkout-documents.test.ts b/src/payment-checkout-documents.test.ts
+index c7facc1c..b2779d10 100644
+--- a/src/payment-checkout-documents.test.ts
++++ b/src/payment-checkout-documents.test.ts
+@@ -195,6 +195,40 @@ describe('checkout payment documents', () => {
+     );
+   });
+ 
++  it('renders a paid invoice when the optional apartment or suite is empty', async () => {
++    const parsed = parseCheckoutDocumentSnapshot({
++      ...receipt,
++      documentKind: 'paid_invoice',
++      documentNumber: 'TCA-2026-000001',
++      buyer: {
++        ...receipt.buyer,
++        billingProfile: {
++          companyLegalName: 'Hooves & Horns Inc',
++          invoiceEmail: 'accounts@example.test',
++          taxId: null,
++          address: {
++            street: '13507 Mooring Pointe Dr',
++            houseNumberOrName: '',
++            city: 'Pearland',
++            postalCode: '77584',
++            stateOrProvince: 'TX',
++            country: 'US',
++          },
++        },
++      },
++      policy: {
++        ...receipt.policy,
++        taxPolicyVersion: 'mcs-foundations-zero-tax-display-v1',
++        taxJurisdiction: 'US-TX',
++        taxClassification: 'not_stated',
++        correctionPolicy: 'credit_note_or_replacement_only',
++      },
++    });
++    const pdf = await renderCheckoutDocumentPdf(parsed);
++    expect(pdf.subarray(0, 8).toString('ascii')).toBe('%PDF-1.7');
++    expect(pdf.length).toBeGreaterThan(10000);
++  });
++
+   it('rejects receipt arithmetic and invoice-shape drift', () => {
+     expect(() =>
+       parseCheckoutDocumentSnapshot({
+diff --git a/src/payment-checkout-documents.ts b/src/payment-checkout-documents.ts
+index bec4d9cb..cc4947b2 100644
+--- a/src/payment-checkout-documents.ts
++++ b/src/payment-checkout-documents.ts
+@@ -72,6 +72,12 @@ const printable = (maximum: number) =>
+     .min(1)
+     .max(maximum)
+     .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
++const printableOrEmpty = (maximum: number) =>
++  z
++    .string()
++    .trim()
++    .max(maximum)
++    .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value));
+ 
+ export type PaymentCheckoutDocumentKind = 'receipt' | 'paid_invoice';
+ 
+@@ -219,7 +225,7 @@ export function parseWebsiteCheckoutDocumentConfig(
+ const addressSchema = z
+   .object({
+     street: printable(180),
+-    houseNumberOrName: printable(40),
++    houseNumberOrName: printableOrEmpty(40),
+     city: printable(100),
+     postalCode: printable(20),
+     stateOrProvince: printable(40).nullable(),
+@@ -539,7 +545,9 @@ export async function renderCheckoutDocumentPdf(
+   if (snapshot.documentKind === 'paid_invoice' && billing) {
+     buyerY = columnText(`Attn: ${snapshot.buyer.name}`, buyerX, buyerY, 210);
+     buyerY = columnText(
+-      `${billing.address.street} ${billing.address.houseNumberOrName}`,
++      [billing.address.street, billing.address.houseNumberOrName]
++        .filter(Boolean)
++        .join(', '),
+       buyerX,
+       buyerY,
+       210,

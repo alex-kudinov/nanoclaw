@@ -1,5 +1,17 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-004 Optional business address line
+
+- The MCS business billing contract now accepts a complete street address with
+  an empty apartment/suite line. Both request normalization and immutable
+  document snapshot validation retain the bounded empty string, and paid
+  invoice rendering omits the separator when that optional line is absent.
+- Focused billing/document/identity verification passes 28/28; typecheck and
+  build pass. Full root verification passes 4,318 with 32 skipped; two
+  unrelated date/data baselines and one known CNPC wrapper baseline remain,
+  while two parallel disposable timeouts passed immediately in isolation.
+  Website review and deployment evidence are recorded in Tandemweb and Peri.
+
 ## 2026-09-12 — NC-20260909-003 MCS receipt and paid-invoice document self-service
 
 - Production v2 release: immutable `d160195d660fd0d1ca777bb59718954f459bcbe7`
