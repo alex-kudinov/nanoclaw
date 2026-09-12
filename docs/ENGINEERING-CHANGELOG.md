@@ -26,13 +26,18 @@
   `8f24565cdc0524b4` and 1,813 catalog lines. Migration165 applied and read back
   both admin-owned tables with zero submission/materialization rows; the exact
   release is healthy and ready on Mini.
-- Tandemweb `937fc017938f9bd6bef1274187b177fe0587060f` is live after design/catalog
+- Tandemweb `e4ada3df99299ec95150dfead1644b5b649eb1e5` is live after design/catalog
   gates plus LiteSpeed and Cloudflare purge. The direct checkout serves JS
   `c21dd2d406c60cd7`, step links have no underline, Apply code is present, and
-  an untouched form has no status error or console log. No form submission,
-  provider Session, payment, Party, enrollment, document or notice was created
-  for live verification. Main MCS page still reports `data-new-routing="0"`
-  and uses Stripe; the next natural purchase remains the outcome proof.
+  an untouched form has no status error or console log. A synthetic no-card
+  submission opened the $299 Adyen form and showed its exact receipt email;
+  PostgreSQL readback at that boundary was one encrypted submission, zero
+  materializations and zero matching Party/interactions. Back unlocked the
+  Information form and the 95/95 browser suite includes delayed email-field
+  replacement/restoration. No card data or payment was entered. The exact
+  synthetic temporary PII was deleted and final submission/materialization/
+  Party counts returned to zero. Main MCS still reports
+  `data-new-routing="0"`; the next natural purchase remains outcome proof.
 - Independent Claude Sonnet/high R1 found one material cleanup race: any old
   terminal sub-session could purge PII while a successor on the same attempt
   remained live. The corrected query requires a current refused/failed

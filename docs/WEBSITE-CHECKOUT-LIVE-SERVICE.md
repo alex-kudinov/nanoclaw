@@ -268,9 +268,12 @@ same-order successor Sessions after failure. Terminal nonpayment returns to the
 editable form for a new deliberate submission. Unfinished pre-payment setup is
 discarded automatically instead of exposing draft/re-entry language. This is
 deployed in immutable backend `60e1ff16` with migration165 and Tandemweb
-`937fc0179`. Health/ready, zero-row schema readback, rendered direct-checkout UI,
-clean console and main-page Stripe routing are verified without creating a
-Session or payment. The next natural purchase remains end-to-end outcome proof.
+`e4ada3df9`. Health/ready, zero-row schema baseline, rendered direct-checkout
+UI, clean console and main-page Stripe routing are verified. A synthetic
+no-card submission opened the $299 Adyen form with one encrypted submission and
+zero materialized Party/interactions; no card data/payment was entered, and the
+exact synthetic temporary PII was deleted with final counts back at zero. The
+next natural purchase remains end-to-end outcome proof.
 
 ## Confirmation and billing preparation
 
