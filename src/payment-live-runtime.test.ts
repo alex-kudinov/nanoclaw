@@ -13,6 +13,7 @@ import {
   DEFAULT_LIVE_MCS_CARD_ACTIVATION,
   LIVE_MCS_CARD_CALLER,
   LIVE_MCS_CARD_QUOTE_AUTHORITY,
+  liveMcsProviderOptimization,
   type PaymentLiveRuntimeConfig,
 } from './payment-live-runtime.js';
 import type { PaymentTransaction } from './payment-store.js';
@@ -103,6 +104,10 @@ describe('disabled-by-default English MCS LIVE card composition', () => {
     ).toThrow('payment_live_runtime_disabled');
     expect(transaction).not.toHaveBeenCalled();
     expect(providerTransport).not.toHaveBeenCalled();
+  });
+
+  it('keeps the provider optimization bundle out of LIVE card requests after the failed canary', () => {
+    expect(liveMcsProviderOptimization()).toBeUndefined();
   });
 
   it('requires enabled recovery before new attempts and supports recovery-only rollback', () => {

@@ -9,6 +9,7 @@ import {
 } from './adyen-session-adapter.js';
 import { resolveAdyenEnvironment } from './adyen-environment.js';
 import { createPaymentAttempt } from './payment-domain.js';
+import { liveMcsProviderOptimization } from './payment-live-runtime.js';
 
 const scope = {
   provider: 'adyen',
@@ -142,8 +143,21 @@ describe('Adyen TEST Sessions adapter', () => {
 
   it('builds a repeatable card-only request from the authoritative quote', () => {
     const a = attempt();
-    const request = buildAdyenTestSessionRequest(a, routing);
-    expect(request).toBe(buildAdyenTestSessionRequest(a, routing));
+    const profile = resolveAdyenEnvironment({
+      environment: 'test',
+      liveEndpointPrefix: null,
+    });
+    const build = () =>
+      buildAdyenSessionRequest(
+        a,
+        routing,
+        profile,
+        ['card'],
+        1,
+        liveMcsProviderOptimization(),
+      );
+    const request = build();
+    expect(request).toBe(build());
     expect(JSON.parse(request)).toMatchObject({
       amount: { value: 29900, currency: 'USD' },
       merchantAccount: scope.merchant,
@@ -154,6 +168,11 @@ describe('Adyen TEST Sessions adapter', () => {
       expiresAt: new Date(a.quote.expiresAt).toISOString(),
     });
     expect(request).not.toContain('apiKey');
+    expect(JSON.parse(request)).not.toHaveProperty('metadata');
+    expect(JSON.parse(request)).not.toHaveProperty('lineItems');
+    expect(JSON.parse(request)).not.toHaveProperty('additionalData');
+    expect(JSON.parse(request)).not.toHaveProperty('authenticationData');
+    expect(JSON.parse(request)).not.toHaveProperty('threeDS2RequestData');
     expect(JSON.parse(request).returnUrl).toBe(
       `http://localhost:3000/?attempt=${a.attemptId}`,
     );
