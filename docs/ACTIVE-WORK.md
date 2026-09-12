@@ -213,6 +213,14 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-12T13:27Z pre-activation packaging correction: installed immutable
+  `ece233ad` passed manifest verification but its help probe exposed missing new
+  PDF/font packages in the established shared dependency layout. It was never
+  activated; live remains `e3c21b9e`. The replacement source embeds the licensed
+  TTF and bundles only the new PDF libraries into the compiled document module;
+  exact local compiled help now passes. Recommit, rebuild and install a new
+  immutable release before migration or config mutation.
+
 - 2026-09-12T13:20Z document self-service source is review-complete. Migration163
   stores one immutable encrypted snapshot and separately encrypted deterministic
   PDF per attempt/kind; download capabilities are short-lived and exact-attempt

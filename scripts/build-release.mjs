@@ -304,6 +304,8 @@ try {
     'data/business/migrations/nanoclaw-v2/163_payment_checkout_documents.sql',
     'data/business/migrations/nanoclaw-v2/rollback_163_payment_checkout_documents.sql',
     'scripts/verify-release.mjs',
+    'scripts/bundle-payment-documents.mjs',
+    'docs/licenses/Roboto-OFL-1.1.txt',
     'scripts/build-student-catalog-publication.mjs',
     'scripts/reconcile-supervision-checkout-source.mjs',
     'scripts/runtime-doctor.mjs',

@@ -38,6 +38,7 @@ describe('website checkout immutable release packaging', () => {
     }
     expect(builder).not.toContain("'data/business/migrations/nanoclaw-v2',");
     expect(builder).toContain('website-checkout-live-entrypoint.js');
+    expect(builder).toContain('scripts/bundle-payment-documents.mjs');
     expect(builder).toContain("[checkoutEntrypoint, '--help']");
     expect(builder).toContain("'relative-private-config.json'");
   });

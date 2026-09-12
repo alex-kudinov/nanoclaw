@@ -40,6 +40,16 @@
   61+69+26+44+58+17 pass; both production bundles were rebuilt. No payment,
   email, invoice number, document row, config, migration, release or website
   deployment occurred in this local verification phase.
+- Pre-activation correction: immutable archive `ece233ad` verified its manifest
+  after installation on Mini but its CLI help probe failed because the release
+  layout intentionally relies on an established parent dependency tree and did
+  not contain the three newly introduced PDF/font packages. No supervisor,
+  config, schema or traffic pointer changed; live stayed healthy on `e3c21b9e`.
+  The replacement build now embeds the OFL Roboto TTF and bundles only pdf-lib,
+  fontkit and their pinned transitive libraries into the one compiled document
+  module. `scripts/bundle-payment-documents.mjs` rejects unexpected bundled
+  packages and the release includes the font license. The compiled checkout CLI
+  now runs without those packages installed in its release/parent runtime.
 
 ## 2026-09-12 — NC-20260909-003 MCS confirmation and provider contracts
 

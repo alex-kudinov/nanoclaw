@@ -5,8 +5,6 @@ import {
   randomBytes,
   randomUUID,
 } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 
 import fontkit from '@pdf-lib/fontkit';
 import type { gmail_v1 } from 'googleapis';
@@ -29,6 +27,7 @@ import {
 import type { PaymentPayloadVault } from './payment-payload-vault.js';
 import { paymentPayloadFingerprint } from './payment-payload-vault.js';
 import type { PaymentTransaction } from './payment-store.js';
+import { ROBOTO_REGULAR_TTF_BASE64 } from './payment-checkout-roboto-font.js';
 
 const OFFER = 'mcq-program-a-foundations';
 const LOCALE = 'en-US';
@@ -273,10 +272,6 @@ export function checkoutDocumentSnapshotSha256(input: unknown): string {
   return sha(stableJson(parseCheckoutDocumentSnapshot(input)));
 }
 
-const require = createRequire(import.meta.url);
-const FONT_PATH =
-  require.resolve('@expo-google-fonts/roboto/400Regular/Roboto_400Regular.ttf');
-
 function safePdfText(value: string, font: PDFFont): string {
   const available = new Set(font.getCharacterSet());
   return [...value.normalize('NFC')]
@@ -309,7 +304,7 @@ function money(minor: number): string {
 
 export async function renderCheckoutDocumentPdf(
   input: unknown,
-  fontBytes: Buffer = readFileSync(FONT_PATH),
+  fontBytes: Buffer = Buffer.from(ROBOTO_REGULAR_TTF_BASE64, 'base64'),
 ): Promise<Buffer> {
   const snapshot = parseCheckoutDocumentSnapshot(input);
   const document = await PDFDocument.create({ updateMetadata: false });
