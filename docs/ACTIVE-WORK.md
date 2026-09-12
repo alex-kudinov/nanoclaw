@@ -228,6 +228,16 @@ outside the current client conversation.
   before help/refusal verification. Recommit and install a new immutable
   archive; live, schema and config are still unchanged.
 
+- 2026-09-12T13:45Z document self-service is deployed. Backend immutable
+  `b0c2ca2d` and migration163 are live with exact backup/rollback; all five new
+  tables are empty/admin-only and paid invoice remains disabled. Tandemweb
+  `5f0e1c65d` is on main/VPS with hosted CI green; cache purge/warm and hidden
+  browser verification prove USD299, four hidden Confirmation actions, blank
+  identity/Terms, empty status and no console errors. No payment, document,
+  invoice number or email occurred. A future owner-operated transaction must
+  prove the natural post-payment receipt/download/email path and ESD/3DS facts;
+  finance/legal acceptance remains required before invoice activation.
+
 - 2026-09-12T13:20Z document self-service source is review-complete. Migration163
   stores one immutable encrypted snapshot and separately encrypted deterministic
   PDF per attempt/kind; download capabilities are short-lived and exact-attempt

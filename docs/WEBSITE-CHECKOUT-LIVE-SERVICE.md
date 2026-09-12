@@ -249,7 +249,7 @@ metadata and are not emitted to Adyen in this slice.
 
 ## Receipt and paid-invoice document self-service
 
-Migration163 and `payment-checkout-documents.ts` add the release-pending
+Migration163 and `payment-checkout-documents.ts` provide the deployed
 document boundary. One authorized English MCS payment can own one immutable
 receipt and one immutable paid-invoice version. The canonical snapshot binds
 the server quote, discount arithmetic, zero-tax fact, card authorization,
@@ -277,6 +277,8 @@ Email actions create one recipient-hash-bound job per document, reconcile Gmail
 Sent before any retry, attach the exact stored PDF, and require message/thread,
 recipient, sender, subject, filename and attachment-digest readback. A lost or
 ambiguous acknowledgement becomes an immutable hold and is never blindly
-resent. Migration163, WordPress routes/assets, private schema contract and the
-immutable release still require review, production apply and live no-payment
-readback before this source is called deployed.
+resent. Backend immutable `b0c2ca2d` and tandemweb `5f0e1c65d` are deployed;
+the schema/config/start page and hidden actions are live-verified without a
+payment. Natural post-payment document/download/email proof still requires an
+owner-operated transaction, and paid-invoice activation remains finance/legal
+blocked.

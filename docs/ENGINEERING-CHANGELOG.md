@@ -57,6 +57,30 @@
   unchanged. The immutable builder now invokes the checked bundler immediately
   after its own TypeScript compile and before the existing help/refusal probes;
   the release contract test pins that order.
+- Production release: immutable `b0c2ca2d1ab5` passed the 805-host/45-runner
+  release gate with artifact SHA-256
+  `afcf910b81998c100cfcaf6ca027c099d2ad27928a2d395366ff1174835856bf`
+  and archive SHA-256
+  `9c8a1c70f3f41ba1b8a0378f1b352134b834be4941a8ba9b8a563c6e4cf1365d`.
+  A fresh complete `business_v2` custom-format backup was verified at
+  `2f327587f86bc9d7159d50720733178805b9e41ca711bf459222c34943bc3004`
+  before migration163 applied. Readback: five admin-owned relations, four
+  enabled immutability guards, zero non-admin grants, and zero document,
+  capability, email-job, email-receipt or sequence rows. The owner-only config
+  now pins schema163, enables five-minute receipt downloads, and keeps paid
+  invoice false. The active service runs exact `b0c2ca2d`, health/ready pass,
+  the earlier owner-test exclusion remains exact, and rollback config/plist
+  hashes are retained privately. No document, invoice number, email or payment
+  was generated.
+- WordPress/live UI: tandemweb feature/main/deployed `5f0e1c65d` passed hosted
+  design-system CI run34696979482. Purge/warm and public200 verification passed.
+  Live source hashes match the repository; the HTML contains four separate
+  hidden Confirmation actions, public assets are
+  `f9d36487373aeb62` JS and `4ba1c7287d46d510` CSS, USD299 renders, identity and
+  Terms are blank/unchecked, status is empty, and the hidden in-app browser has
+  no error/warning console entries. Post-payment document generation remains
+  naturally unverified pending an owner-operated transaction; general paid
+  invoice issuance remains finance/legal blocked.
 
 ## 2026-09-12 — NC-20260909-003 MCS confirmation and provider contracts
 
