@@ -956,6 +956,17 @@ settlement explicitly unproven. The optional schema check and transport failures
 cannot fail the base payment schema guard or transaction. Source is reviewed-
 pending, default-off and unapplied; see `docs/WEBSITE-CHECKOUT-LIVE-SERVICE.md`.
 
+The English MCS canary's next provider boundary is source-ready under
+NC-20260909-003. Sessions use only bounded non-sensitive attempt/quote/offer
+metadata, quote-derived line items and truthful zero-tax Level 3 data, plus
+checkout-scoped authentication with a no-challenge preference. Unsigned ESD and
+3DS webhook additions live in their own append-only admin evidence table and
+cannot affect canonical payment state. Optional business billing details are
+strictly normalized, request-bound and encrypted at rest. A minimized
+capability-protected Confirmation summary uses a derived Tandem reference, not
+the PSP reference. Invoice numbering/document/email activation remains under
+the finance/legal gate; ordinary MCS routing remains Stripe.
+
 MCS now includes the reviewed source-only enrollment dependency from d9e29856:
 Bookkeeper composition, proof-bound ingress, authenticated admission, canonical
 PostgreSQL store and projection outbox (migrations146-148). See

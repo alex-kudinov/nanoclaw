@@ -100,7 +100,8 @@ type Dependencies = {
   store: Pick<PaymentStore, 'acceptAttempt' | 'readAttempt'>;
   sessions: Pick<PaymentSessionService, 'validateStart' | 'start' | 'resume'> &
     Partial<Pick<PaymentSessionService, 'retry' | 'checkSubmit'>>;
-  events: Pick<PaymentEventStore, 'readInternalEvidence'>;
+  events: Pick<PaymentEventStore, 'readInternalEvidence'> &
+    Partial<Pick<PaymentEventStore, 'readConfirmationSummary'>>;
   reconciliation?: Pick<
     PaymentMethodReconciliationStore,
     'verify' | 'readState'
@@ -351,7 +352,15 @@ export class PaymentApiController {
                     : 'awaiting_payment';
       // No PSP refs, reasons, identities or session tokens in a status response.
       // No paid/access claim until the separately governed fulfillment adapter exists.
-      return this.response(200, { attemptId: attempt.attemptId, state });
+      const confirmation =
+        state === 'confirming_payment'
+          ? await this.deps.events.readConfirmationSummary?.(attempt.attemptId)
+          : null;
+      return this.response(200, {
+        attemptId: attempt.attemptId,
+        state,
+        ...(confirmation ? { confirmation } : {}),
+      });
     } catch (error) {
       const code =
         error instanceof PaymentDomainError && typeof error.code === 'string'

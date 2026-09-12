@@ -179,6 +179,7 @@ beforeAll(async () => {
   await pool.query(sql('149_payment_attempt_store.sql'));
   await pool.query(sql('150_payment_request_admission.sql'));
   await pool.query(migration);
+  await pool.query(sql('162_payment_provider_optimization_evidence.sql'));
   await pool.query(sql('152_payment_method_reconciliation.sql'));
   await pool.query(sql('159_payment_terminal_card_retry.sql'));
   store = new PaymentStore(
@@ -222,7 +223,21 @@ afterAll(async () => {
 describe('HMAC-admitted durable provider payment events', () => {
   it('deduplicates 25 deliveries into one event and one evidence version', async () => {
     const a = await attempt(),
-      input = payload(notification(a.attemptId));
+      input = payload(
+        notification(a.attemptId, {
+          additionalData: {
+            store: scope.store,
+            shopperEmail: 'must-not-store@example.test',
+            enhancedSchemeDataReceived: 'L3',
+            enhancedSchemeDataSubmitted: 'L3',
+            enhancedSchemeDataRefusalReasons: '',
+            enhancedSchemeDataWarningReasons: '',
+            threeDOffered: 'true',
+            threeDAuthenticated: 'true',
+            liabilityShift: 'true',
+          },
+        }),
+      );
     const results = await Promise.all(
       Array.from({ length: 25 }, () => events.recordWebhook(input)),
     );
@@ -256,6 +271,38 @@ describe('HMAC-admitted durable provider payment events', () => {
     );
     expect(persisted).not.toContain('must-not-store');
     expect(persisted).not.toContain('hmacSignature');
+    expect(JSON.parse(persisted)[0].fact.providerEvidence).toBeUndefined();
+    expect(
+      (
+        await pool.query(
+          `SELECT evidence FROM business_v2.payment_provider_optimization_evidence
+           WHERE attempt_id=$1`,
+          [a.attemptId],
+        )
+      ).rows[0].evidence,
+    ).toEqual({
+      source: 'adyen_additional_data',
+      enhancedSchemeDataReceived: 'L3',
+      enhancedSchemeDataSubmitted: 'L3',
+      enhancedSchemeDataRefusalReasons: null,
+      enhancedSchemeDataWarningReasons: null,
+      threeDOffered: true,
+      threeDAuthenticated: true,
+      liabilityShift: true,
+      invalidFields: [],
+    });
+    const confirmation = await events.readConfirmationSummary(a.attemptId);
+    expect(confirmation).toMatchObject({
+      schemaVersion: 1,
+      offerKey: 'mcq-program-a-foundations',
+      amount: 29900,
+      currency: 'USD',
+      paymentStatus: 'authorized',
+    });
+    expect(confirmation?.paymentReference).toMatch(/^TCA-[A-F0-9]{12}$/);
+    expect(JSON.stringify(confirmation)).not.toContain(
+      input.notificationItems[0].NotificationRequestItem.pspReference,
+    );
     expect(JSON.stringify(events)).not.toContain(key);
   });
   it('accepts a failed retry followed by a different successful PSP in either order', async () => {
@@ -753,11 +800,19 @@ describe('HMAC-admitted durable provider payment events', () => {
       '/internal/payments/status',
       wire('/internal/payments/status', { ...status, requestId: randomUUID() }),
     );
-    expect(confirmed.body).toEqual({
+    expect(confirmed.body).toMatchObject({
       attemptId: a.attemptId,
       state: 'confirming_payment',
+      confirmation: {
+        schemaVersion: 1,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29900,
+        currency: 'USD',
+        paymentStatus: 'authorized',
+        paymentReference: expect.stringMatching(/^TCA-[A-F0-9]{12}$/),
+      },
     });
-    expect(JSON.stringify(confirmed)).not.toContain('paymentReference');
+    expect(JSON.stringify(confirmed)).not.toContain('must-not-expose-psp');
     expect(JSON.stringify(confirmed)).not.toContain('fixture-private-session');
     const paused = new PaymentSessionService(store, adapter, routing, []);
     const freshApi = new PaymentApiController(
@@ -798,6 +853,14 @@ describe('HMAC-admitted durable provider payment events', () => {
     ).toBe('1');
   });
   it('refuses populated rollback then proves exact empty rollback/reapply', async () => {
+    await expect(
+      pool.query(
+        sql('rollback_162_payment_provider_optimization_evidence.sql'),
+      ),
+    ).rejects.toThrow(
+      'populated provider optimization evidence rollback refused',
+    );
+    await pool.query('ROLLBACK');
     const client = await pool.connect();
     try {
       await expect(client.query(rollback)).rejects.toThrow(
@@ -813,10 +876,17 @@ describe('HMAC-admitted durable provider payment events', () => {
     await pool.query(sql('rollback_159_payment_terminal_card_retry.sql'));
     await pool.query(sql('rollback_152_payment_method_reconciliation.sql'));
     await pool.query(
-      'TRUNCATE business_v2.payment_checkout_evidence,business_v2.payment_event_exceptions,business_v2.payment_events,business_v2.payment_provider_references',
+      'TRUNCATE business_v2.payment_provider_optimization_evidence,business_v2.payment_checkout_evidence,business_v2.payment_event_exceptions,business_v2.payment_events,business_v2.payment_provider_references',
+    );
+    await pool.query(
+      sql('rollback_162_payment_provider_optimization_evidence.sql'),
     );
     await pool.query(rollback);
     await pool.query(migration);
+    await pool.query(sql('162_payment_provider_optimization_evidence.sql'));
+    await pool.query(
+      sql('rollback_162_payment_provider_optimization_evidence.sql'),
+    );
     await pool.query(rollback);
   });
 });

@@ -101,6 +101,20 @@ const selfResolve = {
     },
   },
   participant: { role: 'participant', sameAs: 'payer' },
+  billingProfile: {
+    schemaVersion: 1,
+    companyLegalName: 'Example Coaching LLC',
+    invoiceEmail: 'accounts@example.test',
+    taxId: '12-3456789',
+    address: {
+      street: 'Main Street',
+      houseNumberOrName: '42',
+      city: 'Chicago',
+      postalCode: '60601',
+      stateOrProvince: 'IL',
+      country: 'US',
+    },
+  },
 };
 
 function wire(
@@ -214,6 +228,7 @@ beforeAll(async () => {
     '154_payment_identity_preparation.sql',
     'rollback_154_payment_identity_preparation.sql',
     '154_payment_identity_preparation.sql',
+    '161_payment_checkout_billing_profile.sql',
   ]) {
     try {
       await pool.query(sql(migration));
@@ -378,6 +393,7 @@ describe('disposable identity preparation HTTP/store composition', () => {
     ).toMatchObject({
       payerExistingStripeCustomerId: 'cus_1234567890abc',
       participantExistingStripeCustomerId: 'cus_1234567890abc',
+      billingProfile: selfResolve.billingProfile,
     });
     const stored = await pool.query(
       'SELECT * FROM business_v2.payment_identity_preparations WHERE preparation_id=$1',
@@ -385,6 +401,9 @@ describe('disposable identity preparation HTTP/store composition', () => {
     );
     expect(stored.rows).toHaveLength(1);
     expect(JSON.stringify(stored.rows[0])).not.toContain('alex@example.test');
+    expect(JSON.stringify(stored.rows[0])).not.toContain('Example Coaching');
+    expect(stored.rows[0].billing_profile_sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(stored.rows[0].encrypted_billing_profile).toMatch(/^payload-v1\./);
     expect(
       (
         await pool.query(
@@ -584,6 +603,10 @@ describe('disposable identity preparation HTTP/store composition', () => {
   });
 
   it('refuses populated rollback and leaves tables inaccessible to non-admin roles', async () => {
+    await expect(
+      pool.query(sql('rollback_161_payment_checkout_billing_profile.sql')),
+    ).rejects.toThrow('populated payment billing profile rollback refused');
+    await pool.query('ROLLBACK');
     await expect(
       pool.query(sql('rollback_154_payment_identity_preparation.sql')),
     ).rejects.toThrow('rollback154 refused');

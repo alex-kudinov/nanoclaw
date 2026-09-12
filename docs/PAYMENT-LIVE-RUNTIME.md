@@ -1,7 +1,7 @@
 # English MCS card LIVE runtime source contract
 
-Status: source-only production-readiness slice under NC-20260909-003.
-It is not host-mounted, configured, migrated, deployed or activated.
+Status: dedicated English MCS LIVE runtime is active under NC-20260909-003;
+ordinary MCS product traffic remains on Stripe.
 
 ## Boundary
 
@@ -73,6 +73,15 @@ payment_owned_event_exceptions record for operator review. LIVE composition
 forbids the TEST shared-feed foreign-reference discard option. Authorization or
 capture still does not prove settlement; chargebacks remain held operator facts,
 and this source does not revoke access or dispatch fulfillment.
+
+The exact LIVE MCS Session request now adds a bounded PII-free metadata subset,
+one quote-derived line item, truthful zero-tax Level 3 enhanced scheme data,
+and checkout-scoped 3DS authentication with no-challenge preference. A genuine
+unused TEST Session returned HTTP 201 for the same v72 request shape. Adyen ESD
+and 3DS `additionalData` is not part of the Standard-webhook HMAC fields, so it
+is stored only in the append-only admin table introduced by migration162. It is
+never part of a canonical payment fact, authorization projection, fulfillment
+decision or Confirmation claim.
 
 ## Managed service composition
 

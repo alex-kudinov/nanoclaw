@@ -480,9 +480,17 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
       ...statusCommand,
       requestId: randomUUID(),
     });
-    expect(confirmed.body).toEqual({
+    expect(confirmed.body).toMatchObject({
       attemptId: a.attemptId,
       state: 'confirming_payment',
+      confirmation: {
+        schemaVersion: 1,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29900,
+        currency: 'USD',
+        paymentStatus: 'authorized',
+        paymentReference: expect.stringMatching(/^TCA-[A-F0-9]{12}$/),
+      },
     });
     expect(JSON.stringify(confirmed.body)).not.toContain(
       'fixture-private-session',
@@ -546,7 +554,18 @@ describe('explicit TEST payment runtime on disposable Postgres 149-151', () => {
             rollbackBase,
           )
         ).body,
-      ).toEqual({ attemptId: a.attemptId, state: 'confirming_payment' });
+      ).toMatchObject({
+        attemptId: a.attemptId,
+        state: 'confirming_payment',
+        confirmation: {
+          schemaVersion: 1,
+          offerKey: 'mcq-program-a-foundations',
+          amount: 29900,
+          currency: 'USD',
+          paymentStatus: 'authorized',
+          paymentReference: expect.stringMatching(/^TCA-[A-F0-9]{12}$/),
+        },
+      });
       const blocked = await post(
         '/internal/payments/sessions',
         { requestId: randomUUID(), attempt: attempt() },

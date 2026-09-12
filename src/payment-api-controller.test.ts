@@ -153,6 +153,15 @@ function setup(
           fulfillment: 'not_evaluated',
         }),
       ),
+      readConfirmationSummary: vi.fn(async () => ({
+        schemaVersion: 1 as const,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29900,
+        currency: 'USD',
+        paymentStatus: 'authorized' as const,
+        paymentRecordedAt: '2026-09-12T04:00:00.000Z',
+        paymentReference: 'TCA-1234567890AB',
+      })),
     },
     reconciliation: {
       readState: vi.fn(
@@ -508,6 +517,15 @@ describe('unwired signed payment HTTP controller', () => {
     expect(response.body).toEqual({
       attemptId: s.attempt.attemptId,
       state: 'confirming_payment',
+      confirmation: {
+        schemaVersion: 1,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29900,
+        currency: 'USD',
+        paymentStatus: 'authorized',
+        paymentRecordedAt: '2026-09-12T04:00:00.000Z',
+        paymentReference: 'TCA-1234567890AB',
+      },
     });
     expect(JSON.stringify(response)).not.toContain('must-not-expose');
     expect(JSON.stringify(response)).not.toContain('private-session');

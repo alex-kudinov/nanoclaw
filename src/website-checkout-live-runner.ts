@@ -97,6 +97,8 @@ const privateConfigSchema = z
         schemaContract: z.enum([
           'nanoclaw-v2:148,149-159',
           'nanoclaw-v2:148,149-160',
+          'nanoclaw-v2:148,149-161',
+          'nanoclaw-v2:148,149-162',
         ]),
       })
       .strict(),
@@ -322,7 +324,7 @@ export function parseWebsiteCheckoutLivePrivateConfig(
         parsed.receiptWelcome.senderAccount !==
           parsed.receiptWelcome.senderAccount.toLowerCase())) ||
     (parsed.chaosObservability.enabled &&
-      (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-160' ||
+      (parsed.database.schemaContract !== 'nanoclaw-v2:148,149-162' ||
         parsed.chaosObservability.webhookToken ===
           parsed.chaosObservability.identityHmacSecret ||
         keys.includes(parsed.chaosObservability.webhookToken) ||
@@ -394,6 +396,7 @@ const requiredRelations = [
   'payment_enrollment_admissions',
   'website_checkout_customer_notice_jobs',
   'website_checkout_customer_notice_receipts',
+  'payment_provider_optimization_evidence',
 ] as const;
 
 export async function verifyWebsiteCheckoutLiveSchema(
@@ -433,7 +436,8 @@ export async function verifyWebsiteCheckoutLiveSchema(
        (table_name='payment_checkout_attribution_admissions' AND column_name IN
          ('scope_sha256','caller','attempt_id','checkout_evidence_reference')) OR
        (table_name='payment_identity_preparations' AND column_name IN
-         ('caller','preparation_id','participant_party_id','participant_reference')) OR
+         ('caller','preparation_id','participant_party_id','participant_reference',
+          'billing_profile_sha256','encrypted_billing_profile')) OR
        (table_name='payment_method_bindings' AND column_name IN
          ('source_kind','source_event_id')) OR
        (table_name='payment_operations' AND column_name IN
@@ -448,7 +452,7 @@ export async function verifyWebsiteCheckoutLiveSchema(
          ('method_source_kind','method_event_id'))
      )`,
   );
-  if (Number(columns.rows[0]?.count) !== 28)
+  if (Number(columns.rows[0]?.count) !== 30)
     throw new PaymentDomainError('website_checkout_live_schema_mismatch');
 }
 

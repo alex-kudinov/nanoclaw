@@ -639,7 +639,7 @@ describe('managed LIVE private config and schema gates', () => {
         rows: [{ database: 'approved_database', role_exists: true }],
       })
       .mockResolvedValueOnce({
-        rowCount: 17,
+        rowCount: 18,
         rows: [
           'student_projection_outbox',
           'student_projection_receipts',
@@ -658,9 +658,10 @@ describe('managed LIVE private config and schema gates', () => {
           'payment_enrollment_admissions',
           'website_checkout_customer_notice_jobs',
           'website_checkout_customer_notice_receipts',
+          'payment_provider_optimization_evidence',
         ].map((relname) => ({ relname, owner: 'nanoclaw_admin' })),
       })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 28 }] });
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ count: 30 }] });
     await expect(
       verifyWebsiteCheckoutLiveSchema({ query } as never, 'approved_database'),
     ).resolves.toBeUndefined();
@@ -686,7 +687,7 @@ describe('managed LIVE private config and schema gates', () => {
           };
         if (sql.includes('FROM pg_class'))
           return {
-            rowCount: 17,
+            rowCount: 18,
             rows: [
               'student_projection_outbox',
               'student_projection_receipts',
@@ -705,13 +706,14 @@ describe('managed LIVE private config and schema gates', () => {
               'payment_enrollment_admissions',
               'website_checkout_customer_notice_jobs',
               'website_checkout_customer_notice_receipts',
+              'payment_provider_optimization_evidence',
             ].map((relname) => ({
               relname,
               owner: 'nanoclaw_admin',
             })),
           };
         if (sql.includes('information_schema.columns'))
-          return { rowCount: 1, rows: [{ count: 28 }] };
+          return { rowCount: 1, rows: [{ count: 30 }] };
         throw new Error(`unexpected query: ${sql}`);
       });
       const release = vi.fn();

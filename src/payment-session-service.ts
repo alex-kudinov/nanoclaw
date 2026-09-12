@@ -2,6 +2,7 @@ import {
   AdyenSessionAdapter,
   buildAdyenSessionRequest,
   type AdyenSession,
+  type AdyenSessionOptimizationPolicy,
   type AdyenSessionRouting,
 } from './adyen-session-adapter.js';
 import {
@@ -67,6 +68,7 @@ export class PaymentSessionService {
       },
     ),
     returnBindings?: PaymentSessionReturnBindingIssuer,
+    private readonly optimization?: AdyenSessionOptimizationPolicy,
   ) {
     this.allowedOffers = new Set(allowedOffers);
     this.configuredPaymentMethods = validatePaymentMethodCapabilities(
@@ -92,6 +94,8 @@ export class PaymentSessionService {
       this.routing,
       this.environmentProfile,
       this.configuredPaymentMethods,
+      1,
+      this.optimization,
     );
     await this.store.acceptAttempt(attempt);
     await this.store.prepareSession({
@@ -117,6 +121,8 @@ export class PaymentSessionService {
       this.routing,
       this.environmentProfile,
       this.configuredPaymentMethods,
+      1,
+      this.optimization,
     );
     return attempt;
   }
@@ -171,6 +177,7 @@ export class PaymentSessionService {
           this.environmentProfile,
           this.configuredPaymentMethods,
           sessionSequence,
+          this.optimization,
         );
       },
       retryWindowMs: 24 * 60 * 60 * 1000,

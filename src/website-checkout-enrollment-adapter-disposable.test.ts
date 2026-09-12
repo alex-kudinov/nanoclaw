@@ -461,6 +461,7 @@ beforeAll(async () => {
     '152_payment_method_reconciliation.sql',
     '153_website_checkout_provisional_finance.sql',
     '154_payment_identity_preparation.sql',
+    '161_payment_checkout_billing_profile.sql',
     '155_website_checkout_admission_evidence.sql',
     '157_payment_webhook_method_evidence.sql',
     '159_payment_terminal_card_retry.sql',

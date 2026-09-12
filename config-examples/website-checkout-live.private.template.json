@@ -17,7 +17,7 @@
     "user": "xbohdpukc",
     "ssl": "disable",
     "role": "nanoclaw_admin",
-    "schemaContract": "nanoclaw-v2:148,149-160"
+    "schemaContract": "nanoclaw-v2:148,149-162"
   },
   "adyen": {
     "environment": "live",

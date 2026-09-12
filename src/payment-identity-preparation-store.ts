@@ -23,6 +23,12 @@ import {
   PaymentDomainError,
   type PaymentScope,
 } from './payment-domain.js';
+import {
+  checkoutBillingProfileSha256,
+  parseCheckoutBillingProfile,
+  type CheckoutBillingProfile,
+} from './payment-checkout-billing.js';
+import type { PaymentPayloadVault } from './payment-payload-vault.js';
 import type { VerifiedPaymentRequest } from './payment-request-auth.js';
 import type { PaymentTransaction } from './payment-store.js';
 
@@ -49,6 +55,8 @@ type IdentityRow = {
   participant_existing_stripe_customer_id: string | null;
   receipt_reference: string;
   resolved_at: string;
+  billing_profile_sha256: string | null;
+  encrypted_billing_profile: string | null;
 };
 
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -69,6 +77,7 @@ export class PaymentIdentityPreparationStore {
     identitySecret: string,
     tokenSecret: Buffer,
     private readonly resolver: IdentityResolver = resolveCheckoutCustomerIdentityWithClient,
+    private readonly vault?: PaymentPayloadVault,
   ) {
     this.#identitySecret = identitySecret;
     this.#tokenSecret = Buffer.from(tokenSecret);
@@ -222,6 +231,10 @@ export class PaymentIdentityPreparationStore {
     admitted: VerifiedPaymentRequest;
   }): Promise<IdentityPreparationResult> {
     const command = parsePaymentIdentityResolveCommand(input.command);
+    ensure(
+      !command.billingProfile || this.vault !== undefined,
+      'invalid_identity_configuration',
+    );
     digest.parse(input.identityRequestSha256);
     ensure(
       command.requestId === input.admitted.operationId,
@@ -324,9 +337,10 @@ export class PaymentIdentityPreparationStore {
           participant_interaction_id,payer_reference,participant_reference,
           payer_role_proof,participant_role_proof,
           payer_existing_stripe_customer_id,
-          participant_existing_stripe_customer_id,receipt_reference,resolved_at)
+          participant_existing_stripe_customer_id,receipt_reference,resolved_at,
+          billing_profile_sha256,encrypted_billing_profile)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,
-                $16,$17,$18,$19,$20,$21)
+                $16,$17,$18,$19,$20,$21,$22,$23)
          RETURNING *`,
         [
           command.preparationId,
@@ -350,6 +364,15 @@ export class PaymentIdentityPreparationStore {
           participant.stripeCustomerId,
           receiptReference,
           resolvedAt,
+          command.billingProfile
+            ? checkoutBillingProfileSha256(command.billingProfile)
+            : null,
+          command.billingProfile && this.vault
+            ? this.vault.seal(
+                JSON.stringify(command.billingProfile),
+                `${command.preparationId}:billing-profile`,
+              )
+            : null,
         ],
       );
       ensure(inserted.rowCount === 1, 'identity_write_unknown');
@@ -398,6 +421,7 @@ export class PaymentIdentityPreparationStore {
     participantPartyId: number;
     payerExistingStripeCustomerId: string | null;
     participantExistingStripeCustomerId: string | null;
+    billingProfile: CheckoutBillingProfile | null;
   } | null> {
     if (!z.uuid().safeParse(preparationId).success)
       throw new PaymentDomainError('invalid_identity_request');
@@ -409,12 +433,36 @@ export class PaymentIdentityPreparationStore {
       );
       if (result.rowCount !== 1) return null;
       const row = result.rows[0];
+      if (
+        (row.billing_profile_sha256 === null) !==
+        (row.encrypted_billing_profile === null)
+      )
+        throw new PaymentDomainError('identity_evidence_corrupt');
+      let billingProfile: CheckoutBillingProfile | null = null;
+      if (row.encrypted_billing_profile) {
+        ensure(this.vault !== undefined, 'identity_evidence_corrupt');
+        billingProfile = parseCheckoutBillingProfile(
+          JSON.parse(
+            this.vault.open(
+              row.encrypted_billing_profile,
+              `${preparationId}:billing-profile`,
+            ),
+          ),
+        );
+      }
+      if (
+        billingProfile &&
+        checkoutBillingProfileSha256(billingProfile) !==
+          row.billing_profile_sha256
+      )
+        throw new PaymentDomainError('identity_evidence_corrupt');
       return {
         payerPartyId: Number(row.payer_party_id),
         participantPartyId: Number(row.participant_party_id),
         payerExistingStripeCustomerId: row.payer_existing_stripe_customer_id,
         participantExistingStripeCustomerId:
           row.participant_existing_stripe_customer_id,
+        billingProfile,
       };
     });
   }

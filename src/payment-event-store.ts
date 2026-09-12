@@ -2,6 +2,7 @@ import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import {
   admitAdyenWebhook,
+  type AdyenProviderOptimizationEvidence,
   type AdyenWebhookConfig,
   type AdyenTestWebhookConfig,
 } from './adyen-webhook.js';
@@ -31,6 +32,15 @@ type EventResult = {
   result: 'recorded' | 'duplicate' | 'needs_review';
   attemptId: string | null;
 };
+export interface PaymentConfirmationSummary {
+  schemaVersion: 1;
+  offerKey: string;
+  amount: number;
+  currency: string;
+  paymentStatus: 'authorized';
+  paymentRecordedAt: string;
+  paymentReference: string;
+}
 type ExceptionReason =
   | 'unknown_attempt'
   | 'scope_conflict'
@@ -161,6 +171,7 @@ export class PaymentEventStore {
       const amount = entity.amount as { value: number; currency: string };
       if (attemptId === null)
         throw new PaymentDomainError('invalid_payment_reference');
+      const providerEvidence = entity.provider_optimization;
       const fact = {
         deliveryId: item.eventId,
         scope: this.scope,
@@ -172,9 +183,55 @@ export class PaymentEventStore {
         amount: amount.value,
         currency: amount.currency,
       };
-      results.push(await this.recordFact(fact, sessionSequence));
+      const result = await this.recordFact(fact, sessionSequence);
+      if (providerEvidence && result.attemptId === attemptId)
+        await this.recordProviderOptimizationEvidence({
+          attemptId,
+          eventId: item.eventId,
+          eventCode: String(entity.event_code),
+          evidence: providerEvidence,
+        });
+      results.push(result);
     }
     return results;
+  }
+
+  private async recordProviderOptimizationEvidence(input: {
+    attemptId: string;
+    eventId: string;
+    eventCode: string;
+    evidence: AdyenProviderOptimizationEvidence;
+  }): Promise<void> {
+    await this.transaction(async (client) => {
+      const attempt = await client.query<{ contract: unknown }>(
+        'SELECT contract FROM business_v2.payment_attempts WHERE attempt_id=$1',
+        [input.attemptId],
+      );
+      if (
+        attempt.rowCount !== 1 ||
+        paymentScopeFingerprint(
+          validateAttempt(attempt.rows[0].contract).scope,
+        ) !== this.scopeHash
+      )
+        throw new PaymentDomainError('event_scope_mismatch');
+      const evidenceSha256 = paymentPayloadFingerprint(
+        JSON.stringify(input.evidence),
+      );
+      await client.query(
+        `INSERT INTO business_v2.payment_provider_optimization_evidence
+         (scope_sha256,event_id,evidence_sha256,attempt_id,event_code,evidence)
+         VALUES($1,$2,$3,$4,$5,$6::jsonb)
+         ON CONFLICT(scope_sha256,event_id,evidence_sha256) DO NOTHING`,
+        [
+          this.scopeHash,
+          input.eventId,
+          evidenceSha256,
+          input.attemptId,
+          input.eventCode,
+          JSON.stringify(input.evidence),
+        ],
+      );
+    });
   }
 
   private async recordOwnedIntakeException(
@@ -703,6 +760,64 @@ export class PaymentEventStore {
               attempt: rows.rows[0].contract,
               facts: [],
             }));
+    });
+  }
+
+  /** Capability-protected customer summary. Never exposes a PSP reference. */
+  async readConfirmationSummary(
+    attemptId: string,
+  ): Promise<PaymentConfirmationSummary | null> {
+    if (!z.uuid().safeParse(attemptId).success)
+      throw new PaymentDomainError('invalid_attempt_identity');
+    return this.transaction(async (client) => {
+      const rows = await client.query<{
+        contract: unknown;
+        projection: CheckoutPaymentEvidence | null;
+        payment_reference: string | null;
+        received_at: Date | string | null;
+      }>(
+        `SELECT a.contract,ce.projection,
+          (SELECT e.payment_reference FROM business_v2.payment_events e
+           WHERE e.attempt_id=a.attempt_id AND e.scope_sha256=$2
+             AND e.fact->>'kind'='authorization'
+             AND e.fact->>'success'='true'
+           ORDER BY e.received_at,e.event_id LIMIT 1) payment_reference,
+          (SELECT e.received_at FROM business_v2.payment_events e
+           WHERE e.attempt_id=a.attempt_id AND e.scope_sha256=$2
+             AND e.fact->>'kind'='authorization'
+             AND e.fact->>'success'='true'
+           ORDER BY e.received_at,e.event_id LIMIT 1) received_at
+         FROM business_v2.payment_attempts a
+         LEFT JOIN business_v2.payment_checkout_evidence ce
+           ON ce.attempt_id=a.attempt_id
+         WHERE a.attempt_id=$1`,
+        [attemptId, this.scopeHash],
+      );
+      if (rows.rowCount !== 1) return null;
+      const row = rows.rows[0];
+      const attempt = validateAttempt(row.contract);
+      if (
+        paymentScopeFingerprint(attempt.scope) !== this.scopeHash ||
+        row.projection?.state !== 'authorization_recorded' ||
+        !row.payment_reference ||
+        !row.received_at
+      )
+        return null;
+      const recordedAt = new Date(row.received_at);
+      if (Number.isNaN(recordedAt.getTime())) return null;
+      return Object.freeze({
+        schemaVersion: 1 as const,
+        offerKey: attempt.quote.offerKey,
+        amount: attempt.quote.finalAmount,
+        currency: attempt.quote.currency,
+        paymentStatus: 'authorized' as const,
+        paymentRecordedAt: recordedAt.toISOString(),
+        paymentReference: `TCA-${paymentPayloadFingerprint(
+          row.payment_reference,
+        )
+          .slice(0, 12)
+          .toUpperCase()}`,
+      });
     });
   }
 }

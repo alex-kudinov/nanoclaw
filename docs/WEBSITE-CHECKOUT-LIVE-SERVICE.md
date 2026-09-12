@@ -1,6 +1,7 @@
 # Managed website checkout LIVE service
 
-Status: source-ready candidate; default off; not configured or deployed
+Status: dedicated English MCS LIVE canary service is deployed and active;
+ordinary MCS product routing remains off.
 
 This is the production-shaped host composition for the private signed website
 checkout API. It preserves the existing private route and response contract and
@@ -46,7 +47,7 @@ commit, wrong Node or mismatched root fail before config/DB/listener work.
 
 The clean-release builder executes that compiled entrypoint's `--help` and
 relative-config refusal paths before inventorying the archive, and packages the
-exact forward/rollback migrations 146-160. The inert
+exact forward/rollback migrations 146-162. The inert
 `launchd/com.nanoclaw.website-checkout-live.plist` template contains only
 unresolved node, immutable release, private config, non-release working
 directory and log-root placeholders. It supplies no port, remote host, tunnel,
@@ -213,7 +214,7 @@ to ten seconds, rejects redirects, accepts only Chaos `recorded|duplicate`, and
 records bounded retry/dead-letter receipts without raw error text.
 
 Activation requires an applied/read-back migration 160, schema contract
-`nanoclaw-v2:148,149-160`, the exact HTTPS Chaos lifecycle endpoint and distinct
+`nanoclaw-v2:148,149-162`, the exact HTTPS Chaos lifecycle endpoint and distinct
 secrets in an owner-only LIVE config. Omission resolves to disabled. TEST has no
 external-emission path; fixture transports and generated disposable databases
 are the only TEST evidence in this source boundary.
@@ -221,7 +222,7 @@ are the only TEST evidence in this source boundary.
 ## Deployment gates still outside this source
 
 - approved exact database/host/port and encrypted proxy configuration;
-- migrations 148 and 149-160 applied and read back through the established
+- migrations 148 and 149-162 applied and read back through the established
   release procedure; startup never applies them;
 - private LIVE keys, company/merchant/store and provider webhook settings;
 - accepted publication and Heartbeat activation receipts;
@@ -231,3 +232,19 @@ are the only TEST evidence in this source boundary.
 
 Build, tests, listener receipt, provider acceptance, deployment, membership
 readback and learner outcome remain distinct evidence.
+
+## Confirmation and billing preparation
+
+Capability-protected status can now return a minimized purchase summary only
+from one conflict-free durable authorization projection. It contains the exact
+offer, quote amount/currency, server-recorded timestamp and a SHA-derived Tandem
+reference; it never exposes the PSP reference. The public checkout renders that
+summary as the third Confirmation step after the existing enrollment/access
+readback.
+
+Optional company, invoice-email, address and tax/VAT details are normalized in
+WordPress, bound into the exact signed identity request and stored only as an
+encrypted payload with a digest under migration161. They are not provider
+metadata and are not emitted to Adyen in this slice. Receipt and paid-invoice
+PDF generation, numbering and email actions remain separately gated on the
+recorded finance/legal decisions.

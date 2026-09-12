@@ -7,6 +7,10 @@ import {
   PaymentDomainError,
   type PaymentScope,
 } from './payment-domain.js';
+import {
+  parseCheckoutBillingProfile,
+  type CheckoutBillingProfile,
+} from './payment-checkout-billing.js';
 
 const uuid = z.uuid();
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -39,6 +43,7 @@ const resolveBase = z
     intentId: uuid,
     offerKey: offer,
     payer,
+    billingProfile: z.unknown().nullable().optional(),
   })
   .strict();
 const resolveSchema = z.discriminatedUnion('purchaseRelationship', [
@@ -94,7 +99,18 @@ export function parsePaymentIdentityResolveCommand(
 ): PaymentIdentityResolveCommand {
   const parsed = resolveSchema.safeParse(input);
   if (!parsed.success) throw new PaymentDomainError('invalid_identity_request');
-  return parsed.data;
+  return {
+    ...parsed.data,
+    ...(parsed.data.billingProfile
+      ? {
+          billingProfile: parseCheckoutBillingProfile(
+            parsed.data.billingProfile,
+          ),
+        }
+      : {}),
+  } as PaymentIdentityResolveCommand & {
+    billingProfile?: CheckoutBillingProfile;
+  };
 }
 
 export function parsePaymentIdentityStatusCommand(

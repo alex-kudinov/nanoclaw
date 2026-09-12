@@ -114,6 +114,7 @@ export function createPaymentIdentityRuntime(
     config.identitySecret,
     config.identityTokenSecret,
     dependencies.identityResolver,
+    vault,
   );
   const controller = new PaymentIdentityApiController(
     config.caller,

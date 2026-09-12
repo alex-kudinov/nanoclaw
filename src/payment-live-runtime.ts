@@ -4,6 +4,7 @@ import {
 } from './adyen-environment.js';
 import type { AdyenWebhookConfig } from './adyen-webhook.js';
 import type { AdyenSessionRouting } from './adyen-session-adapter.js';
+import type { AdyenSessionOptimizationPolicy } from './adyen-session-adapter.js';
 import { PaymentDomainError, type PaymentScope } from './payment-domain.js';
 import type { PaymentRequestKey } from './payment-request-auth.js';
 import {
@@ -15,6 +16,13 @@ import type { PaymentResponseKey } from './payment-signed-response-controller.js
 export const LIVE_MCS_CARD_CALLER = 'tandem-wordpress-live';
 export const LIVE_MCS_CARD_OFFER_LOCALE = 'mcq-program-a-foundations:en-US';
 export const LIVE_MCS_CARD_QUOTE_AUTHORITY = 'tandem-wordpress-commerce-v1';
+export const LIVE_MCS_ADYEN_OPTIMIZATION: AdyenSessionOptimizationPolicy =
+  Object.freeze({
+    profile: 'mcs-foundations-us-l3-v1',
+    productCode: 'MCSFOUND',
+    description: 'Mentor Coaching Foundations',
+    unitOfMeasure: 'EA',
+  });
 
 export const DEFAULT_LIVE_MCS_CARD_ACTIVATION = Object.freeze({
   enabled: false,
@@ -133,6 +141,7 @@ export function createPaymentLiveRuntime(
       recoveryMode: config.recoveryMode,
       credentials: config.credentials,
       sessionRouting: config.sessionRouting,
+      providerOptimization: LIVE_MCS_ADYEN_OPTIMIZATION,
       webhook: config.webhook,
       webhookMethodEvidence: 'card_scope_webhook',
       limits: config.limits,

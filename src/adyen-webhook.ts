@@ -58,7 +58,21 @@ export interface AdyenAdmittedNotification {
   eventId: string;
   eventType: string;
   rawBody: Record<string, unknown>;
-  relatedEntity: Record<string, unknown>;
+  relatedEntity: Record<string, unknown> & {
+    provider_optimization?: AdyenProviderOptimizationEvidence;
+  };
+}
+
+export interface AdyenProviderOptimizationEvidence {
+  source: 'adyen_additional_data';
+  enhancedSchemeDataReceived: 'L2' | 'L3' | null;
+  enhancedSchemeDataSubmitted: 'L2' | 'L3' | null;
+  enhancedSchemeDataRefusalReasons: string | null;
+  enhancedSchemeDataWarningReasons: string | null;
+  threeDOffered: boolean | null;
+  threeDAuthenticated: boolean | null;
+  liabilityShift: boolean | null;
+  invalidFields: string[];
 }
 
 export class AdyenWebhookAdmissionError extends Error {
@@ -183,6 +197,60 @@ function parseTandemItem(
     success: signed.success,
     paymentMethod: optionalString(signed.raw, 'paymentMethod', 80),
     reason: optionalString(signed.raw, 'reason', 512),
+  };
+}
+
+function optimizationEvidence(
+  source: Record<string, unknown>,
+): AdyenProviderOptimizationEvidence | undefined {
+  const names = [
+    'enhancedSchemeDataReceived',
+    'enhancedSchemeDataSubmitted',
+    'enhancedSchemeDataRefusalReasons',
+    'enhancedSchemeDataWarningReasons',
+    'threeDOffered',
+    'threeDAuthenticated',
+    'liabilityShift',
+  ] as const;
+  if (!names.some((name) => Object.hasOwn(source, name))) return undefined;
+  const invalidFields: string[] = [];
+  const level = (name: (typeof names)[number]): 'L2' | 'L3' | null => {
+    const value = source[name];
+    if (value == null || value === '') return null;
+    if (value === 'L2' || value === 'L3') return value;
+    invalidFields.push(name);
+    return null;
+  };
+  const text = (name: (typeof names)[number]): string | null => {
+    const value = source[name];
+    if (value == null || value === '') return null;
+    if (
+      typeof value === 'string' &&
+      value.length <= 512 &&
+      !/[\u0000-\u001f\u007f]/u.test(value)
+    )
+      return value;
+    invalidFields.push(name);
+    return null;
+  };
+  const bool = (name: (typeof names)[number]): boolean | null => {
+    const value = source[name];
+    if (value == null || value === '') return null;
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    invalidFields.push(name);
+    return null;
+  };
+  return {
+    source: 'adyen_additional_data',
+    enhancedSchemeDataReceived: level('enhancedSchemeDataReceived'),
+    enhancedSchemeDataSubmitted: level('enhancedSchemeDataSubmitted'),
+    enhancedSchemeDataRefusalReasons: text('enhancedSchemeDataRefusalReasons'),
+    enhancedSchemeDataWarningReasons: text('enhancedSchemeDataWarningReasons'),
+    threeDOffered: bool('threeDOffered'),
+    threeDAuthenticated: bool('threeDAuthenticated'),
+    liabilityShift: bool('liabilityShift'),
+    invalidFields: [...new Set(invalidFields)].sort(),
   };
 }
 
@@ -323,6 +391,7 @@ export function admitAdyenWebhook(
 
   return items.map((item) => {
     const eventId = `${item.pspReference}:${item.eventCode}:${item.success}`;
+    const providerEvidence = optimizationEvidence(item.additionalData);
     const minimized = {
       live: expectedLive,
       notification: {
@@ -336,7 +405,10 @@ export function admitAdyenWebhook(
         amount: item.amount,
         paymentMethod: item.paymentMethod,
         reason: item.reason,
-        additionalData: { store: item.additionalData.store },
+        additionalData: {
+          store: item.additionalData.store,
+          ...(providerEvidence ?? {}),
+        },
       },
     };
     return {
@@ -353,6 +425,9 @@ export function admitAdyenWebhook(
         success: item.success === 'true',
         amount: item.amount,
         reported_store: item.additionalData.store,
+        ...(providerEvidence
+          ? { provider_optimization: providerEvidence }
+          : {}),
       },
     };
   });

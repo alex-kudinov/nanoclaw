@@ -6,6 +6,7 @@ import type { AdyenWebhookConfig } from './adyen-webhook.js';
 import { AdyenSessionResultAdapter } from './adyen-session-result-adapter.js';
 import {
   AdyenSessionAdapter,
+  type AdyenSessionOptimizationPolicy,
   type AdyenSessionRouting,
 } from './adyen-session-adapter.js';
 import {
@@ -74,6 +75,7 @@ export interface PaymentRuntimeCoreConfig {
   recoveryMode: 'dispatch' | 'reconcile_only';
   credentials: PaymentRuntimeCredentialBundle;
   sessionRouting: Omit<AdyenSessionRouting, 'scope'>;
+  providerOptimization?: AdyenSessionOptimizationPolicy;
   /** Null retains Session/return/status while native ingress fails closed. */
   webhook: AdyenWebhookConfig | null;
   webhookMethodEvidence?: 'session_result_only' | 'card_scope_webhook';
@@ -241,6 +243,7 @@ export function createPaymentRuntimeCore(
     config.recoveryMode,
     profile,
     returnBindings,
+    config.providerOptimization,
   );
   const eventStore = config.webhook
     ? new PaymentEventStore(
@@ -272,6 +275,7 @@ export function createPaymentRuntimeCore(
           projectCheckoutPaymentEvidence({ attempt, facts: [] })
         );
       }),
+    readConfirmationSummary: async () => null,
   };
   const reconciliation = new PaymentMethodReconciliationStore(
     dependencies.transaction,

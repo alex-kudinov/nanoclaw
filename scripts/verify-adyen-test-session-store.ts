@@ -6,10 +6,15 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { Pool } from 'pg';
 
 import { AdyenTestSessionAdapter } from '../src/adyen-session-adapter.js';
-import { createPaymentAttempt } from '../src/payment-domain.js';
+import {
+  createPaymentAttempt,
+  PaymentDomainError,
+} from '../src/payment-domain.js';
 import { PaymentPayloadVault } from '../src/payment-payload-vault.js';
 import { PaymentStore, type PaymentTransaction } from '../src/payment-store.js';
 import { PaymentSessionService } from '../src/payment-session-service.js';
+import { LIVE_MCS_ADYEN_OPTIMIZATION } from '../src/payment-live-runtime.js';
+import { readEnvFile } from '../src/env.js';
 
 const args = process.argv.slice(2);
 if (
@@ -21,7 +26,16 @@ if (
   throw new Error(
     'usage: --confirm-test-only --catalog <reviewed products.json> --policy <reviewed checkout policy>',
   );
-const env = process.env;
+const env = {
+  ...readEnvFile([
+    'TANDEM_ADYEN_TEST_ENVIRONMENT',
+    'TANDEM_ADYEN_TEST_API_KEY',
+    'TANDEM_ADYEN_TEST_MERCHANT_ACCOUNT',
+    'TANDEM_ADYEN_TEST_STORE_REFERENCE',
+    'TANDEM_ADYEN_TEST_ALLOWED_ORIGIN',
+  ]),
+  ...process.env,
+};
 if (
   env.TANDEM_ADYEN_TEST_ENVIRONMENT !== 'test' ||
   !env.TANDEM_ADYEN_TEST_API_KEY ||
@@ -63,6 +77,7 @@ let created = false;
 let proof: Record<string, unknown> | undefined;
 let phase = 'database_setup';
 const providerStatuses: number[] = [];
+const providerErrors: { code: string; message: string }[] = [];
 let providerCalls = 0;
 const vault = new PaymentPayloadVault(
   'fixture-only',
@@ -102,15 +117,23 @@ try {
   created = true;
   pool = new Pool({ ...config, database });
   await pool.query('CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin');
-  await pool.query(
-    readFileSync(
-      new URL(
-        '../data/business/migrations/nanoclaw-v2/149_payment_attempt_store.sql',
-        import.meta.url,
+  for (const name of [
+    '149_payment_attempt_store.sql',
+    '150_payment_request_admission.sql',
+    '151_payment_event_ledger.sql',
+    '152_payment_method_reconciliation.sql',
+    '159_payment_terminal_card_retry.sql',
+    '162_payment_provider_optimization_evidence.sql',
+  ])
+    await pool.query(
+      readFileSync(
+        new URL(
+          `../data/business/migrations/nanoclaw-v2/${name}`,
+          import.meta.url,
+        ),
+        'utf8',
       ),
-      'utf8',
-    ),
-  );
+    );
   const now = Date.now();
   const attempt = createPaymentAttempt({
     attemptId: randomUUID(),
@@ -131,7 +154,7 @@ try {
       catalogVersion: createHash('sha256').update(catalogBytes).digest('hex'),
       bundleVersion: 'unpublished-foundations-test-v1',
       deliveryVersion: 'unpublished-foundations-test-v1',
-      locale: 'en',
+      locale: 'en-US',
       country: 'US',
       payerReference: null,
       participantReference: null,
@@ -153,6 +176,23 @@ try {
     providerCalls++;
     const response = await fetch(url, options);
     providerStatuses.push(response.status);
+    if (!response.ok) {
+      const body = (await response
+        .clone()
+        .json()
+        .catch(() => null)) as Record<string, unknown> | null;
+      const code = typeof body?.errorCode === 'string' ? body.errorCode : '';
+      const message = typeof body?.message === 'string' ? body.message : '';
+      providerErrors.push({
+        code: /^[A-Za-z0-9_.-]{0,80}$/.test(code) ? code : 'redacted',
+        message:
+          message.length <= 200 &&
+          /^[\x20-\x7e]*$/.test(message) &&
+          !/@|https?:|api.?key/i.test(message)
+            ? message
+            : 'redacted',
+      });
+    }
     return response;
   };
   const adapter = new AdyenTestSessionAdapter(
@@ -168,7 +208,12 @@ try {
     new PaymentStore(transaction(pool), vault),
     adapter,
     routing,
-    ['mcq-program-a-foundations:en'],
+    ['mcq-program-a-foundations:en-US'],
+    ['card'],
+    'dispatch',
+    undefined,
+    undefined,
+    LIVE_MCS_ADYEN_OPTIMIZATION,
   );
   phase = 'test_session_create';
   const started = await service.start(attempt);
@@ -184,6 +229,11 @@ try {
     adapter,
     routing,
     [],
+    ['card'],
+    'dispatch',
+    undefined,
+    undefined,
+    LIVE_MCS_ADYEN_OPTIMIZATION,
   );
   const resumed = await service.resume(attempt.attemptId);
   if (
@@ -214,6 +264,7 @@ try {
     attemptId: attempt.attemptId,
     providerCalls,
     providerStatuses,
+    providerErrors,
     counts,
     poolReopenReusedExactSession: true,
     sessionIdSha256: createHash('sha256')
@@ -221,20 +272,29 @@ try {
       .digest('hex'),
     sessionExpiresAt: started.session.expiresAt,
     encryptedAtRest: true,
+    providerOptimizationProfile: LIVE_MCS_ADYEN_OPTIMIZATION.profile,
     paymentAuthorized: false,
     webhookVerified: false,
     enrollmentChanged: false,
     providerSessionUnused: true,
   };
-} catch {
+} catch (error) {
   // Never emit provider payloads, session tokens, keys, connection details or SQL values.
   process.exitCode = 1;
   process.stderr.write(
     JSON.stringify({
       error: 'test_session_proof_failed',
       phase,
+      failureCode:
+        error instanceof PaymentDomainError ? error.code : 'internal_failure',
+      ...(providerCalls === 0 &&
+      error instanceof Error &&
+      /^[A-Za-z0-9_ :.-]{1,200}$/.test(error.message)
+        ? { failureMessage: error.message }
+        : {}),
       providerCalls,
       providerStatuses,
+      providerErrors,
       paymentAttempted: false,
     }) + '\n',
   );

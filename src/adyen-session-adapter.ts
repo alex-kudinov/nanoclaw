@@ -35,6 +35,13 @@ export interface AdyenApiCredential {
   readonly apiKey: string;
 }
 
+export interface AdyenSessionOptimizationPolicy {
+  readonly profile: 'mcs-foundations-us-l3-v1';
+  readonly productCode: string;
+  readonly description: string;
+  readonly unitOfMeasure: string;
+}
+
 const ADYEN_METHOD_TYPES: Readonly<
   Record<PaymentMethodCapability, 'scheme' | 'ach'>
 > = Object.freeze({
@@ -80,6 +87,7 @@ export function buildAdyenSessionRequest(
   profile: AdyenEnvironmentProfile,
   configuredPaymentMethods: unknown = ['card'],
   sessionSequence = 1,
+  optimization?: AdyenSessionOptimizationPolicy,
 ): string {
   const attempt = validateAttempt(input);
   const scope = attempt.scope;
@@ -125,6 +133,9 @@ export function buildAdyenSessionRequest(
     routing.providerLocaleByQuoteLocale,
   );
   returnUrl.searchParams.set('attempt', attempt.attemptId); // Identifier, not a status capability.
+  const providerOptimization = optimization
+    ? buildAdyenSessionOptimization(attempt, optimization)
+    : {};
   return JSON.stringify({
     merchantAccount: scope.merchant,
     store: scope.store,
@@ -150,7 +161,87 @@ export function buildAdyenSessionRequest(
     allowedPaymentMethods: capabilities.map(
       (capability) => ADYEN_METHOD_TYPES[capability],
     ),
+    ...providerOptimization,
   });
+}
+
+/**
+ * PII-free provider projection for the exact US MCS one-time offer. The full
+ * attribution snapshot remains internal. All arithmetic is derived from the
+ * immutable quote; zero tax is reported truthfully and never inflated for L2.
+ */
+export function buildAdyenSessionOptimization(
+  input: unknown,
+  policy: AdyenSessionOptimizationPolicy,
+): Record<string, unknown> {
+  const attempt = validateAttempt(input);
+  if (
+    policy.profile !== 'mcs-foundations-us-l3-v1' ||
+    attempt.quote.offerKey !== 'mcq-program-a-foundations' ||
+    attempt.quote.locale !== 'en-US' ||
+    attempt.quote.country !== 'US' ||
+    attempt.quote.currency !== 'USD' ||
+    !/^[A-Za-z0-9_.-]{1,12}$/.test(policy.productCode) ||
+    !/^[\x20-\x7e]{1,80}$/.test(policy.description) ||
+    !/^[A-Za-z]{1,3}$/.test(policy.unitOfMeasure)
+  )
+    throw new PaymentDomainError('invalid_provider_optimization_policy');
+
+  const quote = attempt.quote;
+  const customerReference = `mcs-${quote.quoteId.replaceAll('-', '').slice(0, 20)}`;
+  const metadata: Record<string, string> = {
+    checkout_attempt: attempt.attemptId,
+    quote_id: quote.quoteId,
+    offer_key: quote.offerKey,
+    schema: policy.profile,
+  };
+  if (quote.discountPolicyReference !== null) {
+    if (quote.discountPolicyReference.length > 80)
+      throw new PaymentDomainError('invalid_provider_optimization_policy');
+    metadata.promo_policy = quote.discountPolicyReference;
+  }
+  if (
+    Object.keys(metadata).length > 20 ||
+    Object.entries(metadata).some(
+      ([key, value]) => key.length > 20 || value.length > 80,
+    )
+  )
+    throw new PaymentDomainError('invalid_provider_optimization_policy');
+
+  return {
+    metadata,
+    lineItems: [
+      {
+        id: quote.offerKey,
+        description: policy.description,
+        quantity: 1,
+        amountExcludingTax: quote.finalAmount,
+        taxAmount: 0,
+        taxPercentage: 0,
+        amountIncludingTax: quote.finalAmount,
+        sku: policy.productCode,
+      },
+    ],
+    additionalData: {
+      'enhancedSchemeData.customerReference': customerReference,
+      'enhancedSchemeData.totalTaxAmount': '0',
+      'enhancedSchemeData.itemDetailLine1.productCode': policy.productCode,
+      'enhancedSchemeData.itemDetailLine1.description': policy.description,
+      'enhancedSchemeData.itemDetailLine1.quantity': '1',
+      'enhancedSchemeData.itemDetailLine1.unitOfMeasure': policy.unitOfMeasure,
+      'enhancedSchemeData.itemDetailLine1.unitPrice': String(
+        quote.originalAmount,
+      ),
+      'enhancedSchemeData.itemDetailLine1.discountAmount': String(
+        quote.discountAmount,
+      ),
+      'enhancedSchemeData.itemDetailLine1.totalAmount': String(
+        quote.finalAmount,
+      ),
+    },
+    authenticationData: { attemptAuthentication: 'always' },
+    threeDS2RequestData: { threeDSRequestorChallengeInd: '02' },
+  };
 }
 
 export function buildAdyenTestSessionRequest(

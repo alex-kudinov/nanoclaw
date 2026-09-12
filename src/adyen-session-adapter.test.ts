@@ -2,9 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import {
   AdyenTestSessionAdapter,
+  buildAdyenSessionRequest,
+  buildAdyenSessionOptimization,
   buildAdyenTestSessionRequest,
   resolveAdyenTestPaymentMethodCapabilities,
 } from './adyen-session-adapter.js';
+import { resolveAdyenEnvironment } from './adyen-environment.js';
 import { createPaymentAttempt } from './payment-domain.js';
 
 const scope = {
@@ -70,6 +73,73 @@ const response = () => ({
 });
 
 describe('Adyen TEST Sessions adapter', () => {
+  it('projects the exact MCS quote into bounded metadata, L3 data, line items, and frictionless-preferred 3DS', () => {
+    const a = attempt({ locale: 'en-US' });
+    const policy = {
+      profile: 'mcs-foundations-us-l3-v1',
+      productCode: 'MCSFOUND',
+      description: 'Mentor Coaching Foundations',
+      unitOfMeasure: 'EA',
+    } as const;
+    const optimization = buildAdyenSessionOptimization(a, policy);
+    expect(optimization).toEqual({
+      metadata: {
+        checkout_attempt: a.attemptId,
+        quote_id: a.quote.quoteId,
+        offer_key: 'mcq-program-a-foundations',
+        schema: 'mcs-foundations-us-l3-v1',
+      },
+      lineItems: [
+        {
+          id: 'mcq-program-a-foundations',
+          description: 'Mentor Coaching Foundations',
+          quantity: 1,
+          amountExcludingTax: 29900,
+          taxAmount: 0,
+          taxPercentage: 0,
+          amountIncludingTax: 29900,
+          sku: 'MCSFOUND',
+        },
+      ],
+      additionalData: expect.objectContaining({
+        'enhancedSchemeData.totalTaxAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.unitPrice': '29900',
+        'enhancedSchemeData.itemDetailLine1.discountAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.totalAmount': '29900',
+      }),
+      authenticationData: { attemptAuthentication: 'always' },
+      threeDS2RequestData: { threeDSRequestorChallengeInd: '02' },
+    });
+    const request = JSON.parse(
+      buildAdyenSessionRequest(
+        a,
+        routing,
+        resolveAdyenEnvironment({
+          environment: 'test',
+          liveEndpointPrefix: null,
+        }),
+        ['card'],
+        1,
+        policy,
+      ),
+    );
+    expect(request).toMatchObject(optimization);
+    expect(JSON.stringify(request)).not.toMatch(
+      /email|firstName|lastName|gclid|utm_/i,
+    );
+  });
+
+  it('fails closed when the provider optimization policy is used outside the exact US MCS quote', () => {
+    expect(() =>
+      buildAdyenSessionOptimization(attempt(), {
+        profile: 'mcs-foundations-us-l3-v1',
+        productCode: 'MCSFOUND',
+        description: 'Mentor Coaching Foundations',
+        unitOfMeasure: 'EA',
+      }),
+    ).toThrow('invalid_provider_optimization_policy');
+  });
+
   it('builds a repeatable card-only request from the authoritative quote', () => {
     const a = attempt();
     const request = buildAdyenTestSessionRequest(a, routing);

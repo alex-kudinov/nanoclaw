@@ -413,6 +413,8 @@ beforeAll(async () => {
     '152_payment_method_reconciliation.sql',
     '153_website_checkout_provisional_finance.sql',
     '154_payment_identity_preparation.sql',
+    '161_payment_checkout_billing_profile.sql',
+    '162_payment_provider_optimization_evidence.sql',
     '155_website_checkout_admission_evidence.sql',
     '156_website_checkout_attribution_admission.sql',
     'rollback_156_website_checkout_attribution_admission.sql',
@@ -979,9 +981,17 @@ describe('complete isolated English card TEST checkout service', () => {
       attemptId: paymentAttempt.attemptId,
       capability: started.inner.capability,
     });
-    expect(status.inner).toEqual({
+    expect(status.inner).toMatchObject({
       attemptId: paymentAttempt.attemptId,
       state: 'confirming_payment',
+      confirmation: {
+        schemaVersion: 1,
+        offerKey: 'mcq-program-a-foundations',
+        amount: 29400,
+        currency: 'USD',
+        paymentStatus: 'authorized',
+        paymentReference: expect.stringMatching(/^TCA-[A-F0-9]{12}$/),
+      },
     });
 
     await pool.query(

@@ -202,6 +202,37 @@ outside the current client conversation.
 
 ### NC-20260909-003
 
+- 2026-09-12T04:41Z confirmation/provider-contract slice is review-complete.
+  Exact MCS LIVE request construction now adds bounded non-sensitive metadata,
+  quote-derived line-item/L3 arithmetic with zero invented tax, and
+  checkout-scoped 3DS authentication with no-challenge preference. A real
+  unused Adyen TEST Session returned201 after removing one v72 Sessions-only
+  incompatibility (`merchantRiskIndicator`); no payment followed. Optional
+  business billing data is normalized, request-bound and encrypted under new
+  migration161. New migration162 isolates unsigned ESD/3DS webhook evidence
+  from canonical payment facts. Capability-protected status emits a minimized
+  Confirmation summary with a derived Tandem reference, and tandemweb renders
+  the third step. Sonnet/high R1 returned GO, but root found and corrected its
+  mistaken supplemental-fact assessment; narrow R2 returned GO. Focused
+  payment/runtime130/130 and frontend/PHP checks pass. Typecheck/build/format/
+  continuity pass. Full root:4295 pass/32 skip/5 fail; two parallel disposable
+  timeouts pass3/3 isolated and the three established unrelated Capacity/CNPC/
+  Trafft failures remain. Next: commit/release migrations161-162 and both
+  worktrees, update private schema contract, deploy once, and verify live UI/
+  health without a payment. PDF receipt/invoice generation and email actions
+  remain the next finance-gated slice.
+
+- 2026-09-12T04:08Z continuation: implement the accepted MCS confirmation and
+  optimization phase beginning with the backend provider boundary. This slice
+  freezes a non-sensitive Adyen metadata allowlist, quote-derived line items
+  and Level 3 arithmetic, checkout-scoped frictionless-preferred 3DS request
+  policy, and minimized AUTHORISATION/CAPTURE validation evidence. It must
+  preserve the complete attribution snapshot internally, avoid invented tax,
+  keep ordinary MCS traffic on Stripe, and perform no real payment. Source,
+  focused/full tests, bounded Sonnet/high review, normal immutable release and
+  exact live readback remain owned by this task under Peri
+  `work:mcs-foundations-deploy-ready`.
+
 - Authorized LIVE release preparation is reviewed and validated. Dedicated
   compiled entrypoint/146–160 inventory/immutable guard, genuine schema-name
   correction and verified Gmail-alias support are ready for source publication.

@@ -155,6 +155,57 @@ describe('Adyen Standard webhook HMAC', () => {
     expect(stored).not.toContain('must-not-persist@example.com');
   });
 
+  it('retains only bounded ESD and 3DS validation evidence from additional data', () => {
+    const notification = item();
+    notification.additionalData = {
+      ...notification.additionalData,
+      enhancedSchemeDataReceived: 'L3',
+      enhancedSchemeDataSubmitted: 'L2',
+      enhancedSchemeDataRefusalReasons: '',
+      enhancedSchemeDataWarningReasons: 'L3 downgraded to L2',
+      threeDOffered: 'true',
+      threeDAuthenticated: 'true',
+      liabilityShift: 'false',
+    };
+    const [admitted] = admitAdyenTestWebhook(
+      envelope(sign(notification)),
+      config,
+    );
+    expect(admitted.relatedEntity.provider_optimization).toEqual({
+      source: 'adyen_additional_data',
+      enhancedSchemeDataReceived: 'L3',
+      enhancedSchemeDataSubmitted: 'L2',
+      enhancedSchemeDataRefusalReasons: null,
+      enhancedSchemeDataWarningReasons: 'L3 downgraded to L2',
+      threeDOffered: true,
+      threeDAuthenticated: true,
+      liabilityShift: false,
+      invalidFields: [],
+    });
+    const stored = JSON.stringify(admitted.rawBody);
+    expect(stored).toContain('enhancedSchemeDataSubmitted');
+    expect(stored).not.toContain('shopperEmail');
+    expect(stored).not.toContain('must-not-persist@example.com');
+  });
+
+  it('marks malformed supplemental evidence without rejecting the signed payment fact', () => {
+    const notification = item();
+    notification.additionalData = {
+      ...notification.additionalData,
+      enhancedSchemeDataReceived: 'L4',
+      threeDOffered: 'sometimes',
+    };
+    const [admitted] = admitAdyenTestWebhook(
+      envelope(sign(notification)),
+      config,
+    );
+    expect(admitted.relatedEntity.provider_optimization).toMatchObject({
+      enhancedSchemeDataReceived: null,
+      threeDOffered: null,
+      invalidFields: ['enhancedSchemeDataReceived', 'threeDOffered'],
+    });
+  });
+
   it('discards a fully verified foreign-only TEST notification when explicitly enabled', () => {
     const foreign = item({ merchantReference: 'another-platform-attempt-1' });
     foreign.additionalData = {};

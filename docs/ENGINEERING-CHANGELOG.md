@@ -1,5 +1,40 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 MCS confirmation and provider contracts
+
+- Added the exact English MCS Adyen Session optimization profile: bounded
+  PII-free attempt/quote/offer metadata, one authoritative line item, truthful
+  zero-tax Level 3 fields, and checkout-scoped authentication with a
+  no-challenge preference. A real unused TEST Session first identified and
+  rejected unsupported `merchantRiskIndicator`; the corrected v72 request
+  returned HTTP201 and the disposable store was removed without payment.
+- Standard-webhook ESD and 3DS additions are unsigned supplemental evidence.
+  Root corrected the initial implementation so these values never enter
+  `PaymentFact`, payment fingerprints, projection or Confirmation. Migration162
+  stores them separately as append-only admin evidence with populated rollback
+  refusal. Migration161 adds paired digest/encrypted optional business-billing
+  fields to immutable identity preparation; raw company/address/tax values are
+  absent from WordPress persistence and provider metadata.
+- Capability-protected status now returns a server-verified purchase summary
+  only from one conflict-free authorization projection. It exposes exact
+  offer/amount/currency, server-recorded time and a SHA-derived Tandem reference,
+  never the PSP reference. Tandemweb renders the new Confirmation step and
+  offers collapsed optional business-invoice fields.
+- Sonnet/high bounded R1 `d89bd350-5dc6-40f6-852f-a5396f5a6226` returned GO;
+  root independently found its mistaken unsigned-fact conclusion and made the
+  load-bearing separation. Narrow R2
+  `22dfc638-172e-4c83-8f29-c7b2d5ff5ad1` returned GO. R1 used five model calls,
+  332201 cache-read and 24911 output tokens; R2 used four calls, 162011
+  cache-read and 14753 output tokens. Both exceeded the 100k context target,
+  recorded as orchestration warnings rather than hidden.
+- Focused payment/runtime tests pass130/130; frontend tests pass83/83 and
+  affected PHP contracts pass. Pinned Node typecheck/build/format/continuity
+  pass. Full root:4295 pass/32 skip/5 fail; the two parallel disposable
+  timeouts pass3/3 alone, and the three established unrelated Capacity/CNPC/
+  Trafft failures remain. Invoice numbering, PDF generation and document email
+  activation remain behind finance/legal acceptance. No real payment,
+  customer email, fulfillment replay or Stripe routing change occurred.
+
 ## 2026-09-11 — NC-20260909-003 LIVE shared-feed filter wiring correction
 
 - Root deployment inspection found that the standalone LIVE receiver omitted
