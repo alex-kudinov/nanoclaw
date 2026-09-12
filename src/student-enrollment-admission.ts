@@ -22,6 +22,7 @@ import {
 } from './student-enrollment-foundation.js';
 import { persistEnrollmentDecision } from './student-enrollment-store.js';
 import { guardEnrollmentStore } from './student-enrollment-store-mapping.js';
+import type { ProjectionDatabaseGuard } from './student-enrollment-projection-store.js';
 
 export const ENROLLMENT_ADMISSION_MODE = 'synthetic_only' as const;
 const key = z.string().regex(/^[a-z0-9][a-z0-9._:-]{0,99}$/);
@@ -117,8 +118,9 @@ export async function claimEnrollmentWriter(
   actor: string,
   at: string,
   registeredSources: readonly EnrollmentWriterSourceRegistration[] = [],
+  databaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
 ): Promise<boolean> {
-  await guardEnrollmentStore(client);
+  await databaseGuard(client);
   const canonical = z
     .strictObject({
       scope: key,

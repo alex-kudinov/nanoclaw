@@ -39,6 +39,7 @@ import {
   PaymentWebhookHttpAdapter,
 } from './payment-test-webhook-http-adapter.js';
 import type { PaymentTransaction } from './payment-store.js';
+import type { ProjectionDatabaseGuard } from './student-enrollment-projection-store.js';
 import {
   WebsiteCheckoutEnrollmentAdapter,
   type WebsiteCheckoutPublicationActivationReceipt,
@@ -79,6 +80,8 @@ export interface WebsiteCheckoutServiceDependencies {
   providerTransport?: typeof fetch;
   accessDelivery?: WebsiteCheckoutAccessDelivery;
   receiptWelcomeOwner?: WebsiteCheckoutReceiptWelcomeOwner;
+  enrollmentDatabaseGuard?: ProjectionDatabaseGuard;
+  excludedFulfillmentAttemptIds?: ReadonlySet<string>;
 }
 
 export interface WebsiteCheckoutReceiptWelcomeOwner {
@@ -186,6 +189,7 @@ export function createWebsiteCheckoutService(
         payment.recoveryMode !== 'dispatch'
       : payment.mode !== 'live' ||
         payment.caller !== LIVE_MCS_CARD_CALLER ||
+        !dependencies.enrollmentDatabaseGuard ||
         (payment.activation.newAttemptsEnabled &&
           (!config.liveNewAttemptPrerequisites?.accessDeliveryOwnerConfigured ||
             !config.liveNewAttemptPrerequisites.receiptWelcomeOwnerConfigured ||
@@ -288,6 +292,8 @@ export function createWebsiteCheckoutService(
           environment: 'live',
           activationReceipt: config.publicationActivationReceipt!,
         },
+    dependencies.enrollmentDatabaseGuard,
+    dependencies.excludedFulfillmentAttemptIds,
   );
   const promotion = new PaymentPromotionConsumptionReceiptReader(
     dependencies.transaction,

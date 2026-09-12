@@ -11,6 +11,7 @@ import {
   persistEnrollmentStore,
   guardEnrollmentStore,
 } from './student-enrollment-store-mapping.js';
+import type { ProjectionDatabaseGuard } from './student-enrollment-projection-store.js';
 
 export const ENROLLMENT_STORE_MODE = 'disposable_only' as const;
 export { assertEnrollmentStoreDatabase } from './student-enrollment-store-mapping.js';
@@ -44,6 +45,7 @@ export async function persistEnrollmentDecision(
     client: PoolClient,
     state: BookkeeperEnrollmentState,
   ) => Promise<EnrollmentIngressResult>,
+  databaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
 ): Promise<EnrollmentIngressResult> {
   const client = await pool.connect();
   let began = false;
@@ -52,7 +54,7 @@ export async function persistEnrollmentDecision(
   try {
     // Outside BEGIN so this identity check cannot pin a stale serializable snapshot
     // while a competing intake still holds the table locks.
-    await guardEnrollmentStore(client);
+    await databaseGuard(client);
     await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
     began = true;
     await client.query("SET LOCAL lock_timeout='5s'");
@@ -60,10 +62,10 @@ export async function persistEnrollmentDecision(
     await client.query(
       `LOCK TABLE ${ENROLLMENT_STORE_TABLES.map((t) => 'business_v2.' + t).join(',')} IN SHARE ROW EXCLUSIVE MODE`,
     );
-    const before = await loadEnrollmentStore(client);
+    const before = await loadEnrollmentStore(client, databaseGuard);
     const result = await decide(client, before.state);
-    await persistEnrollmentStore(client, before, result);
-    const readback = await loadEnrollmentStore(client);
+    await persistEnrollmentStore(client, before, result, databaseGuard);
+    const readback = await loadEnrollmentStore(client, databaseGuard);
     committing = true;
     await client.query('COMMIT');
     began = false;

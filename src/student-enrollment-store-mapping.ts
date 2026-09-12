@@ -5,6 +5,7 @@ import {
 } from './bookkeeper-enrollment-contract.js';
 import { createEmptyEnrollmentFoundationState } from './student-enrollment-foundation.js';
 import { createEmptyAcademyCapacityState } from './academy-capacity.js';
+import type { ProjectionDatabaseGuard } from './student-enrollment-projection-store.js';
 
 export function assertEnrollmentStoreDatabase(database: string): void {
   if (!/^nc_student_enrollment_store_[a-f0-9]{32}$/.test(database))
@@ -296,8 +297,9 @@ export interface EnrollmentStoreSnapshot {
 /** Must be called inside the store transaction after all canonical table locks. */
 export async function loadEnrollmentStore(
   client: PoolClient,
+  databaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
 ): Promise<EnrollmentStoreSnapshot> {
-  await guardEnrollmentStore(client);
+  await databaseGuard(client);
   const state = {
     enrollment: createEmptyEnrollmentFoundationState(),
     capacity: createEmptyAcademyCapacityState(),
@@ -357,8 +359,9 @@ export async function persistEnrollmentStore(
   client: PoolClient,
   before: EnrollmentStoreSnapshot,
   after: BookkeeperEnrollmentState,
+  databaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
 ): Promise<void> {
-  await guardEnrollmentStore(client);
+  await databaseGuard(client);
   const normalized = canonical(after);
   const prior = canonical(before.state);
   const ids: Indexes = new Map(
@@ -408,7 +411,7 @@ export async function persistEnrollmentStore(
       ids.get(t.collection)!.set(k, String(result.rows[0].id));
     }
   }
-  const readback = await loadEnrollmentStore(client);
+  const readback = await loadEnrollmentStore(client, databaseGuard);
   if (hash(canonical(readback.state)) !== hash(normalized))
     throw new Error('store_readback_mismatch');
 }

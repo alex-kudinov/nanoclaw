@@ -187,6 +187,7 @@ const privateConfigSchema = z
       .object({
         pollIntervalMs: z.number().int().min(1000).max(60000),
         batchSize: z.number().int().min(1).max(100),
+        excludedAttemptIds: z.array(z.uuid()).max(100).default([]),
       })
       .strict(),
     chaosObservability: z
@@ -350,7 +351,9 @@ export function parseWebsiteCheckoutLivePrivateConfig(
     (parsed.activation.newAttemptsEnabled &&
       (!parsed.heartbeatAccess.enabled || !parsed.receiptWelcome.enabled)) ||
     new Set(parsed.backend.promotionPolicyReferences).size !==
-      parsed.backend.promotionPolicyReferences.length
+      parsed.backend.promotionPolicyReferences.length ||
+    new Set(parsed.fulfillment.excludedAttemptIds).size !==
+      parsed.fulfillment.excludedAttemptIds.length
   )
     throw new PaymentDomainError(
       'invalid_website_checkout_live_private_config',
@@ -713,6 +716,7 @@ export async function startWebsiteCheckoutLiveService(
             }
           : { enabled: false },
         receiptWelcome: config.receiptWelcome,
+        excludedFulfillmentAttemptIds: config.fulfillment.excludedAttemptIds,
       },
       {
         pool,

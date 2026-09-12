@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { PoolClient } from 'pg';
 import {
   assertEnrollmentStoreDatabase,
+  persistEnrollmentDecision,
   persistEnrollmentIngress,
   ENROLLMENT_STORE_MODE,
 } from './student-enrollment-store.js';
@@ -36,6 +37,28 @@ describe('local atomic enrollment store', () => {
     expect(calls).toEqual([
       'SELECT current_database() AS database, inet_server_addr() AS address',
     ]);
+  });
+  it('uses an explicit production guard instead of the disposable-only guard', async () => {
+    const queries: string[] = [];
+    const client = {
+      query: async (sql: string) => {
+        queries.push(sql);
+        return { rows: [] };
+      },
+      release: () => {},
+    } as unknown as PoolClient;
+    const guard = vi.fn(async () => {
+      throw new Error('approved_production_guard_probe');
+    });
+    await expect(
+      persistEnrollmentDecision(
+        { connect: async () => client },
+        async () => null as never,
+        guard,
+      ),
+    ).rejects.toThrow('approved_production_guard_probe');
+    expect(guard).toHaveBeenCalledWith(client);
+    expect(queries).toEqual([]);
   });
   it('persists canonical state atomically under real PostgreSQL races and failures', () => {
     const result = runEnrollmentStoreDisposableProof() as any;

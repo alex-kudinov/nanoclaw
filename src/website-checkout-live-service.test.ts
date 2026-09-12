@@ -102,6 +102,7 @@ describe('English production publication activation boundary', () => {
         'capture-policy-live-v1',
         true,
         { environment: 'live', activationReceipt: activation() },
+        async () => undefined,
       ),
     ).toBeInstanceOf(WebsiteCheckoutEnrollmentAdapter);
     expect(connect).not.toHaveBeenCalled();
@@ -124,6 +125,55 @@ describe('English production publication activation boundary', () => {
           { environment: 'live', activationReceipt: poisoned },
         ),
     ).toThrow('invalid_website_adapter_configuration');
+  });
+
+  it('refuses LIVE enrollment composition without an explicit production database guard', () => {
+    const pool = { connect: vi.fn() } as unknown as Pick<Pool, 'connect'>;
+    expect(
+      () =>
+        new WebsiteCheckoutEnrollmentAdapter(
+          pool,
+          'tandem-wordpress-live',
+          scope,
+          publication,
+          {
+            publicationId: 'student-foundations-publication-v1',
+            publicationRevision: 2,
+            payloadSha256: publication.payload_sha256,
+          },
+          'capture-policy-live-v1',
+          true,
+          { environment: 'live', activationReceipt: activation() },
+        ),
+    ).toThrow('invalid_website_adapter_configuration');
+  });
+
+  it('holds an explicitly excluded owner test attempt before database admission', async () => {
+    const attemptId = '70db04a3-2d1d-4639-9fe8-434226f87577';
+    const connect = vi.fn();
+    const adapter = new WebsiteCheckoutEnrollmentAdapter(
+      { connect } as unknown as Pick<Pool, 'connect'>,
+      'tandem-wordpress-live',
+      scope,
+      publication,
+      {
+        publicationId: 'student-foundations-publication-v1',
+        publicationRevision: 2,
+        payloadSha256: publication.payload_sha256,
+      },
+      'capture-policy-live-v1',
+      true,
+      { environment: 'live', activationReceipt: activation() },
+      async () => undefined,
+      new Set([attemptId]),
+    );
+    await expect(adapter.admit(attemptId)).resolves.toMatchObject({
+      disposition: 'held',
+      canonicalEnrollment: 'not_materialized',
+      currentPaymentState: 'needs_review',
+      reasons: ['owner_test_fulfillment_excluded'],
+    });
+    expect(connect).not.toHaveBeenCalled();
   });
 });
 
@@ -462,6 +512,36 @@ describe('managed LIVE private config and schema gates', () => {
     expect(() =>
       parseWebsiteCheckoutLivePrivateConfig(
         writeConfig({ listener: { host: '0.0.0.0', port: 3456 } }),
+      ),
+    ).toThrow('invalid_website_checkout_live_private_config');
+  });
+
+  it('defaults fulfillment exclusions empty and accepts unique owner test attempts only', () => {
+    expect(
+      parseWebsiteCheckoutLivePrivateConfig(writeConfig()).fulfillment
+        .excludedAttemptIds,
+    ).toEqual([]);
+    const attemptId = '70db04a3-2d1d-4639-9fe8-434226f87577';
+    expect(
+      parseWebsiteCheckoutLivePrivateConfig(
+        writeConfig({
+          fulfillment: {
+            pollIntervalMs: 5000,
+            batchSize: 25,
+            excludedAttemptIds: [attemptId],
+          },
+        }),
+      ).fulfillment.excludedAttemptIds,
+    ).toEqual([attemptId]);
+    expect(() =>
+      parseWebsiteCheckoutLivePrivateConfig(
+        writeConfig({
+          fulfillment: {
+            pollIntervalMs: 5000,
+            batchSize: 25,
+            excludedAttemptIds: [attemptId, attemptId],
+          },
+        }),
       ),
     ).toThrow('invalid_website_checkout_live_private_config');
   });

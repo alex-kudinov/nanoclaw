@@ -44,6 +44,7 @@ export interface WebsiteCheckoutLiveServiceConfig {
         approvedAt: string;
         activationReceiptSha256: string;
       };
+  excludedFulfillmentAttemptIds: readonly string[];
 }
 
 export interface WebsiteCheckoutLiveServiceDependencies {
@@ -128,6 +129,13 @@ export function createWebsiteCheckoutLiveService(
           : undefined,
       cardCaptureConfigurationEvidence: config.cardCaptureConfigurationEvidence,
     },
-    { ...dependencies, accessDelivery },
+    {
+      ...dependencies,
+      accessDelivery,
+      enrollmentDatabaseGuard: dependencies.projectionDatabaseGuard,
+      excludedFulfillmentAttemptIds: new Set(
+        config.excludedFulfillmentAttemptIds,
+      ),
+    },
   );
 }

@@ -32,6 +32,8 @@ import {
   type EnrollmentFoundationState,
 } from './student-enrollment-foundation.js';
 import { persistEnrollmentDecision } from './student-enrollment-store.js';
+import { guardEnrollmentStore } from './student-enrollment-store-mapping.js';
+import type { ProjectionDatabaseGuard } from './student-enrollment-projection-store.js';
 
 const actor = 'website-checkout-enrollment-adapter:host';
 const uuid = z.uuid();
@@ -331,6 +333,8 @@ export class WebsiteCheckoutEnrollmentAdapter {
     runtimeProfile: WebsiteCheckoutEnrollmentRuntimeProfile = {
       environment: 'test',
     },
+    private readonly enrollmentDatabaseGuard: ProjectionDatabaseGuard = guardEnrollmentStore,
+    private readonly excludedFulfillmentAttemptIds: ReadonlySet<string> = new Set(),
   ) {
     this.scopeHash = paymentScopeFingerprint(scope);
     const parsed = publicationSchema.safeParse(publication);
@@ -344,6 +348,12 @@ export class WebsiteCheckoutEnrollmentAdapter {
       publicationPin.publicationRevision !== parsed.data.publication_revision ||
       publicationPin.payloadSha256 !== parsed.data.payload_sha256 ||
       typeof attributionRequired !== 'boolean' ||
+      excludedFulfillmentAttemptIds.size > 100 ||
+      [...excludedFulfillmentAttemptIds].some(
+        (attemptId) => !uuid.safeParse(attemptId).success,
+      ) ||
+      (runtimeProfile.environment === 'live' &&
+        enrollmentDatabaseGuard === guardEnrollmentStore) ||
       (cardCaptureConfigurationEvidence !== null &&
         !ref.safeParse(cardCaptureConfigurationEvidence).success) ||
       (runtimeProfile.environment === 'test'
@@ -683,6 +693,18 @@ export class WebsiteCheckoutEnrollmentAdapter {
   async admit(attemptId: string): Promise<WebsiteCheckoutEnrollmentResult> {
     if (!uuid.safeParse(attemptId).success)
       throw new PaymentDomainError('invalid_attempt_identity');
+    if (this.excludedFulfillmentAttemptIds.has(attemptId)) {
+      return {
+        disposition: 'held',
+        orderKey: `website-checkout:excluded:${hash(attemptId)}`,
+        canonicalEnrollment: 'not_materialized',
+        accessDelivery: 'not_requested',
+        certificateFinancialClearance: 'not_evaluated',
+        currentPaymentState: 'needs_review',
+        reasons: ['owner_test_fulfillment_excluded'],
+        evidenceReference: null,
+      };
+    }
     let metadata: Omit<
       WebsiteCheckoutEnrollmentResult,
       'disposition' | 'orderKey'
@@ -839,6 +861,7 @@ export class WebsiteCheckoutEnrollmentAdapter {
                 objectType: 'payment',
               },
             ],
+            this.enrollmentDatabaseGuard,
           ))
         ) {
           metadata = {
@@ -1066,6 +1089,7 @@ export class WebsiteCheckoutEnrollmentAdapter {
           disposition: 'accepted' as const,
         };
       },
+      this.enrollmentDatabaseGuard,
     );
     return {
       disposition: result.disposition,
