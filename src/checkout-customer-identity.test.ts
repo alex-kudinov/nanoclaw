@@ -152,7 +152,8 @@ describe('checkout customer identity store', () => {
     });
     expect(result).toMatchObject({ partyId: 43, resolution: 'created' });
     expect(calls.some((sql) => sql.includes('fn_add_party_role'))).toBe(true);
-    const createPartySql = calls.find((sql) => sql.includes('fn_create_party')) ?? '';
+    const createPartySql =
+      calls.find((sql) => sql.includes('fn_create_party')) ?? '';
     expect(createPartySql).toContain("'person',$1,$2,'wordpress'");
     expect(createPartySql).not.toContain('::citext');
   });
@@ -167,11 +168,13 @@ describe('checkout customer identity store', () => {
         return { rows: [{ id: '11' }] };
       return { rows: [] };
     });
-    await expect(resolveCheckoutCustomerIdentityWithClient({
-      client: ambiguous,
-      request: preparedResolve(),
-      identitySecret: secret,
-    })).resolves.toMatchObject({ partyId: 42, resolution: 'existing' });
+    await expect(
+      resolveCheckoutCustomerIdentityWithClient({
+        client: ambiguous,
+        request: preparedResolve(),
+        identitySecret: secret,
+      }),
+    ).resolves.toMatchObject({ partyId: 42, resolution: 'existing' });
   });
 
   it('still refuses reuse of one exact submission token for a different email', async () => {
