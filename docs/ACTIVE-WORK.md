@@ -6,11 +6,14 @@ compatibility Payment Log, Student Roster and PostgreSQL readbacks, but the
 dedicated Commerce Bookkeeper handler acknowledged the VPS job without posting
 the required mechanical summary to El Contador. Exact live evidence is one
 matching Adyen projection row and zero matching Contador channel messages.
-Align the handler with the existing Contador AUTO communication contract:
-resolve exactly one registered `contador` group, post the verified recorder
-summary before HTTP acknowledgment, return retryable 503 on missing group or
-send failure, and prove the current order produces one visible message without
-another payment. Preserve the existing Stripe path and do not spawn an agent.
+The handler now aligns with the existing Contador AUTO communication contract:
+it resolves exactly one registered `contador` group, posts the verified recorder
+summary before HTTP acknowledgment, and returns retryable 503 on missing group
+or send failure. Exact release `c190b957333a` is live and healthy; the existing
+WordPress order's idempotent second Bookkeeper attempt returned
+`projected_notified`, the Adyen projection row remains one, and exactly one new
+El Contador channel message was persisted at 2026-09-13T21:39:04.693Z. No
+payment or agent turn was created; the Stripe path remains unchanged.
 
 2026-09-13T02:45Z — NC-20260909-003 architecture review complete, no
 implementation: bounded Claude Sonnet/high R1 confirmed the rejected Mini

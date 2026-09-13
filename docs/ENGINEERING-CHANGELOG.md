@@ -13,8 +13,25 @@
   recorder, so the VPS job repairs rather than silently completing.
 - The Stripe payment path, provider/payment authority, sheets/roster/PostgreSQL
   recorder, group prompt, and no-agent-spawn boundary are unchanged.
-- State: in_progress. Source verification, immutable release, live health and
-  one exact current-order message/readback remain pending.
+- Verification: focused Commerce/webhook tests pass 63/63, typecheck, format,
+  documentation continuity and runtime doctor pass. The immutable release gate
+  passed 805 host tests and 45 runner tests. The broad 4,386-test development
+  run retained the established missing Tandemweb fixture/data failures and one
+  unrelated parallel-only extra failure; the exact changed files pass alone.
+- Release: commit `c190b957333ac1901b2d46a1f4b3f1cf75c6341c`, source tree
+  `9cb84ddc8b7a18c69cfc762b13b8fd1567cf9712`, 1,316-file artifact
+  `833042cd62581b58345a63a9497c3a677d141a2e3572b3492cfc675858bfe3d3`,
+  archive `d9f407d4c8c6d092e57b6694a04dc1ee7a5bb8506f9df8590a51c1f1b6878b32`.
+  Fresh local/Mini extraction verified under Node 22.23.2. Main activation
+  changed only the three release pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-68cbdd110e28-2026-09-13T21-35-54-278Z`.
+- Live outcome: health proves exact release/code root, connected Slack/Gmail and
+  empty queues. The existing WordPress Bookkeeper job retried once through its
+  same stable delivery ID and completed attempt 2 as `projected_notified`.
+  PostgreSQL remains one exact Adyen projection row, while SQLite/Slack records
+  exactly one new El Contador message at 2026-09-13T21:39:04.693Z. No payment
+  replay, second charge, customer message or agent turn occurred.
+- State: complete for the visible Commerce Bookkeeper receipt.
 
 ## 2026-09-12 — NC-20260909-003 other-learner fulfillment, documents and AVS
 
