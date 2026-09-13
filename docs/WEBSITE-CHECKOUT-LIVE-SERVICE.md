@@ -83,6 +83,17 @@ not claim acquisition or conversion-platform parity. TEST external emitters
 remain off. Any later emitter requires its own owner, consent decision,
 idempotency/readback and activation evidence.
 
+The exact US MCS card request includes Level 3 enhanced scheme data from the
+immutable quote: one `MCS Foundations` item (`MCSFOUND`), quantity 1, unit `EA`,
+UNSPSC `86132000`, exact original price less any accepted discount, and USD0
+tax. No shopper-entered price, tax or item description can reach this request.
+Adyen Checkout v72 cannot carry its structured Level 3 field through
+`/sessions`, and its legacy flattened field is rejected by the internal v72
+payment call. The MCS Level 3 Session therefore pins Checkout v69, which passed
+both direct and full-browser official-card TEST authorization; other Session
+traffic stays on v72. Authentication preferences are deliberately absent from
+the Level 3 bundle.
+
 The shipped publication is
 `facts/generated/student-foundations-publication-live-v1.candidate.json`. It
 contains only the English route and the natively verified Heartbeat

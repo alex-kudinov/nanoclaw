@@ -16,14 +16,20 @@ export const LIVE_MCS_CARD_CALLER = 'tandem-wordpress-live';
 export const LIVE_MCS_CARD_OFFER_LOCALE = 'mcq-program-a-foundations:en-US';
 export const LIVE_MCS_CARD_QUOTE_AUTHORITY = 'tandem-wordpress-commerce-v1';
 /**
- * The 2026-09-12 LIVE canary proved that the combined enhanced-data and
- * forced-authentication projection can create a Session but makes Adyen's
- * browser /payments call fail with HTTP 500. Keep the LIVE projection absent;
- * ordinary card capture does not depend on it. A future projection needs its
- * own provider-accepted proof before this function may return a policy.
+ * The exact server-owned Level 3 projection for the US MCS digital course.
+ * Tax is always zero and the one known invoice line reconciles exactly to the
+ * immutable quote. Authentication preferences are intentionally separate:
+ * their earlier combination with ESD caused the failed LIVE canary.
  */
-export function liveMcsProviderOptimization(): undefined {
-  return undefined;
+export function liveMcsProviderOptimization() {
+  return Object.freeze({
+    profile: 'mcs-foundations-us-l3-v1',
+    checkoutApiVersion: 69,
+    productCode: 'MCSFOUND',
+    description: 'MCS Foundations',
+    unitOfMeasure: 'EA',
+    commodityCode: '86132000',
+  } as const);
 }
 
 export const DEFAULT_LIVE_MCS_CARD_ACTIVATION = Object.freeze({

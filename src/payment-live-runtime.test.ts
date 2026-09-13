@@ -106,8 +106,15 @@ describe('disabled-by-default English MCS LIVE card composition', () => {
     expect(providerTransport).not.toHaveBeenCalled();
   });
 
-  it('keeps the provider optimization bundle out of LIVE card requests after the failed canary', () => {
-    expect(liveMcsProviderOptimization()).toBeUndefined();
+  it('enables only the exact server-owned MCS Level 3 policy in LIVE', () => {
+    expect(liveMcsProviderOptimization()).toEqual({
+      profile: 'mcs-foundations-us-l3-v1',
+      checkoutApiVersion: 69,
+      productCode: 'MCSFOUND',
+      description: 'MCS Foundations',
+      unitOfMeasure: 'EA',
+      commodityCode: '86132000',
+    });
   });
 
   it('requires enabled recovery before new attempts and supports recovery-only rollback', () => {

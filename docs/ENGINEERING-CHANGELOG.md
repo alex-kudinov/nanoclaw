@@ -1,5 +1,31 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 MCS Level 3 enhanced scheme data
+
+- Replaced the disabled combined optimization with an exact server-owned Level
+  3 profile for the US MCS course. One known invoice line carries product code
+  `MCSFOUND`, description `MCS Foundations`, quantity 1, unit `EA`, UNSPSC
+  `86132000`, exact quote original/discount/final arithmetic and zero tax.
+  Required field bounds fail closed, browser identity is excluded, and the prior
+  forced-authentication/no-challenge settings are not part of this change.
+- Current Adyen v72 provider tests proved an API-version incompatibility rather
+  than an arithmetic defect: v72 Session creation accepts flattened Level 3
+  `additionalData`, but its browser `/payments` rejects it because v72 requires
+  structured top-level `enhancedSchemeData`; `/sessions` in turn rejects that
+  structured field as unknown. Checkout v69 retains the documented flattened
+  Session contract. Only the exact MCS Level 3 path is pinned to v69; ordinary
+  non-L3 Sessions remain v72.
+- Provider proof used no LIVE transaction: the exact v69 TEST Session request
+  returned HTTP 201, a direct official Visa TEST-card `/payments` returned
+  `Authorised`, and the full Adyen Web Session/card flow also returned
+  `Authorised`. The v72 browser control returned failed. Focused adapter,
+  runtime, webhook/evidence and disposable database coverage passes 123/123,
+  including malformed required fields, discount arithmetic, endpoint pinning,
+  replay and encrypted-at-rest Session reuse.
+- All 51 Adyen/payment/website-checkout test files pass 504/504. Independent
+  Claude Sonnet/high reviewed the exact provider/version, arithmetic, PII,
+  replay and environment boundaries and reported `NO MATERIAL FINDINGS`.
+
 ## 2026-09-12 — NC-20260909-003 immediate confirmation response repair
 
 - The first natural successful simplified-checkout return proved payment,

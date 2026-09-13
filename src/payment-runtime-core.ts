@@ -236,6 +236,7 @@ export function createPaymentRuntimeCore(
       providerCredential,
       profile,
       dependencies.providerTransport,
+      config.providerOptimization?.checkoutApiVersion,
     ),
     { scope: config.scope, ...config.sessionRouting },
     newAttemptOfferLocales,

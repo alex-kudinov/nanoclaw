@@ -1,5 +1,8 @@
 import type { AdyenTestWebhookConfig } from './adyen-webhook.js';
-import type { AdyenSessionRouting } from './adyen-session-adapter.js';
+import type {
+  AdyenSessionOptimizationPolicy,
+  AdyenSessionRouting,
+} from './adyen-session-adapter.js';
 import {
   PaymentDomainError,
   type PaymentMethodCapability,
@@ -33,6 +36,7 @@ export interface PaymentTestRuntimeConfig {
   returnBindingKey: Buffer;
   adyenApiKey: string;
   sessionRouting: Omit<AdyenSessionRouting, 'scope'>;
+  providerOptimization?: AdyenSessionOptimizationPolicy;
   /** Null keeps Session/return/status available while native ingress fails closed. */
   webhook: AdyenTestWebhookConfig | null;
   webhookMethodEvidence?: 'session_result_only' | 'card_scope_webhook';
@@ -79,6 +83,7 @@ export function createPaymentTestRuntime(
         adyenApiKey: config.adyenApiKey,
       },
       sessionRouting: config.sessionRouting,
+      providerOptimization: config.providerOptimization,
       webhook: config.webhook
         ? { ...config.webhook, environment: 'test' }
         : null,

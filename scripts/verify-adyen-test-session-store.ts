@@ -13,7 +13,7 @@ import {
 import { PaymentPayloadVault } from '../src/payment-payload-vault.js';
 import { PaymentStore, type PaymentTransaction } from '../src/payment-store.js';
 import { PaymentSessionService } from '../src/payment-session-service.js';
-import { LIVE_MCS_ADYEN_OPTIMIZATION } from '../src/payment-live-runtime.js';
+import { liveMcsProviderOptimization } from '../src/payment-live-runtime.js';
 import { readEnvFile } from '../src/env.js';
 
 const args = process.argv.slice(2);
@@ -79,6 +79,7 @@ let phase = 'database_setup';
 const providerStatuses: number[] = [];
 const providerErrors: { code: string; message: string }[] = [];
 let providerCalls = 0;
+const providerOptimization = liveMcsProviderOptimization();
 const vault = new PaymentPayloadVault(
   'fixture-only',
   new Map([['fixture-only', randomBytes(32)]]),
@@ -198,6 +199,7 @@ try {
   const adapter = new AdyenTestSessionAdapter(
     env.TANDEM_ADYEN_TEST_API_KEY,
     transport,
+    providerOptimization.checkoutApiVersion,
   );
   const routing = {
     scope: attempt.scope,
@@ -213,7 +215,7 @@ try {
     'dispatch',
     undefined,
     undefined,
-    LIVE_MCS_ADYEN_OPTIMIZATION,
+    providerOptimization,
   );
   phase = 'test_session_create';
   const started = await service.start(attempt);
@@ -233,7 +235,7 @@ try {
     'dispatch',
     undefined,
     undefined,
-    LIVE_MCS_ADYEN_OPTIMIZATION,
+    providerOptimization,
   );
   const resumed = await service.resume(attempt.attemptId);
   if (
@@ -272,7 +274,7 @@ try {
       .digest('hex'),
     sessionExpiresAt: started.session.expiresAt,
     encryptedAtRest: true,
-    providerOptimizationProfile: LIVE_MCS_ADYEN_OPTIMIZATION.profile,
+    providerOptimizationProfile: providerOptimization.profile,
     paymentAuthorized: false,
     webhookVerified: false,
     enrollmentChanged: false,

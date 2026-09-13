@@ -37,9 +37,11 @@ export interface AdyenApiCredential {
 
 export interface AdyenSessionOptimizationPolicy {
   readonly profile: 'mcs-foundations-us-l3-v1';
+  readonly checkoutApiVersion: 69;
   readonly productCode: string;
   readonly description: string;
   readonly unitOfMeasure: string;
+  readonly commodityCode: string;
 }
 
 const ADYEN_METHOD_TYPES: Readonly<
@@ -48,6 +50,14 @@ const ADYEN_METHOD_TYPES: Readonly<
   card: 'scheme',
   ach_direct_debit: 'ach',
 });
+
+function adyenOrderDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const year = String(date.getUTCFullYear()).slice(-2);
+  return `${day}${month}${year}`;
+}
 
 export function resolveAdyenTestPaymentMethodCapabilities(
   input: unknown,
@@ -177,13 +187,15 @@ export function buildAdyenSessionOptimization(
   const attempt = validateAttempt(input);
   if (
     policy.profile !== 'mcs-foundations-us-l3-v1' ||
+    policy.checkoutApiVersion !== 69 ||
     attempt.quote.offerKey !== 'mcq-program-a-foundations' ||
     attempt.quote.locale !== 'en-US' ||
     attempt.quote.country !== 'US' ||
     attempt.quote.currency !== 'USD' ||
     !/^[A-Za-z0-9_.-]{1,12}$/.test(policy.productCode) ||
-    !/^[\x20-\x7e]{1,80}$/.test(policy.description) ||
-    !/^[A-Za-z]{1,3}$/.test(policy.unitOfMeasure)
+    !/^[\x20-\x7e]{1,26}$/.test(policy.description) ||
+    !/^[A-Za-z]{1,3}$/.test(policy.unitOfMeasure) ||
+    !/^(?!0{8}$)[0-9]{8}$/.test(policy.commodityCode)
   )
     throw new PaymentDomainError('invalid_provider_optimization_policy');
 
@@ -219,7 +231,6 @@ export function buildAdyenSessionOptimization(
         taxAmount: 0,
         taxPercentage: 0,
         amountIncludingTax: quote.finalAmount,
-        sku: policy.productCode,
       },
     ],
     additionalData: {
@@ -229,6 +240,7 @@ export function buildAdyenSessionOptimization(
       'enhancedSchemeData.itemDetailLine1.description': policy.description,
       'enhancedSchemeData.itemDetailLine1.quantity': '1',
       'enhancedSchemeData.itemDetailLine1.unitOfMeasure': policy.unitOfMeasure,
+      'enhancedSchemeData.itemDetailLine1.commodityCode': policy.commodityCode,
       'enhancedSchemeData.itemDetailLine1.unitPrice': String(
         quote.originalAmount,
       ),
@@ -238,9 +250,8 @@ export function buildAdyenSessionOptimization(
       'enhancedSchemeData.itemDetailLine1.totalAmount': String(
         quote.finalAmount,
       ),
+      'enhancedSchemeData.orderDate': adyenOrderDate(attempt.createdAt),
     },
-    authenticationData: { attemptAuthentication: 'always' },
-    threeDS2RequestData: { threeDSRequestorChallengeInd: '02' },
   };
 }
 
@@ -292,10 +303,12 @@ async function readBoundedJson(response: Response): Promise<unknown> {
 /** Unknown response/timeout is never permission for a new provider operation. */
 export class AdyenSessionAdapter {
   #apiKey: string;
+  #sessionsUrl: string;
   constructor(
     credential: AdyenApiCredential,
     private readonly profile: AdyenEnvironmentProfile,
     private readonly transport: typeof fetch = fetch,
+    checkoutApiVersion: 69 | 72 = 72,
   ) {
     assertCanonicalAdyenEnvironmentProfile(profile);
     if (
@@ -305,13 +318,19 @@ export class AdyenSessionAdapter {
     )
       throw new PaymentDomainError('adyen_key_unavailable');
     this.#apiKey = credential.apiKey;
+    this.#sessionsUrl =
+      checkoutApiVersion === 72
+        ? profile.sessionsUrl
+        : profile.sessionsUrl.replace('/v72/sessions', '/v69/sessions');
+    if (!this.#sessionsUrl.endsWith(`/v${checkoutApiVersion}/sessions`))
+      throw new PaymentDomainError('invalid_adyen_environment_profile');
   }
 
   async create(request: string, idempotencyKey: string): Promise<AdyenSession> {
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(idempotencyKey))
       throw new PaymentDomainError('invalid_idempotency_key');
     try {
-      const response = await this.transport(this.profile.sessionsUrl, {
+      const response = await this.transport(this.#sessionsUrl, {
         method: 'POST',
         redirect: 'error',
         signal: AbortSignal.timeout(15000),
@@ -338,7 +357,11 @@ export class AdyenSessionAdapter {
 
 /** Compatibility wrapper for the existing TEST-only composition. */
 export class AdyenTestSessionAdapter extends AdyenSessionAdapter {
-  constructor(apiKey: string, transport: typeof fetch = fetch) {
+  constructor(
+    apiKey: string,
+    transport: typeof fetch = fetch,
+    checkoutApiVersion: 69 | 72 = 72,
+  ) {
     super(
       { environment: 'test', apiKey },
       resolveAdyenEnvironment({
@@ -346,6 +369,7 @@ export class AdyenTestSessionAdapter extends AdyenSessionAdapter {
         liveEndpointPrefix: null,
       }),
       transport,
+      checkoutApiVersion,
     );
   }
 }

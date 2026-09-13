@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  AdyenSessionAdapter,
   AdyenTestSessionAdapter,
   buildAdyenSessionRequest,
   buildAdyenSessionOptimization,
@@ -30,6 +31,10 @@ function attempt(
     currency?: string;
     locale?: string;
     paymentMethodCapabilities?: unknown;
+    originalAmount?: number;
+    discountAmount?: number;
+    finalAmount?: number;
+    discountPolicyReference?: string | null;
   } = {},
 ) {
   const now = Date.now();
@@ -53,10 +58,10 @@ function attempt(
       payerReference: null,
       participantReference: null,
       currency: changes.currency ?? 'USD',
-      originalAmount: 29900,
-      discountAmount: 0,
-      finalAmount: 29900,
-      discountPolicyReference: null,
+      originalAmount: changes.originalAmount ?? 29900,
+      discountAmount: changes.discountAmount ?? 0,
+      finalAmount: changes.finalAmount ?? 29900,
+      discountPolicyReference: changes.discountPolicyReference ?? null,
       redemptionReference: null,
       paymentOption: 'one_time',
       termsVersion: 'fixture',
@@ -74,13 +79,15 @@ const response = () => ({
 });
 
 describe('Adyen TEST Sessions adapter', () => {
-  it('projects the exact MCS quote into bounded metadata, L3 data, line items, and frictionless-preferred 3DS', () => {
+  it('projects the exact MCS quote into bounded metadata, L3 data, and invoice line items', () => {
     const a = attempt({ locale: 'en-US' });
     const policy = {
       profile: 'mcs-foundations-us-l3-v1',
+      checkoutApiVersion: 69,
       productCode: 'MCSFOUND',
-      description: 'Mentor Coaching Foundations',
+      description: 'MCS Foundations',
       unitOfMeasure: 'EA',
+      commodityCode: '86132000',
     } as const;
     const optimization = buildAdyenSessionOptimization(a, policy);
     expect(optimization).toEqual({
@@ -93,23 +100,28 @@ describe('Adyen TEST Sessions adapter', () => {
       lineItems: [
         {
           id: 'mcq-program-a-foundations',
-          description: 'Mentor Coaching Foundations',
+          description: 'MCS Foundations',
           quantity: 1,
           amountExcludingTax: 29900,
           taxAmount: 0,
           taxPercentage: 0,
           amountIncludingTax: 29900,
-          sku: 'MCSFOUND',
         },
       ],
-      additionalData: expect.objectContaining({
+      additionalData: {
+        'enhancedSchemeData.customerReference':
+          expect.stringMatching(/^mcs-[a-f0-9]{20}$/),
         'enhancedSchemeData.totalTaxAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.productCode': 'MCSFOUND',
+        'enhancedSchemeData.itemDetailLine1.description': 'MCS Foundations',
+        'enhancedSchemeData.itemDetailLine1.quantity': '1',
+        'enhancedSchemeData.itemDetailLine1.unitOfMeasure': 'EA',
+        'enhancedSchemeData.itemDetailLine1.commodityCode': '86132000',
         'enhancedSchemeData.itemDetailLine1.unitPrice': '29900',
         'enhancedSchemeData.itemDetailLine1.discountAmount': '0',
         'enhancedSchemeData.itemDetailLine1.totalAmount': '29900',
-      }),
-      authenticationData: { attemptAuthentication: 'always' },
-      threeDS2RequestData: { threeDSRequestorChallengeInd: '02' },
+        'enhancedSchemeData.orderDate': expect.stringMatching(/^\d{6}$/),
+      },
     });
     const request = JSON.parse(
       buildAdyenSessionRequest(
@@ -134,15 +146,64 @@ describe('Adyen TEST Sessions adapter', () => {
     expect(() =>
       buildAdyenSessionOptimization(attempt(), {
         profile: 'mcs-foundations-us-l3-v1',
+        checkoutApiVersion: 69,
         productCode: 'MCSFOUND',
-        description: 'Mentor Coaching Foundations',
+        description: 'MCS Foundations',
         unitOfMeasure: 'EA',
+        commodityCode: '86132000',
       }),
     ).toThrow('invalid_provider_optimization_policy');
   });
 
+  it.each([
+    { checkoutApiVersion: 72 },
+    { commodityCode: '00000000' },
+    { commodityCode: '8613200' },
+    { commodityCode: '8613200A' },
+    { description: 'Mentor Coaching Foundations' },
+    { unitOfMeasure: 'EACH' },
+    { productCode: 'MCS-FOUND-2026' },
+  ])('rejects malformed required Level 3 policy data %o', (change) => {
+    expect(() =>
+      buildAdyenSessionOptimization(attempt({ locale: 'en-US' }), {
+        ...liveMcsProviderOptimization(),
+        ...change,
+      } as never),
+    ).toThrow('invalid_provider_optimization_policy');
+  });
+
+  it('reconciles a discount to the authoritative invoice line with zero tax', () => {
+    const optimization = buildAdyenSessionOptimization(
+      attempt({
+        locale: 'en-US',
+        originalAmount: 29900,
+        discountAmount: 5000,
+        finalAmount: 24900,
+        discountPolicyReference: 'promotion:fixture-5000',
+      }),
+      liveMcsProviderOptimization(),
+    );
+    expect(optimization).toMatchObject({
+      lineItems: [
+        {
+          quantity: 1,
+          amountExcludingTax: 24900,
+          taxAmount: 0,
+          taxPercentage: 0,
+          amountIncludingTax: 24900,
+        },
+      ],
+      additionalData: {
+        'enhancedSchemeData.totalTaxAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.unitPrice': '29900',
+        'enhancedSchemeData.itemDetailLine1.discountAmount': '5000',
+        'enhancedSchemeData.itemDetailLine1.totalAmount': '24900',
+      },
+    });
+  });
+
   it('builds a repeatable card-only request from the authoritative quote', () => {
-    const a = attempt();
+    const a = attempt({ locale: 'en-US' });
     const profile = resolveAdyenEnvironment({
       environment: 'test',
       liveEndpointPrefix: null,
@@ -168,9 +229,24 @@ describe('Adyen TEST Sessions adapter', () => {
       expiresAt: new Date(a.quote.expiresAt).toISOString(),
     });
     expect(request).not.toContain('apiKey');
-    expect(JSON.parse(request)).not.toHaveProperty('metadata');
-    expect(JSON.parse(request)).not.toHaveProperty('lineItems');
-    expect(JSON.parse(request)).not.toHaveProperty('additionalData');
+    expect(JSON.parse(request)).toMatchObject({
+      lineItems: [
+        {
+          id: 'mcq-program-a-foundations',
+          amountExcludingTax: 29900,
+          amountIncludingTax: 29900,
+          taxAmount: 0,
+          taxPercentage: 0,
+        },
+      ],
+      additionalData: {
+        'enhancedSchemeData.totalTaxAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.unitPrice': '29900',
+        'enhancedSchemeData.itemDetailLine1.discountAmount': '0',
+        'enhancedSchemeData.itemDetailLine1.totalAmount': '29900',
+        'enhancedSchemeData.itemDetailLine1.commodityCode': '86132000',
+      },
+    });
     expect(JSON.parse(request)).not.toHaveProperty('authenticationData');
     expect(JSON.parse(request)).not.toHaveProperty('threeDS2RequestData');
     expect(JSON.parse(request).returnUrl).toBe(
@@ -313,6 +389,48 @@ describe('Adyen TEST Sessions adapter', () => {
       }),
     );
     expect(JSON.stringify(adapter)).not.toContain('fixture-api-key');
+  });
+
+  it('pins the Level 3 Session to Checkout v69 without changing ordinary v72 Sessions', async () => {
+    const urls: string[] = [];
+    const transport = vi.fn(async (url: string | URL | Request) => {
+      urls.push(String(url));
+      return Response.json(response(), { status: 201 });
+    });
+    await new AdyenTestSessionAdapter(
+      'fixture',
+      transport as typeof fetch,
+    ).create('{}', 'ordinary-v72');
+    await new AdyenTestSessionAdapter(
+      'fixture',
+      transport as typeof fetch,
+      69,
+    ).create('{}', 'mcs-l3-v69');
+    expect(urls).toEqual([
+      'https://checkout-test.adyen.com/v72/sessions',
+      'https://checkout-test.adyen.com/v69/sessions',
+    ]);
+  });
+
+  it('preserves the assigned LIVE endpoint prefix while pinning Level 3 to v69', async () => {
+    const urls: string[] = [];
+    const profile = resolveAdyenEnvironment({
+      environment: 'live',
+      liveEndpointPrefix: 'tandem-live',
+    });
+    const adapter = new AdyenSessionAdapter(
+      { environment: 'live', apiKey: 'fixture' },
+      profile,
+      (async (url: string | URL | Request) => {
+        urls.push(String(url));
+        return Response.json(response(), { status: 201 });
+      }) as typeof fetch,
+      69,
+    );
+    await adapter.create('{}', 'live-mcs-l3-v69');
+    expect(urls).toEqual([
+      'https://tandem-live-checkout-live.adyenpayments.com/checkout/v69/sessions',
+    ]);
   });
   it.each([400, 401, 403, 409, 422, 429, 500, 503])(
     'treats HTTP %s as unknown without exposing its response body',

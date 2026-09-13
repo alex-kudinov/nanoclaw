@@ -1,5 +1,20 @@
 # NanoClaw active work
 
+2026-09-13T00:00Z — NC-20260909-003 MCS Level 3 enhanced scheme data,
+source owner Codex: the previously disabled combined optimization was split.
+Exact provider proof showed Checkout v72 accepts flattened L3 fields on Session
+creation but rejects them during the browser `/payments` call; v72 also rejects
+the new structured `enhancedSchemeData` field on `/sessions`. The isolated MCS
+L3 path is therefore pinned to supported Checkout v69 while ordinary Sessions
+remain v72. It sends one known `MCS Foundations` line, product `MCSFOUND`,
+UNSPSC `86132000`, quantity 1, unit `EA`, exact authoritative original/discount/
+final amounts, and zero tax. Authentication forcing is absent. Provider Session
+creation returned 201, a direct official-card TEST `/payments` returned
+Authorised, and the full Adyen Web browser Session returned Authorised. Focused
+123/123 and the broader payment/checkout suite 504/504 plus typecheck pass.
+Independent Claude Sonnet/high reports no material findings. Release and live
+deployment remain; no LIVE payment was created.
+
 2026-09-12T23:20Z — NC-20260909-003 successful-return confirmation repair is
 deployed and live-verified. The first natural simplified-checkout payment was
 authorized, materialized and enrolled, but the immediate

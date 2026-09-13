@@ -16,6 +16,7 @@ import { z } from 'zod';
 
 import { resolveCheckoutCustomerIdentityWithClient } from './checkout-customer-identity.js';
 import { ADYEN_CARD_EVENT_CODES } from './adyen-environment.js';
+import { liveMcsProviderOptimization } from './payment-live-runtime.js';
 import { PaymentDomainError, type PaymentScope } from './payment-domain.js';
 import type { PaymentTransaction } from './payment-store.js';
 import { createWebsiteCheckoutTestService } from './website-checkout-test-service.js';
@@ -707,6 +708,7 @@ export async function startWebsiteCheckoutTestService(input: {
             allowedOrigin: 'http://localhost:3000',
             returnPath: websiteCheckoutTestReturnPath(config.checkoutProfile),
           },
+          providerOptimization: liveMcsProviderOptimization(),
           webhook:
             config.webhookHmacKey === null
               ? null
