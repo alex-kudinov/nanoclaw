@@ -26,6 +26,7 @@ describe('migration 166 Adyen Bookkeeper compatibility', () => {
     expect(migration).toContain('UNIQUE (merchant_reference)');
     expect(migration).not.toMatch(/\b(email|first_name|last_name|payer)\b/i);
     expect(migration).not.toContain('contador_payment_fulfillment_cases');
+    expect(migration).toContain('TO nanoclaw_contador');
   });
 
   it('refuses rollback after the first compatibility payment exists', () => {

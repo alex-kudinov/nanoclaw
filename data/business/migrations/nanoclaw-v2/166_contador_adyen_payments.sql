@@ -20,6 +20,6 @@ COMMENT ON TABLE business_v2.contador_adyen_payments IS
   'Compatibility projection of WordPress-authoritative Adyen payments. No customer PII; Sheets remain the operational Bookkeeper views.';
 
 ALTER TABLE business_v2.contador_adyen_payments OWNER TO nanoclaw_admin;
-GRANT SELECT, INSERT, UPDATE ON business_v2.contador_adyen_payments TO nanoclaw_runtime;
+GRANT SELECT, INSERT, UPDATE ON business_v2.contador_adyen_payments TO nanoclaw_contador;
 
 COMMIT;
