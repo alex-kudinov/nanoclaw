@@ -1,5 +1,44 @@
 # NanoClaw active work
 
+2026-09-13T02:45Z — NC-20260909-003 architecture review complete, no
+implementation: bounded Claude Sonnet/high R1 confirmed the rejected Mini
+authority but incorrectly retained the WordPress intent/preparation state
+machine, transient production persistence, reused terminal idempotency,
+Stripe-shaped Bookkeeper internals, stranded paid-document history, and
+mis-sequenced credential rotation. Codex independently verified those defects
+against the current TEST adapter, migration133 and `process-payment.cjs`; narrow
+R2 confirmed seven corrections and found no unresolved owner decision. The
+converged target collapses pre-payment persistence to one durable MariaDB
+submission row; leaves the current Stripe ingress/case path unchanged; adds a
+separate Adyen Bookkeeper adapter/case family plus a newly extracted shared
+operational recorder; imports the exact existing paid order/documents into
+Tandem Commerce before retiring the Mini; and moves only real Adyen secrets to
+the VPS, rotating them after old attempts drain. Card AVS billing remains in
+the Adyen Component/provider flow; the temporary submission stores only the
+checkout and optional business-invoice data entered before Payment. Review
+sessions `f835554b-70a6-4517-a40c-a13afcc257c8` and
+`13c308d0-4991-465f-9592-2451cae267ba`; both exceeded the 100k bounded-context
+target and are closed. No source, schema, config, provider, runtime, deployment,
+payment, email, Heartbeat, Sheet, tunnel, LiteSpeed, Cloudflare, DNS, or
+credential mutation occurred.
+
+2026-09-13T02:31Z — NC-20260909-003 architecture reset, owner decision:
+the owner rejects NanoClaw/Mac Mini as Adyen Session, payment-status,
+confirmation, receipt/invoice, or enrollment authority. Stop further changes
+to the Mini payment service and do not add the proposed three LiteSpeed
+document-route mappings. The target is a dedicated WordPress Tandem Commerce
+plugin on the VPS: it owns Adyen Sessions/webhooks, payment/order/document
+state, common jobs and per-product post-payment actions, including direct
+course enrollment. A common VPS job sends the verified native Adyen
+notification plus Tandem order context to NanoClaw Bookkeeper only for
+compatibility spreadsheet/PostgreSQL recording; NanoClaw keeps distinct Stripe
+and Adyen adapters and cannot gate customer checkout or fulfillment. Existing
+Stripe webhook processing remains during the compatibility window. No new
+implementation is authorized until a bounded Claude Sonnet/high architecture
+review produces a keep/change/delete/create and cutover plan and Codex verifies
+it for owner review. Current LIVE service remains in place only to avoid an
+unreviewed outage; no root proxy change was applied.
+
 2026-09-13T01:06Z — NC-20260909-003 first other-learner fulfillment and
 document incident, source owner Codex: exact LIVE payment
 `02a6bd46-004f-47e0-945d-ae8186e388d3` is authorized and canonically

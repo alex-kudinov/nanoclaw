@@ -197,6 +197,7 @@ try {
     .filter(Boolean);
   const requiredTrackedRuntimeInputs = [
     'tools/contador/process-payment.cjs',
+    'tools/contador/process-commerce-payment.cjs',
     'tools/contador/lib/cohort.cjs',
     'tools/contador/lib/product-identity.cjs',
     'facts/catalogs/student-entitlements-v1.json',
@@ -312,6 +313,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_164_payment_checkout_document_retention.sql',
     'data/business/migrations/nanoclaw-v2/165_deferred_checkout_identity.sql',
     'data/business/migrations/nanoclaw-v2/rollback_165_deferred_checkout_identity.sql',
+    'data/business/migrations/nanoclaw-v2/166_contador_adyen_payments.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_166_contador_adyen_payments.sql',
     'scripts/verify-release.mjs',
     'scripts/bundle-payment-documents.mjs',
     'docs/licenses/Roboto-OFL-1.1.txt',

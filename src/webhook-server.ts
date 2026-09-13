@@ -92,6 +92,13 @@ import {
   isAdyenTestWebhookConfigured,
   type AdyenTestWebhookConfig,
 } from './adyen-webhook.js';
+import {
+  COMMERCE_BOOKKEEPER_MAX_BODY_BYTES,
+  CommerceBookkeeperRequestError,
+  prepareCommerceBookkeeperEnvelope,
+  type CommerceBookkeeperEnvelope,
+  type CommerceBookkeeperResult,
+} from './commerce-bookkeeper.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -181,6 +188,14 @@ export interface WebhookServerDeps {
   // Provider-native Adyen Standard webhook verification. This route bypasses
   // generic shared-secret/group dispatch and admits only minimized TEST events.
   adyenTestWebhook?: AdyenTestWebhookConfig;
+  commerceBookkeeper?: {
+    enabled: boolean;
+    path: string;
+    relaySecret: string;
+    handle: (
+      envelope: CommerceBookkeeperEnvelope,
+    ) => Promise<CommerceBookkeeperResult>;
+  };
   // Phase 1 webhook reliability — envelope archive + dispatch tracking.
   // When provided, every accepted /hook/:id request is recorded in
   // business_v2.webhook_inbox before agent dispatch. See docs/WEBHOOK-RELIABILITY.md.
@@ -717,6 +732,67 @@ export class WebhookServer {
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    const commerceBookkeeper = this.deps.commerceBookkeeper;
+    if (
+      req.method === 'POST' &&
+      commerceBookkeeper?.enabled === true &&
+      req.url?.split('?')[0] === commerceBookkeeper.path
+    ) {
+      if (
+        !String(req.headers['content-type'] || '')
+          .toLowerCase()
+          .startsWith('application/json')
+      ) {
+        res.writeHead(415, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'application/json required' }));
+        return;
+      }
+      let rawBody: Buffer;
+      try {
+        rawBody = await readBodyBounded(
+          req,
+          COMMERCE_BOOKKEEPER_MAX_BODY_BYTES,
+        );
+      } catch (error) {
+        res.writeHead(error instanceof RequestBodyTooLargeError ? 413 : 400, {
+          'Content-Type': 'application/json',
+        });
+        res.end(JSON.stringify({ error: 'request rejected' }));
+        return;
+      }
+      try {
+        const envelope = prepareCommerceBookkeeperEnvelope({
+          rawBody,
+          signatureHeader: req.headers['x-tandem-commerce-signature'],
+          relaySecret: commerceBookkeeper.relaySecret,
+        });
+        const result = await commerceBookkeeper.handle(envelope);
+        logger.info(
+          {
+            deliveryId: result.deliveryId,
+            providerPaymentId: result.providerPaymentId,
+          },
+          'Adyen payment projected to Bookkeeper views',
+        );
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(
+          JSON.stringify({ accepted: true, deliveryId: result.deliveryId }),
+        );
+      } catch (error) {
+        const status =
+          error instanceof CommerceBookkeeperRequestError
+            ? error.statusCode
+            : 503;
+        logger.warn({ status }, 'Commerce Bookkeeper delivery rejected');
+        res.writeHead(status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'delivery rejected' }));
+      }
       return;
     }
 

@@ -191,6 +191,32 @@ export const ADYEN_TEST_WEBHOOK_CONFIG = {
     adyenSharedFeedFilterRaw === 'true' || adyenSharedFeedFilterRaw === '1',
 };
 
+const commerceBookkeeperEnv = readEnvFile([
+  'TANDEM_COMMERCE_BOOKKEEPER_PATH',
+  'TANDEM_COMMERCE_BOOKKEEPER_KEY',
+]);
+export const TANDEM_COMMERCE_BOOKKEEPER_PATH =
+  process.env.TANDEM_COMMERCE_BOOKKEEPER_PATH ||
+  commerceBookkeeperEnv.TANDEM_COMMERCE_BOOKKEEPER_PATH ||
+  '';
+export const TANDEM_COMMERCE_BOOKKEEPER_KEY =
+  process.env.TANDEM_COMMERCE_BOOKKEEPER_KEY ||
+  commerceBookkeeperEnv.TANDEM_COMMERCE_BOOKKEEPER_KEY ||
+  '';
+if (
+  TANDEM_COMMERCE_BOOKKEEPER_PATH &&
+  !/^\/hook\/[A-Za-z0-9._-]{16,200}$/.test(TANDEM_COMMERCE_BOOKKEEPER_PATH)
+) {
+  throw new Error('TANDEM_COMMERCE_BOOKKEEPER_PATH is invalid');
+}
+if (
+  (TANDEM_COMMERCE_BOOKKEEPER_PATH || TANDEM_COMMERCE_BOOKKEEPER_KEY) &&
+  (TANDEM_COMMERCE_BOOKKEEPER_PATH === '' ||
+    TANDEM_COMMERCE_BOOKKEEPER_KEY.length < 32)
+) {
+  throw new Error('Tandem Commerce Bookkeeper configuration is incomplete');
+}
+
 const studentLifecycleEnv = readEnvFile([
   'STUDENT_LIFECYCLE_ENABLED',
   'STUDENT_LIFECYCLE_WEBHOOK_PATH',

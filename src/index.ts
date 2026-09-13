@@ -39,6 +39,8 @@ import {
   STUDENT_LIFECYCLE_IDENTITY_SECRET,
   STUDENT_LIFECYCLE_RELAY_SECRET,
   STUDENT_LIFECYCLE_WEBHOOK_PATH,
+  TANDEM_COMMERCE_BOOKKEEPER_KEY,
+  TANDEM_COMMERCE_BOOKKEEPER_PATH,
   TRIGGER_PATTERN,
   WEBHOOK_PORT,
   WEBHOOK_SECRET,
@@ -149,6 +151,7 @@ import { runJob } from './job-runner.js';
 import { isIncidentProposal } from './healer/remediation.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
+import { handleCommerceBookkeeper } from './commerce-bookkeeper.js';
 import {
   archiveWebhook as archiveWebhookImpl,
   markDispatched as markDispatchedImpl,
@@ -2234,6 +2237,14 @@ async function main(): Promise<void> {
     webhooksFile: WEBHOOKS_FILE,
     globalSecret: WEBHOOK_SECRET,
     adyenTestWebhook: ADYEN_TEST_WEBHOOK_CONFIG,
+    commerceBookkeeper: {
+      enabled:
+        TANDEM_COMMERCE_BOOKKEEPER_PATH !== '' &&
+        TANDEM_COMMERCE_BOOKKEEPER_KEY.length >= 32,
+      path: TANDEM_COMMERCE_BOOKKEEPER_PATH,
+      relaySecret: TANDEM_COMMERCE_BOOKKEEPER_KEY,
+      handle: handleCommerceBookkeeper,
+    },
     heartbeatPath,
     getRegisteredGroups: () => registeredGroups,
     getHealth: () => {
