@@ -25,6 +25,19 @@
 - All 51 Adyen/payment/website-checkout test files pass 504/504. Independent
   Claude Sonnet/high reviewed the exact provider/version, arithmetic, PII,
   replay and environment boundaries and reported `NO MATERIAL FINDINGS`.
+- Immutable release `94eafe1e004323a97d3f15b801acf9efdbaec13a` passed
+  805/805 host plus 45/45 runner tests. Artifact SHA-256 is
+  `2882c52e4af75325b383928c8559e1078bdafaf2a7373ea3876bbeb9a8d1a126`
+  across 1,308 files; archive SHA-256 is
+  `f5364f0b94d48bf747c7e7a20228c363bbfb5540f0bef450219ae8e856b92f8a`.
+  Exact config validation, release verification, Mini health/readiness and all
+  three release pointers pass after activation.
+- A hidden isolated LIVE no-card proof submitted a valid $299 checkout and
+  reached the empty Adyen card form, proving LIVE accepted the exact v69 Level
+  3 Session request. No card data was entered. Guarded database readback found
+  zero payment events and zero admissions; the one synthetic encrypted
+  submission was then deleted and read back as zero retained. No payment,
+  enrollment, document or email was created.
 
 ## 2026-09-12 — NC-20260909-003 immediate confirmation response repair
 

@@ -43,3 +43,19 @@ an `enhancedSchemeDataSubmitted=L3` webhook receipt.
   description and unit bounds.
 - Arithmetic coverage includes full-price and discounted zero-tax cases.
 - Endpoint coverage proves exact MCS L3 v69 and ordinary v72 separation.
+
+## Release and LIVE no-card verification
+
+- Reviewed commit `94eafe1e004323a97d3f15b801acf9efdbaec13a` built immutable
+  artifact SHA-256
+  `2882c52e4af75325b383928c8559e1078bdafaf2a7373ea3876bbeb9a8d1a126`
+  across 1,308 files and archive SHA-256
+  `f5364f0b94d48bf747c7e7a20228c363bbfb5540f0bef450219ae8e856b92f8a`.
+  Release gates passed 805/805 host and 45/45 runner tests.
+- Mini activated the exact commit/root/executable pointers and reports healthy
+  and ready without a migration or configuration rewrite.
+- One isolated LIVE no-card attempt reached the $299 Adyen card form, proving
+  LIVE Session acceptance. No card data was entered. Database guards found zero
+  payment events and zero admissions; the exact synthetic encrypted submission
+  was deleted and verified absent. No payment, enrollment, document or email
+  was created.

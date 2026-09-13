@@ -12,8 +12,12 @@ final amounts, and zero tax. Authentication forcing is absent. Provider Session
 creation returned 201, a direct official-card TEST `/payments` returned
 Authorised, and the full Adyen Web browser Session returned Authorised. Focused
 123/123 and the broader payment/checkout suite 504/504 plus typecheck pass.
-Independent Claude Sonnet/high reports no material findings. Release and live
-deployment remain; no LIVE payment was created.
+Independent Claude Sonnet/high reports no material findings. Immutable release
+`94eafe1e` passed 805/805 plus runner 45/45 and is healthy/ready on Mini. One
+isolated LIVE no-card check created the exact $299 v69/L3 Session and rendered
+the empty Adyen card form. No card data was entered; the attempt has zero
+payment events/admissions, and its one synthetic encrypted submission was
+deleted with zero retained. No LIVE payment was created.
 
 2026-09-12T23:20Z — NC-20260909-003 successful-return confirmation repair is
 deployed and live-verified. The first natural simplified-checkout payment was
