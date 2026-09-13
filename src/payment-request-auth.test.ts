@@ -44,9 +44,7 @@ describe('internal payment request authentication', () => {
   ] as const)('authenticates the exact document route %s', (path) => {
     const documentExpected = { ...expected, path };
     const envelope = auth.sign({ ...unsigned(), path }, body);
-    expect(
-      auth.verify(envelope, body, documentExpected, now),
-    ).toMatchObject({
+    expect(auth.verify(envelope, body, documentExpected, now)).toMatchObject({
       caller: expected.caller,
       operationId: envelope.operationId,
     });
