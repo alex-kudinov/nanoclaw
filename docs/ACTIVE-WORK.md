@@ -12,7 +12,13 @@ Adyen delivery, one durable AUTHORISATION and `authorization_recorded` state.
 The webhook does not yet contain ESD validation results, so L3 submission is not
 claimed. Source adds reusable161–165 upgrades and a release-verified compiled
 TEST entrypoint for permanent supervision. Focused66/66 and independent
-Sonnet/high review pass. Immutable release and launchd installation remain.
+Sonnet/high review pass. Immutable release `a14b679c` passed the release gate and
+is installed on Studio with shared pinned production dependencies. launchd now
+supervises the backend, filtering edge and reverse tunnel. A forced restart
+changed all three PIDs, restored listeners on 3443/3444 and VPS loopback15679,
+and the public route returned the expected403 for an unsigned request. The exact
+fresh TEST attempt remains `authorization_recorded` with one payment event, zero
+optimization-evidence rows and zero admissions.
 
 2026-09-13T00:00Z — NC-20260909-003 MCS Level 3 enhanced scheme data,
 source owner Codex: the previously disabled combined optimization was split.

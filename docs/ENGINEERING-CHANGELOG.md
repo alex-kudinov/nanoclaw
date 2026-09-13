@@ -22,6 +22,23 @@
   release before reading config or opening PostgreSQL/listeners, emits
   content-free errors and installs one-shot cleanup handlers. Focused tests pass
   66/66; independent Claude Sonnet/high returned `NO MATERIAL FINDINGS`.
+- Immutable release `a14b679cdc1e10363137c78871f0f34d0afeafff` passed 805/805
+  host tests plus 45/45 runner tests. Artifact SHA-256 is
+  `9dd630a49139071c75add9d9de939454f5530aabfc7e8bfde9f01982dba9f3d0`
+  across 1,312 files; archive SHA-256 is
+  `abf20aade99bd2fa408c913eaec77aa2a3ac3b2d89c4f22966cfd1afe1a21143`.
+  Studio now resolves its pinned production dependencies from the established
+  shared `nanoclaw-releases/node_modules` location, while release integrity
+  continues to verify the exact compiled artifact.
+- Three launchd jobs now supervise the TEST backend, webhook filtering edge and
+  reverse SSH tunnel. Forced restart changed all three process IDs and restored
+  local listeners 3443/3444 plus VPS loopback15679. The public webhook route
+  returned the expected HTTP403 for an unsigned probe after restart. Exact
+  database readback for TEST attempt
+  `638d2161-3abb-4b8e-9c8d-2fde220dabb7` remains one payment event with
+  `authorization_recorded`, zero optimization-evidence rows and zero admissions;
+  Adyen event `WHEL4293G22322235PXZSNM2DQ4D4J` records HTTP202 Accepted for PSP
+  `XK4P3Z94BWW5KG75` at the Tandem webhook URL.
 
 ## 2026-09-12 — NC-20260909-003 MCS Level 3 enhanced scheme data
 
