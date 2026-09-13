@@ -770,12 +770,21 @@ export class WebhookServer {
           relaySecret: commerceBookkeeper.relaySecret,
         });
         const result = await commerceBookkeeper.handle(envelope);
+        const contadorGroups = Object.entries(
+          this.deps.getRegisteredGroups(),
+        ).filter(([, group]) => group.folder === 'contador');
+        if (contadorGroups.length !== 1) {
+          throw new Error('Commerce Bookkeeper group unavailable');
+        }
+        await this.deps.sendMessage(contadorGroups[0][0], result.summary, {
+          fromGroup: 'contador',
+        });
         logger.info(
           {
             deliveryId: result.deliveryId,
             providerPaymentId: result.providerPaymentId,
           },
-          'Adyen payment projected to Bookkeeper views',
+          'Adyen payment projected and posted to Bookkeeper',
         );
         res.writeHead(200, {
           'Content-Type': 'application/json',

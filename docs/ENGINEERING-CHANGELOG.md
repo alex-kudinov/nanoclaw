@@ -1,5 +1,21 @@
 # NanoClaw engineering changelog
 
+## 2026-09-13 — NC-20260909-003 visible Commerce Bookkeeper receipt
+
+- A recovered Live WordPress Commerce payment completed exact Payment Log,
+  Student Roster and PostgreSQL readback, but the dedicated compatibility
+  handler returned success without posting the mechanical receipt required by
+  El Contador's existing AUTO contract. Live evidence showed one Adyen
+  projection row and zero matching Contador channel messages.
+- The handler now resolves exactly one registered `contador` group and posts the
+  already-verified recorder summary before returning HTTP success. Missing
+  registration or a send failure returns retryable 503 after the idempotent
+  recorder, so the VPS job repairs rather than silently completing.
+- The Stripe payment path, provider/payment authority, sheets/roster/PostgreSQL
+  recorder, group prompt, and no-agent-spawn boundary are unchanged.
+- State: in_progress. Source verification, immutable release, live health and
+  one exact current-order message/readback remain pending.
+
 ## 2026-09-12 — NC-20260909-003 other-learner fulfillment, documents and AVS
 
 - The first confirmed LIVE `other`-learner checkout proved payment and canonical

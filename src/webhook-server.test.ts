@@ -280,6 +280,13 @@ describe('WebhookServer', () => {
     }));
     deps = makeDeps({
       commerceBookkeeper: { enabled: true, path, relaySecret, handle },
+      getRegisteredGroups: vi.fn(() => ({
+        'slack:CONTADOR': {
+          ...testGroup,
+          name: 'El Contador',
+          folder: 'contador',
+        },
+      })),
     });
     server = new WebhookServer(deps);
     await server.start();
@@ -298,6 +305,85 @@ describe('WebhookServer', () => {
       deliveryId: '10000000-0000-4000-8000-000000000001',
     });
     expect(handle).toHaveBeenCalledOnce();
+    expect(deps.sendMessage).toHaveBeenCalledOnce();
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:CONTADOR',
+      'recorded',
+      { fromGroup: 'contador' },
+    );
+  });
+
+  it('keeps the Commerce delivery retryable when the visible Bookkeeper receipt cannot be posted', async () => {
+    await server.stop();
+    const path = '/hook/tandem-commerce-bookkeeper-test';
+    const relaySecret = 'bookkeeper-relay-secret-that-is-long-enough';
+    const value = {
+      schemaVersion: 1,
+      deliveryId: '10000000-0000-4000-8000-000000000001',
+      sentAt: new Date().toISOString(),
+      notification: {
+        pspReference: 'PSP123',
+        merchantReference: 'TCA-ABC',
+        merchantAccountCode: 'TandemECOM',
+        eventCode: 'AUTHORISATION',
+        eventDate: new Date().toISOString(),
+        success: 'true',
+        amount: { value: 29900, currency: 'USD' },
+        additionalData: { hmacSignature: 'native' },
+      },
+      order: {
+        orderId: '20000000-0000-4000-8000-000000000002',
+        merchantReference: 'TCA-ABC',
+        productId: 'mcq-program-a-foundations',
+        amountCents: 29900,
+        currency: 'USD',
+        purchaseRelationship: 'self',
+        payer: {
+          firstName: 'Alex',
+          lastName: 'Buyer',
+          email: 'buyer@example.test',
+        },
+        learner: {
+          firstName: 'Alex',
+          lastName: 'Buyer',
+          email: 'buyer@example.test',
+        },
+      },
+    };
+    const body = JSON.stringify(value);
+    const signature = crypto
+      .createHmac('sha256', relaySecret)
+      .update(
+        `tandem-commerce-bookkeeper-v1\n${crypto.createHash('sha256').update(body).digest('hex')}`,
+      )
+      .digest('hex');
+    const handle = vi.fn(async () => ({
+      deliveryId: value.deliveryId,
+      provider: 'adyen' as const,
+      providerPaymentId: 'PSP123',
+      paymentLogVerified: true,
+      studentRosterVerified: true,
+      postgresVerified: true,
+      summary: 'recorded',
+    }));
+    deps = makeDeps({
+      commerceBookkeeper: { enabled: true, path, relaySecret, handle },
+      getRegisteredGroups: vi.fn(() => ({})),
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    const response = await makeRequest(deps.port, {
+      path,
+      headers: {
+        'content-type': 'application/json',
+        'x-tandem-commerce-signature': signature,
+      },
+      body,
+    });
+    expect(response.status).toBe(503);
+    expect(handle).toHaveBeenCalledOnce();
+    expect(deps.sendMessage).not.toHaveBeenCalled();
   });
 
   it('returns 503 for Adyen TEST when provider-native admission is not configured', async () => {

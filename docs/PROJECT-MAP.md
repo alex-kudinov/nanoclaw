@@ -1020,6 +1020,14 @@ PostgreSQL store and projection outbox (migrations146-148). See
 `docs/MCS-ENROLLMENT-DEPENDENCY-INTEGRATION.md`. Exact source imports do not
 activate the unrelated Supervision production pilot or an MCS source/consumer.
 
+The WordPress Commerce compatibility delivery remains a host-mechanical
+Bookkeeper path: the adapter validates the signed order/native-notification
+envelope and completes only after exact Payment Log, Student Roster and
+PostgreSQL readback. It must then post that verified recorder summary to the
+single registered El Contador channel before acknowledging WordPress. Missing
+group registration or Slack delivery is retryable; no Contador agent is spawned,
+and the unchanged Stripe payment path retains its own case/receipt machinery.
+
 `adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,
 stored Session ID, one Authorised PSP payment, exact amount/currency and actual
