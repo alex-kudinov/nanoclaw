@@ -18,7 +18,9 @@ supervises the backend, filtering edge and reverse tunnel. A forced restart
 changed all three PIDs, restored listeners on 3443/3444 and VPS loopback15679,
 and the public route returned the expected403 for an unsigned request. The exact
 fresh TEST attempt remains `authorization_recorded` with one payment event, zero
-optimization-evidence rows and zero admissions.
+optimization-evidence rows and zero admissions. After the forced restart, a real
+Adyen retry of the previously failed AUTHORISATION created a new Tandem delivery
+at 19:49:40 CDT with status Accepted.
 
 2026-09-13T00:00Z — NC-20260909-003 MCS Level 3 enhanced scheme data,
 source owner Codex: the previously disabled combined optimization was split.

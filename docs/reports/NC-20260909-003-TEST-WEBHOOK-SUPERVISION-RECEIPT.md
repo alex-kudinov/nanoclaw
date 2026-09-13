@@ -17,6 +17,9 @@
   `XK4P3Z94BWW5KG75`, merchant reference
   `tandem-poc-tsv1-638d2161-3abb-4b8e-9c8d-2fde220dabb7`, Tandem URL,
   HTTP202 Accepted.
+- Post-restart provider proof: retrying a previously failed Adyen delivery for
+  PSP `XH38KKJ9HKW9PPV5` created event `WHEL4299N2...V5MDDQ63JK` at
+  19:49:40.524 CDT with status Accepted for the Tandem URL.
 - Durable readback: attempt `638d2161-3abb-4b8e-9c8d-2fde220dabb7` is
   `authorization_recorded`, with one payment event, zero provider optimization
   evidence rows and zero admissions.

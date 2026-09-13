@@ -39,6 +39,11 @@
   `authorization_recorded`, zero optimization-evidence rows and zero admissions;
   Adyen event `WHEL4293G22322235PXZSNM2DQ4D4J` records HTTP202 Accepted for PSP
   `XK4P3Z94BWW5KG75` at the Tandem webhook URL.
+- A provider-originated redelivery after the forced supervisor restart created
+  Adyen event `WHEL4299N2...V5MDDQ63JK` for the previously failed PSP
+  `XH38KKJ9HKW9PPV5`; Adyen records the Tandem URL as Accepted at
+  19:49:40.524 CDT. This proves the restarted supervised chain accepts authentic
+  Adyen webhook traffic rather than only the unsigned HTTP probe.
 
 ## 2026-09-12 — NC-20260909-003 MCS Level 3 enhanced scheme data
 
