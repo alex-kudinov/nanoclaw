@@ -767,7 +767,7 @@ export class PgPaymentCheckoutDocumentAuthorityReader {
     const row = await this.transaction(async (client) => {
       const result = await client.query<AuthorityRow>(
         `SELECT a.contract,ce.projection,ca.identity_preparation_id preparation_id,
-          ip.purchase_relationship,ip.payer_party_id::text,ip.participant_party_id::text,
+          ip.purchase_relationship,m.payer_party_id::text,m.participant_party_id::text,
           pp.display_name payer_name,lower(pp.primary_email::text) payer_email,
           lp.display_name participant_name,lower(lp.primary_email::text) participant_email,
           ea.payment_method,ea.payment_reference,ca.terms_version,
@@ -786,9 +786,11 @@ export class PgPaymentCheckoutDocumentAuthorityReader {
            ON ca.attempt_id=a.attempt_id AND ca.caller=$2 AND ca.scope_sha256=$3
          JOIN business_v2.payment_identity_preparations ip
            ON ip.preparation_id=ca.identity_preparation_id AND ip.caller=$2
-         JOIN business_v2.parties pp ON pp.id=ip.payer_party_id
+         JOIN business_v2.payment_identity_materializations m
+           ON m.caller=ip.caller AND m.preparation_id=ip.preparation_id
+         JOIN business_v2.parties pp ON pp.id=m.payer_party_id
            AND pp.party_type='person' AND pp.merged_into IS NULL AND pp.primary_email IS NOT NULL
-         JOIN business_v2.parties lp ON lp.id=ip.participant_party_id
+         JOIN business_v2.parties lp ON lp.id=m.participant_party_id
            AND lp.party_type='person' AND lp.merged_into IS NULL AND lp.primary_email IS NOT NULL
          JOIN business_v2.payment_enrollment_admissions ea
            ON ea.attempt_id=a.attempt_id AND ea.checkout_caller=$2 AND ea.scope_sha256=$3

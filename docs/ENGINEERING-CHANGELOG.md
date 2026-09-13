@@ -1,5 +1,38 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 other-learner fulfillment, documents and AVS
+
+- The first confirmed LIVE `other`-learner checkout proved payment and canonical
+  enrollment, then exposed two independent post-payment defects. Heartbeat's
+  exact-email lookup returns HTTP404 for a new participant, but the shared tool
+  converted that normal absence to a hard failure; the projection retried
+  `provider_lookup_failed` without creating access. Receipt and paid-invoice
+  preparation still joined migration154's intentionally empty pre-payment Party
+  columns instead of migration165's immutable paid materialization.
+- Shared Heartbeat tool commit
+  `c7537456de6c079ce21178e83e5d7509b597fbd3` invokes the API helper in the
+  current shell, maps only confirmed404 to `{ok:true,data:[]}`, preserves
+  structured non404 failures and removes the bounded temp response on every
+  exit. Its mock contract proves404 empty,200 exact user and503 failure; a live
+  nonexistent synthetic email also returns exact empty.
+- `PgPaymentCheckoutDocumentAuthorityReader` now selects and joins payer and
+  participant only through `payment_identity_materializations`; its existing
+  caller/scope, single authorized payment, matching provider reference, active
+  enrollment and retry-exception checks remain unchanged. The regression test
+  requires the materialization join and excludes the old preparation join.
+- Adyen's current ESD requirements make AVS data necessary for Visa interchange
+  qualification. Tandem checkout commit `172676e44` configures Web Components
+  v6 with `billingAddressRequired:true` and `billingAddressMode:'full'`. Card
+  billing remains a separate Payment-step field from the optional company
+  invoice address. JavaScript95/95, WordPress PHP85/85 and public Vite build pass.
+- Nano focused33/33, broader payment/checkout526/526 and typecheck pass. The full
+  repository recorded4,326 pass,32 skipped and19 unrelated pre-existing
+  failures across five files outside this change. Bounded Sonnet/high R1 found
+  and prevented the unsafe all-errors fallback. R2 confirmed the confirmed404
+  wrapper, document authority and AVS config; its caller-scope note is closed by
+  the final source diff, where `HeartbeatLiveMembershipDriver.find()` retains
+  one exact-email call with no catch or name fallback.
+
 ## 2026-09-12 — NC-20260909-003 TEST webhook lifecycle correction
 
 - Corrected an overstated Level 3 completion claim. The initial official-card

@@ -1,5 +1,24 @@
 # NanoClaw active work
 
+2026-09-13T01:06Z — NC-20260909-003 first other-learner fulfillment and
+document incident, source owner Codex: exact LIVE payment
+`02a6bd46-004f-47e0-945d-ae8186e388d3` is authorized and canonically
+enrolled, but Heartbeat access repeatedly records `provider_lookup_failed` and
+all four receipt/invoice actions fail before document creation. This is not an
+email duplicate: the purchase relationship is `other`. Root causes are a normal
+Heartbeat404 for the new participant being treated as a hard lookup failure,
+and document authority still joining the intentionally empty pre-payment Party
+columns instead of migration165 materialization IDs. The Heartbeat wrapper now
+maps only confirmed404 to exact empty and preserves all other failures; document
+authority now uses immutable paid materialization IDs. The related Tandem
+checkout also requires a full card billing address for Visa AVS/ESD. Focused and
+broader suites pass; two bounded Sonnet/high reviews found the initial unsafe
+catch, confirmed its correction boundary, confirmed the document/AVS changes,
+and left only a review-scope note that Codex closed by checking the unchanged
+exact-email-only caller. Release through the established immutable workflows,
+then prove exact Heartbeat membership and receipt/invoice download plus email
+outcomes without another payment.
+
 2026-09-13T00:39Z — NC-20260909-003 TEST webhook lifecycle correction,
 source owner Codex: the prior Level 3 completion claim was overstated. The
 standalone provider payment was Authorised, but the enabled TEST webhook's

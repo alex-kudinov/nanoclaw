@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -375,8 +375,12 @@ describe('checkout payment documents', () => {
       enrollment_active: true,
       retry_exception: false,
     };
+    const query = vi.fn(async (_sql: string) => ({
+      rowCount: 1,
+      rows: [row],
+    }));
     const transaction = async (work: (client: unknown) => Promise<unknown>) =>
-      work({ query: async () => ({ rowCount: 1, rows: [row] }) });
+      work({ query });
     const reader = new PgPaymentCheckoutDocumentAuthorityReader(
       transaction as never,
       'tandem-wordpress-live',
@@ -393,6 +397,13 @@ describe('checkout payment documents', () => {
       paymentReference: 'PSP-REFERENCE',
       finalAmount: 29900,
     });
+    const authoritySql = String(query.mock.calls[0]?.[0] ?? '');
+    expect(authoritySql).toContain(
+      'JOIN business_v2.payment_identity_materializations m',
+    );
+    expect(authoritySql).toContain('pp.id=m.payer_party_id');
+    expect(authoritySql).toContain('lp.id=m.participant_party_id');
+    expect(authoritySql).not.toContain('pp.id=ip.payer_party_id');
     row.retry_exception = true;
     await expect(reader.read(attemptId)).rejects.toThrow(
       'checkout_document_authority_conflict',
