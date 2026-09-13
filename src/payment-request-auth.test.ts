@@ -38,6 +38,28 @@ describe('internal payment request authentication', () => {
     expect(JSON.stringify(result)).not.toContain('amount');
   });
   it.each([
+    '/internal/payments/documents/prepare',
+    '/internal/payments/documents/download',
+    '/internal/payments/documents/email',
+  ] as const)('authenticates the exact document route %s', (path) => {
+    const documentExpected = { ...expected, path };
+    const envelope = auth.sign({ ...unsigned(), path }, body);
+    expect(
+      auth.verify(envelope, body, documentExpected, now),
+    ).toMatchObject({
+      caller: expected.caller,
+      operationId: envelope.operationId,
+    });
+    expect(() =>
+      auth.verify(
+        envelope,
+        body,
+        { ...documentExpected, path: '/internal/payments/status' },
+        now,
+      ),
+    ).toThrow('internal_request_denied');
+  });
+  it.each([
     { caller: 'other' },
     { path: '/internal/payments/status' },
     { method: 'GET' },

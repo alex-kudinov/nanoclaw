@@ -39,6 +39,12 @@
   now selected only for `paid_invoice`. The disposable PostgreSQL test creates a
   receipt with paid invoices enabled and proves all three tax-policy fields stay
   null with the receipt correction policy intact.
+- A direct signed request through the deployed HTTP route returned unsigned401
+  while direct document-owner preparation succeeded. The shared
+  `PaymentRequestAuthenticator` allowlist omitted all three document paths even
+  though the response wrapper and document controller included them. The exact
+  prepare/download/email paths are now authenticated and each test proves a
+  mismatched status path is still denied.
 
 ## 2026-09-12 — NC-20260909-003 TEST webhook lifecycle correction
 
