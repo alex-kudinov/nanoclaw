@@ -1,5 +1,28 @@
 # NanoClaw engineering changelog
 
+## 2026-09-12 — NC-20260909-003 TEST webhook lifecycle correction
+
+- Corrected an overstated Level 3 completion claim. The initial official-card
+  provider flow was Authorised, but the enabled Tandem TEST webhook returned
+  repeated HTTP503 because its backend, filtering edge and reverse tunnel were
+  terminal-session processes and offline. Restoring all three hops and retrying
+  the exact event produced Adyen `Accepted`.
+- The preserved TEST database was also behind migrations161–165, which explains
+  its failed identity path and prevented ESD evidence storage. A private mode0600
+  custom backup (606726 bytes, SHA-256
+  `fdd0e8918a9efa8d76dbeccb82a9ab2cd6a0092c23af77340cabb11508d7bf32`)
+  preceded successful application of all five migrations.
+- A fresh full Tandem TEST checkout now has an Accepted Adyen AUTHORISATION,
+  one durable payment event and `authorization_recorded` projection. It has no
+  provider optimization evidence because Adyen did not include ESD validation
+  fields; Level 3 scheme submission therefore remains unproven pending provider
+  enablement/result evidence.
+- Reusable TEST startup now advances complete missing 161–165 schemas and
+  rejects partial markers. A new compiled TEST entrypoint verifies the immutable
+  release before reading config or opening PostgreSQL/listeners, emits
+  content-free errors and installs one-shot cleanup handlers. Focused tests pass
+  66/66; independent Claude Sonnet/high returned `NO MATERIAL FINDINGS`.
+
 ## 2026-09-12 — NC-20260909-003 MCS Level 3 enhanced scheme data
 
 - Replaced the disabled combined optimization with an exact server-owned Level

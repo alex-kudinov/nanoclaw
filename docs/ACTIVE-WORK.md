@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-13T00:39Z — NC-20260909-003 TEST webhook lifecycle correction,
+source owner Codex: the prior Level 3 completion claim was overstated. The
+standalone provider payment was Authorised, but the enabled TEST webhook's
+backend, edge and reverse tunnel were terminal-session processes and offline;
+Adyen recorded repeated HTTP503. All three hops were restored and the exact
+failed event redelivered Accepted. The preserved TEST database also lacked
+migrations161–165; an owner-only 606726-byte backup was taken, the five
+migrations applied, and a fresh full Tandem TEST payment now has one Accepted
+Adyen delivery, one durable AUTHORISATION and `authorization_recorded` state.
+The webhook does not yet contain ESD validation results, so L3 submission is not
+claimed. Source adds reusable161–165 upgrades and a release-verified compiled
+TEST entrypoint for permanent supervision. Focused66/66 and independent
+Sonnet/high review pass. Immutable release and launchd installation remain.
+
 2026-09-13T00:00Z — NC-20260909-003 MCS Level 3 enhanced scheme data,
 source owner Codex: the previously disabled combined optimization was split.
 Exact provider proof showed Checkout v72 accepts flattened L3 fields on Session

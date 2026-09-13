@@ -165,6 +165,9 @@ const migrations = [
   '156_website_checkout_attribution_admission.sql',
   '157_payment_webhook_method_evidence.sql',
   '159_payment_terminal_card_retry.sql',
+  '163_payment_checkout_documents.sql',
+  '164_payment_checkout_document_retention.sql',
+  '165_deferred_checkout_identity.sql',
 ] as const;
 
 const databaseName = /^nc_student_enrollment_store_[a-f0-9]{32}$/;
@@ -648,6 +651,60 @@ export async function startWebsiteCheckoutTestService(input: {
       if (Number(terminalRetry.rows[0]?.count) === 0)
         await pool.query(migrationSql('159_payment_terminal_card_retry.sql'));
       else if (Number(terminalRetry.rows[0]?.count) !== 10)
+        throw new PaymentDomainError('unsafe_website_checkout_database');
+      const billingProfile = await pool.query(
+        `SELECT count(*)::int count FROM information_schema.columns
+         WHERE table_schema='business_v2'
+           AND table_name='payment_identity_preparations'
+           AND column_name IN ('billing_profile_sha256','encrypted_billing_profile')`,
+      );
+      if (Number(billingProfile.rows[0]?.count) === 0)
+        await pool.query(
+          migrationSql('161_payment_checkout_billing_profile.sql'),
+        );
+      else if (Number(billingProfile.rows[0]?.count) !== 2)
+        throw new PaymentDomainError('unsafe_website_checkout_database');
+      const optimizationEvidence = await pool.query(
+        `SELECT (to_regclass('business_v2.payment_provider_optimization_evidence') IS NOT NULL)::int count`,
+      );
+      if (Number(optimizationEvidence.rows[0]?.count) === 0)
+        await pool.query(
+          migrationSql('162_payment_provider_optimization_evidence.sql'),
+        );
+      const documentTables = await pool.query(
+        `SELECT count(*)::int count FROM unnest(ARRAY[
+          'business_v2.payment_checkout_document_sequences',
+          'business_v2.payment_checkout_documents',
+          'business_v2.payment_checkout_document_capabilities',
+          'business_v2.payment_checkout_document_email_jobs',
+          'business_v2.payment_checkout_document_email_receipts'
+        ]) name WHERE to_regclass(name) IS NOT NULL`,
+      );
+      if (Number(documentTables.rows[0]?.count) === 0)
+        await pool.query(migrationSql('163_payment_checkout_documents.sql'));
+      else if (Number(documentTables.rows[0]?.count) !== 5)
+        throw new PaymentDomainError('unsafe_website_checkout_database');
+      const retentionTables = await pool.query(
+        `SELECT count(*)::int count FROM unnest(ARRAY[
+          'business_v2.payment_checkout_document_retention_events',
+          'business_v2.payment_checkout_document_tombstones'
+        ]) name WHERE to_regclass(name) IS NOT NULL`,
+      );
+      if (Number(retentionTables.rows[0]?.count) === 0)
+        await pool.query(
+          migrationSql('164_payment_checkout_document_retention.sql'),
+        );
+      else if (Number(retentionTables.rows[0]?.count) !== 2)
+        throw new PaymentDomainError('unsafe_website_checkout_database');
+      const deferredIdentityTables = await pool.query(
+        `SELECT count(*)::int count FROM unnest(ARRAY[
+          'business_v2.payment_checkout_submission_payloads',
+          'business_v2.payment_identity_materializations'
+        ]) name WHERE to_regclass(name) IS NOT NULL`,
+      );
+      if (Number(deferredIdentityTables.rows[0]?.count) === 0)
+        await pool.query(migrationSql('165_deferred_checkout_identity.sql'));
+      else if (Number(deferredIdentityTables.rows[0]?.count) !== 2)
         throw new PaymentDomainError('unsafe_website_checkout_database');
     }
     const transaction: PaymentTransaction = async (work) => {
