@@ -32,6 +32,13 @@
   wrapper, document authority and AVS config; its caller-scope note is closed by
   the final source diff, where `HeartbeatLiveMembershipDriver.find()` retains
   one exact-email call with no catch or name fallback.
+- Post-deployment exact authority readback passed, but the receipt still failed
+  before persistence. The generator derived invoice policy metadata whenever
+  paid invoices were globally enabled, including while building a receipt; the
+  receipt schema correctly rejects tax-policy metadata. Invoice configuration is
+  now selected only for `paid_invoice`. The disposable PostgreSQL test creates a
+  receipt with paid invoices enabled and proves all three tax-policy fields stay
+  null with the receipt correction policy intact.
 
 ## 2026-09-12 — NC-20260909-003 TEST webhook lifecycle correction
 

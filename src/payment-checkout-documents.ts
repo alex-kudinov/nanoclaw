@@ -1089,7 +1089,10 @@ export class PgPaymentCheckoutDocumentStore {
                 authority.paymentRecordedAt,
                 config,
               );
-        const invoice = config.paidInvoice.enabled ? config.paidInvoice : null;
+        const invoice =
+          kind === 'paid_invoice' && config.paidInvoice.enabled
+            ? config.paidInvoice
+            : null;
         const snapshot = parseCheckoutDocumentSnapshot({
           schemaVersion: 2,
           documentVersion: DOCUMENT_VERSION,

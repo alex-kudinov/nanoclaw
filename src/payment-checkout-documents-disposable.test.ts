@@ -305,6 +305,17 @@ describe('migration 163 checkout document store', () => {
     expect(new Set([a.documentNumber, b.documentNumber])).toEqual(
       new Set(['TCA-2026-000001', 'TCA-2026-000002']),
     );
+    const enabledInvoiceReceipt = await store.ensure(
+      'receipt',
+      authority(attemptA, 'AAAABBBBCCCC', true),
+      config,
+    );
+    expect(enabledInvoiceReceipt.snapshot.policy).toMatchObject({
+      taxPolicyVersion: null,
+      taxJurisdiction: null,
+      taxClassification: null,
+      correctionPolicy: 'original_payment_evidence_immutable',
+    });
     await expect(
       pool.query(sql('rollback_164_payment_checkout_document_retention.sql')),
     ).rejects.toThrow(/rollback refused/);

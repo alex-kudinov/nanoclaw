@@ -17,7 +17,11 @@ catch, confirmed its correction boundary, confirmed the document/AVS changes,
 and left only a review-scope note that Codex closed by checking the unchanged
 exact-email-only caller. Release through the established immutable workflows,
 then prove exact Heartbeat membership and receipt/invoice download plus email
-outcomes without another payment.
+outcomes without another payment. The first deployed document-identity repair
+proved authority but exposed a second generator defect: globally enabled invoice
+tax metadata was also copied into receipts, whose own immutable schema correctly
+rejects tax metadata. Scope invoice metadata to `paid_invoice`, rerun release
+tests, redeploy and exercise all four actions.
 
 2026-09-13T00:39Z — NC-20260909-003 TEST webhook lifecycle correction,
 source owner Codex: the prior Level 3 completion claim was overstated. The
