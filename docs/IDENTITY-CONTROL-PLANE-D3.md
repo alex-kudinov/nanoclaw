@@ -60,3 +60,20 @@ The first import must report `imported`, the second `duplicate`, and both must
 report `providerAttempts: 0`, `status: blocked` and
 `individualIdentityGraphAvailable: false`. Compare the validator's protected
 baseline before and after. Any drift stops admission.
+
+## Production receipt
+
+At `2026-09-14T11:50Z`, exact release
+`1509c38eb53bfbb32bfc16cc09cc240af3094614` became active on
+`mini-claw.local`. Its verified source tree is
+`24bf0a3a86f3039e6d1da63f565d0534b9267789`, artifact SHA-256 is
+`39030fffcb6b54f17acfa26e686d8fb73834201d11d16520e9371cc38741c40e`,
+and it contains 1,372 files under Node 22.23.2.
+
+Production run ID 1 contains 82 normalized items, including 79 group
+fingerprints, plus one blocked projection and one unavailable readback. Its
+database-computed snapshot SHA-256 is
+`c4ec624167ef6766d4b04bb8aac715a11c76c60b6a5cffae2d528c90df9725ea`.
+Both immediate and exact-live replay inserted zero rows. D2 remains 379
+receipts, 379 held observations and 156 non-materializable candidates; Party,
+reference, auth, resolution and provider-attempt counts did not change.

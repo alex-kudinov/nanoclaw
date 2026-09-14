@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-14T11:21Z — `NC-20260914-001` Tandem Identity D3 Heartbeat
-aggregate reconciliation, owner Codex, `in_progress`, C5/C3, isolated branch
+aggregate reconciliation, owner Codex, `complete`, C5/C3, pushed branch
 `codex/tandem-identity-d3-heartbeat-reconciliation-20260914` from D2 live-proof
 commit `e887c7849a30dbb82738d1e541730f0c16cb0908`. Owner authorization is
 recorded in
@@ -12,7 +12,14 @@ blocked simulations, and prove atomic exact replay. The complete census is
 1,694 users and 4,202 group-membership edges, but it exposes no per-user graph;
 therefore person resolution, absence decisions, access repair, Party/ref/auth
 binding, provider attempts and all customer/provider writes remain prohibited.
-The Mac Mini will receive no Heartbeat credential or recurring provider client.
+The exact live release is `1509c38eb53bfbb32bfc16cc09cc240af3094614`.
+Production stores one fresh complete run, 82 normalized fingerprints, one
+blocked control projection and one unavailable readback. Candidate and
+exact-live replays both wrote zero; Party/ref/auth/resolution/attempt and D2
+state are unchanged. The Mac Mini has no Heartbeat credential or recurring
+provider client. The active Chief container was adopted intact across the
+three-pointer release switch. No further action remains in D3; per-user graph
+acquisition and any identity/access migration are separately gated.
 
 2026-09-14T02:39Z — `NC-20260913-003` Tandem Identity D2 production
 shadow, owner Codex, `complete`, C5/C3, deployed branch

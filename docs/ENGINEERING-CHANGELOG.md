@@ -2,9 +2,9 @@
 
 ## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
 
-- State: reviewed source and disposable PostgreSQL proof complete; production
-  remains unchanged pending protected backup, immutable release, import, replay
-  and exact live readback.
+- State: `complete`; reviewed source, disposable PostgreSQL proof, protected
+  backup, immutable release, production import, replay and exact live readback
+  are complete.
 - Two complete Heartbeat `main` censuses reproduce 1,694 users, 79 groups and
   4,202 membership edges; the current webhook inventory has 22 registrations.
   The private artifact retains only UUIDs, counts, timestamps and hashes.
@@ -33,8 +33,29 @@
   this mechanical validator-only correction does not need a second review
   round.
 - Detailed evidence:
+  `.program/evidence/NC-20260914-001-d3-complete.md`,
   `.program/evidence/NC-20260914-001-d3-reviewed-precommit.md` and
   `docs/IDENTITY-CONTROL-PLANE-D3.md`.
+- Release: exact live commit
+  `1509c38eb53bfbb32bfc16cc09cc240af3094614`, source tree
+  `24bf0a3a86f3039e6d1da63f565d0534b9267789`, artifact SHA-256
+  `39030fffcb6b54f17acfa26e686d8fb73834201d11d16520e9371cc38741c40e`,
+  1,372 files and archive SHA-256
+  `e6012f9d0ad4610e835406e74e98439a1527f3a8823f3519b9fdc551eda6c5b5`.
+  Local and fresh Mini verification pass under Node 22.23.2.
+- Protected backup is 15,116,487 bytes, mode 0600 and SHA-256
+  `530e34aed7d6886a388a9e4dbfa38c166a999913b2b4770c5d335701c397ed53`;
+  `pg_restore --list` accepts it.
+- Production run ID 1 stores 82 normalized items with database-computed
+  snapshot SHA-256
+  `c4ec624167ef6766d4b04bb8aac715a11c76c60b6a5cffae2d528c90df9725ea`.
+  Candidate and exact-live replays are zero-write duplicates. Party 1,647,
+  refs 5,601, claims/auth/resolutions/attempts zero and D2 379/379/156 remain
+  unchanged.
+- Activation changed only three immutable release pointers, retained rollback
+  plist `com.nanoclaw.plist.rollback-d99ca2589def-2026-09-14T11-50-49-513Z`,
+  adopted the unrelated Chief container intact, and restored connected
+  Gmail/Slack with no waiting groups.
 
 ## 2026-09-14 — NC-20260913-003 Tandem Identity D2 production shadow
 
