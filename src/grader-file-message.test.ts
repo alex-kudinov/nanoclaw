@@ -35,6 +35,7 @@ function fixture(content = 'student submission') {
     size: Buffer.byteLength(content),
     sha256: crypto.createHash('sha256').update(content).digest('hex'),
     idempotency_key: 'heartbeat:ada:m2p2:attempt-1',
+    submission_language: 'it',
     targetGroupFolder: 'grader',
   };
   return { dataDir, filePath, payload };
@@ -76,7 +77,45 @@ describe('grader file message dispatch', () => {
       Buffer.from('student submission'),
       'submission.txt',
       'main',
+      'it',
     );
+  });
+
+  it('rejects an unsupported submission language before any external action', async () => {
+    const { dataDir, payload } = fixture();
+    (payload as unknown as { submission_language: string }).submission_language =
+      'de';
+    const post = vi.fn();
+
+    await expect(
+      dispatchGraderFileMessage('main', payload, {
+        dataDir,
+        targetJid: 'slack:GRADER',
+        postGraderFileMessage: post,
+      }),
+    ).rejects.toThrow('unsupported grader submission language');
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('does not reuse an idempotency key with a different language attestation', async () => {
+    const { dataDir, payload } = fixture();
+    const post = vi.fn(async () => ({ messageTs: '1785685710.379679' }));
+
+    await dispatchGraderFileMessage('main', payload, {
+      dataDir,
+      targetJid: 'slack:GRADER',
+      postGraderFileMessage: post,
+    });
+    delete payload.submission_language;
+
+    await expect(
+      dispatchGraderFileMessage('main', payload, {
+        dataDir,
+        targetJid: 'slack:GRADER',
+        postGraderFileMessage: post,
+      }),
+    ).rejects.toThrow('idempotency key was already used for different content');
+    expect(post).toHaveBeenCalledTimes(1);
   });
 
   it('holds an uncertain failed delivery instead of retrying it', async () => {

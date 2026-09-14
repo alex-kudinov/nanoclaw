@@ -1,5 +1,36 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
+
+- State: ready_for_deploy; reviewed source and isolated verification complete,
+  exact release and live workflow pending.
+- Change class: C5 because one new privileged assertion affects which
+  cross-language submission the grader may evaluate.
+- The existing directory-authorized main/chief grader-file request accepts only
+  optional `submission_language=it`. It participates in the request hash and
+  receipt, and the host binds it in memory to `{grader jid, Slack root ts}`
+  after upload but before the root is persisted and becomes grader-visible.
+- The exact run context may expose `<submission_language>it</submission_language>`
+  without changing registry-derived course variant, `en-US` locale, English
+  feedback language, or the live assignment. Omission, restart, expiry, another
+  root, another JID, or any unsupported language remains fail-closed.
+- No new route, database/schema, durable student state, language registry,
+  worker/scheduler, automatic detection, translation-primary grading, or
+  certificate behavior is introduced.
+- Isolated exact-production-base verification passed typecheck, five focused
+  files / 163 tests, documentation continuity, capabilities matrix and diff
+  check. Full suite passed 4,415 with 32 skipped and 19 unrelated baseline
+  failures tied to retired publication fixtures plus existing CNPC, capacity,
+  and relationship checks. One bounded Claude Sonnet/high
+  review returned `ACCEPT`; session
+  `8641cb43-fa3d-4a9d-81eb-01e34d8ab625`, four model calls, 80,820 cache-create,
+  141,682 cache-read, 15,351 output tokens, maximum context 80,822.
+- Shared toolbox syntax/registry validation passed; isolated staging emitted
+  exact `submission_language: "it"`, and `de` was rejected before staging.
+- Deployment, live Slack verdict, and Heartbeat writeback are not yet claimed.
+  Rollback is the prior immutable release plus the prior grader prompt; restart
+  clears every in-memory attestation.
+
 ## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
 
 - State: reviewed source and disposable PostgreSQL proof complete; production

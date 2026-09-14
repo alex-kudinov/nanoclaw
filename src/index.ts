@@ -136,8 +136,10 @@ import {
   clearLatestGraderThreadContext,
   formatHostAssignmentContext,
   formatHostContextUnavailable,
+  getGraderSubmissionLanguageAttestation,
   getGraderRunContext,
   prepareLatestGraderRunContext,
+  setGraderSubmissionLanguageAttestation,
   setGraderRunContext,
   type GraderRunContext,
 } from './grader-run-context.js';
@@ -423,6 +425,10 @@ async function establishGraderRunContext(
     completionCourse: assignment.completionCourse,
     locale: assignment.locale,
     feedbackLanguage: assignment.feedbackLanguage,
+    submissionLanguage: getGraderSubmissionLanguageAttestation(
+      chatJid,
+      threadTs,
+    ),
     localeProfile: assignment.localeProfile,
     registeredAtMs: Date.now(),
   };
@@ -3726,6 +3732,7 @@ async function main(): Promise<void> {
       file,
       filename,
       sourceGroup,
+      submissionLanguage,
     ) => {
       const slack = channels.find(
         (c): c is SlackChannel => c instanceof SlackChannel,
@@ -3737,6 +3744,14 @@ async function main(): Promise<void> {
         file,
         filename,
         sourceGroup,
+        submissionLanguage
+          ? (messageTs) =>
+              setGraderSubmissionLanguageAttestation(
+                targetJid,
+                messageTs,
+                submissionLanguage,
+              )
+          : undefined,
       );
     },
     deliverGraderOutput: deliverGraderOutputHost,
