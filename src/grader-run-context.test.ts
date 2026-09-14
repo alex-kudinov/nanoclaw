@@ -199,9 +199,7 @@ describe('the run-context registry', () => {
 
   it('binds a privileged submission-language attestation to one exact root', () => {
     setGraderSubmissionLanguageAttestation(JID, THREAD, 'it', NOW);
-    expect(getGraderSubmissionLanguageAttestation(JID, THREAD, NOW)).toBe(
-      'it',
-    );
+    expect(getGraderSubmissionLanguageAttestation(JID, THREAD, NOW)).toBe('it');
     expect(
       getGraderSubmissionLanguageAttestation(JID, 'other-thread', NOW),
     ).toBeUndefined();
