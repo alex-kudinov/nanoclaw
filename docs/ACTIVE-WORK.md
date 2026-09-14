@@ -329,6 +329,18 @@ closed mechanically. General provider abstraction, `claim_available`, BFF/UI/
 Firestore/signing, real users, Party creation, production identity/ref/access/
 customer/provider writes, DDL, runtime activation and deployment remain
 prohibited and absent.
+2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
+owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
+`codex/grader-italian-attestation-20260914` from exact production release
+`1509c38eb53bfbb32bfc16cc09cc240af3094614`. Add only an optional
+`submission_language=it` to the existing main/chief-only grader-file IPC, bind
+it in memory to the exact Slack root before persistence, and carry it into that
+root's run context. Preserve the registered English Foundation assignment and
+feedback language; unattested mismatches remain held. No new route, schema,
+durable student state, broad language policy, translation-primary grading, or
+certificate action. Focused tests and one Sonnet/high review are complete;
+build, exact release activation, Barbara live verdict, and any Heartbeat
+writeback remain pending. Updated 2026-09-14T22:50Z.
 
 2026-09-14T11:21Z — `NC-20260914-001` Tandem Identity D3 Heartbeat
 aggregate reconciliation, owner Codex, `complete`, C5/C3, pushed branch
@@ -864,6 +876,32 @@ outside the current client conversation.
   Sonnet/high implementation review returned `PASS` with no material finding;
   commit/push/build/verify/activate the exact release and prove live health.
   Outcome validation waits for the next natural owner-directed CC action.
+### NC-20260914-002
+
+- Trigger: a verified Italian Foundation submission was correctly refused
+  because trusted host context exposed only the English course locale. Chat
+  replies could not and should not override that authority.
+- Minimum-sufficient gate: fresh-context necessity review returned `KEEP`.
+  The largest avoidable burden is a course-wide language policy or new route;
+  the accepted path is one optional Italian assertion on the existing
+  privileged file request.
+- Operational delta: validate one exact enum, include it in the request hash
+  and receipt, and register one bounded in-memory `{jid, rootTs}` assertion
+  before persistence. Restart or TTL expiry removes it. No schema, worker,
+  scheduler, queue, or independently owned recovery obligation is added.
+- Review: bounded Claude Sonnet/high session
+  `8641cb43-fa3d-4a9d-81eb-01e34d8ab625` returned `ACCEPT` with no material
+  finding. Usage was four model calls, 80,820 cache-creation, 141,682
+  cache-read, 15,351 output tokens, maximum context 80,822, no warnings.
+- Verification before release: isolated production-base typecheck, five focused
+  files / 163 tests, documentation continuity, capabilities matrix and diff
+  check pass. Full suite is 4,415 passed / 32 skipped / 19 unrelated baseline
+  failures concentrated in missing retired publication sources and pre-existing
+  CNPC/capacity/relationship checks). The shared
+  toolbox accepts only `it`, emits it in IPC, and rejects unsupported languages
+  before staging.
+- External state: no implementation-triggered Slack root, Heartbeat write,
+  certificate action, database mutation, or deployment at registration.
 
 ### NC-20260909-003
 
