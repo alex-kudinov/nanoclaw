@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-14T02:39Z — `NC-20260913-003` Tandem Identity D2 production
-shadow, owner Codex, `validating`, C5/C3, isolated branch
+shadow, owner Codex, `complete`, C5/C3, deployed branch
 `codex/tandem-identity-d2-shadow-20260913` from D1 completion
 `eae3a1424e1c1224d943c618bc8ac66b516a3194` and exact live release
 `c190b957333ac1901b2d46a1f4b3f1cf75c6341c`. Owner authorization is
@@ -30,9 +30,16 @@ reports that irreducible gap as terminally blocked and preserves its exact
 count, with a real PostgreSQL regression. Focused 66/66, typecheck, build,
 format and continuity pass; full repository is 4,401 pass/32 skip/19 unchanged
 baseline failures and no identity test failed. Documentation and independent
-review are complete. Final precommit rerun passed; commit/push, production
-backup/migration/release/enablement and live readback
-remain; no production write has occurred in this task yet.
+review are complete. Reviewed implementation commit
+`d99ca2589def4fc459fa129218ab83696b34b330` is pushed and live under verified
+artifact `416eec1b…`/1,360 files/Node 22.23.2. A readable 14,858,133-byte
+mode-0600 backup preceded migration 167. Disabled-first release and exact
+post-migration checks passed, then the fixed configuration was enabled once.
+Live state is 379 source/receipt/held-observation rows, 156 candidates, zero
+unmirrored/promoted/linked/materializable/resolution/projection/command/attempt/
+readback/reconciliation/drift state, blocked provider-unreconciled health and
+an exact second-run zero-write replay. Party/ref counts and channels/queues are
+unchanged. D2 is complete; D3 remains separately unauthorized.
 
 2026-09-14T02:02Z — `NC-20260913-002` Tandem Identity D1 disposable
 PostgreSQL store proof, owner Codex, `complete`, C5, pushed branch

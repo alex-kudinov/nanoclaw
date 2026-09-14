@@ -1,8 +1,11 @@
 # Tandem Identity D2 Production Shadow
 
-Status: implementation and validation in progress; production admission not yet executed
+Status: independently reviewed, deployed, and live-verified in blocked shadow mode
 
 Task: `NC-20260913-003`
+
+Reviewed/deployed implementation commit:
+`d99ca2589def4fc459fa129218ab83696b34b330`.
 
 Authorization:
 `.program/decisions/decision-tandem-identity-d2-production-shadow-2026-09-14.json`
@@ -163,3 +166,42 @@ when deciding whether progress remains, reports `blocked` with
 real PostgreSQL regression proves that state. No other material issue was
 reported; the correction is mechanical and does not require a confirmation
 round.
+
+## Production receipt
+
+At 2026-09-14T03:11Z the exact immutable release
+`d99ca2589def4fc459fa129218ab83696b34b330` became active on `mini-claw.local`.
+`/health` verifies source tree `cf952ed4db55d14f741de2475f4d258ce0867b09`,
+artifact SHA-256
+`416eec1baada64dde08573f627f75b0725a91ae12a01fc15051a70eb796a62b0`,
+1,360 files, Node 22.23.2, matching code root, connected Gmail/Slack, zero
+active containers, and an empty work queue.
+
+Before migration, a complete custom-format backup was written mode 0600 at
+`/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260913-003-20260914T030951Z/nanoclaw_business_pre_167.dump`.
+It is 14,858,133 bytes, SHA-256
+`56f17f7e45ec8f5b716c0f5859e670b07e5f701d12d679fabedeae1988a361e5`,
+and `pg_restore --list` accepts it. Migration 167 applied transactionally;
+post-migration validation found 12 tables, one view, zero non-admin grants and
+zero rows before enablement.
+
+The one-key configuration transaction retained mode-0600 rollback
+`/Users/xbohdpukc/dev/NanoClaw/.env.rollback-tandem-identity-d2-2026-09-14T03-11-34-067Z`.
+Release activation retained
+`/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-c190b957333a-2026-09-14T03-11-02-625Z`.
+
+Live database and health readback agree:
+
+- 379 source rows, 379 unverified/held receipts, 379 held Party-null
+  observations, 156 open non-materializable candidates, zero unmirrored;
+- zero promoted receipts, linked D2 observations, materializable candidates,
+  accepted facts, desired projections, commands, attempts, readbacks,
+  reconciliation runs or drift items;
+- Party count 1,645, external-ref count 5,596, identifier claims zero and
+  identity exceptions 1,196, unchanged across the shadow transition;
+- scoreboard `blocked` / `provider_authenticity_unreconciled`, with no error;
+- an immediate exact second execution scanned zero and inserted zero receipts,
+  observations, or candidates.
+
+This is production-shadow evidence, not provider completeness or canonical
+identity migration. D3 remains unauthorized.

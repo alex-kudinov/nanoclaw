@@ -1,28 +1,6 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-09-06T21:30:24.628Z
-
-Additional local/unapplied source extension (NC-20260909-001): migration 148
-adds target-scoped idempotency, exact destination identity, provider operation,
-exact readback hash, uncertain-acceptance hold, and supersession references to
-`business_v2.student_projection_outbox`. It adds no rows, grants, runtime
-wiring, or provider access and is tested only in uniquely generated disposable
-PostgreSQL. The production snapshot below is unchanged.
-
-Additional local/unapplied source extension (NC-20260906-009): migration 147
-creates `business_v2.student_enrollment_authenticated_receipts` (issuer/receipt
-identity, source/body hashes, actor/role/purpose/transport and times) and
-`business_v2.student_enrollment_writer_claims` (canonical source, writer/policy,
-evidence and actor/time). Both are append-only, admin-owned and tested only in
-disposable PostgreSQL. This is not a production schema refresh or apply receipt.
-
-Local source extension, not part of the live snapshot below: migration 146
-(`146_student_enrollment_store_contract.sql`, NC-20260906-008) adds
-`business_v2.student_projection_outbox.version integer NOT NULL DEFAULT 0`
-with a nonnegative check, and adds `evidence` to the enrollment-history subject
-check. It is tested only in disposable databases and remains unapplied to
-production. Existing live schema descriptions below are not rewritten as proof
-of a production change.
+Generated: 2026-09-14T03:13:35.398Z
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -499,6 +477,27 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   recorded_at                   timestamp with time zone NOT NULL
 ```
 
+## business_v2.academy_capacity_publications
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.academy_capacity_publications_id_seq'::regclass)
+  publication_key               text                 NOT NULL
+  pool_id                       bigint               NOT NULL
+  pool_version                  integer              NOT NULL
+  public_state                  text                 NOT NULL
+  reason                        text                 NOT NULL
+  payload_sha256                text                 NOT NULL
+  state                         text                 NOT NULL
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  next_attempt_at               timestamp with time zone NOT NULL
+  last_error_code               text
+  ack_sha256                    text
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+  delivered_at                  timestamp with time zone
+  updated_by                    text                 NOT NULL
+```
+
 ## business_v2.academy_capacity_reservations
 
 ```
@@ -622,6 +621,29 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   storage_url                   text
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.auth_accounts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.auth_accounts_id_seq'::regclass)
+  issuer                        text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  subject                       text                 NOT NULL
+  account_version               integer              NOT NULL
+  party_id                      bigint
+  account_state                 text                 NOT NULL
+  binding_basis                 text                 NOT NULL
+  source_receipt_id             bigint               NOT NULL
+  source_effective_at           timestamp with time zone
+  last_observed_at              timestamp with time zone NOT NULL
+  last_verified_at              timestamp with time zone
+  valid_from                    timestamp with time zone NOT NULL
+  valid_until                   timestamp with time zone
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
 ## business_v2.chaos_lifecycle_outbox
@@ -1487,6 +1509,22 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   enabled                       boolean              NOT NULL DEFAULT=true
 ```
 
+## business_v2.contador_adyen_payments
+
+```
+  delivery_id                   uuid                 NOT NULL
+  order_id                      uuid                 NOT NULL
+  psp_reference                 text                 NOT NULL
+  merchant_reference            text                 NOT NULL
+  product_id                    text                 NOT NULL
+  amount_cents                  bigint               NOT NULL
+  currency                      text                 NOT NULL
+  event_date                    timestamp with time zone NOT NULL
+  evidence_sha256               text                 NOT NULL
+  first_seen_at                 timestamp with time zone NOT NULL DEFAULT=now()
+  last_seen_at                  timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.contador_payment_fulfillment_aliases
 
 ```
@@ -1649,6 +1687,94 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
 ```
 
+## business_v2.identity_candidates
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.identity_candidates_id_seq'::regclass)
+  candidate_uuid                uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  subject_sha256                text                 NOT NULL
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id_sha256            text                 NOT NULL
+  candidate_version             integer              NOT NULL
+  status                        text                 NOT NULL
+  creation_basis                text                 NOT NULL
+  party_materialization_allowed boolean              NOT NULL DEFAULT=false
+  evidence_sha256               text                 NOT NULL
+  first_seen_at                 timestamp with time zone NOT NULL
+  last_observed_at              timestamp with time zone NOT NULL
+  valid_until                   timestamp with time zone
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.identity_event_receipts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.identity_event_receipts_id_seq'::regclass)
+  receipt_uuid                  uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  adapter_registration_id       bigint               NOT NULL
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  event_type                    text                 NOT NULL
+  provider_event_id             text
+  deduplication_key             text                 NOT NULL
+  payload_sha256                text                 NOT NULL
+  protected_payload_ref         text
+  authenticity_status           text                 NOT NULL
+  verification_method           text                 NOT NULL
+  normalization_status          text                 NOT NULL
+  schema_version                integer              NOT NULL
+  api_version                   text
+  source_effective_at           timestamp with time zone
+  received_at                   timestamp with time zone NOT NULL
+  relay_identity_sha256         text                 NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.identity_event_related_refs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.identity_event_related_refs_id_seq'::regclass)
+  receipt_id                    bigint               NOT NULL
+  ref_index                     integer              NOT NULL
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.identity_resolution_decisions
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.identity_resolution_decisions_id_seq'::regclass)
+  decision_uuid                 uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id_sha256            text                 NOT NULL
+  result                        text                 NOT NULL
+  resolution_basis              text
+  party_id                      bigint
+  candidate_id                  bigint
+  evidence_refs                 jsonb                NOT NULL
+  evidence_sha256               text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  decided_at                    timestamp with time zone NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.incidents
 
 ```
@@ -1778,6 +1904,11 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_health_at                timestamp with time zone
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  environment                   text                 NOT NULL DEFAULT='production'::text
+  accepted_at                   timestamp with time zone
+  retired_at                    timestamp with time zone
+  identity_entity_types         ARRAY                NOT NULL DEFAULT='{}'::text[]
+  identity_event_types          ARRAY                NOT NULL DEFAULT='{}'::text[]
 ```
 
 ## business_v2.party_context_observations
@@ -1910,6 +2041,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   source_receipt_sha256         text                 NOT NULL
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  environment                   text                 NOT NULL DEFAULT='production'::text
 ```
 
 ## business_v2.party_identifier_claims
@@ -1975,6 +2107,544 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   ended_at                      timestamp with time zone
   metadata                      jsonb                NOT NULL DEFAULT='{}'::jsonb
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.payment_attempts
+
+```
+  attempt_id                    uuid                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  quote_id                      uuid                 NOT NULL
+  contract                      jsonb                NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_chaos_observability_outbox
+
+```
+  id                            bigint               NOT NULL
+  source_event_sha256           text                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  attempt_id                    uuid
+  source_kind                   text                 NOT NULL
+  origin_reference              text                 NOT NULL
+  origin_version                integer              NOT NULL
+  event_name                    text                 NOT NULL
+  action                        text                 NOT NULL
+  outcome                       text                 NOT NULL
+  reason_code                   text                 NOT NULL
+  session_sequence              integer              NOT NULL
+  evidence_class                text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  status                        text                 NOT NULL DEFAULT='pending'::text
+  attempts                      integer              NOT NULL DEFAULT=0
+  next_attempt_at               timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  last_attempted_at             timestamp with time zone
+  accepted_at                   timestamp with time zone
+  lease_token                   uuid
+  lease_until                   timestamp with time zone
+  last_http_status              integer
+  last_error_code               text
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_chaos_observability_receipts
+
+```
+  receipt_sha256                text                 NOT NULL
+  outbox_id                     bigint               NOT NULL
+  attempt_number                integer              NOT NULL
+  kind                          text                 NOT NULL
+  outcome_code                  text                 NOT NULL
+  http_status                   integer
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_checkout_admission_evidence
+
+```
+  scope_sha256                  text                 NOT NULL
+  caller                        text                 NOT NULL
+  operation_id                  uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  quote_id                      uuid                 NOT NULL
+  quote_fingerprint             text                 NOT NULL
+  identity_preparation_id       uuid                 NOT NULL
+  identity_origin_operation_id  uuid                 NOT NULL
+  identity_receipt_reference    text                 NOT NULL
+  payer_reference               text                 NOT NULL
+  participant_reference         text                 NOT NULL
+  payer_role_proof              text                 NOT NULL
+  participant_role_proof        text                 NOT NULL
+  purchase_relationship         text                 NOT NULL
+  consent_bundle_receipt        text                 NOT NULL
+  terms_version                 text                 NOT NULL
+  terms_content_sha256          text                 NOT NULL
+  terms_receipt_reference       text                 NOT NULL
+  terms_accepted_at             bigint               NOT NULL
+  privacy_version               text                 NOT NULL
+  privacy_content_sha256        text                 NOT NULL
+  privacy_receipt_reference     text                 NOT NULL
+  privacy_accepted_at           bigint               NOT NULL
+  mandate_version               text
+  mandate_content_sha256        text
+  mandate_receipt_reference     text
+  mandate_accepted_at           bigint
+  mandate_amount_minor          bigint
+  mandate_currency              text
+  mandate_frequency             text
+  mandate_sec_code              text
+  request_body_sha256           text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  evidence_reference            text                 NOT NULL
+  accepted_at                   bigint               NOT NULL
+```
+
+## business_v2.payment_checkout_attribution_admissions
+
+```
+  scope_sha256                  text                 NOT NULL
+  caller                        text                 NOT NULL
+  operation_id                  uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  checkout_evidence_reference   text                 NOT NULL
+  snapshot_id                   uuid                 NOT NULL
+  snapshot_sha256               text                 NOT NULL
+  binding_reference             text                 NOT NULL
+  binding_sha256                text                 NOT NULL
+  intent_id                     uuid                 NOT NULL
+  attempt_operation_id          uuid                 NOT NULL
+  quote_id                      uuid                 NOT NULL
+  quote_fingerprint             text                 NOT NULL
+  encrypted_snapshot            text                 NOT NULL
+  encrypted_binding             text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  evidence_reference            text                 NOT NULL
+  accepted_at                   bigint               NOT NULL
+```
+
+## business_v2.payment_checkout_document_capabilities
+
+```
+  capability_id                 uuid                 NOT NULL
+  document_id                   uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  document_kind                 text                 NOT NULL
+  capability_sha256             text                 NOT NULL
+  issued_at                     timestamp with time zone NOT NULL
+  expires_at                    timestamp with time zone NOT NULL
+```
+
+## business_v2.payment_checkout_document_email_jobs
+
+```
+  job_id                        uuid                 NOT NULL
+  document_id                   uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  document_kind                 text                 NOT NULL
+  recipient_email_sha256        text                 NOT NULL
+  encrypted_recipient_email     text                 NOT NULL
+  content_sha256                text                 NOT NULL
+  state                         text                 NOT NULL
+  uncertain_acceptance          boolean              NOT NULL DEFAULT=false
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  lease_token                   uuid
+  lease_expires_at              timestamp with time zone
+  gmail_message_id              text
+  gmail_thread_id               text
+  last_error_code               text
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+```
+
+## business_v2.payment_checkout_document_email_receipts
+
+```
+  job_id                        uuid                 NOT NULL
+  version                       integer              NOT NULL
+  stage                         text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_checkout_document_retention_events
+
+```
+  event_id                      uuid                 NOT NULL
+  document_id                   uuid                 NOT NULL
+  event_kind                    text                 NOT NULL
+  decision_reference            text                 NOT NULL
+  receipt_sha256                text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_checkout_document_sequences
+
+```
+  series_key                    text                 NOT NULL
+  next_value                    bigint               NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+```
+
+## business_v2.payment_checkout_document_tombstones
+
+```
+  document_id                   uuid                 NOT NULL
+  attempt_id_sha256             text                 NOT NULL
+  document_kind                 text                 NOT NULL
+  document_number               text                 NOT NULL
+  issued_at                     timestamp with time zone NOT NULL
+  amount_minor                  bigint               NOT NULL
+  currency                      text                 NOT NULL
+  snapshot_sha256               text                 NOT NULL
+  pdf_sha256                    text                 NOT NULL
+  retention_policy_version      text                 NOT NULL
+  purge_receipt_sha256          text                 NOT NULL
+  purged_at                     timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_checkout_documents
+
+```
+  document_id                   uuid                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  caller                        text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  document_kind                 text                 NOT NULL
+  document_version              text                 NOT NULL
+  document_number               text                 NOT NULL
+  snapshot_sha256               text                 NOT NULL
+  encrypted_snapshot            text                 NOT NULL
+  pdf_sha256                    text                 NOT NULL
+  encrypted_pdf                 text                 NOT NULL
+  issued_at                     timestamp with time zone NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  retention_until               timestamp with time zone NOT NULL
+  retention_policy_version      text                 NOT NULL
+  amount_minor                  bigint               NOT NULL
+  currency                      text                 NOT NULL
+  attempt_id_sha256             text                 NOT NULL
+```
+
+## business_v2.payment_checkout_evidence
+
+```
+  attempt_id                    uuid                 NOT NULL
+  projection                    jsonb                NOT NULL
+  version                       integer              NOT NULL
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_checkout_submission_payloads
+
+```
+  caller                        text                 NOT NULL
+  preparation_id                uuid                 NOT NULL
+  payer_reference               text                 NOT NULL
+  payload_sha256                text                 NOT NULL
+  encrypted_payload             text                 NOT NULL
+  created_at                    bigint               NOT NULL
+  expires_at                    bigint               NOT NULL
+```
+
+## business_v2.payment_enrollment_admissions
+
+```
+  scope_sha256                  text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  checkout_caller               text                 NOT NULL
+  checkout_operation_id         uuid                 NOT NULL
+  checkout_evidence_reference   text                 NOT NULL
+  identity_receipt_reference    text                 NOT NULL
+  payment_reference             text                 NOT NULL
+  payment_method                text                 NOT NULL
+  method_operation_id           uuid
+  method_evidence_sha256        text                 NOT NULL
+  payment_projection_version    integer              NOT NULL
+  payment_projection_sha256     text                 NOT NULL
+  publication_id                text                 NOT NULL
+  publication_revision          integer              NOT NULL
+  publication_payload_sha256    text                 NOT NULL
+  offer_key                     text                 NOT NULL
+  content_locale                text                 NOT NULL
+  bundle_key                    text                 NOT NULL
+  component_key                 text                 NOT NULL
+  order_key                     text                 NOT NULL
+  seat_key                      text                 NOT NULL
+  enrollment_key                text                 NOT NULL
+  financial_evidence_sha256     text                 NOT NULL
+  admission_evidence_sha256     text                 NOT NULL
+  evidence_reference            text                 NOT NULL
+  state                         text                 NOT NULL
+  materialized_at               bigint               NOT NULL
+  method_source_kind            text                 NOT NULL DEFAULT='session_result'::text
+  method_event_id               text
+```
+
+## business_v2.payment_event_exceptions
+
+```
+  exception_sha256              text                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  event_id_sha256               text                 NOT NULL
+  candidate_sha256              text                 NOT NULL
+  attempt_hint                  uuid                 NOT NULL
+  attempt_id                    uuid
+  related_attempt_id            uuid
+  payment_reference             text                 NOT NULL
+  reason                        text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_event_operation_parents
+
+```
+  scope_sha256                  text                 NOT NULL
+  operation_reference           text                 NOT NULL
+  payment_reference             text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+```
+
+## business_v2.payment_event_operations
+
+```
+  scope_sha256                  text                 NOT NULL
+  operation_reference           text                 NOT NULL
+  payment_reference             text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  kind                          text                 NOT NULL
+```
+
+## business_v2.payment_events
+
+```
+  scope_sha256                  text                 NOT NULL
+  event_id                      text                 NOT NULL
+  payload_sha256                text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  payment_reference             text                 NOT NULL
+  fact                          jsonb                NOT NULL
+  received_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  payment_operation_id          uuid                 NOT NULL
+  session_sequence              integer              NOT NULL DEFAULT=1
+```
+
+## business_v2.payment_identity_materializations
+
+```
+  caller                        text                 NOT NULL
+  preparation_id                uuid                 NOT NULL
+  payer_party_id                bigint               NOT NULL
+  participant_party_id          bigint               NOT NULL
+  payer_interaction_id          bigint               NOT NULL
+  participant_interaction_id    bigint               NOT NULL
+  billing_profile_sha256        text
+  encrypted_billing_profile     text
+  materialized_at               bigint               NOT NULL
+```
+
+## business_v2.payment_identity_preparations
+
+```
+  preparation_id                uuid                 NOT NULL
+  caller                        text                 NOT NULL
+  origin_operation_id           uuid                 NOT NULL
+  intent_id                     uuid                 NOT NULL
+  offer_key                     text                 NOT NULL
+  purchase_relationship         text                 NOT NULL
+  identity_request_sha256       text                 NOT NULL
+  source                        jsonb                NOT NULL
+  source_sha256                 text                 NOT NULL
+  payer_party_id                bigint
+  participant_party_id          bigint
+  payer_interaction_id          bigint
+  participant_interaction_id    bigint
+  payer_reference               text                 NOT NULL
+  participant_reference         text                 NOT NULL
+  payer_role_proof              text                 NOT NULL
+  participant_role_proof        text                 NOT NULL
+  payer_existing_stripe_customer_idtext
+  participant_existing_stripe_customer_idtext
+  receipt_reference             text                 NOT NULL
+  resolved_at                   bigint               NOT NULL
+  billing_profile_sha256        text
+  encrypted_billing_profile     text
+```
+
+## business_v2.payment_method_bindings
+
+```
+  scope_sha256                  text                 NOT NULL
+  payment_reference             text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  method                        text                 NOT NULL
+  operation_id                  uuid
+  evidence_sha256               text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  source_kind                   text                 NOT NULL DEFAULT='session_result'::text
+  source_event_id               text
+```
+
+## business_v2.payment_operation_receipts
+
+```
+  operation_id                  uuid                 NOT NULL
+  version                       integer              NOT NULL
+  kind                          text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_operations
+
+```
+  operation_id                  uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  contract                      jsonb                NOT NULL
+  request_sha256                text                 NOT NULL
+  encrypted_request             text                 NOT NULL
+  encrypted_response            text
+  state                         text                 NOT NULL
+  session_expires_at            bigint
+  version                       integer              NOT NULL DEFAULT=0
+  lease_token                   uuid
+  lease_until                   bigint
+  session_sequence              integer              NOT NULL DEFAULT=1
+  predecessor_operation_id      uuid
+  predecessor_session_sequence  integer
+  retry_terminal_receipt_sha256 text
+```
+
+## business_v2.payment_owned_event_exceptions
+
+```
+  exception_sha256              text                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  event_id_sha256               text                 NOT NULL
+  attempt_hint                  uuid
+  event_code                    text                 NOT NULL
+  reason                        text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_provider_optimization_evidence
+
+```
+  scope_sha256                  text                 NOT NULL
+  event_id                      text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  event_code                    text                 NOT NULL
+  evidence                      jsonb                NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_provider_references
+
+```
+  scope_sha256                  text                 NOT NULL
+  payment_reference             text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  payment_operation_id          uuid                 NOT NULL
+  session_sequence              integer              NOT NULL DEFAULT=1
+```
+
+## business_v2.payment_request_nonces
+
+```
+  caller                        text                 NOT NULL
+  nonce_sha256                  text                 NOT NULL
+  operation_id                  uuid                 NOT NULL
+  request_sha256                text                 NOT NULL
+  received_at                   bigint               NOT NULL
+  retain_until                  bigint               NOT NULL
+```
+
+## business_v2.payment_session_result_operations
+
+```
+  operation_id                  uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  session_id_sha256             text                 NOT NULL
+  result_sha256                 text                 NOT NULL
+  encrypted_result              text                 NOT NULL
+  retry_until                   bigint               NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  lease_token                   uuid
+  lease_until                   bigint
+  payment_operation_id          uuid                 NOT NULL
+  session_sequence              integer              NOT NULL DEFAULT=1
+  terminal_status               text
+```
+
+## business_v2.payment_session_result_receipts
+
+```
+  operation_id                  uuid                 NOT NULL
+  version                       integer              NOT NULL
+  kind                          text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_session_retry_exceptions
+
+```
+  exception_sha256              text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  payment_operation_id          uuid                 NOT NULL
+  session_sequence              integer              NOT NULL
+  event_id_sha256               text
+  reason                        text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_session_terminal_nonpayment_receipts
+
+```
+  receipt_sha256                text                 NOT NULL
+  scope_sha256                  text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  payment_operation_id          uuid                 NOT NULL
+  session_sequence              integer              NOT NULL
+  session_id_sha256             text                 NOT NULL
+  result_sha256                 text                 NOT NULL
+  response_sha256               text                 NOT NULL
+  terminal_status               text                 NOT NULL
+  source                        text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.payment_status_capabilities
+
+```
+  capability_id                 uuid                 NOT NULL
+  caller                        text                 NOT NULL
+  issuer_nonce_sha256           text                 NOT NULL
+  operation_id                  uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  token_sha256                  text                 NOT NULL
+  encrypted_token               text                 NOT NULL
+  issued_at                     bigint               NOT NULL
+  expires_at                    bigint               NOT NULL
+```
+
+## business_v2.payment_status_revocations
+
+```
+  capability_id                 uuid                 NOT NULL
+  caller                        text                 NOT NULL
+  request_nonce_sha256          text                 NOT NULL
+  operation_id                  uuid                 NOT NULL
+  reason                        text                 NOT NULL
+  revoked_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
 ```
 
 ## business_v2.pipeline_entries
@@ -2150,6 +2820,152 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   sent_at                       timestamp with time zone
 ```
 
+## business_v2.provider_desired_projections
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_desired_projections_id_seq'::regclass)
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  managed_object_key            text                 NOT NULL
+  projection_key                text                 NOT NULL
+  desired_version               integer              NOT NULL
+  managed_fields                jsonb                NOT NULL
+  projection_sha256             text                 NOT NULL
+  source_authority_versions     jsonb                NOT NULL
+  source_effective_at           timestamp with time zone
+  last_observed_at              timestamp with time zone NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_drift_items
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_drift_items_id_seq'::regclass)
+  drift_uuid                    uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id_sha256            text                 NOT NULL
+  drift_class                   text                 NOT NULL
+  severity                      text                 NOT NULL
+  absence_based                 boolean              NOT NULL DEFAULT=false
+  reconciliation_run_id         bigint
+  decision_at                   timestamp with time zone NOT NULL
+  repair_eligibility            text                 NOT NULL
+  owner_group                   text                 NOT NULL
+  status                        text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  source_effective_at           timestamp with time zone
+  last_observed_at              timestamp with time zone NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_projection_attempts
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_projection_attempts_id_seq'::regclass)
+  command_id                    bigint               NOT NULL
+  attempt_number                integer              NOT NULL
+  provider_operation_id         text
+  outcome                       text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_projection_commands
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_projection_commands_id_seq'::regclass)
+  command_uuid                  uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  projection_key                text                 NOT NULL
+  desired_version               integer              NOT NULL
+  idempotency_key               text                 NOT NULL
+  status                        text                 NOT NULL
+  writes_enabled                boolean              NOT NULL DEFAULT=false
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  provider_operation_id         text
+  next_attempt_at               timestamp with time zone
+  reason_code                   text                 NOT NULL
+  source_effective_at           timestamp with time zone
+  last_observed_at              timestamp with time zone NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_projection_readbacks
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_projection_readbacks_id_seq'::regclass)
+  command_id                    bigint               NOT NULL
+  readback_uuid                 uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  result                        text                 NOT NULL
+  managed_fields_sha256         text
+  evidence_sha256               text                 NOT NULL
+  observed_at                   timestamp with time zone NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_reconciliation_runs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_reconciliation_runs_id_seq'::regclass)
+  run_uuid                      uuid                 NOT NULL DEFAULT=gen_random_uuid()
+  adapter_registration_id       bigint               NOT NULL
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_set                    text                 NOT NULL
+  run_mode                      text                 NOT NULL
+  status                        text                 NOT NULL DEFAULT='running'::text
+  complete                      boolean              NOT NULL DEFAULT=false
+  final_page_complete           boolean              NOT NULL DEFAULT=false
+  source_watermark              text
+  observed_count                integer              NOT NULL DEFAULT=0
+  normalized_count              integer              NOT NULL DEFAULT=0
+  duplicate_count               integer              NOT NULL DEFAULT=0
+  held_count                    integer              NOT NULL DEFAULT=0
+  snapshot_sha256               text
+  previous_snapshot_sha256      text
+  started_at                    timestamp with time zone NOT NULL
+  completed_at                  timestamp with time zone
+  fresh_until                   timestamp with time zone
+  last_observed_at              timestamp with time zone NOT NULL
+  retention_policy_version      integer              NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
+  last_action_at                timestamp with time zone NOT NULL DEFAULT=now()
+```
+
+## business_v2.provider_snapshot_items
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.provider_snapshot_items_id_seq'::regclass)
+  run_id                        bigint               NOT NULL
+  provider                      text                 NOT NULL
+  environment                   text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  entity_type                   text                 NOT NULL
+  external_id                   text                 NOT NULL
+  fact_type                     text                 NOT NULL
+  source_version                text                 NOT NULL
+  fact_sha256                   text                 NOT NULL
+  item_state                    text                 NOT NULL
+  source_effective_at           timestamp with time zone
+  observed_at                   timestamp with time zone NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.relationship_owner_assignments
 
 ```
@@ -2237,6 +3053,21 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL
   updated_at                    timestamp with time zone NOT NULL
   updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollment_authenticated_receipts
+
+```
+  issuer_id                     text                 NOT NULL
+  receipt_id                    text                 NOT NULL
+  body_sha256                   text                 NOT NULL
+  source_key                    text                 NOT NULL
+  transport                     text                 NOT NULL
+  purpose                       text                 NOT NULL
+  actor                         text                 NOT NULL
+  role                          text                 NOT NULL
+  issued_at                     timestamp with time zone NOT NULL
+  expires_at                    timestamp with time zone NOT NULL
 ```
 
 ## business_v2.student_enrollment_evidence
@@ -2344,6 +3175,20 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL
   updated_at                    timestamp with time zone NOT NULL
   updated_by                    text                 NOT NULL
+```
+
+## business_v2.student_enrollment_writer_claims
+
+```
+  source_key                    text                 NOT NULL
+  source_scope                  text                 NOT NULL
+  source_object_type            text                 NOT NULL
+  source_object_id              text                 NOT NULL
+  writer                        text                 NOT NULL
+  policy_key                    text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  claimed_at                    timestamp with time zone NOT NULL
+  claimed_by                    text                 NOT NULL
 ```
 
 ## business_v2.student_enrollments_v2
@@ -2607,6 +3452,13 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_error_code               text
   created_at                    timestamp with time zone NOT NULL
   updated_at                    timestamp with time zone NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  target_idempotency_key        text
+  destination_key               text
+  provider_operation_id         text
+  last_readback_sha256          text
+  uncertain_acceptance          boolean              NOT NULL DEFAULT=false
+  supersedes_outbox_id          bigint
 ```
 
 ## business_v2.student_projection_receipts
@@ -2669,6 +3521,7 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   pool_version                  integer
   source_updated_at             timestamp with time zone
   calculated_at                 timestamp with time zone
+  committed                     integer
 ```
 
 ## business_v2.v_active_engagements
@@ -2906,6 +3759,19 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_reconciliation_completed_attimestamp with time zone
 ```
 
+## business_v2.v_tandem_identity_shadow_health
+
+```
+  receipt_count                 bigint
+  candidate_count               bigint
+  decision_count                bigint
+  desired_projection_count      bigint
+  blocked_command_count         bigint
+  provider_attempt_count        bigint
+  fresh_complete_run_count      bigint
+  open_drift_count              bigint
+```
+
 ## business_v2.variant_enrollments
 
 ```
@@ -2939,4 +3805,44 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   handled_by                    text
   party_id                      bigint
   related_entity                jsonb
+```
+
+## business_v2.website_checkout_customer_notice_jobs
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.website_checkout_customer_notice_jobs_id_seq'::regclass)
+  notice_key                    text                 NOT NULL
+  idempotency_key               text                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  notice_kind                   text                 NOT NULL
+  recipient_party_id            bigint               NOT NULL
+  recipient_email_sha256        text                 NOT NULL
+  content_sha256                text                 NOT NULL
+  sender_account                text                 NOT NULL
+  sender_address                text                 NOT NULL
+  message_identity              text                 NOT NULL
+  state                         text                 NOT NULL
+  uncertain_acceptance          boolean              NOT NULL DEFAULT=false
+  attempt_count                 integer              NOT NULL DEFAULT=0
+  lease_token                   uuid
+  lease_expires_at              timestamp with time zone
+  gmail_message_id              text
+  gmail_thread_id               text
+  last_error_code               text
+  version                       integer              NOT NULL DEFAULT=0
+  created_at                    timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL
+```
+
+## business_v2.website_checkout_customer_notice_receipts
+
+```
+  notice_id                     bigint               NOT NULL
+  version                       integer              NOT NULL
+  stage                         text                 NOT NULL
+  outcome                       text                 NOT NULL
+  result_code                   text                 NOT NULL
+  evidence_sha256               text                 NOT NULL
+  occurred_at                   timestamp with time zone NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
 ```

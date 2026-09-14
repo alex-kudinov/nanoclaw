@@ -2,8 +2,8 @@
 
 ## 2026-09-14 — NC-20260913-003 Tandem Identity D2 production shadow
 
-- State: `validating`; local implementation exists, production migration,
-  deployment and enablement have not occurred.
+- State: `complete`; implementation, independent review, immutable release,
+  production migration, enablement and live verification are complete.
 - Exact base: D1 completion
   `eae3a1424e1c1224d943c618bc8ac66b516a3194`, whose ancestor is exact live
   release `c190b957333ac1901b2d46a1f4b3f1cf75c6341c`.
@@ -45,13 +45,51 @@
   124,416 cache-creation, 375,736 cache-read and 17,476 output tokens (14,554
   thinking), no web request or subagent. The standalone usage reporter found
   no persisted transcript.
-- Deployment/migration: none yet. Production remains exact release `c190b957`;
-  migration-167 object count remains zero.
-- Rollback: before enablement restore the prior immutable release; after
-  enablement disable D2 and preserve append-only evidence. Populated migration
-  rollback must refuse. A verified production backup is required before apply.
+- Deployment/migration state is detailed below. Production is exact release
+  `d99ca258`; migration 167 is live and populated only by the bounded D2 shadow.
+- Rollback: disable D2 through the release-bound config transaction, reload,
+  and restore the prior immutable release if needed while preserving append-only
+  evidence. Populated migration rollback must refuse; the verified pre-167
+  custom backup is the destructive recovery boundary.
 - Documentation: `docs/IDENTITY-CONTROL-PLANE-D2.md`, Project Map, Security,
   Release Integrity, Business DB guide, Active Work and this changelog.
+- Release: clean immutable artifact from commit
+  `d99ca2589def4fc459fa129218ab83696b34b330`, source tree
+  `cf952ed4db55d14f741de2475f4d258ce0867b09`, artifact SHA-256
+  `416eec1baada64dde08573f627f75b0725a91ae12a01fc15051a70eb796a62b0`,
+  1,360 files and archive SHA-256
+  `4ff5eaa5e1a8f5926e9fb44656f98884a543c96f950ea81d789b9e05373402a2`.
+  Local and fresh Mini extraction/runtime verification passed under Node
+  22.23.2. The first release build correctly stopped on stale nested-runner
+  dependencies; locked `npm ci`, runner build and 45/45 tests repaired the
+  environment without changing source or dependencies.
+- Backup/migration: mode-0600 complete custom backup
+  `NC-20260913-003-20260914T030951Z/nanoclaw_business_pre_167.dump` is
+  14,858,133 bytes, SHA-256
+  `56f17f7e45ec8f5b716c0f5859e670b07e5f701d12d679fabedeae1988a361e5`,
+  and has a readable `pg_restore --list`. Exact preflight pinned 379 rows,
+  source prefix and zero target objects. Migration 167 committed; exact
+  post-migration readback found 12 tables/one view/zero non-admin grants/zero
+  target rows and unchanged Party/ref/source state.
+- Disabled-first activation changed only the three immutable release pointers
+  from `c190b957` to `d99ca258`; rollback plist
+  `com.nanoclaw.plist.rollback-c190b957333a-2026-09-14T03-11-02-625Z` is mode
+  0600. Health proved exact release/code root, connected Gmail/Slack, zero
+  containers and empty queues while D2 remained disabled.
+- Enablement changed only the fixed D2 enable/batch/interval keys through the
+  release-bound value-redacted transaction; mode-0600 environment rollback is
+  `.env.rollback-tandem-identity-d2-2026-09-14T03-11-34-067Z`. One bounded
+  restart produced 379 unverified/held receipts, 379 Party-null held
+  observations and 156 non-materializable candidates for 379 source rows.
+- Live exact readback: zero unmirrored/promoted/linked/materializable/accepted/
+  projection/command/attempt/readback/reconciliation/drift rows; Party 1,645,
+  refs 5,596, claims zero and identity exceptions 1,196 unchanged. `/health`
+  is intentionally `blocked/provider_authenticity_unreconciled` with no error.
+  Immediate compiled replay scanned and inserted zero while retaining the same
+  blocked score and zero provider attempts.
+- Deployment boundary: no provider API/hook/config/write, Party/ref/access/
+  enrollment/entitlement/customer projection, payment, certificate, booking,
+  attendance, communication, or minion capability changed. D3 is not implied.
 
 ## 2026-09-14 — NC-20260913-002 Tandem Identity D1 disposable store
 

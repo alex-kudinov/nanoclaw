@@ -32,7 +32,14 @@ reconciliation and drift at zero. The release-bound validator pins the first
 `251fe76eed9db7710fbe7d96d11359f0c5231cd9f6cbd0c42ac4d1207642f955`;
 append-only successors are accepted only under the same source contract. See
 `docs/IDENTITY-CONTROL-PLANE-D2.md`. Source presence is not a production apply,
-deployment, enablement, or live-verification receipt.
+deployment, enablement, or live-verification receipt. Exact release
+`d99ca2589def4fc459fa129218ab83696b34b330` subsequently applied migration 167
+and enabled the D2 host shadow after a verified backup and empty/admin-only
+readback. Current exact coverage is 379 source rows, 379 unverified/held
+receipts, 379 Party-null held observations, 156 non-materializable candidates,
+zero unmirrored or promoted state, and a deliberately blocked
+provider-unreconciled scoreboard. Party/ref/access/provider state is unchanged;
+immediate replay wrote zero.
 
 Local/unapplied enrollment dependency migrations146-148 are now included for
 the MCS deployment-readiness source integration. They add transactional store
