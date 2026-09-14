@@ -6,6 +6,8 @@ import { Pool, type PoolClient } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { runTandemIdentityD2ShadowWithClient } from './d2-student-lifecycle-shadow.js';
+import { importHeartbeatAggregateSnapshotWithClient } from './d3-heartbeat-reconciliation.js';
+import { prepareHeartbeatAggregateSnapshot } from './d3-heartbeat-snapshot.js';
 
 const ROOT = process.cwd();
 const PREFIX = 'nc_tandem_identity_d2_test_';
@@ -384,6 +386,136 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       receipts: 4,
       observations: 4,
       candidates: 3,
+    });
+  });
+
+  it('imports one aggregate Heartbeat reconciliation and makes exact replay write zero', async () => {
+    const rawCensus = (observedAt: string) => ({
+      ok: true,
+      data: {
+        instance: 'main',
+        complete: true,
+        observed_at: observedAt,
+        user_count: 2,
+        user_ids_sha256: 'a'.repeat(64),
+        snapshot_sha256: 'b'.repeat(64),
+        disposition: 'unchanged',
+        missing_email_count: 0,
+        duplicate_email_values_across_user_ids: 0,
+        zero_group_users: 0,
+        membership_edges: 4,
+        role_membership_edges: 2,
+        access_membership_edges: 2,
+        zero_access_group_users: 1,
+        role_counts: [
+          { role: 'Administrator', count: 0 },
+          { role: 'Instructor', count: 0 },
+          { role: 'User', count: 2 },
+        ],
+        status_counts: [{ status: 'active', count: 2 }],
+        created_at: {},
+        updated_at: {},
+        groups: [
+          {
+            group_id: '00000000-0000-4000-8000-000000000001',
+            group_name: 'Never persisted',
+            member_count: 2,
+            membership_sha256: 'c'.repeat(64),
+          },
+        ],
+      },
+    });
+    const snapshot = prepareHeartbeatAggregateSnapshot({
+      firstCensus: rawCensus('2026-09-14T03:00:00.000Z'),
+      secondCensus: rawCensus('2026-09-14T03:01:00.000Z'),
+      webhooks: {
+        ok: true,
+        data: [
+          {
+            id: '10000000-0000-4000-8000-000000000001',
+            action: 'USER_JOIN',
+            filter: {},
+            destination_host: 'example.test',
+            url_sha256: 'd'.repeat(64),
+          },
+        ],
+      },
+      webhookObservedAt: '2026-09-14T03:01:30.000Z',
+    });
+
+    const first = await transaction((client) =>
+      importHeartbeatAggregateSnapshotWithClient({
+        client,
+        snapshot,
+        importedAt: '2026-09-14T03:02:00.000Z',
+      }),
+    );
+    expect(first).toMatchObject({
+      outcome: 'imported',
+      snapshotItemsInserted: 4,
+      desiredProjectionsInserted: 1,
+      blockedCommandsInserted: 1,
+      readbacksInserted: 1,
+      providerAttempts: 0,
+      partyWrites: 0,
+      externalReferenceWrites: 0,
+      authAccountWrites: 0,
+      resolutionDecisionWrites: 0,
+      d2Drift: 0,
+      individualIdentityGraphAvailable: false,
+      status: 'blocked',
+      reason: 'INDIVIDUAL_IDENTITY_GRAPH_UNAVAILABLE',
+    });
+    const replay = await transaction((client) =>
+      importHeartbeatAggregateSnapshotWithClient({
+        client,
+        snapshot,
+        importedAt: '2026-09-14T03:03:00.000Z',
+      }),
+    );
+    expect(replay).toMatchObject({
+      outcome: 'duplicate',
+      snapshotItemsInserted: 0,
+      desiredProjectionsInserted: 0,
+      blockedCommandsInserted: 0,
+      readbacksInserted: 0,
+      providerAttempts: 0,
+      d2Drift: 0,
+    });
+
+    const readback = await transaction((client) =>
+      client.query(`SELECT
+      (SELECT count(*) FROM business_v2.parties)::int AS parties,
+      (SELECT count(*) FROM business_v2.party_external_refs)::int AS refs,
+      (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+      (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+      (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS d2_receipts,
+      (SELECT count(*) FROM business_v2.party_context_observations
+        WHERE adapter_key='tandem_identity_student_lifecycle_shadow')::int AS d2_observations,
+      (SELECT count(*) FROM business_v2.identity_candidates)::int AS d2_candidates,
+      (SELECT count(*) FROM business_v2.provider_reconciliation_runs)::int AS runs,
+      (SELECT count(*) FROM business_v2.provider_snapshot_items)::int AS items,
+      (SELECT count(*) FROM business_v2.provider_desired_projections)::int AS projections,
+      (SELECT count(*) FROM business_v2.provider_projection_commands
+        WHERE status='blocked' AND NOT writes_enabled AND attempt_count=0)::int AS commands,
+      (SELECT count(*) FROM business_v2.provider_projection_attempts)::int AS attempts,
+      (SELECT count(*) FROM business_v2.provider_projection_readbacks
+        WHERE result='unavailable')::int AS readbacks`),
+    );
+    expect(readback.rows[0]).toEqual({
+      parties: 2,
+      refs: 0,
+      auth_accounts: 0,
+      decisions: 0,
+      d2_receipts: 4,
+      d2_observations: 4,
+      d2_candidates: 3,
+      runs: 1,
+      items: 4,
+      projections: 1,
+      commands: 1,
+      attempts: 0,
+      readbacks: 1,
     });
   });
 });

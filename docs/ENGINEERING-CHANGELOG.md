@@ -1,5 +1,33 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
+
+- State: reviewed source and disposable PostgreSQL proof complete; production
+  remains unchanged pending protected backup, immutable release, import, replay
+  and exact live readback.
+- Two complete Heartbeat `main` censuses reproduce 1,694 users, 79 groups and
+  4,202 membership edges; the current webhook inventory has 22 registrations.
+  The private artifact retains only UUIDs, counts, timestamps and hashes.
+- D3 introduces no provider client or credential on Mini. One one-shot
+  transaction can write only a full aggregate reconciliation, 82 normalized
+  fingerprints, one aggregate control projection, one blocked command and one
+  unavailable readback. The block is
+  `INDIVIDUAL_IDENTITY_GRAPH_UNAVAILABLE` because the source has no per-user
+  graph.
+- Exact replay writes zero. Party/ref/auth/resolution/provider-attempt and D2
+  counts are compared before and after; migration 167 also structurally rejects
+  every provider attempt.
+- Focused 9/9, typecheck, build and documentation continuity pass. Full suite:
+  4,407 pass/32 skip/19 failures in the unchanged five-file baseline; no D3 or
+  identity-control-plane failure.
+- Bounded Sonnet/high review
+  `ed0bdbcc-6a73-42a3-8b5c-93573b866c92` found no material issue. It used 7
+  model calls, 135,768 cache-create, 568,014 cache-read and 18,208 output tokens,
+  with a 135,770 maximum context warning; no second round is warranted.
+- Detailed evidence:
+  `.program/evidence/NC-20260914-001-d3-reviewed-precommit.md` and
+  `docs/IDENTITY-CONTROL-PLANE-D3.md`.
+
 ## 2026-09-14 — NC-20260913-003 Tandem Identity D2 production shadow
 
 - State: `complete`; implementation, independent review, immutable release,

@@ -40,6 +40,23 @@ prefix, value-redacted one-key configuration transaction, and post-enable
 database plus `/health` readback. Runtime rollback disables the worker and
 preserves append-only evidence; populated schema rollback is prohibited.
 
+## Tandem Identity D3 aggregate-import boundary
+
+D3 does not add a Heartbeat client or credential to production. Provider reads
+remain in the established Studio toolbox. Only a mode-0600 minimized artifact
+containing UUIDs, counts, timestamps and SHA-256 fingerprints is transferred to
+the Mac Mini; names, email values, webhook filters, destination URLs, raw
+payloads and credentials are rejected or discarded before transfer.
+
+The import CLI is pinned to `mini-claw.local`, validates the artifact hash and
+24-hour freshness window, requires two stable complete censuses, and runs under
+one PostgreSQL transaction plus an advisory lock. It writes only migration-167
+aggregate reconciliation/projection evidence. It performs before/after checks
+on Party, external reference, auth, resolution, provider-attempt and D2 state.
+Commands are always blocked with zero writes/attempts, and migration 167 rejects
+every provider-attempt insert independently. The missing per-user graph is a
+hard block on person resolution, absence decisions and access repair.
+
 Release activation treats the installed launchd plist as machine-local state.
 The host-owned activator changes exactly the executable target, code root, and
 expected commit; any fourth diff fails before mutation. It verifies both the

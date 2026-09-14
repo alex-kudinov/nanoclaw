@@ -319,6 +319,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_167_tandem_identity_control_plane.sql',
     'scripts/verify-release.mjs',
     'scripts/validate-tandem-identity-d2-production.mjs',
+    'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',
+    'scripts/validate-tandem-identity-d3-production.mjs',
     'scripts/bundle-payment-documents.mjs',
     'docs/licenses/Roboto-OFL-1.1.txt',
     'assets/checkout-documents/tandem-logo-horizontal.png',

@@ -1,0 +1,14 @@
+{
+  "decision_id": "decision:tandem-identity-d3-heartbeat-reconciliation-2026-09-14",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-14T11:16:51Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-d3-heartbeat-reconciliation"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "The owner said go immediately after D2 completion and the explicit statement that D3 complete Heartbeat/provider snapshots and simulated desired projections was next. This authorizes read-only Heartbeat main-workspace census and webhook inventory through the established toolbox; a privacy-minimized source artifact containing provider UUIDs, counts and hashes but no names, emails, raw payloads or credentials; implementation and independent review of an exact-release import/validation path; a protected production backup; immutable release deployment; and production writes only to migration-167 adapter registrations, full reconciliation runs, snapshot items, desired projections, simulated or blocked commands, readbacks and drift records. The first D3 scope is Heartbeat main only. The complete user-set/group-membership census must reproduce twice or explain change, remain within its freshness deadline, bind the current webhook inventory hash, and preserve D2 held receipts/candidates/observations. Because the available census exposes aggregate/group hashes rather than a per-user identity graph, individual D2 candidate resolution, absence-based person decisions and access repairs must remain blocked. D3 may calculate aggregate managed-state simulations but cannot dispatch, attempt, configure or write Heartbeat or any provider; create or merge a Party; bind an external reference or auth account; resolve by email/name/group/product/payment instrument; mutate enrollment, entitlement, access or customer authorization; send communications; issue certificates; change bookings/attendance/payments; grant a minion; schedule a recurring provider credential on the Mac Mini; or authorize full migration. Any incomplete, changed, stale, duplicate, unreviewed, non-minimized or scope-mismatched snapshot, any nonzero provider attempt, or any D2/Party/ref/access drift stops admission and preserves the current D2 release.",
+  "source_task": "Current owner instruction in Codex: go, immediately after D2 completion and the declared D3 Heartbeat reconciliation and simulated-projection gate."
+}
