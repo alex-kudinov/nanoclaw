@@ -4,6 +4,10 @@ Status: independently reviewed local pure implementation; no runtime registratio
 
 Task: `NC-20260913-001`
 
+Reviewed implementation commit:
+`4b3ec286b9359b93ab1945478c7e679fe09b43ef` on
+`codex/tandem-identity-d0-replay-20260913`.
+
 ## Purpose
 
 D0 turns the accepted Tandem Identity Stage D design into executable,

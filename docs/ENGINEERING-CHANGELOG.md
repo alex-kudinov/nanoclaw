@@ -44,8 +44,12 @@
   `student-enrollment-projection-disposable` failure; that exact test passed
   immediately in isolation. An earlier paired comparison had the same 20
   failures with D0 included/excluded. No D0 test or source failed.
-- State: `ready_for_review`; independent review and correction are complete,
-  commit/push remain.
+- Commit/push: independently reviewed implementation
+  `4b3ec286b9359b93ab1945478c7e679fe09b43ef` is pushed on
+  `origin/codex/tandem-identity-d0-replay-20260913`; exact remote branch
+  readback matches.
+- State: `complete`. Independent review, corrections, verification, commit and
+  push are complete. Deployment/migration are explicitly not applicable.
 - Deployment/migration: not applicable and prohibited for D0. No database,
   provider, customer, payment, enrollment, access, credential, communication,
   runtime, or production mutation occurred.
