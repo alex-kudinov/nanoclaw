@@ -5,10 +5,12 @@ import {
   CONTEXT_TTL_MS,
   formatHostAssignmentContext,
   formatHostContextUnavailable,
+  getGraderSubmissionLanguageAttestation,
   getGraderRunBinding,
   getGraderRunContext,
   MAX_LIVE_CLONE_AGE_MS,
   prepareLatestGraderRunContext,
+  setGraderSubmissionLanguageAttestation,
   setGraderRunContext,
   _resetGraderRunContexts,
   type GraderRunContext,
@@ -194,6 +196,30 @@ describe('the run-context registry', () => {
       getGraderRunContext('run-204', JID, 'thread-204', NOW),
     ).toBeDefined();
   });
+
+  it('binds a privileged submission-language attestation to one exact root', () => {
+    setGraderSubmissionLanguageAttestation(JID, THREAD, 'it', NOW);
+    expect(getGraderSubmissionLanguageAttestation(JID, THREAD, NOW)).toBe(
+      'it',
+    );
+    expect(
+      getGraderSubmissionLanguageAttestation(JID, 'other-thread', NOW),
+    ).toBeUndefined();
+    expect(
+      getGraderSubmissionLanguageAttestation('slack:C0OTHER', THREAD, NOW),
+    ).toBeUndefined();
+  });
+
+  it('expires a submission-language attestation with the run proof', () => {
+    setGraderSubmissionLanguageAttestation(JID, THREAD, 'it', NOW);
+    expect(
+      getGraderSubmissionLanguageAttestation(
+        JID,
+        THREAD,
+        NOW + CONTEXT_TTL_MS + 1,
+      ),
+    ).toBeUndefined();
+  });
 });
 
 describe('formatHostAssignmentContext', () => {
@@ -221,6 +247,28 @@ describe('formatHostAssignmentContext', () => {
     expect(block).toContain('original language');
     expect(block).toContain('Write the student-facing feedback body');
     expect(block.endsWith('</host_assignment_context>')).toBe(true);
+  });
+
+  it('carries a host-attested Italian submission language without changing feedback language', () => {
+    const block = formatHostAssignmentContext(
+      context({
+        courseVariant: 'foundation',
+        locale: 'en-US',
+        feedbackLanguage: 'en',
+        submissionLanguage: 'it',
+      }),
+    );
+
+    expect(block).toContain('<submission_language>it</submission_language>');
+    expect(block).toContain('<locale>en-US</locale>');
+    expect(block).toContain('<feedback_language>en</feedback_language>');
+    expect(block).toContain('It may differ from the course locale');
+  });
+
+  it('does not invent a submission-language attestation', () => {
+    expect(formatHostAssignmentContext(context())).not.toContain(
+      '<submission_language>',
+    );
   });
 
   it('says the block is data and outranks only the snapshot', () => {

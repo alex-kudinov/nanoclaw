@@ -421,6 +421,11 @@ the bytes. It writes a durable pending receipt before posting one Slack root,
 uploads the file into that root's thread with `filesUploadV2`, and persists the
 inline-readable root only after upload success. The completed receipt records
 the root timestamp; duplicate or uncertain keys never post automatically.
+An optional privileged `submission_language=it` participates in idempotency
+identity and is registered in memory against the exact destination/root before
+the root is persisted. Only that root's next verified run context receives the
+attestation; the registry's course locale and feedback language remain intact,
+and an unattested mismatch still holds.
 
 ### Procurement review boundary
 

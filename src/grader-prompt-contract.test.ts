@@ -48,4 +48,14 @@ describe('grader feedback prompt contract', () => {
       'a completed or signed form alone is not sufficient',
     );
   });
+
+  it('accepts only an exact host submission-language attestation for a locale mismatch', () => {
+    expect(prose).toContain(
+      'An exact `<submission_language>` is a host attestation',
+    );
+    expect(prose).toContain('Without that tag, a different language requires');
+    expect(prose).toContain(
+      'write the complete feedback body in the exact `<feedback_language>`',
+    );
+  });
 });

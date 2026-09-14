@@ -5,6 +5,9 @@ import path from 'node:path';
 const MAX_GRADER_FILE_BYTES = 25 * 1024 * 1024;
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SHA256_RE = /^[a-f0-9]{64}$/;
+export const GRADER_SUBMISSION_LANGUAGES = ['it'] as const;
+export type GraderSubmissionLanguage =
+  (typeof GRADER_SUBMISSION_LANGUAGES)[number];
 
 export interface GraderFileMessagePayload {
   type: 'slack_file_message';
@@ -14,6 +17,7 @@ export interface GraderFileMessagePayload {
   size: number;
   sha256: string;
   idempotency_key: string;
+  submission_language?: GraderSubmissionLanguage;
   targetGroupFolder?: string;
 }
 
@@ -31,6 +35,7 @@ export interface GraderFileMessageDeps {
     file: Buffer,
     filename: string,
     sourceGroup: string,
+    submissionLanguage?: GraderSubmissionLanguage,
   ) => Promise<GraderFileDelivery>;
 }
 
@@ -43,6 +48,7 @@ export interface GraderFileReceipt {
   filename: string;
   size: number;
   sha256: string;
+  submissionLanguage?: GraderSubmissionLanguage;
   requestHash: string;
   createdAt: string;
   updatedAt: string;
@@ -95,6 +101,12 @@ function validatePayload(
   payload: GraderFileMessagePayload,
   dataDir: string,
 ): { file: Buffer; size: number; sha256: string } {
+  if (
+    payload.submission_language !== undefined &&
+    !GRADER_SUBMISSION_LANGUAGES.includes(payload.submission_language)
+  ) {
+    throw new Error('unsupported grader submission language');
+  }
   if (
     typeof payload.idempotency_key !== 'string' ||
     !IDEMPOTENCY_KEY_RE.test(payload.idempotency_key)
@@ -202,6 +214,7 @@ export async function dispatchGraderFileMessage(
         filename: payload.filename,
         size: payload.size,
         sha256: payload.sha256,
+        submissionLanguage: payload.submission_language,
       }),
     )
     .digest('hex');
@@ -235,6 +248,7 @@ export async function dispatchGraderFileMessage(
     filename: payload.filename,
     size: validated.size,
     sha256: validated.sha256,
+    submissionLanguage: payload.submission_language,
     requestHash,
     createdAt: now,
     updatedAt: now,
@@ -248,6 +262,7 @@ export async function dispatchGraderFileMessage(
       validated.file,
       payload.filename,
       sourceGroup,
+      payload.submission_language,
     );
     const complete: GraderFileReceipt = {
       ...pending,

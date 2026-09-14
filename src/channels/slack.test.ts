@@ -1323,6 +1323,7 @@ describe('SlackChannel', () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);
       await channel.connect();
+      const beforePersist = vi.fn();
 
       try {
         const result = await channel.postGraderFileMessage(
@@ -1331,6 +1332,7 @@ describe('SlackChannel', () => {
           fs.readFileSync(filePath),
           'submission.txt',
           'main',
+          beforePersist,
         );
 
         expect(result).toEqual({
@@ -1348,6 +1350,10 @@ describe('SlackChannel', () => {
           filename: 'submission.txt',
           title: 'submission.txt',
         });
+        expect(beforePersist).toHaveBeenCalledWith('1704067200.000100');
+        expect(beforePersist.mock.invocationCallOrder[0]).toBeLessThan(
+          vi.mocked(opts.onMessage).mock.invocationCallOrder[0],
+        );
         expect(opts.onMessage).toHaveBeenCalledWith(
           'slack:C0123456789',
           expect.objectContaining({
@@ -1385,6 +1391,37 @@ describe('SlackChannel', () => {
             'main',
           ),
         ).rejects.toThrow('files_upload_failed');
+        expect(currentApp().client.chat.delete).toHaveBeenCalledWith({
+          channel: 'C0123456789',
+          ts: '1704067200.000100',
+        });
+        expect(opts.onMessage).not.toHaveBeenCalled();
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('deletes the root and does not wake grader when host attestation binding fails', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'slack-grader-file-'));
+      const filePath = path.join(dir, 'submission.txt');
+      fs.writeFileSync(filePath, 'submission');
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+
+      try {
+        await expect(
+          channel.postGraderFileMessage(
+            'slack:C0123456789',
+            'Ada Lovelace\nModule 2 Part 2',
+            fs.readFileSync(filePath),
+            'submission.txt',
+            'main',
+            () => {
+              throw new Error('attestation binding failed');
+            },
+          ),
+        ).rejects.toThrow('attestation binding failed');
         expect(currentApp().client.chat.delete).toHaveBeenCalledWith({
           channel: 'C0123456789',
           ts: '1704067200.000100',
