@@ -1,5 +1,62 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260913-002 Tandem Identity D1 disposable store
+
+- Exact base: D0 completion `3c8e7d1c4a704f7952950aa86644b7d70c1ab8c9`
+  on isolated branch `codex/tandem-identity-d1-disposable-20260913`.
+- Change class: C5 identity/security and distributed-consistency contract,
+  exercised only through C2 local source and generated disposable databases.
+- Migration 167 extends the existing migration-137 Party/context foundation
+  with explicit environment and effective manifest declarations, then adds 12
+  admin-only receipt, related-ref, candidate, resolution, auth, desired
+  projection, shadow command, prohibited attempt, simulated readback,
+  reconciliation/snapshot and drift relations.
+- Database enforcement covers manifest provider/environment/scope/entity/event
+  matching; exact receipt replay and changed-hash conflicts; related-ref
+  TEST/LIVE class segregation; append-only monotonic candidate lifecycle and
+  materialization basis; resolution
+  result/basis/Party coupling; append-only evidence; monotonic auth and desired
+  versions; derived projection/idempotency hashes; command/projection FK;
+  shadow write prohibition; canonical snapshot finalization; and complete,
+  matching, still-fresh absence evidence.
+- Disposable PostgreSQL 16.15 proof: deliberate mid-migration failure rollback,
+  first apply, direct reapply, 12-table/one-view shape, admin ownership, zero
+  non-admin grants, exact receipt replay no-op, one synthetic end-to-end chain,
+  18 reason-matched negative contracts, transaction failure rollback,
+  custom-format backup/restore with trigger readback, a two-client finalization
+  race that refuses the late snapshot item with zero residue, populated rollback
+  refusal, empty rollback, reapply and zero database residue. Reported provider
+  attempts, production connections and residue are all zero.
+- Bounded Sonnet/high R1 found one material constraint gap: ambiguous,
+  not-found and conflict decisions could carry a foreign candidate ID. The
+  target check now requires `candidate_id IS NULL` for that whole branch and a
+  real PostgreSQL refusal proves it. The review's non-material note that an
+  immutable candidate could not advance is closed with append-only monotonic
+  candidate versions and constrained forward transitions; no second review is
+  needed because both corrections are mechanically exercised.
+- Codex additionally closed a post-review snapshot race: item insertion now
+  holds a share row lock while validating an open run, so a concurrent terminal
+  update either includes the committed item or causes the later item to re-read
+  terminal state and refuse. The two-client PostgreSQL proof exercises the
+  failure path; no second review is needed for this mechanically verified lock.
+- Verification so far: D0+D1 focused 52/52; format, pinned Node 22.23.2
+  typecheck, build and documentation continuity pass. Full repository: 4,387
+  passed, 32 skipped and 19 failures in five unchanged baseline files: Academy
+  Capacity disposable state, CNPC prompt wiring, date-sensitive Trafft status,
+  and two publication suites whose pinned Tandemweb fixture path is absent. No
+  D0/D1 source or test failed. Bounded Sonnet/high review and corrections are
+  complete; final focused/static/disposable rerun follows before commit.
+- Deployment/migration: none. Migration 167 is deliberately excluded from the
+  release bundle and has not been applied to production or any persistent
+  database. No provider/customer/Party/ref/access/enrollment/entitlement,
+  credential, runtime, communication, packaging or deployment state changed.
+- Rollback: populated rollback refuses before deletion and requires a separate
+  archival migration; empty rollback/reapply is proven. The private temporary
+  backup and all generated databases are removed by the verifier.
+- Documentation: `docs/IDENTITY-CONTROL-PLANE-D1.md`, Project Map, Business DB
+  guide, Active Work and this changelog. The live structure-only schema
+  reference is intentionally unchanged because production schema is unchanged.
+
 ## 2026-09-14 — NC-20260913-001 Tandem Identity D0 replay core
 
 - Exact base: verified live release

@@ -49,6 +49,7 @@
     "student-entitlements:validate": "./scripts/with-pinned-node.sh node scripts/validate-student-entitlements.mjs",
     "student-enrollment-foundation:validate": "./scripts/with-pinned-node.sh node scripts/validate-student-enrollment-foundation.mjs",
     "student-enrollment-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-student-enrollment-disposable.mjs",
+    "tandem-identity-d1:verify": "./scripts/with-pinned-node.sh node scripts/verify-tandem-identity-d1-disposable.mjs",
     "academy-capacity-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-disposable.mjs",
     "academy-capacity-reconciliation:validate": "./scripts/with-pinned-node.sh node scripts/validate-academy-capacity-reconciliation.mjs",
     "academy-capacity-shadow:disposable": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-shadow-population-disposable.mjs",

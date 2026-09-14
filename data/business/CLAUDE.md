@@ -4,6 +4,22 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Source-only migration 167 is the Tandem Identity D1 persistence contract over
+the existing migration-137 relationship-context foundation. It adds explicit
+environment/effective manifest declarations and 12 admin-only receipt,
+candidate, decision, auth, desired-projection, shadow-command, readback,
+reconciliation and drift relations. Candidates advance only through append-only
+monotonic versions; resolution result/basis/Party/candidate coupling is exact.
+Provider attempts are structurally
+prohibited; no function creates a Party, binds a ref, changes access or calls a
+provider. Generated local PostgreSQL 16.15 proves failed-migration rollback,
+direct reapply, 18 negative contracts, backup/restore, populated refusal, empty
+rollback/reapply and zero residue. Migration 167 is deliberately not in the
+release bundle and has not been applied to production; do not update the live
+structure-only schema reference, activate ingress/runtime, or infer provider or
+customer authority from source presence. See
+`docs/IDENTITY-CONTROL-PLANE-D1.md`.
+
 Local/unapplied enrollment dependency migrations146-148 are now included for
 the MCS deployment-readiness source integration. They add transactional store
 versions/evidence identity, authenticated issuer receipts/shared writer claims,

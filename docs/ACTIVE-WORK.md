@@ -1,5 +1,36 @@
 # NanoClaw active work
 
+2026-09-14T02:02Z — `NC-20260913-002` Tandem Identity D1 disposable
+PostgreSQL store proof, owner Codex, `validating`, C5, isolated branch
+`codex/tandem-identity-d1-disposable-20260913` from D0 completion
+`3c8e7d1c4a704f7952950aa86644b7d70c1ab8c9`. Implement the reviewed
+identity receipts, decisions, candidates, authentication bindings, desired
+projections, shadow-only commands, complete reconciliation snapshots and drift
+constraints as an unwired ordered migration. Prove first apply, reapply,
+reason-matched negative cases, transaction failure rollback, backup/restore,
+populated rollback refusal, empty rollback and zero disposable-database residue
+under pinned Node/PostgreSQL. Update the structure-only design and project map,
+run focused/full verification and bounded Sonnet/high review, then commit and
+push the branch. Production Company OS, providers, customer data, Party/ref/
+access state, credentials, runtime registration, communications, packaging,
+migration and deployment are explicitly out of scope.
+Migration 167 now implements 12 admin-only relations and an exact-replay
+receipt function. Local PostgreSQL 16.15 passes deliberate migration failure
+rollback, direct reapply, one synthetic chain, 18 reason-matched refusals,
+transaction rollback, custom-format backup/restore, populated rollback refusal,
+concurrent terminalization/late-item refusal, empty rollback/reapply, zero
+provider attempts/production connections and zero
+database residue. Sonnet/high R1 found one material dangling-candidate coupling
+gap; the constraint now requires null candidate references for ambiguity,
+not-found and conflict decisions. Its non-material lifecycle note is closed by
+append-only monotonic candidate versions and legal forward transitions. The
+52-test D0+D1 focused surface, format, typecheck, build
+and docs continuity pass. The full repository has 4,387 pass/32 skip/19
+unchanged baseline failures across Academy Capacity, CNPC prompt, date-sensitive
+Trafft and missing Tandemweb publication fixtures; no D0/D1 source or test
+failed. Bounded independent review and corrections are complete. Completion
+evidence, final rerun, commit and push remain.
+
 2026-09-14T00:45Z — `NC-20260913-001` Tandem Identity D0 replay core,
 owner Codex, `complete`, C5, pushed branch
 `codex/tandem-identity-d0-replay-20260913` commit `4b3ec286b935` from exact verified live release
