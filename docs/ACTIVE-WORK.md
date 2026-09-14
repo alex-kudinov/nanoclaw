@@ -1,5 +1,24 @@
 # NanoClaw active work
 
+2026-09-14T00:45Z — `NC-20260913-001` Tandem Identity D0 replay core,
+owner Codex, `ready_for_review`, C5, branch
+`codex/tandem-identity-d0-replay-20260913` from exact verified live release
+`c190b957333ac1901b2d46a1f4b3f1cf75c6341c`. Implement only pure,
+network-free TypeScript contracts, semantic validators, reducers, and the 12
+proof plus 27 failure fixtures under `src/identity-control-plane/`; update
+Project Map, authoritative D0 design, changelog, and continuity evidence. D0
+has no database/provider imports, credentials, Party/external-reference/access
+writes, runtime registration, consumer, migration, deployment, or production
+effect. Sonnet/high R2 found no mechanism defect and identified coverage gaps;
+R17-R27 now cover weak/rejected authenticity, both reducer conflicts,
+tombstone/accepted-subject/merge-cycle conflicts, manifest scope/entity/event
+mismatch and duplicate snapshot facts. The unused parallel proof helper is
+removed. 47 focused checks and 12/12 proof plus 27/27 failure fixtures pass with
+zero writes. Final typecheck, build and docs continuity pass. Full suite has
+4,381 pass/32 skip/20 baseline failures; the exclusion run added one
+intermittent disposable PostgreSQL failure that passes alone. Next: commit and
+push the reviewed D0 branch without deployment, then close the program item.
+
 2026-09-13T21:24Z — NC-20260909-003 first Commerce payment polish,
 source owner Codex: the recovered WordPress Commerce order reached the
 compatibility Payment Log, Student Roster and PostgreSQL readbacks, but the

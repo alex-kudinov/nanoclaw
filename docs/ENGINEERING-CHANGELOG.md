@@ -1,5 +1,62 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260913-001 Tandem Identity D0 replay core
+
+- Exact base: verified live release
+  `c190b957333ac1901b2d46a1f4b3f1cf75c6341c`; the first empty worktree based
+  on stale `origin/main` was removed before source edits.
+- Added an unregistered pure TypeScript identity-control-plane package with
+  strict scoped-reference/event/candidate/resolution/adapter/projection/
+  shadow-command/reconciliation/drift/scoreboard contracts, canonical hashes,
+  exact-ref and merge-lineage resolution, manifest and environment-class
+  checks, complete/fresh snapshot gates, uncertain-delivery planning, temporal
+  claims, explicit payer/learner roles, tombstones, split freeze, and derived
+  synchronization health.
+- The executable pseudonymous replay reproduces 12/12 accepted proof outcomes
+  and 27/27 failure fixtures. It reports zero provider, Party, and access writes;
+  plan SHA-256 `b93bb5057820992acfdad02343c394af29e6ebae3beb9bb61d5e04b09ccb9a30`
+  and report SHA-256
+  `157388051eebaead7745d00c548ab5ca48e7ee1290b02ce6ed120eb1743ac2b6`.
+- Structural tests reject HTTP/network/PostgreSQL/Firebase/Google/provider-
+  toolbox/child-process/environment imports and prove no host runtime import.
+  D0 has no migration, service, consumer, runtime registration, provider
+  credential, or external-write state.
+- Verification on pinned Node 22.23.2: 47 focused tests; final typecheck, build,
+  full-suite and documentation continuity rerun follows the review correction.
+  The pre-review boundary had typecheck, build and
+  documentation continuity pass. Full suite with D0: 4,371 passed, 32 skipped,
+  20 failed in six unchanged baseline files; excluding D0: 4,334 passed, 32
+  skipped, the same 20 failures in the same six files. Failures are existing
+  Academy capacity disposable state, CNPC prompt wiring, date-sensitive Trafft
+  freshness, and missing external Tandemweb catalog fixtures.
+- Review: bounded Sonnet/high R2 found no mechanism defect. It found missing
+  fixture coverage for weak/rejected authenticity, both reducer conflict
+  branches, tombstone/accepted-subject/merge-cycle conflict, manifest
+  scope/entity/event mismatch and duplicate snapshot facts. R17-R27 now execute
+  every path; the unused parallel proof helper was removed. Corrections are
+  mechanically verified, so no confirmation round is required. The successful
+  review used forced `info`; its response artifact exists but the shared usage
+  reporter has no persisted transcript, so numeric model usage is unavailable.
+- Final verification after review correction: 47/47 focused, typecheck, build,
+  formatting and documentation continuity pass. Full suite with D0: 4,381
+  passed, 32 skipped, 20 baseline failures in six files. The D0-excluded run
+  had 4,333 passed and one additional intermittent
+  `student-enrollment-projection-disposable` failure; that exact test passed
+  immediately in isolation. An earlier paired comparison had the same 20
+  failures with D0 included/excluded. No D0 test or source failed.
+- State: `ready_for_review`; independent review and correction are complete,
+  commit/push remain.
+- Deployment/migration: not applicable and prohibited for D0. No database,
+  provider, customer, payment, enrollment, access, credential, communication,
+  runtime, or production mutation occurred.
+- Dependency baseline: clean `npm ci` reports 38 existing findings (three low,
+  15 moderate, 15 high, five critical). D0 changes no dependency or lockfile;
+  exact reachability/remediation is preserved as separate unapproved program
+  candidate `work:nanoclaw-dependency-vulnerability-reconciliation` rather than
+  invoking `npm audit fix` under this task.
+- Documentation: `docs/IDENTITY-CONTROL-PLANE-D0.md`, Project Map, Active Work,
+  and this changelog.
+
 ## 2026-09-13 — NC-20260909-003 visible Commerce Bookkeeper receipt
 
 - A recovered Live WordPress Commerce payment completed exact Payment Log,
