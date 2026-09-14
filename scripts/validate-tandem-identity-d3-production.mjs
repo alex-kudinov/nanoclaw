@@ -9,6 +9,8 @@ const EXPECTED_HOST = 'mini-claw.local';
 const EXPECTED_DATABASE = 'nanoclaw_business';
 const EXPECTED_ARTIFACT =
   'f6e9e057ea609d3bba25d9aff7b2cd0a4bf22f305a8f510bdf9d00d7a1b69a35';
+const EXPECTED_DATABASE_SNAPSHOT =
+  'c4ec624167ef6766d4b04bb8aac715a11c76c60b6a5cffae2d528c90df9725ea';
 const EXPECTED_USERS = 1694;
 const EXPECTED_GROUPS = 79;
 const EXPECTED_MEMBERSHIP_EDGES = 4202;
@@ -126,6 +128,11 @@ function d3Receipt(database) {
       WHERE provider='heartbeat' AND environment='production' AND source_scope='main'
         AND entity_set='aggregate_identity_access_state' AND status='complete'
         AND source_watermark='${EXPECTED_ARTIFACT}' AND fresh_until >= now()),
+    'snapshotHashCount',(SELECT count(*) FROM business_v2.provider_reconciliation_runs
+      WHERE provider='heartbeat' AND environment='production' AND source_scope='main'
+        AND entity_set='aggregate_identity_access_state'
+        AND source_watermark='${EXPECTED_ARTIFACT}'
+        AND snapshot_sha256='${EXPECTED_DATABASE_SNAPSHOT}'),
     'itemCount',(SELECT count(*) FROM business_v2.provider_snapshot_items i
       JOIN business_v2.provider_reconciliation_runs r ON r.id=i.run_id
       WHERE r.source_watermark='${EXPECTED_ARTIFACT}'),
@@ -169,6 +176,19 @@ const { stage, database } = parseArgs(process.argv.slice(2));
 if (os.hostname() !== EXPECTED_HOST) fail('host_mismatch');
 const before = baseline(database);
 if (!before.serverLocal) fail('remote_postgresql_refused');
+if (
+  before.identifierClaimCount !== 0 ||
+  before.authAccountCount !== 0 ||
+  before.resolutionDecisionCount !== 0 ||
+  before.providerAttemptCount !== 0 ||
+  before.d2Receipts !== 379 ||
+  before.d2HeldObservations !== 379 ||
+  before.d2LinkedObservations !== 0 ||
+  before.d2Candidates !== 156 ||
+  before.d2MaterializableCandidates !== 0
+) {
+  fail('protected_baseline_mismatch');
+}
 const d3 = d3Receipt(database);
 if (stage === 'pre-import') {
   if (
@@ -184,6 +204,7 @@ if (stage === 'pre-import') {
   d3.adapterCount !== 1 ||
   d3.runCount !== 1 ||
   d3.freshRunCount !== 1 ||
+  d3.snapshotHashCount !== 1 ||
   d3.itemCount !== EXPECTED_ITEMS ||
   d3.heldItemCount !== 0 ||
   d3.groupItemCount !== EXPECTED_GROUPS ||

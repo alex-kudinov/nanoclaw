@@ -54,3 +54,13 @@ release, revalidate D2 production, acquire narrow database/release leases, take
 a protected backup, validate the empty D3 target, deploy, import the still-fresh
 artifact once, replay it exactly, compare pre/post protected counts, and release
 the leases.
+
+Post-import acceptance exposed one integration-only validator defect: the D2
+validator counted projection/command/readback/reconciliation/drift tables
+globally, so it rejected D3's authorized `main` rows even though D2's
+`community` scope remained exact. The D2 validator now scopes those reads to
+Heartbeat production/community while retaining a global zero-attempt check.
+The D3 validator now pins the database-recomputed snapshot hash and asserts the
+complete protected D2/canonical baseline. Four focused files/12 tests and
+typecheck pass. This correction changes read-only acceptance logic only and is
+mechanically verified; no second Claude round is warranted.

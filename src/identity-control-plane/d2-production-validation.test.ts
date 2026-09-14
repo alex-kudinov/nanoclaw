@@ -60,5 +60,11 @@ describe('Tandem Identity D2 production validator', () => {
     ]) {
       expect(source).toContain(`'${field}'`);
     }
+    expect(
+      source.match(/source_scope='community'/g)?.length,
+    ).toBeGreaterThanOrEqual(9);
+    expect(source).toContain(
+      'JOIN business_v2.provider_projection_commands c ON c.id=r.command_id',
+    );
   });
 });

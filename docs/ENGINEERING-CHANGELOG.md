@@ -24,6 +24,14 @@
   `ed0bdbcc-6a73-42a3-8b5c-93573b866c92` found no material issue. It used 7
   model calls, 135,768 cache-create, 568,014 cache-read and 18,208 output tokens,
   with a 135,770 maximum context warning; no second round is warranted.
+- First production readback surfaced a read-only integration defect: the D2
+  validator treated all provider projection/reconciliation rows as D2 rows and
+  therefore rejected D3's authorized `main` evidence. It now scopes those
+  checks to D2's `community` source while retaining the global zero-attempt
+  invariant. D3 acceptance also pins the database-recomputed snapshot hash and
+  the full protected D2/canonical baseline. Focused 12/12 and typecheck pass;
+  this mechanical validator-only correction does not need a second review
+  round.
 - Detailed evidence:
   `.program/evidence/NC-20260914-001-d3-reviewed-precommit.md` and
   `docs/IDENTITY-CONTROL-PLANE-D3.md`.

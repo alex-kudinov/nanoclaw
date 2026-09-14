@@ -27,6 +27,9 @@ describe('Tandem Identity D3 production boundary', () => {
     expect(validator).toContain(
       "'f6e9e057ea609d3bba25d9aff7b2cd0a4bf22f305a8f510bdf9d00d7a1b69a35'",
     );
+    expect(validator).toContain(
+      "'c4ec624167ef6766d4b04bb8aac715a11c76c60b6a5cffae2d528c90df9725ea'",
+    );
     expect(validator).toContain('const EXPECTED_USERS = 1694');
     expect(validator).toContain('const EXPECTED_GROUPS = 79');
     expect(validator).toContain('const EXPECTED_MEMBERSHIP_EDGES = 4202');
@@ -61,6 +64,7 @@ describe('Tandem Identity D3 production boundary', () => {
     expect(validator).not.toMatch(
       /\b(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|DROP|CREATE)\b/,
     );
+    expect(validator).toContain("fail('protected_baseline_mismatch')");
     expect(importer).not.toMatch(/fetch\(|axios|https?:\/\/|heartbeat\.com/i);
     expect(importer).not.toMatch(
       /INSERT INTO business_v2\.(parties|party_external_refs|auth_accounts|identity_resolution_decisions|provider_projection_attempts)/i,

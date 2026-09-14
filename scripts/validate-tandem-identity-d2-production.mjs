@@ -123,11 +123,15 @@ function commonSourceReceipt(database) {
   ) {
     fail('frozen_source_prefix_drift');
   }
-  if (integer(receipt.sourceRows, 'source_count_invalid') < EXPECTED_PREFIX_COUNT)
+  if (
+    integer(receipt.sourceRows, 'source_count_invalid') < EXPECTED_PREFIX_COUNT
+  )
     fail('source_rows_regressed');
   if (integer(receipt.sourceRowsWithoutUser, 'without_user_invalid') !== 0)
     fail('source_subject_unsupported');
-  if (integer(receipt.sourceContractViolations, 'source_contract_invalid') !== 0)
+  if (
+    integer(receipt.sourceContractViolations, 'source_contract_invalid') !== 0
+  )
     fail('source_contract_violation');
   return receipt;
 }
@@ -154,10 +158,15 @@ function targetReceipt(database) {
        'distinctSourceUsers',(SELECT count(DISTINCT heartbeat_user_id)
          FROM business_v2.student_lifecycle_events
          WHERE heartbeat_user_id IS NOT NULL),
-       'receipts',(SELECT count(*) FROM business_v2.identity_event_receipts),
+       'receipts',(SELECT count(*) FROM business_v2.identity_event_receipts
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community'),
        'promotedReceipts',(SELECT count(*) FROM business_v2.identity_event_receipts
-         WHERE authenticity_status <> 'unverified_hint'
-            OR normalization_status <> 'held'),
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community' AND (
+             authenticity_status <> 'unverified_hint'
+             OR normalization_status <> 'held'
+           )),
        'heldObservations',(SELECT count(*) FROM business_v2.party_context_observations
          WHERE adapter_key='tandem_identity_student_lifecycle_shadow'
            AND adapter_version='1.0.0' AND conflict_state='held'),
@@ -173,12 +182,24 @@ function targetReceipt(database) {
        'acceptedFacts',(SELECT count(*) FROM business_v2.identity_resolution_decisions
          WHERE provider='heartbeat' AND environment='production'
            AND source_scope='community' AND result LIKE 'resolved_%'),
-       'desiredProjections',(SELECT count(*) FROM business_v2.provider_desired_projections),
-       'commands',(SELECT count(*) FROM business_v2.provider_projection_commands),
+       'desiredProjections',(SELECT count(*) FROM business_v2.provider_desired_projections
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community'),
+       'commands',(SELECT count(*) FROM business_v2.provider_projection_commands
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community'),
        'attempts',(SELECT count(*) FROM business_v2.provider_projection_attempts),
-       'readbacks',(SELECT count(*) FROM business_v2.provider_projection_readbacks),
-       'reconciliationRuns',(SELECT count(*) FROM business_v2.provider_reconciliation_runs),
-       'driftItems',(SELECT count(*) FROM business_v2.provider_drift_items)
+       'readbacks',(SELECT count(*)
+          FROM business_v2.provider_projection_readbacks r
+          JOIN business_v2.provider_projection_commands c ON c.id=r.command_id
+         WHERE c.provider='heartbeat' AND c.environment='production'
+           AND c.source_scope='community'),
+       'reconciliationRuns',(SELECT count(*) FROM business_v2.provider_reconciliation_runs
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community'),
+       'driftItems',(SELECT count(*) FROM business_v2.provider_drift_items
+         WHERE provider='heartbeat' AND environment='production'
+           AND source_scope='community')
      );`,
   );
 }
@@ -220,7 +241,9 @@ function main() {
           OR c.relname LIKE 'provider_%');`,
     );
     if (absent.d1ObjectCount !== 0) fail('preflight_target_not_absent');
-    process.stdout.write(`${JSON.stringify({ ok: true, stage, source, target: absent })}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ ok: true, stage, source, target: absent })}\n`,
+    );
     return;
   }
   const target = targetReceipt(database);
@@ -250,7 +273,9 @@ function main() {
       if (target[key] !== 0) fail(`forbidden_target_state_${key}`);
     }
   }
-  process.stdout.write(`${JSON.stringify({ ok: true, stage, source, target })}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ ok: true, stage, source, target })}\n`,
+  );
 }
 
 main();
