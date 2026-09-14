@@ -39,13 +39,25 @@
   update either includes the committed item or causes the later item to re-read
   terminal state and refuse. The two-client PostgreSQL proof exercises the
   failure path; no second review is needed for this mechanically verified lock.
+- Review session `c6b1a4b7-ff1c-4b83-a476-673059d030ce` used bounded Claude
+  Sonnet/high with read-only packet access and one response-file write. The
+  runner recorded 10 turns, 128,925 cache-creation, 195,198 cache-read and
+  24,096 output tokens (21,325 thinking), with no web request or subagent; the
+  standalone usage reporter found no persisted transcript.
 - Verification so far: D0+D1 focused 52/52; format, pinned Node 22.23.2
   typecheck, build and documentation continuity pass. Full repository: 4,387
   passed, 32 skipped and 19 failures in five unchanged baseline files: Academy
   Capacity disposable state, CNPC prompt wiring, date-sensitive Trafft status,
   and two publication suites whose pinned Tandemweb fixture path is absent. No
   D0/D1 source or test failed. Bounded Sonnet/high review and corrections are
-  complete; final focused/static/disposable rerun follows before commit.
+  complete. Final focused 52/52, disposable PostgreSQL, format, typecheck,
+  build, docs continuity, absent release/runtime registration and zero-residue
+  readback all pass.
+- Commit/push: reviewed implementation
+  `2ae0e7575e883573213fedfb1c3d531c15fcb345` is pushed on
+  `origin/codex/tandem-identity-d1-disposable-20260913`; remote readback matched.
+- State: `complete`. Source, disposable proof, independent review, corrections,
+  verification, commit and push are complete.
 - Deployment/migration: none. Migration 167 is deliberately excluded from the
   release bundle and has not been applied to production or any persistent
   database. No provider/customer/Party/ref/access/enrollment/entitlement,

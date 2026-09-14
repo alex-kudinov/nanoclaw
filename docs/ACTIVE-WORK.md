@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-14T02:02Z — `NC-20260913-002` Tandem Identity D1 disposable
-PostgreSQL store proof, owner Codex, `validating`, C5, isolated branch
+PostgreSQL store proof, owner Codex, `complete`, C5, pushed branch
 `codex/tandem-identity-d1-disposable-20260913` from D0 completion
 `3c8e7d1c4a704f7952950aa86644b7d70c1ab8c9`. Implement the reviewed
 identity receipts, decisions, candidates, authentication bindings, desired
@@ -29,7 +29,11 @@ and docs continuity pass. The full repository has 4,387 pass/32 skip/19
 unchanged baseline failures across Academy Capacity, CNPC prompt, date-sensitive
 Trafft and missing Tandemweb publication fixtures; no D0/D1 source or test
 failed. Bounded independent review and corrections are complete. Completion
-evidence, final rerun, commit and push remain.
+evidence is recorded. Reviewed implementation commit
+`2ae0e7575e883573213fedfb1c3d531c15fcb345` is pushed and exact remote readback
+matched. Deployment and production migration are not applicable and were not
+performed. No further D1 action; D2 production shadow admission requires a
+separate explicit validation and task.
 
 2026-09-14T00:45Z — `NC-20260913-001` Tandem Identity D0 replay core,
 owner Codex, `complete`, C5, pushed branch

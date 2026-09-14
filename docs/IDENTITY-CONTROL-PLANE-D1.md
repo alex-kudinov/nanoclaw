@@ -4,6 +4,10 @@ Status: source-only and unwired; verified only in generated disposable PostgreSQ
 
 Task: `NC-20260913-002`
 
+Reviewed implementation commit:
+`2ae0e7575e883573213fedfb1c3d531c15fcb345` on
+`codex/tandem-identity-d1-disposable-20260913`.
+
 ## Outcome
 
 Migration 167 turns the independently reviewed D0 identity contracts into an
@@ -124,3 +128,14 @@ before customer authorization depends on this control plane.
 
 D2 may mirror production ingress only after explicit validation. It must still
 perform no Party, ref, entitlement, access, provider, or customer-facing write.
+
+## Independent review
+
+Bounded Claude Sonnet/high R1 found one material target-coupling defect:
+ambiguous, not-found and conflict decisions could carry a candidate reference.
+The constraint and real-PostgreSQL negative case now require that reference to
+be null. The review's non-material candidate-lifecycle note was closed through
+append-only monotonic versions and legal forward transitions. Codex then found
+and mechanically closed a finalization race with a share row lock and a real
+two-client PostgreSQL test. These corrections are directly exercised, so a
+second review round was not warranted.
