@@ -1752,8 +1752,8 @@ files over the existing authenticated SSH route to the production Mac Mini's
 IPC, and fails closed unless that host's compiled runtime contains this
 capability; it does not call Slack directly or inject message rows.
 This path shipped in release `0a39380`, was live-canaried through the toolbox,
-and remains present in the exact predecessor production release `1509c38e`.
-Its durable receipt and duplicate replay were verified before later switches.
+and remains present in exact production release `3dd0eb67`. Its durable receipt
+and duplicate replay were verified before later switches.
 `NC-20260914-002` adds optional `submission_language=it` to this same
 privileged request. It is part of idempotency identity and is bound in memory
 to the exact Slack root before persistence. Only that root's verified run

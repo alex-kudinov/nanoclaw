@@ -2,8 +2,7 @@
 
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 
-- State: ready_for_deploy; reviewed source and isolated verification complete,
-  exact release and live workflow pending.
+- State: complete; reviewed source, exact release and live workflow verified.
 - Change class: C5 because one new privileged assertion affects which
   cross-language submission the grader may evaluate.
 - The existing directory-authorized main/chief grader-file request accepts only
@@ -27,9 +26,25 @@
   141,682 cache-read, 15,351 output tokens, maximum context 80,822.
 - Shared toolbox syntax/registry validation passed; isolated staging emitted
   exact `submission_language: "it"`, and `de` was rejected before staging.
-- Deployment, live Slack verdict, and Heartbeat writeback are not yet claimed.
-  Rollback is the prior immutable release plus the prior grader prompt; restart
-  clears every in-memory attestation.
+- Deployment: archive SHA-256
+  `a967c36425f8a630607951cb2cb0c46141289556f1d9d46e7f7759cf156ab2c9`
+  and artifact SHA-256
+  `bc17038536f798e90521409eed4cf76ad42c7c175af9a881d88498b7e4218cff`
+  (1,372 files) activate commit `3dd0eb671203f6f25bbd87afe7f97eeb911dac39`
+  from predecessor `1509c38e`. Dry run and apply changed only code root,
+  expected commit and executable. Health proves exact release/code root, Node
+  22.23.2, one listener/process, connected Slack/Gmail and empty work/retry
+  queues. Reviewed operational grader prompt hash is `19365468bbb132c6`.
+- Live outcome: protected toolbox receipt for root `1789426469.635669` returned
+  `submission_language=it` and one Slack file ID. The exact thread returned PASS
+  with English feedback. Heartbeat saved the two-paragraph student copy and
+  showed `Submission Approved` at Sep 14 5:59 PM. English counts reconciled to
+  Needs Approval 2, Awaiting Resubmit 1, Complete no feedback 0, Complete with
+  feedback 1040. Completion tracker `D165=P` was API-read back with exact email
+  and `en-US`; no certificate action occurred.
+- Rollback: activate predecessor `1509c38e` with the preserved rollback plist
+  and restore the pre-release grader prompt backup. Restart clears all in-memory
+  attestations. Omitting the field preserves the normal mismatch hold.
 
 ## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
 

@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
-owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
+owner Codex with bounded Claude reviewer, `complete`, C5, isolated branch
 `codex/grader-italian-attestation-20260914` from exact production release
 `1509c38eb53bfbb32bfc16cc09cc240af3094614`. Add only an optional
 `submission_language=it` to the existing main/chief-only grader-file IPC, bind
@@ -9,9 +9,11 @@ it in memory to the exact Slack root before persistence, and carry it into that
 root's run context. Preserve the registered English Foundation assignment and
 feedback language; unattested mismatches remain held. No new route, schema,
 durable student state, broad language policy, translation-primary grading, or
-certificate action. Focused tests and one Sonnet/high review are complete;
-build, exact release activation, Barbara live verdict, and any Heartbeat
-writeback remain pending. Updated 2026-09-14T22:50Z.
+certificate action. Focused tests and one Sonnet/high review are complete.
+Exact release `3dd0eb671203` is live and healthy; the Italian original produced
+PASS in root `1789426469.635669`, Heartbeat saved the English feedback and
+approved the assignment, and tracker `D165=P` was API-read back. No certificate
+action was eligible or taken. Updated 2026-09-14T23:02Z.
 
 2026-09-14T11:21Z — `NC-20260914-001` Tandem Identity D3 Heartbeat
 aggregate reconciliation, owner Codex, `in_progress`, C5/C3, isolated branch
@@ -524,11 +526,27 @@ outside the current client conversation.
   files / 163 tests, documentation continuity, capabilities matrix and diff
   check pass. Full suite is 4,415 passed / 32 skipped / 19 unrelated baseline
   failures concentrated in missing retired publication sources and pre-existing
-  CNPC/capacity/relationship checks). The shared
+  CNPC/capacity/relationship checks. The shared
   toolbox accepts only `it`, emits it in IPC, and rejects unsupported languages
   before staging.
 - External state: no implementation-triggered Slack root, Heartbeat write,
   certificate action, database mutation, or deployment at registration.
+- Release/outcome: commits `62f7baf7` and `3dd0eb67` produced verified archive
+  SHA-256 `a967c36425f8a630607951cb2cb0c46141289556f1d9d46e7f7759cf156ab2c9`
+  and artifact SHA-256
+  `bc17038536f798e90521409eed4cf76ad42c7c175af9a881d88498b7e4218cff`
+  across 1,372 files. Mini activation changed only the three reviewed service
+  pointers. Health proves release mode, exact commit/code root, Node 22.23.2,
+  one process/listener, connected Slack/Gmail and empty work/retry queues.
+  Reviewed prompt hash is `19365468bbb132c6`; the rollback plist and prior
+  prompt backup are preserved outside the release.
+- Live proof: the toolbox receipt returned exact Italian attestation and one
+  file ID for root `1789426469.635669`; the grader returned PASS in English.
+  Heartbeat saved the reviewed feedback with `Submission Approved` at Sep 14
+  5:59 PM. English counts became Needs Approval 2, Awaiting Resubmit 1,
+  Complete no feedback 0, Complete with feedback 1040. Tracker row 165 reads
+  the verified email, `D=P`, and language `en-US`. No certificate action
+  occurred.
 
 ### NC-20260909-003
 
