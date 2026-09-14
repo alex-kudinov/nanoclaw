@@ -23,6 +23,23 @@ an explicitly documented residual until instructions and operational output are
 separated; reviewed prompt files must be compared during deployment. See
 `docs/RELEASE-INTEGRITY.md`.
 
+## Tandem Identity D2 shadow boundary
+
+`NC-20260913-003` may read only the existing host-owned
+`student_lifecycle_events` ledger and write migration-167 receipts, related
+receipt refs, non-materializable candidates, and Party-null held observations.
+It contains no provider client, network destination, provider credential,
+customer delivery, Party/ref/access/enrollment/entitlement writer, or minion
+capability. All source rows are currently provider-unreconciled, so every
+receipt is `unverified_hint`/held and the synchronization health must remain
+blocked even when coverage is complete. A transaction advisory lock, exact
+receipt idempotency, protected Party/ref before/after counts, and zero accepted
+facts/provider attempts fail the batch closed. Production enablement requires
+the reviewed migration, immutable release, complete backup, exact host/source
+prefix, value-redacted one-key configuration transaction, and post-enable
+database plus `/health` readback. Runtime rollback disables the worker and
+preserves append-only evidence; populated schema rollback is prohibited.
+
 Release activation treats the installed launchd plist as machine-local state.
 The host-owned activator changes exactly the executable target, code root, and
 expected commit; any fourth diff fails before mutation. It verifies both the

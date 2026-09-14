@@ -192,6 +192,12 @@ import {
   runContadorStripeIngressParity,
 } from './contador-stripe-ingress-parity.js';
 import { relationshipContextPolicyDiagnostic } from './relationship-context-policy.js';
+import {
+  getTandemIdentityD2Health,
+  initializeTandemIdentityD2Health,
+  resolveTandemIdentityD2Config,
+  runTandemIdentityD2Shadow,
+} from './identity-control-plane/d2-student-lifecycle-shadow.js';
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
@@ -2156,6 +2162,8 @@ async function main(): Promise<void> {
     readStudentLifecycleHealth,
   );
   await studentLifecycleHealth.refresh();
+  const tandemIdentityD2Config = resolveTandemIdentityD2Config();
+  initializeTandemIdentityD2Health(tandemIdentityD2Config);
   const companyTimeTriggerObserver = new CompanyTimeTriggerObserver();
   const companyWorkExceptionLoop = new CompanyWorkExceptionLoopService(
     makeCompanyWorkExceptionLoopDeps({
@@ -2355,6 +2363,7 @@ async function main(): Promise<void> {
           clientProjection: getClientRelationshipProjectionHealth(),
           plutioEngagement: getPlutioEngagementHealth(),
         },
+        tandemIdentityD2: getTandemIdentityD2Health(),
       };
     },
     runAgent: runContainerAgent,
@@ -2485,6 +2494,29 @@ async function main(): Promise<void> {
     },
   });
   await webhookServer.start();
+  let tandemIdentityD2InFlight = false;
+  const runTandemIdentityD2Tick = async (): Promise<void> => {
+    if (tandemIdentityD2InFlight) {
+      logger.warn('tandem identity D2 shadow tick already running');
+      return;
+    }
+    tandemIdentityD2InFlight = true;
+    try {
+      await runTandemIdentityD2Shadow(tandemIdentityD2Config);
+    } catch (err) {
+      logger.error({ err }, 'tandem identity D2 shadow tick failed');
+    } finally {
+      tandemIdentityD2InFlight = false;
+    }
+  };
+  if (tandemIdentityD2Config.enabled && tandemIdentityD2Config.valid) {
+    void runTandemIdentityD2Tick();
+    const tandemIdentityD2Timer = setInterval(
+      () => void runTandemIdentityD2Tick(),
+      tandemIdentityD2Config.intervalMs,
+    );
+    tandemIdentityD2Timer.unref();
+  }
   let relationshipContextTrafftShadowInFlight = false;
   const runRelationshipContextTrafftShadowTick = async (): Promise<void> => {
     if (relationshipContextTrafftShadowInFlight) {

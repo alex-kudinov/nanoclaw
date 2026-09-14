@@ -280,9 +280,17 @@ describe('Tandem Identity D0 replay', () => {
 
   it('has no runtime network, database, provider, environment, or host registration dependency', () => {
     const directory = path.dirname(fileURLToPath(import.meta.url));
-    const runtimeFiles = fs
-      .readdirSync(directory)
-      .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'));
+    const runtimeFiles = [
+      'canonical.ts',
+      'contracts.ts',
+      'errors.ts',
+      'reducer.ts',
+      'replay-cli.ts',
+      'replay-fixtures.ts',
+      'replay.ts',
+      'resolver.ts',
+      'semantic.ts',
+    ];
     const forbidden = [
       /from ['"](?:node:)?(?:http|https|net|tls|dns|dgram|child_process)['"]/,
       /from ['"](?:pg|firebase-admin|googleapis|undici|axios)['"]/,
@@ -302,7 +310,11 @@ describe('Tandem Identity D0 replay', () => {
       path.join(directory, '..', 'index.ts'),
       'utf8',
     );
-    expect(host).not.toContain('identity-control-plane');
+    for (const filename of runtimeFiles) {
+      expect(host).not.toContain(
+        `./identity-control-plane/${filename.replace(/\.ts$/, '.js')}`,
+      );
+    }
   });
 
   it('rejects unsupported canonical values rather than hashing ambiguously', () => {

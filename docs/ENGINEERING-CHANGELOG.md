@@ -1,5 +1,58 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260913-003 Tandem Identity D2 production shadow
+
+- State: `validating`; local implementation exists, production migration,
+  deployment and enablement have not occurred.
+- Exact base: D1 completion
+  `eae3a1424e1c1224d943c618bc8ac66b516a3194`, whose ancestor is exact live
+  release `c190b957333ac1901b2d46a1f4b3f1cf75c6341c`.
+- Authorization: accepted owner decision
+  `.program/decisions/decision-tandem-identity-d2-production-shadow-2026-09-14.json`;
+  Party/ref/access/entitlement/customer/provider writes and full migration stay
+  prohibited.
+- Read-only production freeze: 379 immutable student-lifecycle rows, max ID
+  379, 156 distinct Heartbeat users, 71 current Party-linked source rows, zero
+  userless rows and all 379 `source_asserted_unreconciled`. The minimized
+  prefix fingerprint is
+  `251fe76eed9db7710fbe7d96d11359f0c5231cd9f6cbd0c42ac4d1207642f955`.
+- Local implementation: one default-off host transaction mirrors only the
+  existing ledger into unverified/held receipts, same-environment receipt refs,
+  Party-null held observations and version-1 open non-materializable candidates.
+  It has no provider client/credential, accepted resolution, desired projection,
+  command/attempt/readback, reconciliation/drift, customer or minion surface.
+- Safety: transaction advisory lock, bounded ordered selection, exact receipt
+  idempotency, source-contract validation, Party/ref before/after counts and
+  zero accepted-fact/provider-attempt assertions fail closed. `/health` reports
+  only aggregate state and must remain blocked on provider authenticity.
+- Release controls: migration 167, a host/database/frozen-prefix read-only
+  validator, and a fixed value-redacted environment transaction are immutable
+  release inputs. Configuration defaults off and pins 500 rows/300,000 ms when
+  enabled.
+- Verification so far: focused 66/66 plus pinned Node 22.23.2 format,
+  typecheck, build and documentation continuity pass.
+  Disposable PostgreSQL proves 2+2 catch-up, four receipts/held observations,
+  three candidates, exact zero-write replay, zero canonical/provider effects,
+  and whole-batch rollback on unexpected provider authenticity.
+- Full repository: 4,401 pass, 32 skip and 19 failures in the same five
+  unchanged baseline files as D1; no identity-control-plane source/test failed.
+- Independent bounded Sonnet/high R1 found one material latent health defect:
+  a future userless source row could never be mirrored but would report
+  `catching_up` forever. Health now distinguishes mirrorable remaining work,
+  terminally blocks unsupported subjects and retains their exact unmirrored
+  count. A real PostgreSQL regression passes; no second round is warranted.
+- Review session `b975876c-b6cd-4369-9555-c236b2d3d617`: 11 turns,
+  124,416 cache-creation, 375,736 cache-read and 17,476 output tokens (14,554
+  thinking), no web request or subagent. The standalone usage reporter found
+  no persisted transcript.
+- Deployment/migration: none yet. Production remains exact release `c190b957`;
+  migration-167 object count remains zero.
+- Rollback: before enablement restore the prior immutable release; after
+  enablement disable D2 and preserve append-only evidence. Populated migration
+  rollback must refuse. A verified production backup is required before apply.
+- Documentation: `docs/IDENTITY-CONTROL-PLANE-D2.md`, Project Map, Security,
+  Release Integrity, Business DB guide, Active Work and this changelog.
+
 ## 2026-09-14 — NC-20260913-002 Tandem Identity D1 disposable store
 
 - Exact base: D0 completion `3c8e7d1c4a704f7952950aa86644b7d70c1ab8c9`

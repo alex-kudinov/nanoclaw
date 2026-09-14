@@ -66,6 +66,18 @@ and independently verifiable; it does not apply the migration. Database backup,
 daemon drain, one-file application, structural validation, and rollback policy
 remain separate recorded operations.
 
+`NC-20260913-003` adds migration/rollback 167, the read-only production
+validator and the value-redacted D2 configuration transaction to the immutable
+release inputs. Build/package presence does not apply the migration or enable
+the worker. Activate first with `TANDEM_IDENTITY_D2_SHADOW_ENABLED=0` after a
+verified complete custom-format business-database backup and exact
+`preflight`/`post-migration` validation. Then dry-run and atomically set only
+the fixed enable/batch/interval keys, reload once, and require held receipt/
+observation coverage, candidate/user parity, blocked provider-unreconciled
+health, zero provider attempts and unchanged Party/ref/access state. Runtime
+rollback disables D2 before restoring the prior release and preserves all
+append-only D2 evidence; populated SQL rollback must refuse.
+
 Beginning with `NC-20260822-017`, the archive also binds migration 132 and its
 history-preserving rollback. The corresponding host adapter defaults off and
 is not daemon/scheduler/Slack/action wired. A release that contains these bytes

@@ -1,5 +1,39 @@
 # NanoClaw active work
 
+2026-09-14T02:39Z — `NC-20260913-003` Tandem Identity D2 production
+shadow, owner Codex, `validating`, C5/C3, isolated branch
+`codex/tandem-identity-d2-shadow-20260913` from D1 completion
+`eae3a1424e1c1224d943c618bc8ac66b516a3194` and exact live release
+`c190b957333ac1901b2d46a1f4b3f1cf75c6341c`. Owner authorization is
+recorded in
+`.program/decisions/decision-tandem-identity-d2-production-shadow-2026-09-14.json`.
+Freeze the live schema/roles/source aggregate, implement a bounded idempotent
+host-only mirror from existing `student_lifecycle_events` into D1 receipts,
+held observations, non-Party candidates, divergence metrics and a truthful
+blocked scoreboard; prove it against disposable PostgreSQL; run bounded
+Sonnet/high review and full verification; then take a protected production
+backup, apply migration 167, deploy and exact-read back only if every gate
+passes. Current frozen source is 379 events/379 inbox links/156 distinct
+Heartbeat users/71 current Party-linked source rows; all 379 are
+`source_asserted_unreconciled`, so D2 must retain every event as
+`unverified_hint`/held and create no accepted canonical fact. Party creation or
+merge, ref binding, enrollment/entitlement/access/customer projection,
+provider hook/config/write, payment, certificate, attendance, booking,
+communication and full migration are prohibited.
+The default-off host worker, aggregate `/health` surface, immutable release
+inputs, read-only exact-prefix validator and value-redacted configuration
+transaction are implemented locally. A real disposable PostgreSQL 2+2 batch
+reaches four held receipts/observations and three candidates, then exact replay
+adds zero; provider-reconciled input rolls the whole batch back. Sonnet/high R1
+found one latent endless-catch-up defect for a userless source row; D2 now
+reports that irreducible gap as terminally blocked and preserves its exact
+count, with a real PostgreSQL regression. Focused 66/66, typecheck, build,
+format and continuity pass; full repository is 4,401 pass/32 skip/19 unchanged
+baseline failures and no identity test failed. Documentation and independent
+review are complete. Final precommit rerun passed; commit/push, production
+backup/migration/release/enablement and live readback
+remain; no production write has occurred in this task yet.
+
 2026-09-14T02:02Z — `NC-20260913-002` Tandem Identity D1 disposable
 PostgreSQL store proof, owner Codex, `complete`, C5, pushed branch
 `codex/tandem-identity-d1-disposable-20260913` from D0 completion

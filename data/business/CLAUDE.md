@@ -20,6 +20,20 @@ structure-only schema reference, activate ingress/runtime, or infer provider or
 customer authority from source presence. See
 `docs/IDENTITY-CONTROL-PLANE-D1.md`.
 
+`NC-20260913-003` is the separately authorized D2 production-shadow candidate.
+It packages migration 167 and adds one default-off host worker over the existing
+immutable `student_lifecycle_events` ledger. The worker may write only
+`unverified_hint`/held receipts, same-environment related refs attached to the
+receipt, Party-null held observations, and version-1 open non-materializable
+candidates. It must keep resolution decisions, auth bindings, Party/ref/access/
+enrollment/entitlement/customer projections, commands, attempts, readbacks,
+reconciliation and drift at zero. The release-bound validator pins the first
+379 source rows to minimized SHA-256
+`251fe76eed9db7710fbe7d96d11359f0c5231cd9f6cbd0c42ac4d1207642f955`;
+append-only successors are accepted only under the same source contract. See
+`docs/IDENTITY-CONTROL-PLANE-D2.md`. Source presence is not a production apply,
+deployment, enablement, or live-verification receipt.
+
 Local/unapplied enrollment dependency migrations146-148 are now included for
 the MCS deployment-readiness source integration. They add transactional store
 versions/evidence identity, authenticated issuer receipts/shared writer claims,
