@@ -48,6 +48,29 @@
 - Documentation: Active Work, Project Map, Engineering Changelog, and the Peri
   minimum-sufficient/S2 evidence set.
 
+### 2026-09-15T21:31Z addendum — deployed, then blocked on migration 166
+
+- Immutable NanoClaw release `740837715c0f16f3d5f93080dae65ea65a6a9cbf`
+  is live on Mini under Node 22.23.2 with artifact
+  `4d326129e00c684d1cd612451efbb00fa1e81e1548b696c39a7382ce548ba225`
+  (1,372 files), connected Gmail/Slack, one listener and empty queues. Rollback
+  plist is `com.nanoclaw.plist.rollback-3dd0eb671203-2026-09-15T21-20-19-198Z`.
+- Tandem Commerce 1.18.11/catalog v7 is live from `a957d8485`; local, staged and
+  active package bytes match, and 17 self-contained server suites plus lint pass.
+  Rollback is `/home/tca/tcawp/releases/tandem-commerce-pre-a957d8485` with full
+  database export `tandem-commerce-pre-a957d8485.sql`.
+- The first replay failed at the corrected commercial-snapshot gate and produced no
+  destination write. Commerce 1.18.11 fixed that exact source-selection defect.
+- The second replay idempotently created/read back the AI Payment Log row with
+  provider `Adyen` and the Practitioner Series `AI for Coaches` roster cell. It then
+  failed before PostgreSQL/Slack/WordPress completion because live constraint
+  `contador_adyen_payments_product_id_check` still requires
+  `mcq-program-a-foundations`. PostgreSQL remains 17 MCS rows and zero non-MCS rows.
+- State is `blocked` at the minimum-sufficient S2 gate. The pending WordPress job is
+  preserved at attempt 10 and deferred 24 hours; no successful payment, Heartbeat,
+  Encharge, receipt, Payment Log or roster fact was deleted or replayed. Migration
+  168 necessity review and guarded apply are required before another attempt.
+
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 
 - State: ready_for_deploy; reviewed source and isolated verification complete,
