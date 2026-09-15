@@ -43,6 +43,16 @@ target whose operational checkout is missing or contradicts those packs. Thus
 `FILES.sha256` attests stable instructions and fact authorities without turning
 live schedules or lessons into a frozen release snapshot.
 
+Beginning with `NC-20260915-001`, the archive also binds migration 168 and its
+guarded rollback. Migration 168 changes only the existing Adyen compatibility
+projection's product-ID check from an MCS literal to the same bounded checkout
+slug accepted by the signed host receiver. Packaging does not apply it. Before
+application, take and validate a custom-format `business_v2` backup; then apply
+only the manifest-covered forward file, prove owner/grants and retained rows are
+unchanged, and prove exact reapplication is a no-op. Once any non-MCS row exists,
+the rollback must refuse visibly; host-code rollback preserves the generalized
+constraint and provider-neutral payment evidence.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact

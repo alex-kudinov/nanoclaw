@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-15T23:12Z — `NC-20260915-004` live-line credential Commerce
+integration, owner Codex, `ready_for_deploy`, C4/C5, isolated branch
+`codex/commerce-cohort-live-integration-20260915` from exact live identity
+release `50905fc8522c11a55a9fca782280b862a017daa6`. Production advanced on a
+divergent login-tools lineage while the Commerce cohort release was being built;
+the initial activation stopped at dry-run. This branch preserves the complete
+live identity gateway source and adds only provider-neutral Bookkeeper commits
+`4016d985`, migration-168 commit `59e84ead`, and credential-cohort commits
+`381f2567`/`fd7e08e7`. The source merges without runtime-code conflict; only
+continuity documentation required combination. Next: run exact integrated
+verification, build one immutable release and activate only after a zero-work
+drain. No payment, enrollment, Sheet, customer message, identity binding, Funnel
+or IAM mutation is authorized by this integration.
+
 2026-09-15T20:20Z — `NC-20260915-003` Tandem Identity login-to-tools walking
 skeleton, owner Codex, `blocked`, C5/C3. Company OS program work
 `work:tandem-identity-login-tools-walking-skeleton` is claimed at revision 357.
@@ -31,6 +45,100 @@ existing server, with no new service/store. Implementation is waiting on the
 load-bearing independent readback of the Cloud Run service account's immutable
 numeric subject; Google Cloud Console requires the owner's fresh passkey. No
 endpoint, Funnel, IAM, binding or deployment state has changed.
+2026-09-15T23:00Z — `NC-20260915-002` credential Commerce cohort projection,
+owner Codex with bounded Sonnet/high necessity review, `in_progress`, C4, same
+isolated provider-neutral Bookkeeper branch. Extend only the existing signed
+Commerce envelope with an optional bounded PCC/ACTC calendar selection. The
+recorder keeps Product Map routing, fills the existing roster `Cohort` cell only
+when blank, reads back product and cohort cells, and adds the cohort to the rich
+Contador receipt. No new route, table, migration, credential, process, queue,
+scheduler, payment authority or customer communication. ACC and combined Level 2
+remain outside this slice because their status/capacity obligation is not yet
+supported. Typecheck and focused Bookkeeper/migration tests pass 11/11; immutable
+release build, deployment and first natural purchase proof remain pending.
+
+2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
+projection, owner Codex with bounded Claude necessity review, `blocked`,
+C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
+exact live release `3dd0eb671203f6f25bbd87afe7f97eeb911dac39`. This is a
+retrospective registration: implementation began from the Peri program's recorded
+authorization and minimum-sufficient checkpoint before the NanoClaw continuity row
+was added. Generalize only the existing signed asynchronous receiver from MCS to
+MCS plus six approved English Practitioner CCE one-time products; use exact
+catalog-declared Product Map labels; add Payment Log column P as explicit provider
+provenance for both existing Stripe and Adyen writers; and restore a rich mechanical
+Contador receipt. Preserve column J's literal `Stripe ID` header for existing
+maintenance consumers, all existing payment/enrollment/Encharge/receipt truth, the
+single host process and route, and All-Access on Heartbeat. No new endpoint, DDL,
+credential, queue, worker, scheduler, provider, synchronous dependency, payment, or
+customer communication is added. Focused 100/100, typecheck, and diff check pass;
+full suite is 4,419 pass/32 skip/19 unrelated baseline failures. Commits
+`4016d985` (NanoClaw) and `65d40c99f` (Tandemweb) are pushed. NanoClaw
+`740837715c0f` and Commerce 1.18.11 are now live and healthy. The exact replay wrote
+and read back the AI Payment Log/Adyen provider and Practitioner roster cells, then
+failed safely before PostgreSQL because migration 166's product constraint is still
+MCS-only. The job remains pending and is deferred until 2026-09-16T21:31Z. Next:
+complete the required necessity review for migration 168, apply/read back only that
+constraint correction after backup, then replay the same job once and verify
+PostgreSQL, rich Contador receipt, WordPress completion and no duplicate effects.
+Migration 168 is now implemented locally with a guarded rollback and disposable
+PostgreSQL proof. Approved Sonnet/high review `7c4f21e1-59a4-4e5e-8469-19d3e5de5f40`
+returned `KEEP`; both findings are closed by an exact receiver/SQL boundary corpus
+and a hard `rollback 168 refused` exception. Focused migration/receiver tests are
+10/10. Typecheck and the expanded migration/receiver suite now pass 12/12. State is
+`ready_for_deploy`: commit/release the exact bytes, take and validate the protected
+backup, apply/read back migration 168, and replay the one deferred job.
+
+2026-09-15T22:15Z — `NC-20260915-002` LinkedIn native-alert intake for
+Executive Search, owner Codex, `ready_for_deploy`, C2, isolated branch
+`codex/linkedin-alert-intake-20260915` from exact live release
+`59e84ead6b088f2eedb7d9baaeda323d34dd5f8a`. Capture only exact LinkedIn job
+alert mail before Mailman classification into a minimized, immutable private
+outbox on the production Mini; suppress those messages from Sales/Chief;
+export a bounded batch over the existing authenticated SSH path; and let the
+Mac Studio Executive Search app persist replay-safe received/pending/resolved
+lead receipts and resolve jobs only through configured employer/public ATS
+sources. No LinkedIn page fetch, mailbox credential copy, inbound application
+port, recurring timer, report refresh, application, employer contact, or
+customer/business email routing is added. Minimum-sufficient review returned
+KEEP while deferring recurring polling until one natural exact-sender alert
+proves the provider format. Focused 96/96, typecheck, Executive Search 93/93,
+lint/build, actual SSH transfer, restart-persistent UI state and one bounded
+Sonnet/high review pass after two verified corrections. Next: commit/push the
+reviewed bytes, build/verify immutable releases, deploy NanoClaw then Executive
+Search, verify empty live state and await one natural exact-sender alert.
+
+2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
+projection, owner Codex with bounded Claude necessity review, `blocked`,
+C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
+exact live release `3dd0eb671203f6f25bbd87afe7f97eeb911dac39`. This is a
+retrospective registration: implementation began from the Peri program's recorded
+authorization and minimum-sufficient checkpoint before the NanoClaw continuity row
+was added. Generalize only the existing signed asynchronous receiver from MCS to
+MCS plus six approved English Practitioner CCE one-time products; use exact
+catalog-declared Product Map labels; add Payment Log column P as explicit provider
+provenance for both existing Stripe and Adyen writers; and restore a rich mechanical
+Contador receipt. Preserve column J's literal `Stripe ID` header for existing
+maintenance consumers, all existing payment/enrollment/Encharge/receipt truth, the
+single host process and route, and All-Access on Heartbeat. No new endpoint, DDL,
+credential, queue, worker, scheduler, provider, synchronous dependency, payment, or
+customer communication is added. Focused 100/100, typecheck, and diff check pass;
+full suite is 4,419 pass/32 skip/19 unrelated baseline failures. Commits
+`4016d985` (NanoClaw) and `65d40c99f` (Tandemweb) are pushed. NanoClaw
+`740837715c0f` and Commerce 1.18.11 are now live and healthy. The exact replay wrote
+and read back the AI Payment Log/Adyen provider and Practitioner roster cells, then
+failed safely before PostgreSQL because migration 166's product constraint is still
+MCS-only. The job remains pending and is deferred until 2026-09-16T21:31Z. Next:
+complete the required necessity review for migration 168, apply/read back only that
+constraint correction after backup, then replay the same job once and verify
+PostgreSQL, rich Contador receipt, WordPress completion and no duplicate effects.
+Migration 168 is now implemented locally with a guarded rollback and disposable
+PostgreSQL proof. Approved Sonnet/high review `7c4f21e1-59a4-4e5e-8469-19d3e5de5f40`
+returned `KEEP`; both findings are closed by an exact receiver/SQL boundary corpus
+and a hard `rollback 168 refused` exception. Focused migration/receiver tests are
+10/10. Typecheck and the expanded migration/receiver suite now pass 12/12. State is
+`ready_for_deploy`: commit/release the exact bytes, take and validate the protected
+backup, apply/read back migration 168, and replay the one deferred job.
 
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
 topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch

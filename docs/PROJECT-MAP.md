@@ -260,12 +260,22 @@ order or shutdown behavior.
 Gmail is both a channel and a business pipeline:
 
 1. push notification or safety polling detects mailbox changes;
-2. hard filters and label logic determine eligible mail;
-3. Mailman classifies and emits a structured label-write action;
-4. specialized groups can receive routed work;
-5. business interactions and classification state are written separately;
-6. outbound email crosses host recipient and content guards;
-7. approval-gated workflows remain pending until an authorized action.
+2. exact authenticated LinkedIn job alerts are minimized into a private
+   Executive Search outbox and return before any agent or business route;
+3. hard filters and label logic determine other eligible mail;
+4. Mailman classifies and emits a structured label-write action;
+5. specialized groups can receive routed work;
+6. business interactions and classification state are written separately;
+7. outbound email crosses host recipient and content guards;
+8. approval-gated workflows remain pending until an authorized action.
+
+`NC-20260915-002` adds only the capture half of a cross-host walking skeleton.
+The Mini stores immutable, content-minimized job pointers after aligned Gmail
+authentication. The Mac Studio pulls them explicitly over the existing SSH
+route and resolves only against an existing authoritative employer/ATS posting.
+There is no recurring poller, LinkedIn page fetch, mailbox credential copy,
+Sales/Chief handoff, report refresh, or application authority. See
+`docs/LINKEDIN-JOB-ALERT-OUTBOX.md`.
 
 `NC-20260903-002` makes classification a single typed, host-bound action. The
 host reloads exact Gmail source fields, validates the canonical enabled label
@@ -1024,10 +1034,29 @@ activate the unrelated Supervision production pilot or an MCS source/consumer.
 The WordPress Commerce compatibility delivery remains a host-mechanical
 Bookkeeper path: the adapter validates the signed order/native-notification
 envelope and completes only after exact Payment Log, Student Roster and
-PostgreSQL readback. It must then post that verified recorder summary to the
-single registered El Contador channel before acknowledging WordPress. Missing
-group registration or Slack delivery is retryable; no Contador agent is spawned,
-and the unchanged Stripe payment path retains its own case/receipt machinery.
+PostgreSQL readback. `NC-20260915-001` makes this receiver provider-neutral across
+MCS plus the six approved English Practitioner CCE one-time products by carrying
+one immutable, catalog-declared Product Map label; old MCS/AI snapshots may use
+their exact snapshotted title, while unknown labels still fail closed. Payment Log
+column P records explicit `Stripe` or `Adyen` provenance from both existing writers
+and stays inside the sortable row range; column J retains its legacy header for
+header-driven maintenance compatibility. The verified recorder summary contains
+the learner, product, amount, provider payment ID, paid/recorded dates, truthful
+fee-pending status and exact Sheet/roster/database destinations. It must post that
+summary to the single registered El Contador channel before acknowledging
+WordPress. Missing group registration or Slack delivery is retryable; no Contador
+agent is spawned, and the existing Stripe case/receipt machinery is unchanged.
+For credential-family Commerce purchases, the same envelope may carry one bounded
+PCC/ACTC calendar selection already signed and snapshotted by WordPress. The
+recorder never derives or changes the selection: it fills the destination roster's
+existing `Cohort` cell only when blank, preserves an existing value, and requires
+readback before success. Capacity-managed ACC and combined Level 2 are not admitted
+by this contract.
+Migration 168 removes migration 166's obsolete MCS-literal PostgreSQL product check
+and replaces it with the same bounded checkout-slug shape enforced by the signed
+receiver. It changes no row, table, index, owner or grant. Its rollback restores the
+literal check only while every retained row is still MCS and otherwise raises a
+visible refusal; ordinary code rollback preserves provider-neutral projection rows.
 
 `adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,

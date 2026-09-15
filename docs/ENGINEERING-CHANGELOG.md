@@ -1,5 +1,88 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-004 live-line credential Commerce integration
+
+- Exact production release `50905fc8522c11a55a9fca782280b862a017daa6`
+  advanced on the login-tools branch after the provider-neutral Commerce release.
+  A dry-run caught the divergent lineage before activation; no service pointer
+  changed.
+- The integration branch starts from that exact live commit and applies only the
+  reviewed provider-neutral receiver, migration 168 and credential cohort
+  projection commits. It retains every identity gateway source file and the
+  current runtime topology. Runtime source merges without conflict; Active Work
+  and this changelog were combined manually to preserve both ownership records.
+- No migration reapply is required: live PostgreSQL already has migration 168 and
+  one provider-neutral AI row. The immutable release must package the migration
+  for integrity while preserving the live generalized constraint.
+- Activation is gated on integrated typecheck/focused tests, clean immutable
+  release verification, exact current health and natural zero-work drain.
+
+## 2026-09-15 — NC-20260915-002 credential Commerce cohort projection
+
+- State: `in_progress`; source verification is green, release pending.
+- The existing signed Commerce Bookkeeper envelope accepts either no cohort or
+  one exact PCC/ACTC selection with bound program, module, scope, key, four
+  canonical session timestamps, display facts and fill-only roster value.
+  Malformed or internally inconsistent cohort evidence fails before any Sheet or
+  PostgreSQL write.
+- The existing recorder continues exact Product Map routing. When a cohort is
+  present it requires the destination tab's existing `Cohort` column, writes only
+  a blank cell, preserves an operator/existing value, and reads the cell back
+  before acknowledging the WordPress job. The mechanical Slack receipt includes
+  the purchase-snapshotted cohort.
+- This adds no route, endpoint, table, migration, secret, worker, queue,
+  scheduler, agent or payment authority. Cohort source authority and checkout
+  validation remain in Tandem Commerce; NanoClaw is an idempotent destination.
+- Verification: pinned Node typecheck and focused Bookkeeper plus migration-168
+  tests pass 11/11. Immutable release build, deployment and first natural
+  credential purchase remain required.
+
+## 2026-09-15 — NC-20260915-002 LinkedIn alert intake for Executive Search
+
+- State: `validating`; implementation and focused tests exist in the isolated
+  branch, while independent review, immutable release, and natural-provider
+  evidence remain pending.
+- Change class: C2. The host changes one inbound Gmail disposition and creates
+  private immutable discovery envelopes. It sends no message, changes no CRM or
+  application decision, and grants no agent capability.
+- Exact authenticated mail from `jobalerts-noreply@linkedin.com` with recognized
+  LinkedIn job pointers is captured before Mailman, Chief, proposal, hard-filter,
+  or classification paths. Raw body/HTML and tracking parameters are discarded;
+  the outbox retains only bounded job-pointer metadata and hashes.
+- Executive Search uses an explicit operator-triggered SSH pull over the existing
+  Tailnet path. It stores private replay-safe received/pending/resolved receipts,
+  resolves only an exact existing employer/public-ATS match, and surfaces
+  unmatched leads without treating email snippets as job descriptions.
+- Minimum-sufficient review: `KEEP`, with recurring timer polling removed from
+  this release until an exact-sender natural alert proves the provider format.
+- Verification: NanoClaw focused Gmail/parser/disposition/outbox 96/96 and
+  typecheck pass under Node 22.23.2. Its full suite is 4,441 passed / 32 skipped
+  with four failures in unchanged unrelated Academy Capacity, CNPC,
+  payment-method, and Trafft tests. Executive Search passes its full 93/93
+  root+nested suite plus app lint/typecheck/build.
+- Independent review: one bounded Sonnet/high round found a broken remote
+  `find` glob and retained-batch starvation. Both were corrected and covered by
+  direct glob reproduction plus a 101-envelope advancement regression. Review
+  usage: four model calls, maximum context 55,115, cache creation 50,274, cache
+  read 76,564, output 21,307; no second ceremonial round.
+- Integration proof: an actual authenticated SSH fixture transferred one
+  minimized envelope from the Mini path to a disposable Studio store, resolved
+  one exact ATS lead and retained one unmatched lead, with zero applications,
+  reports or schedules. Hidden-IAB proof showed zero/zero before explicit
+  import, then one matched/one pending, preserved after reload.
+- Files: `src/linkedin-job-alert-outbox.ts`, Gmail parser/channel/disposition and
+  focused tests, this changelog, Project Map, Security, Active Work, and
+  `docs/LINKEDIN-JOB-ALERT-OUTBOX.md`; Executive Search owns its separate intake
+  module, API/UI, tests and local evidence.
+- Deployment/migration: pending. No real Gmail message was read for this proof,
+  no production outbox/Studio receipt was created, and no schedule, LinkedIn
+  page fetch, briefing, application, employer contact, or customer/business
+  route changed. Synthetic Mini/Studio fixture artifacts were removed after
+  verification; private proof receipts remain on the Studio.
+- Rollback/recovery: remove the capture call and accepted reason while preserving
+  minimized outbox/Studio receipts. SSH or Studio outage leaves Mini envelopes
+  queued; exact replay remains idempotent.
+
 ## 2026-09-15 — NC-20260915-003 login-to-tools source walking skeleton
 
 - Owner redirected Tandem Identity from further foundation work to one customer-
@@ -91,6 +174,29 @@
   DDL/migration, real credential/user, Party/ref/access/provider/customer write
   or deployment exists. Production remains gated on real metadata-token/IAM/
   certificate evidence and an authorized HTTPS route.
+
+### 2026-09-15T21:53Z addendum — migration 168 review and source proof
+
+- Owner approved the additional review. Sonnet/high session
+  `7c4f21e1-59a4-4e5e-8469-19d3e5de5f40` returned `KEEP` and found two material
+  proof gaps: the SQL/receiver pattern equivalence needed mechanical evidence, and
+  unsafe rollback had to fail visibly rather than silently.
+- Migration 168 now replaces only the MCS-literal product constraint with the exact
+  1–100 lowercase-alphanumeric/internal-hyphen shape enforced by
+  `commerce-bookkeeper.ts`. Its guarded rollback raises
+  `rollback 168 refused` whenever any non-MCS row exists; code rollback preserves
+  provider-neutral evidence.
+- A real disposable PostgreSQL database proves first apply, exact reapply without
+  row changes, Practitioner admission, populated rollback refusal, safe MCS-only
+  rollback and reapply. The static corpus covers one-character, 100-character,
+  consecutive-hyphen, leading/trailing-hyphen, uppercase, underscore and 101-byte
+  cases against both source contracts. Focused migration/receiver tests pass 10/10.
+- Review usage: six model calls, 21,255 cache-create, 125,085 cache-read, 9,085
+  output tokens, maximum context 33,071, no warnings; cost `$0.200911`.
+- No production schema or pending job changed in this addendum. Backup, exact
+  migration apply/readback and one pending-job replay remain required.
+- Final local release gate: TypeScript typecheck passes and the focused migration,
+  prior Adyen-schema and signed Bookkeeper receiver suites pass 12/12.
 
 ## 2026-09-14 — NC-20260914-007 disposable claim proposal
 
