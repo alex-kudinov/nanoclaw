@@ -94,6 +94,51 @@
 - Final local release gate: TypeScript typecheck passes and the focused migration,
   prior Adyen-schema and signed Bookkeeper receiver suites pass 12/12.
 
+### 2026-09-15T22:02Z addendum — migration 168 and exact replay complete
+
+- Commit `59e84ead6b088f2eedb7d9baaeda323d34dd5f8a` is pushed. Its clean immutable
+  archive SHA-256 is
+  `f2d1c60a57e0a307312bc71034bcc59d37053f0eadc96e4543778e4b2b5514f1`;
+  source tree `4273c0623d059c551e9fefffa2b2e1c09c6e61ba`, compiled artifact
+  `4d326129e00c684d1cd612451efbb00fa1e81e1548b696c39a7382ce548ba225`,
+  1,372 files and Node 22.23.2 verified locally, after fresh extraction and on
+  the Mini.
+- The three-pointer activator moved production from `740837715c0f` to exact
+  `59e84ead6b08`, retaining rollback plist
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-740837715c0f-2026-09-15T21-59-40-599Z`.
+  Final health reports the exact commit/root, matching Node pin, connected
+  Gmail/Slack, one listener, zero active containers, zero waiting work and zero
+  outgoing Slack messages.
+- Protected backup
+  `/Users/xbohdpukc/.local/share/nanoclaw-backups/NC-20260915-001-20260915T220025Z/business_v2.pre-migration-168.dump`
+  is a validated mode-0600 custom-format `business_v2` dump: 14,463,164 bytes,
+  2,008 catalog lines, SHA-256
+  `f71c72f7ac9edb5aee04e467571cdca366b4ef71c0ba2753dd14f0c92f8ecc9d`.
+- Manifest-covered migration 168 SHA-256
+  `a5fa41bc6d0978fa59c2a5ff7ae4aa9369bf99f9e05110125252fd18a3bac842`
+  replaced only the literal product constraint. The 17-row fingerprint stayed
+  `dfe7f48bb7d6456a92a782080e5dc6b5`; owner remained `nanoclaw_admin`; exact
+  admin/contador grants were unchanged; an immediate exact reapply retained the
+  same count and fingerprint.
+- The guarded WordPress update made only job
+  `02433a93-be78-416b-8f7f-80de9ff1e5d2` due. Attempt 11 completed
+  `projected_notified`; all five post-purchase jobs for order
+  `8e342761-18a1-4f78-a216-a5b23a1611f5` are complete and no other Live Adyen
+  job was due. Payment, Heartbeat, Encharge, receipt and document jobs were not
+  replayed.
+- PostgreSQL now has 18 rows and exactly one non-MCS row: AI for Coaches,
+  `RTKPSQMVRMMV3RR9`, `TCA-ABF3DE0635E1`, 100 USD cents. The El Contador message
+  at `2026-09-15T22:02:05.963Z` names Alex Kudinov, AI for Coaches, Adyen/PSP,
+  paid and recorded dates, truthful fee-pending state, Payment Log row 507,
+  Practitioner Series row 15, and verified database recording.
+- Payment Log API readback proves rows 483–495, 499, 501, 503–504 and the new
+  row 507 carry `Payment Provider = Adyen`. These are exactly the 17 PSPs already
+  present in PostgreSQL plus the current AI row. Existing Stripe IDs and
+  unclassified historical blanks were not changed.
+- State: `complete` for the bounded Practitioner Commerce Bookkeeper repair.
+  Migration rollback is now expected to refuse because a non-MCS row exists;
+  ordinary host rollback preserves the generalized constraint and evidence.
+
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 
 - State: ready_for_deploy; reviewed source and isolated verification complete,

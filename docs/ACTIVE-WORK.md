@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
-projection, owner Codex with bounded Claude necessity review, `blocked`,
+projection, owner Codex with bounded Claude necessity review, `complete`,
 C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
 exact live release `3dd0eb671203f6f25bbd87afe7f97eeb911dac39`. This is a
 retrospective registration: implementation began from the Peri program's recorded
@@ -30,7 +30,14 @@ returned `KEEP`; both findings are closed by an exact receiver/SQL boundary corp
 and a hard `rollback 168 refused` exception. Focused migration/receiver tests are
 10/10. Typecheck and the expanded migration/receiver suite now pass 12/12. State is
 `ready_for_deploy`: commit/release the exact bytes, take and validate the protected
-backup, apply/read back migration 168, and replay the one deferred job.
+backup, apply/read back migration 168, and replay the one deferred job. Completed
+2026-09-15T22:02Z: exact release `59e84ead6b088f2eedb7d9baaeda323d34dd5f8a`
+is live and healthy; the validated custom-format backup precedes migration 168;
+the migration preserved all 17 prior rows, owner and grants and reapplied as a
+no-op; the exact AI job completed on attempt 11. PostgreSQL, Payment Log,
+Practitioner roster, rich El Contador receipt and WordPress completion all read
+back exactly once. All 17 older PSP references proven by PostgreSQL now carry
+`Payment Provider = Adyen`; unrelated historical provider blanks remain unchanged.
 
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
