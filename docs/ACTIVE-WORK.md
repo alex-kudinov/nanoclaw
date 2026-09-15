@@ -1,5 +1,18 @@
 # NanoClaw active work
 
+2026-09-15T01:16Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
+Company-OS claim proposal, owner Codex, `in_progress`, C5/C2, isolated branches
+`codex/claim-proposal-disposable-20260914` and
+`codex/tandem-identity-claim-proposal-disposable-20260914`. Reuse the existing
+BFF `/api/session` Firebase-verification sequence, emit only a strict
+participant proposal with no Party/conflict authority, independently validate
+it in Company OS, derive current identifier candidates/open exception in a
+serializable generated database transaction and reuse migration 167 for atomic
+acceptance/replay. Fresh S2 necessity review removed bespoke HMAC, second token
+verification, duplicate fixture, staff/payer and live transport. Endpoint,
+network, credential, runtime wiring, DDL, real user, production identity/ref/
+access/customer/provider writes and deployment are prohibited.
+
 2026-09-15T00:52Z — `NC-20260914-006` Tandem Identity authenticated
 account-claim dark foundation, owner Codex, `complete`, C5/C2, implementation
 commit `2669e9cf` on isolated branch

@@ -99,6 +99,34 @@ is not authority for a real account. Token verification, signed replay-safe
 transport, canonical server-side context derivation, recovery and production
 activation remain separate security decisions.
 
+## Tandem Identity disposable claim-proposal boundary
+
+`NC-20260914-007` independently parses a participant-only proposal emitted by
+the already-verified BFF session sequence. The schema cannot carry a Party ID,
+candidate/conflict authority, staff/payer role or access decision. Before any
+identity-state query, Company OS validates audience, Google issuer/project/
+environment, exact Heartbeat user scope and the short time window.
+
+The receiver refuses non-generated database names and non-serializable
+transactions. It derives candidate Parties only from active, unexpired,
+verified migration-137 claims attached to unmerged Parties, and derives open
+conflict from the exact Heartbeat-reference fingerprint. Only one candidate and
+no open conflict can reach the existing migration-167 store. Exact replay is a
+verified no-op; every negative path leaves Party, external-reference, provider-
+attempt and accepted evidence state unchanged.
+
+The isolation label alone is insufficient: a session-default serializable
+client can still autocommit each statement. The receiver therefore assigns a
+real PostgreSQL transaction ID before context reads and requires that identical
+ID immediately before the store. A changed ID proves the locks/snapshot did not
+span the sequence and fails before mutation.
+
+There is intentionally no HMAC, signature, key ID, bearer token, endpoint,
+network client, credential or runtime import. A public fixture key would not
+prove transport trust, so the necessity review removed that obligation. This
+synthetic in-process artifact proves schema and sequencing compatibility only;
+service-to-service authentication remains a separate production security gate.
+
 ## Trust model
 
 | Entity/input                                                 | Treatment                                                                                     |

@@ -1,5 +1,38 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260914-007 disposable claim proposal
+
+- Added an independent strict participant-only Company OS proposal validator.
+  The BFF cannot supply Party IDs, candidate lists, conflict flags, staff/payer
+  roles or access decisions.
+- Added an unwired disposable receiver that requires serializable isolation,
+  derives current unmerged Parties only from active/current verified migration-
+  137 identifier claims, and reads open exceptions by exact Heartbeat-reference
+  fingerprint before reusing the migration-167 accepted-claim store.
+- Exact replay reconstructs the historical target only from an existing exact
+  accepted-claim decision and writes zero. Altered reuse, zero/multiple
+  candidates, open conflict, prior decision conflict, invalid proposal and
+  non-serializable callers fail closed with zero forbidden writes.
+- One BFF-produced temporary proposal artifact is consumed by hash; no second
+  checked-in fixture exists. The S2 necessity review removed custom HMAC,
+  signing canonicalization, key IDs and a second Firebase verifier.
+- This is synthetic source/disposable evidence only. No endpoint, network,
+  credential, runtime import, DDL, real user, production binding, provider/
+  access/customer write or deployment is present.
+- Focused cross-repository and disposable verification passes 19/19; format,
+  typecheck, build and docs continuity pass. Two full runs were each 4,435 pass/
+  33 skip/20 fail; each had the established 19 unrelated failures plus a
+  different disposable/concurrency flake. Payment-method reconciliation and
+  Academy Capacity shadow both passed immediately in isolation, making the
+  effective comparison 4,436 pass with the same baseline.
+- One bounded Sonnet/high round found the isolation-GUC check did not prove one
+  persistent transaction. The receiver now assigns and rechecks the same
+  PostgreSQL transaction ID across all context reads; a session configured
+  serializable but left in autocommit fails before writes. The exact regression
+  passes, so no second review round is warranted. Four model calls used 71,968
+  cache-create, 138,150 cache-read and 28,000 output tokens; maximum context was
+  83,647.
+
 ## 2026-09-14 — NC-20260914-006 dark Google account claim
 
 - Added one concrete, strict Google Identity Platform claim and evaluator for an

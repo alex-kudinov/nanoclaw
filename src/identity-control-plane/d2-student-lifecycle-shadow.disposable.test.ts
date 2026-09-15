@@ -5,10 +5,12 @@ import { randomUUID } from 'node:crypto';
 import { Pool, type PoolClient } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { sha256Json } from './canonical.js';
 import { runTandemIdentityD2ShadowWithClient } from './d2-student-lifecycle-shadow.js';
 import { importHeartbeatAggregateSnapshotWithClient } from './d3-heartbeat-reconciliation.js';
 import { prepareHeartbeatAggregateSnapshot } from './d3-heartbeat-snapshot.js';
 import { createGoogleAccountClaimEnvelope } from './google-account-claim.js';
+import { applyGoogleAccountClaimProposalWithClient } from './google-account-claim-proposal-store.js';
 import { applyGoogleAccountClaimWithClient } from './google-account-claim-store.js';
 
 const ROOT = process.cwd();
@@ -77,6 +79,24 @@ async function transaction<T>(
   }
 }
 
+async function serializableTransaction<T>(
+  operation: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+    await client.query('SET LOCAL ROLE nanoclaw_admin');
+    const result = await operation(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 beforeAll(() => {
   if (!fs.existsSync(path.join(pgBin, 'psql')) || !fs.existsSync(migration)) {
     throw new Error('PostgreSQL 16 or migration 167 is unavailable');
@@ -108,6 +128,63 @@ beforeAll(() => {
        entity_type text NOT NULL,
        external_id text NOT NULL,
        UNIQUE(provider,source_scope,entity_type,external_id)
+     );
+     CREATE TABLE business_v2.party_identifier_claims (
+       id bigserial PRIMARY KEY,
+       party_id bigint NOT NULL REFERENCES business_v2.parties(id),
+       identifier_kind text NOT NULL CHECK (
+         identifier_kind IN ('provider_user_id','verified_email_candidate','email_candidate')
+       ),
+       identifier_fingerprint text NOT NULL CHECK (
+         identifier_fingerprint ~ '^[0-9a-f]{64}$'
+       ),
+       restricted_value text,
+       source_ref_id bigint REFERENCES business_v2.party_external_refs(id),
+       verification_method text NOT NULL,
+       confidence text NOT NULL CHECK (
+         confidence IN ('source_verified','provider_asserted','candidate','unknown')
+       ),
+       status text NOT NULL DEFAULT 'active' CHECK (
+         status IN ('active','retired','conflicting')
+       ),
+       valid_from timestamptz NOT NULL,
+       valid_until timestamptz,
+       evidence_sha256 text NOT NULL CHECK (evidence_sha256 ~ '^[0-9a-f]{64}$'),
+       created_at timestamptz NOT NULL DEFAULT now(),
+       updated_at timestamptz NOT NULL DEFAULT now(),
+       CHECK (valid_until IS NULL OR valid_from <= valid_until)
+     );
+     CREATE UNIQUE INDEX party_identifier_claims_active_exact_uniq
+       ON business_v2.party_identifier_claims
+         (party_id,identifier_kind,identifier_fingerprint)
+       WHERE status='active';
+     CREATE TABLE business_v2.party_identity_exceptions (
+       id bigserial PRIMARY KEY,
+       fingerprint text NOT NULL UNIQUE CHECK (fingerprint ~ '^[0-9a-f]{64}$'),
+       current_party_id bigint REFERENCES business_v2.parties(id),
+       candidate_party_ids bigint[] NOT NULL DEFAULT '{}'::bigint[],
+       reason_code text NOT NULL,
+       status text NOT NULL DEFAULT 'open' CHECK (
+         status IN ('open','resolved','no_action')
+       ),
+       owner_group text NOT NULL DEFAULT 'chief',
+       evidence_refs jsonb NOT NULL DEFAULT '{}'::jsonb,
+       occurrence_count integer NOT NULL DEFAULT 1,
+       first_seen_at timestamptz NOT NULL,
+       last_seen_at timestamptz NOT NULL,
+       resolution_code text,
+       resolution_receipt_sha256 text,
+       resolved_at timestamptz,
+       created_at timestamptz NOT NULL DEFAULT now(),
+       updated_at timestamptz NOT NULL DEFAULT now(),
+       CHECK (first_seen_at <= last_seen_at),
+       CHECK (
+         (status='open' AND resolved_at IS NULL AND resolution_code IS NULL
+           AND resolution_receipt_sha256 IS NULL) OR
+         (status IN ('resolved','no_action') AND resolved_at IS NOT NULL
+           AND resolution_code IS NOT NULL
+           AND resolution_receipt_sha256 IS NOT NULL)
+       )
      );
      CREATE TABLE business_v2.party_context_adapter_registrations (
        id bigserial PRIMARY KEY,
@@ -203,9 +280,13 @@ beforeAll(() => {
      ALTER TABLE business_v2.student_lifecycle_events OWNER TO nanoclaw_admin;
      ALTER TABLE business_v2.parties OWNER TO nanoclaw_admin;
      ALTER TABLE business_v2.party_external_refs OWNER TO nanoclaw_admin;
+     ALTER TABLE business_v2.party_identifier_claims OWNER TO nanoclaw_admin;
+     ALTER TABLE business_v2.party_identity_exceptions OWNER TO nanoclaw_admin;
      ALTER TABLE business_v2.party_context_adapter_registrations OWNER TO nanoclaw_admin;
      ALTER SEQUENCE business_v2.parties_id_seq OWNER TO nanoclaw_admin;
      ALTER SEQUENCE business_v2.party_external_refs_id_seq OWNER TO nanoclaw_admin;
+     ALTER SEQUENCE business_v2.party_identifier_claims_id_seq OWNER TO nanoclaw_admin;
+     ALTER SEQUENCE business_v2.party_identity_exceptions_id_seq OWNER TO nanoclaw_admin;
      ALTER SEQUENCE business_v2.party_context_adapter_registrations_id_seq OWNER TO nanoclaw_admin;
      ALTER SEQUENCE business_v2.party_context_observations_id_seq OWNER TO nanoclaw_admin;
      ALTER SEQUENCE business_v2.student_lifecycle_events_id_seq OWNER TO nanoclaw_admin;`,
@@ -782,5 +863,328 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       accepted_decisions: 1,
       provider_attempts: 0,
     });
+  });
+
+  it('derives proposal context in a serializable transaction and reuses the accepted-claim store', async () => {
+    const proposal = {
+      kind: 'google_account_claim_proposal' as const,
+      schemaVersion: 1 as const,
+      audience: 'tandem-company-os:identity-account-claim' as const,
+      claimId: '40000000-0000-4000-8000-000000000002',
+      googleSubject: {
+        issuer: 'https://securetoken.google.com/tandem-identity-dev-2026',
+        projectId: 'tandem-identity-dev-2026',
+        environment: 'test' as const,
+        sourceScope: 'tandem-identity-dev-2026',
+        uid: 'firebase-synthetic-cross-repository-uid',
+        emailVerified: true as const,
+        verifiedEmailSha256:
+          'a905ebe662b7385d1b3c25adf6f5f252dde2a3b456c93d81f11aac822b2f7083',
+        authenticatedAt: '2026-09-15T01:59:00.000Z',
+      },
+      heartbeatRef: {
+        provider: 'heartbeat' as const,
+        environment: 'test' as const,
+        scope: 'main-community',
+        entityType: 'user' as const,
+        externalId: '40000000-0000-4000-8000-000000000001',
+      },
+      selectedBy: 'explicit_heartbeat_user' as const,
+      role: 'participant' as const,
+      payerLearnerRelationship: 'self' as const,
+      issuedAt: '2026-09-15T02:00:00.000Z',
+      expiresAt: '2026-09-15T02:10:00.000Z',
+    };
+    const policy = {
+      expectedProjectId: 'tandem-identity-dev-2026',
+      expectedEnvironment: 'test' as const,
+      observedAt: '2026-09-15T02:01:00.000Z',
+    };
+    const identityWriteCounts = () =>
+      transaction((client) =>
+        client.query(`SELECT
+          (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+          (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+          (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+          (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+          (SELECT count(*) FROM business_v2.parties)::int AS parties,
+          (SELECT count(*) FROM business_v2.party_external_refs)::int AS refs,
+          (SELECT count(*) FROM business_v2.provider_projection_attempts)::int AS provider_attempts`),
+      );
+
+    const initial = await identityWriteCounts();
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimProposalWithClient({
+          client,
+          proposal,
+          policy,
+        }),
+      ),
+    ).rejects.toThrow(/serializable_transaction_required/i);
+    expect((await identityWriteCounts()).rows[0]).toEqual(initial.rows[0]);
+
+    const autocommitClient = await pool.connect();
+    try {
+      await autocommitClient.query(
+        `SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE`,
+      );
+      await expect(
+        applyGoogleAccountClaimProposalWithClient({
+          client: autocommitClient,
+          proposal,
+          policy,
+        }),
+      ).rejects.toThrow(/transaction_boundary_lost/i);
+    } finally {
+      await autocommitClient.query(
+        `SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED`,
+      );
+      autocommitClient.release();
+    }
+    expect((await identityWriteCounts()).rows[0]).toEqual(initial.rows[0]);
+
+    const noCandidate = await serializableTransaction((client) =>
+      applyGoogleAccountClaimProposalWithClient({ client, proposal, policy }),
+    );
+    expect(noCandidate).toMatchObject({
+      outcome: 'held',
+      reasonCode: 'VERIFIED_IDENTIFIER_CANDIDATE_NOT_FOUND',
+      candidateCount: 0,
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+      decisionsInserted: 0,
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(initial.rows[0]);
+
+    await transaction((client) =>
+      client.query(
+        `INSERT INTO business_v2.party_identifier_claims
+           (party_id,identifier_kind,identifier_fingerprint,
+            verification_method,confidence,status,valid_from,valid_until,
+            evidence_sha256)
+         VALUES (2,'verified_email_candidate',$1,'provider_verified',
+           'source_verified','active','2026-09-15T01:00:00Z',NULL,$2)`,
+        [proposal.googleSubject.verifiedEmailSha256, '5'.repeat(64)],
+      ),
+    );
+    const beforeAccepted = await identityWriteCounts();
+    const accepted = await serializableTransaction((client) =>
+      applyGoogleAccountClaimProposalWithClient({ client, proposal, policy }),
+    );
+    expect(accepted).toMatchObject({
+      outcome: 'accepted',
+      reasonCode: 'EXPLICIT_ACCOUNT_CLAIM_ACCEPTED',
+      candidateCount: 1,
+      openConflict: false,
+      receiptInserted: 1,
+      relatedRefsInserted: 1,
+      authAccountsInserted: 1,
+      decisionsInserted: 1,
+      partyWrites: 0,
+      referenceWrites: 0,
+      providerAttempts: 0,
+      providerWrites: 0,
+      accessWrites: 0,
+    });
+    const afterAccepted = await identityWriteCounts();
+    expect(afterAccepted.rows[0]).toEqual({
+      ...beforeAccepted.rows[0],
+      receipts: beforeAccepted.rows[0].receipts + 1,
+      related_refs: beforeAccepted.rows[0].related_refs + 1,
+      auth_accounts: beforeAccepted.rows[0].auth_accounts + 1,
+      decisions: beforeAccepted.rows[0].decisions + 1,
+    });
+
+    const replay = await serializableTransaction((client) =>
+      applyGoogleAccountClaimProposalWithClient({ client, proposal, policy }),
+    );
+    expect(replay).toMatchObject({
+      outcome: 'duplicate',
+      reasonCode: 'EXACT_CLAIM_REPLAY_NOOP',
+      candidateCount: 1,
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+      decisionsInserted: 0,
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(
+      afterAccepted.rows[0],
+    );
+
+    await expect(
+      serializableTransaction((client) =>
+        applyGoogleAccountClaimProposalWithClient({
+          client,
+          proposal: {
+            ...proposal,
+            googleSubject: {
+              ...proposal.googleSubject,
+              authenticatedAt: '2026-09-15T01:58:59.000Z',
+            },
+          },
+          policy,
+        }),
+      ),
+    ).rejects.toThrow(/claim_id_payload_conflict/i);
+    expect((await identityWriteCounts()).rows[0]).toEqual(
+      afterAccepted.rows[0],
+    );
+
+    const sharedProposal = {
+      ...proposal,
+      claimId: '40000000-0000-4000-8000-000000000012',
+      googleSubject: {
+        ...proposal.googleSubject,
+        uid: 'firebase-synthetic-shared-uid',
+        verifiedEmailSha256: 'b'.repeat(64),
+      },
+      heartbeatRef: {
+        ...proposal.heartbeatRef,
+        externalId: '40000000-0000-4000-8000-000000000011',
+      },
+    };
+    await transaction(async (client) => {
+      for (const partyId of [1, 2]) {
+        await client.query(
+          `INSERT INTO business_v2.party_identifier_claims
+             (party_id,identifier_kind,identifier_fingerprint,
+              verification_method,confidence,status,valid_from,
+              evidence_sha256)
+           VALUES ($1,'verified_email_candidate',$2,'provider_verified',
+             'source_verified','active','2026-09-15T01:00:00Z',$3)`,
+          [
+            partyId,
+            sharedProposal.googleSubject.verifiedEmailSha256,
+            '6'.repeat(64),
+          ],
+        );
+      }
+    });
+    const beforeShared = await identityWriteCounts();
+    expect(
+      await serializableTransaction((client) =>
+        applyGoogleAccountClaimProposalWithClient({
+          client,
+          proposal: sharedProposal,
+          policy,
+        }),
+      ),
+    ).toMatchObject({
+      outcome: 'held',
+      reasonCode: 'SHARED_VERIFIED_IDENTIFIER',
+      candidateCount: 2,
+      receiptInserted: 0,
+      decisionsInserted: 0,
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(beforeShared.rows[0]);
+
+    const conflictedProposal = {
+      ...proposal,
+      claimId: '40000000-0000-4000-8000-000000000022',
+      googleSubject: {
+        ...proposal.googleSubject,
+        uid: 'firebase-synthetic-conflicted-uid',
+        verifiedEmailSha256: 'c'.repeat(64),
+      },
+      heartbeatRef: {
+        ...proposal.heartbeatRef,
+        externalId: '40000000-0000-4000-8000-000000000021',
+      },
+    };
+    await transaction(async (client) => {
+      await client.query(
+        `INSERT INTO business_v2.party_identifier_claims
+           (party_id,identifier_kind,identifier_fingerprint,
+            verification_method,confidence,status,valid_from,
+            evidence_sha256)
+         VALUES (2,'verified_email_candidate',$1,'provider_verified',
+           'source_verified','active','2026-09-15T01:00:00Z',$2)`,
+        [conflictedProposal.googleSubject.verifiedEmailSha256, '7'.repeat(64)],
+      );
+      await client.query(
+        `INSERT INTO business_v2.party_identity_exceptions
+           (fingerprint,candidate_party_ids,reason_code,status,owner_group,
+            evidence_refs,first_seen_at,last_seen_at)
+         VALUES ($1,ARRAY[2]::bigint[],'identity_ambiguous','open','chief',
+           $2::jsonb,'2026-09-15T01:00:00Z','2026-09-15T01:00:00Z')`,
+        [
+          '8'.repeat(64),
+          JSON.stringify({
+            source_ref_sha256: sha256Json(conflictedProposal.heartbeatRef),
+          }),
+        ],
+      );
+    });
+    const beforeConflict = await identityWriteCounts();
+    expect(
+      await serializableTransaction((client) =>
+        applyGoogleAccountClaimProposalWithClient({
+          client,
+          proposal: conflictedProposal,
+          policy,
+        }),
+      ),
+    ).toMatchObject({
+      outcome: 'held',
+      reasonCode: 'OPEN_IDENTITY_CONFLICT',
+      candidateCount: 1,
+      openConflict: true,
+      receiptInserted: 0,
+      decisionsInserted: 0,
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(
+      beforeConflict.rows[0],
+    );
+
+    const decisionConflictProposal = {
+      ...proposal,
+      claimId: '40000000-0000-4000-8000-000000000032',
+      googleSubject: {
+        ...proposal.googleSubject,
+        uid: 'firebase-synthetic-decision-conflict-uid',
+        verifiedEmailSha256: 'd'.repeat(64),
+      },
+      heartbeatRef: {
+        ...proposal.heartbeatRef,
+        externalId: '40000000-0000-4000-8000-000000000031',
+      },
+    };
+    await transaction((client) =>
+      client.query(
+        `INSERT INTO business_v2.identity_resolution_decisions
+           (decision_uuid,provider,environment,source_scope,entity_type,
+            external_id_sha256,result,resolution_basis,party_id,candidate_id,
+            evidence_refs,evidence_sha256,reason_code,decided_at,
+            retention_policy_version)
+         VALUES ($1,'heartbeat','test','main-community','user',$2,
+           'ambiguous',NULL,NULL,NULL,$3::jsonb,
+           business_v2.fn_tandem_identity_sha256($3::jsonb::text),
+           'FIXTURE_DECISION_CONFLICT','2026-09-15T02:01:00Z',1)`,
+        [
+          decisionConflictProposal.claimId,
+          sha256Json(decisionConflictProposal.heartbeatRef.externalId),
+          JSON.stringify(['receipt:fixture-decision-conflict']),
+        ],
+      ),
+    );
+    const beforeDecisionConflict = await identityWriteCounts();
+    expect(
+      await serializableTransaction((client) =>
+        applyGoogleAccountClaimProposalWithClient({
+          client,
+          proposal: decisionConflictProposal,
+          policy,
+        }),
+      ),
+    ).toMatchObject({
+      outcome: 'held',
+      reasonCode: 'CLAIM_ID_DECISION_CONFLICT',
+      openConflict: true,
+      receiptInserted: 0,
+      decisionsInserted: 0,
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(
+      beforeDecisionConflict.rows[0],
+    );
   });
 });

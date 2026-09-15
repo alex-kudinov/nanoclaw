@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:tandem-identity-claim-proposal-disposable-2026-09-14",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T01:13:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-account-claim-dark",
+    "work:tandem-identity-claim-proposal-disposable"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "The owner said keep going after the dark Google account-claim foundation was reviewed, verified, pushed, and the next separately gated result was identified as a disposable BFF-to-Company-OS traversal. This authorizes the S2-simplified minimum proof only: reuse Tandem Identity's existing /api/session token-verification and recent-auth sequence with an injected test gateway; define a strict participant-only proposal containing no Party ID or conflict flags; emit one synthetic neutral proposal artifact; independently validate it in Company OS; require a serializable generated disposable transaction; derive current candidate Parties only from active, unexpired, verified migration-137 identifier claims and open conflict from the exact Heartbeat reference; convert exactly one safe candidate into the existing migration-167 accepted-claim store; and prove exact replay, altered reuse, negative guards, atomic rollback and zero forbidden writes. It authorizes clean isolated worktrees in tandem-identity and NanoClaw, focused/full verification, one bounded Sonnet/high review of the identity proposal and transaction boundary, corrections, and commit/push of both source branches. The fresh necessity review rejected bespoke HMAC, custom canonical signing, key IDs, a second raw-token verifier, duplicate fixture copies, and staff/payer scope; those are not authorized. No HTTP endpoint, runtime import, network client, bearer token, credential, Secret Manager change, new DDL, real user, account UI, Party creation/merge, production database binding, external-reference/access/enrollment/entitlement/customer/provider write, migration, deployment or activation is authorized. Stop and replan if server-derived context cannot be proven from existing schema, serializable isolation is not enforceable, the two schemas do not interoperate, any negative leaves partial state, or the proof requires any prohibited surface.",
+  "source_task": "Owner instruction in Codex: keep going, after NC-20260914-006 completion."
+}
