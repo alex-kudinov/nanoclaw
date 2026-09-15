@@ -184,7 +184,9 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(source).toContain('endColumnIndex: 16');
     expect(source).toContain('...(tab.basicFilter || {})');
     expect(source).toContain("headers.findIndex(value => value === 'Cohort')");
-    expect(source).toContain('if (!before) await update(ROSTER_ID, cell, [[expected]])');
+    expect(source).toContain(
+      'if (!before) await update(ROSTER_ID, cell, [[expected]])',
+    );
     expect(source).toContain("fail('student roster cohort readback mismatch')");
     expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
   });
