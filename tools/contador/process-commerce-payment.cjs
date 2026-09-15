@@ -80,6 +80,12 @@ function psqlVars(values) {
   return Object.entries(values).flatMap(([key, value]) => ['-v', `${key}=${value ?? ''}`]);
 }
 
+function cohortRosterValue(current, cohort) {
+  const existing = String(current || '').trim();
+  if (existing) return existing;
+  return cohort && typeof cohort.rosterValue === 'string' ? cohort.rosterValue.trim() : '';
+}
+
 async function readInput() {
   let raw = '';
   for await (const chunk of process.stdin) {
@@ -133,17 +139,30 @@ async function recordRoster(fact) {
     const headers = (await get(ROSTER_ID, `'${tab}'!1:1`)).values?.[0] || [];
     const targetIndex = headers.findIndex(value => value === target);
     if (targetIndex < 0) fail(`roster target missing: ${tab}/${target}`);
+    const cohortIndex = headers.findIndex(value => value === 'Cohort');
+    if (fact.cohort && cohortIndex < 0) fail(`roster cohort target missing: ${tab}/Cohort`);
     const emails = (await get(ROSTER_ID, `'${tab}'!A:A`)).values || [];
     const found = emails.findIndex((row, i) => i > 0 && String(row[0] || '').toLowerCase() === fact.learnerEmail);
     let sheetRow;
+    let cohortValue = '';
     if (found >= 0) {
       sheetRow = found + 1;
       await update(ROSTER_ID, `'${tab}'!${column(targetIndex)}${sheetRow}`, [[fact.transactionDate]]);
       const currentName = String((await get(ROSTER_ID, `'${tab}'!B${sheetRow}`)).values?.[0]?.[0] || '').trim();
       if (!currentName || currentName.toLowerCase() === 'unknown') await update(ROSTER_ID, `'${tab}'!B${sheetRow}`, [[fact.learnerName]]);
+      if (fact.cohort) {
+        const cell = `'${tab}'!${column(cohortIndex)}${sheetRow}`;
+        const before = String((await get(ROSTER_ID, cell)).values?.[0]?.[0] || '').trim();
+        const expected = cohortRosterValue(before, fact.cohort);
+        if (!before) await update(ROSTER_ID, cell, [[expected]]);
+        const after = String((await get(ROSTER_ID, cell)).values?.[0]?.[0] || '').trim();
+        if (after !== expected) fail('student roster cohort readback mismatch');
+        cohortValue = after;
+      }
     } else {
-      const row = new Array(Math.max(headers.length, targetIndex + 1)).fill('');
+      const row = new Array(Math.max(headers.length, targetIndex + 1, cohortIndex + 1)).fill('');
       row[0] = fact.learnerEmail; row[1] = fact.learnerName; row[targetIndex] = fact.transactionDate;
+      if (fact.cohort) row[cohortIndex] = cohortRosterValue('', fact.cohort);
       const result = await append(ROSTER_ID, `'${tab}'!A:A`, [row]);
       const match = String(result.updates?.updatedRange || '').match(/:.*?(\d+)$/);
       sheetRow = match ? Number(match[1]) : 0;
@@ -151,7 +170,11 @@ async function recordRoster(fact) {
     if (!sheetRow) fail('roster row unavailable');
     const verify = (await get(ROSTER_ID, `'${tab}'!A${sheetRow}:${column(targetIndex)}${sheetRow}`)).values?.[0] || [];
     if (String(verify[0] || '').toLowerCase() !== fact.learnerEmail || !String(verify[targetIndex] || '').trim()) fail('student roster readback mismatch');
-    destinations.push({ tab, column: target, row: sheetRow });
+    if (fact.cohort && !cohortValue) {
+      cohortValue = String((await get(ROSTER_ID, `'${tab}'!${column(cohortIndex)}${sheetRow}`)).values?.[0]?.[0] || '').trim();
+      if (!cohortValue) fail('student roster cohort readback mismatch');
+    }
+    destinations.push({ tab, column: target, row: sheetRow, cohort: cohortValue });
   }
   return destinations;
 }
@@ -188,6 +211,7 @@ function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
     'Fee: pending — awaiting Adyen settlement/fee evidence',
     `Payment Log: recorded and verified (row ${paymentLog.row}; provider Adyen)`,
     `Student Roster: recorded and verified (${roster})`,
+    ...(fact.cohort ? [`Cohort: ${fact.cohort.rosterValue}`] : []),
     'Database: recorded and verified',
   ].join('\n');
 }
@@ -204,6 +228,7 @@ async function main() {
     transactionDate: format(event), recordedDate: format(new Date()),
     learnerName: `${learner.firstName} ${learner.lastName}`.trim(), learnerEmail: learner.email.toLowerCase(),
     productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
+    cohort: envelope.order.cohort || null,
   };
   // Each destination is idempotent by provider payment ID. A retry repairs an
   // incomplete prior delivery and only succeeds after exact readback.
@@ -216,4 +241,4 @@ async function main() {
 
 if (require.main === module) main().catch(error => { console.error(`[EL CONTADOR] ${error.message}`); process.exit(1); });
 
-module.exports = { column, psqlVars, formatCommerceSummary };
+module.exports = { column, psqlVars, cohortRosterValue, formatCommerceSummary };

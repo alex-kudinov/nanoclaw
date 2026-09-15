@@ -31,6 +31,18 @@ existing server, with no new service/store. Implementation is waiting on the
 load-bearing independent readback of the Cloud Run service account's immutable
 numeric subject; Google Cloud Console requires the owner's fresh passkey. No
 endpoint, Funnel, IAM, binding or deployment state has changed.
+2026-09-15T23:00Z — `NC-20260915-002` credential Commerce cohort projection,
+owner Codex with bounded Sonnet/high necessity review, `in_progress`, C4, same
+isolated provider-neutral Bookkeeper branch. Extend only the existing signed
+Commerce envelope with an optional bounded PCC/ACTC calendar selection. The
+recorder keeps Product Map routing, fills the existing roster `Cohort` cell only
+when blank, reads back product and cohort cells, and adds the cohort to the rich
+Contador receipt. No new route, table, migration, credential, process, queue,
+scheduler, payment authority or customer communication. ACC and combined Level 2
+remain outside this slice because their status/capacity obligation is not yet
+supported. Typecheck and focused Bookkeeper/migration tests pass 11/11; immutable
+release build, deployment and first natural purchase proof remain pending.
+
 2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
 projection, owner Codex with bounded Claude necessity review, `blocked`,
 C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
