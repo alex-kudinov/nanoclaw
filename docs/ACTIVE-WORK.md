@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-15T20:20Z — `NC-20260915-003` Tandem Identity login-to-tools walking
-skeleton, owner Codex, `in_progress`, C5/C3. Company OS program work
+skeleton, owner Codex, `blocked`, C5/C3. Company OS program work
 `work:tandem-identity-login-tools-walking-skeleton` is claimed at revision 357.
 Tandem Identity branch `codex/login-tools-walking-skeleton-20260915` starts from
 the runtime-unchanged topology documentation at `3a577a7`; Company OS continuity
@@ -13,8 +13,14 @@ entitlement. Unbound, ambiguous, missing/held access, logout, revocation and
 Company OS unavailability must fail closed. No new identity store, service,
 queue, worker, tunnel, generalized federation, provider write, mass migration
 or production rollout is authorized. The exact controlled pilot identity/Party
-binding is a named-human gate and will not be invented. Next: write the minimum-
-sufficient checkpoint and obtain a fresh necessity verdict before source work.
+binding is a named-human gate and will not be invented. The source path is now
+reviewed, committed and pushed on private Tandem Identity branch
+`codex/login-tools-walking-skeleton-20260915` at `d46fb591`: focused 55/55 and
+full 74 passed with four intentional Firestore skips; typecheck/build pass;
+Sonnet/high returned `PASS`. No deployment occurred because the installed
+gateway still guarantees `unbound`. Next: owner names the exact controlled
+account and canonical Party/entitlement, and separately authorizes the real
+gateway path needed for a truthful end-to-end development canary.
 
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
 topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch

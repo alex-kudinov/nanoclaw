@@ -1,5 +1,39 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-003 login-to-tools source walking skeleton
+
+- Owner redirected Tandem Identity from further foundation work to one customer-
+  visible milestone: the same verified session and exact Party must reach
+  `/account` and one protected `/tools` experience.
+- Fresh minimum-sufficient review returned `KEEP` for a typed version-1 access
+  projection, pure evaluator and route through the existing gateway seam. It
+  rejected any new store, transport, cache, queue, worker, tunnel or second
+  identity/access authority.
+- Private Tandem Identity source now requires exact `coaching_tools.plus`,
+  `active` state, inclusive start/exclusive expiry, positive canonical version,
+  five-minute freshness and 60-second future skew. Every uncertain/malformed
+  state denies; gateway failure is distinct temporary unavailability.
+- `/account` and `/tools` independently query the same `(project, Firebase UID)`
+  and receive the same Party in the HTTP proof. Party IDs and access projections
+  do not enter HTML; `/api/me` retains its binding-summary response.
+- Focused access/application tests passed 55/55; full Tandem Identity passed 74
+  with four intentional Firestore skips; typecheck, build and diff checks pass.
+- One bounded Claude Sonnet/high review returned `PASS` with no material finding.
+  Its low error-middleware consistency note was fixed mechanically. Session
+  `58e97d58-0019-4e90-929f-67adf1374fa6` used four model calls, 59,235
+  cache-create, 95,172 cache-read and 12,157 output tokens; maximum context was
+  64,076 with no warning.
+- A formatter-expanded intermediate diff was corrected before acceptance:
+  established files returned to their original formatting and the reviewed
+  route assertions moved to a focused test file. Full verification passed again.
+- Exact private remote head is `d46fb591e4c22e8edc5f113ee0dc99c0062f7589`
+  on `codex/login-tools-walking-skeleton-20260915`.
+- Deployment/live outcome is blocked, not claimed. The installed server still
+  uses `UnconfiguredIdentityGateway`; no user, verification, Party/auth binding,
+  entitlement grant, provider write, gateway transport or deployment occurred.
+  Completion requires one owner-named controlled identity and exact Party/
+  entitlement plus a separately authorized real gateway path.
+
 ## 2026-09-15 — NC-20260915-002 service-account transport verifier
 
 - Selected a future Google-signed Cloud Run service-account ID token as the
