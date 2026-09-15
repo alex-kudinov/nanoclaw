@@ -1,0 +1,15 @@
+{
+  "decision_id": "decision:tandem-identity-account-claim-dark-2026-09-14",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T00:21:06Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-linkage-evidence-batch",
+    "work:tandem-identity-account-claim-dark"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "The owner said continue after all 12 Heartbeat proof cases produced stable graphs and safe resolver outcomes, and after being told the next stage is one scalable exact linkage mechanism rather than more provider matching. This authorizes the minimum-sufficient dark Google account-claim foundation in an isolated NanoClaw worktree: one concrete normalized Google issuer/environment/Firebase UID claim envelope; strict recent-auth, exact Heartbeat scope, explicit participant/staff/payer role, issue/expiry, evidence fingerprint, conflict and email-non-authority guards; a pure accepted-or-held/rejected evaluator; a C02-shaped before/after fixture; integration with the existing D0 resolved_claim_or_operation/accepted_claim path; exact consumed-receipt replay no-op and altered-reuse refusal; and disposable PostgreSQL proof using only migration 167 receipts, candidates, auth_accounts and resolution decisions with transactional rollback and no new DDL. It authorizes focused/full tests, bounded independent Sonnet/high review because the slice crosses a novel auth/identity boundary, corrections, and a commit/push of the isolated source after verification. It does not authorize generalized provider abstraction; tandem-identity BFF/UI/Firestore changes; cryptographic production transport or keys; real Google/Firebase/Heartbeat users; customer claims or communications; Party creation/merge; production database ingestion or binding; external-reference/access/enrollment/entitlement/customer/provider writes; migration 168; deployment/activation; Plus/Pro; Zoom; attendance; automated repair; or full migration. Stop and replan if migration 167 cannot represent atomic consumption without DDL, any negative resolves or leaves partial state, exact replay is not a no-op, or the proof requires network, credentials, runtime route, real user or production write.",
+  "source_task": "Owner instruction in Codex: continue, after the full proof-set graph and resolver batch completed."
+}

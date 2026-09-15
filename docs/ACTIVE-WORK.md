@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-15T00:21Z — `NC-20260914-006` Tandem Identity authenticated
+account-claim dark foundation, owner Codex, `in_progress`, C5/C2, isolated
+branch `codex/tandem-identity-account-claim-dark-20260914` from D3 proof commit
+`1c2e0c52e4e0a7ca7651913d67e77f2b0ec3416a`. The owner authorized the
+single scalable linkage mechanism after all 12 proof cases received stable
+Heartbeat graphs. Implement only one concrete normalized Google claim
+contract, accepted-or-held/rejected evaluator, C02-shaped before/after proof,
+D0 `accepted_claim` resolution and disposable migration-167 atomic replay.
+General provider abstraction, `claim_available`, BFF/UI/Firestore/signing,
+real users, Party creation, production identity/ref/access/customer/provider
+writes, DDL, runtime activation and deployment are prohibited. A fresh
+minimum-sufficient review returned KEEP with those scope reductions; bounded
+Sonnet/high auth/identity review is required before commit/push.
+
 2026-09-14T11:21Z — `NC-20260914-001` Tandem Identity D3 Heartbeat
 aggregate reconciliation, owner Codex, `complete`, C5/C3, pushed branch
 `codex/tandem-identity-d3-heartbeat-reconciliation-20260914` from D2 live-proof

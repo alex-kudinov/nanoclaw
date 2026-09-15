@@ -1,5 +1,35 @@
 # NanoClaw engineering changelog
 
+## 2026-09-14 — NC-20260914-006 dark Google account claim
+
+- Added one concrete, strict Google Identity Platform claim and evaluator for an
+  explicit Heartbeat-user-to-existing-Party selection. Email/name/group/payment
+  similarity is never an authority; missing or conflicting context holds or
+  rejects the claim.
+- Added an unwired admin-transaction store over migration 167 only. Accepted
+  synthetic claims append one authenticated receipt, related Heartbeat ref,
+  accepted auth-account binding and accepted-claim resolution decision. Exact
+  replay writes zero; altered reuse, prior subject observation, invalid target
+  Party, cross-environment adapter scope and late constraint conflicts fail
+  closed or roll back atomically.
+- Structural checks exclude network, credentials, production runtime imports,
+  Party/ref/provider-attempt writers and migration 168. No real user, provider,
+  production database, access, customer or deployment action is authorized.
+- Focused tests, full-suite comparison, independent auth/identity review and the
+  final source commit are recorded in
+  `.program/evidence/NC-20260914-006-account-claim-reviewed-precommit.md`.
+- Verification: focused 20/20, format, typecheck, build and docs continuity
+  pass. Full suite was 4,422 pass/32 skip/20 fail; the one failure beyond the
+  established 19-file baseline was an unrelated disposable timeout that passed
+  immediately in isolation, making the effective comparison 4,423 pass with
+  the same 19 baseline failures.
+- One bounded Sonnet/high round found no behavioral defect and one moderate
+  proof gap: missing-Party and prior-Google-subject refusal lacked database
+  tests. Both guards now have exact zero-write disposable readbacks; no second
+  round is warranted. The review used 13 model calls, 113,010 cache-create,
+  965,527 cache-read and 13,591 output tokens; its 119,643-token maximum context
+  exceeded the 100k target and is recorded as an orchestration warning.
+
 ## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
 
 - State: `complete`; reviewed source, disposable PostgreSQL proof, protected

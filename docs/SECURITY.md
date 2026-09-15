@@ -79,6 +79,26 @@ to the same Slack channel, and timestamps are stripped from cross-channel
 handoffs. Explicit historical Sales roots must be persisted channel roots for
 the same lead. Model-supplied timestamps remain proposals, not authority.
 
+## Tandem Identity dark Google account-claim boundary
+
+`NC-20260914-006` is an unwired, source-only proof for one concrete Google
+Identity Platform account claim. It does not verify tokens, read Firebase,
+accept HTTP, load credentials or derive identity from email. A complete claim
+must carry the exact Google issuer/project/environment/UID, a recent verified
+session, one explicit Heartbeat user selection, one existing target Party and a
+body-bound SHA-256. A strict caller context must independently close shared
+identifier, competing Party, identity-conflict and payer/learner risks.
+
+The injected store is usable only inside a caller-owned PostgreSQL transaction.
+It appends migration-167 receipt, related-reference, accepted-auth and resolution
+evidence after an advisory lock. Exact replay is a verified no-op; altered reuse,
+prior subject observation and adapter environment collision fail closed. It has
+no Party, external-reference, access, enrollment, entitlement, provider-attempt
+or customer writer, no runtime import and no migration 168. The disposable proof
+is not authority for a real account. Token verification, signed replay-safe
+transport, canonical server-side context derivation, recovery and production
+activation remain separate security decisions.
+
 ## Trust model
 
 | Entity/input                                                 | Treatment                                                                                     |

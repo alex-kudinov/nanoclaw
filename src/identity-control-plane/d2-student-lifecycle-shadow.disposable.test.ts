@@ -8,6 +8,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runTandemIdentityD2ShadowWithClient } from './d2-student-lifecycle-shadow.js';
 import { importHeartbeatAggregateSnapshotWithClient } from './d3-heartbeat-reconciliation.js';
 import { prepareHeartbeatAggregateSnapshot } from './d3-heartbeat-snapshot.js';
+import { createGoogleAccountClaimEnvelope } from './google-account-claim.js';
+import { applyGoogleAccountClaimWithClient } from './google-account-claim-store.js';
 
 const ROOT = process.cwd();
 const PREFIX = 'nc_tandem_identity_d2_test_';
@@ -516,6 +518,269 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       commands: 1,
       attempts: 0,
       readbacks: 1,
+    });
+  });
+
+  it('atomically accepts one explicit Google claim, no-ops replay, and rolls back a late conflict', async () => {
+    const heartbeatRef = {
+      provider: 'heartbeat',
+      environment: 'test' as const,
+      scope: 'main-community',
+      entityType: 'user',
+      externalId: '30000000-0000-4000-8000-000000000001',
+    };
+    const claimBody = {
+      kind: 'google_account_link_claim' as const,
+      schemaVersion: 1 as const,
+      claimId: '30000000-0000-4000-8000-000000000002',
+      googleSubject: {
+        issuer: 'https://securetoken.google.com/tandem-identity-dev-2026',
+        projectId: 'tandem-identity-dev-2026',
+        environment: 'test' as const,
+        sourceScope: 'tandem-identity-dev-2026',
+        uid: 'firebase-disposable-uid-1',
+        emailVerified: true as const,
+        verifiedEmailSha256: '1'.repeat(64),
+        authenticatedAt: '2026-09-15T00:00:00.000Z',
+      },
+      heartbeatRef,
+      selectedBy: 'explicit_provider_subject' as const,
+      role: 'participant' as const,
+      payerLearnerRelationship: 'self' as const,
+      targetPartyId: 1,
+      issuedAt: '2026-09-15T00:01:00.000Z',
+      expiresAt: '2026-09-15T00:11:00.000Z',
+      evidenceRefs: ['receipt:google-session', 'receipt:explicit-selection'],
+    };
+    const claim = createGoogleAccountClaimEnvelope(claimBody);
+    const context = {
+      observedAt: '2026-09-15T00:02:00.000Z',
+      candidatePartyIds: [1],
+      sharedIdentifier: false,
+      openIdentityConflict: false,
+      explicitSeatRelationship: false,
+    };
+
+    await transaction((client) =>
+      client.query(
+        `INSERT INTO business_v2.identity_candidates
+           (subject_sha256,provider,environment,source_scope,entity_type,
+            external_id_sha256,candidate_version,status,creation_basis,
+            party_materialization_allowed,evidence_sha256,first_seen_at,
+            last_observed_at,retention_policy_version)
+         VALUES ($1,'heartbeat','test','main-community','user',$1,1,'open',
+           'none',false,$2,'2026-09-15T00:00:00Z','2026-09-15T00:00:00Z',1)`,
+        ['2'.repeat(64), '3'.repeat(64)],
+      ),
+    );
+    const held = await transaction((client) =>
+      applyGoogleAccountClaimWithClient({
+        client,
+        claim,
+        context: { ...context, sharedIdentifier: true },
+      }),
+    );
+    expect(held).toMatchObject({
+      outcome: 'held',
+      reasonCode: 'IDENTITY_CONFLICT_OR_AMBIGUITY',
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+      decisionsInserted: 0,
+    });
+
+    const accepted = await transaction((client) =>
+      applyGoogleAccountClaimWithClient({ client, claim, context }),
+    );
+    expect(accepted).toMatchObject({
+      outcome: 'accepted',
+      reasonCode: 'EXPLICIT_ACCOUNT_CLAIM_ACCEPTED',
+      receiptInserted: 1,
+      relatedRefsInserted: 1,
+      authAccountsInserted: 1,
+      decisionsInserted: 1,
+      partyWrites: 0,
+      referenceWrites: 0,
+      providerAttempts: 0,
+      providerWrites: 0,
+      accessWrites: 0,
+    });
+    const replay = await transaction((client) =>
+      applyGoogleAccountClaimWithClient({ client, claim, context }),
+    );
+    expect(replay).toMatchObject({
+      outcome: 'duplicate',
+      reasonCode: 'EXACT_CLAIM_REPLAY_NOOP',
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+      decisionsInserted: 0,
+    });
+    const alteredReplay = createGoogleAccountClaimEnvelope({
+      ...claimBody,
+      evidenceRefs: ['receipt:altered-reuse'],
+    });
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimWithClient({
+          client,
+          claim: alteredReplay,
+          context,
+        }),
+      ),
+    ).rejects.toThrow(/claim_id_payload_conflict/i);
+
+    const countsAfterAcceptance = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+        (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+        (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+        (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+    );
+    const missingPartyClaim = createGoogleAccountClaimEnvelope({
+      ...claimBody,
+      claimId: '30000000-0000-4000-8000-000000000077',
+      googleSubject: {
+        ...claimBody.googleSubject,
+        uid: 'firebase-disposable-uid-missing-party',
+      },
+      targetPartyId: 999,
+    });
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimWithClient({
+          client,
+          claim: missingPartyClaim,
+          context: { ...context, candidatePartyIds: [999] },
+        }),
+      ),
+    ).rejects.toThrow(/target_party_unavailable/i);
+    const reusedSubjectClaim = createGoogleAccountClaimEnvelope({
+      ...claimBody,
+      claimId: '30000000-0000-4000-8000-000000000078',
+      targetPartyId: 2,
+    });
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimWithClient({
+          client,
+          claim: reusedSubjectClaim,
+          context: { ...context, candidatePartyIds: [2] },
+        }),
+      ),
+    ).rejects.toThrow(/auth_subject_already_observed/i);
+    const afterGuardRefusals = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+        (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+        (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+        (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+    );
+    expect(afterGuardRefusals.rows[0]).toEqual(countsAfterAcceptance.rows[0]);
+
+    await transaction((client) =>
+      client.query(
+        `INSERT INTO business_v2.identity_resolution_decisions
+           (decision_uuid,provider,environment,source_scope,entity_type,
+            external_id_sha256,result,resolution_basis,party_id,candidate_id,
+            evidence_refs,evidence_sha256,reason_code,decided_at,
+            retention_policy_version)
+         VALUES ('30000000-0000-4000-8000-000000000099','heartbeat','test',
+           'main-community','user',$1,'ambiguous',NULL,NULL,NULL,$2::jsonb,
+           business_v2.fn_tandem_identity_sha256($2::jsonb::text),
+           'FIXTURE_PREEXISTING_DECISION','2026-09-15T00:02:00Z',1)`,
+        ['4'.repeat(64), JSON.stringify(['receipt:fixture-conflict'])],
+      ),
+    );
+    const beforeFailure = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+        (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+        (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+        (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+    );
+    const lateConflictClaim = createGoogleAccountClaimEnvelope({
+      ...claimBody,
+      claimId: '30000000-0000-4000-8000-000000000099',
+      googleSubject: {
+        ...claimBody.googleSubject,
+        uid: 'firebase-disposable-uid-2',
+      },
+      targetPartyId: 2,
+    });
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimWithClient({
+          client,
+          claim: lateConflictClaim,
+          context: { ...context, candidatePartyIds: [2] },
+        }),
+      ),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/i);
+    const afterFailure = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+        (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+        (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+        (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+    );
+    expect(afterFailure.rows[0]).toEqual(beforeFailure.rows[0]);
+
+    const crossEnvironmentClaim = createGoogleAccountClaimEnvelope({
+      ...claimBody,
+      claimId: '30000000-0000-4000-8000-000000000088',
+      heartbeatRef: { ...heartbeatRef, environment: 'development' },
+      googleSubject: {
+        ...claimBody.googleSubject,
+        environment: 'development',
+        uid: 'firebase-disposable-uid-cross-environment',
+      },
+      targetPartyId: 2,
+    });
+    await expect(
+      transaction((client) =>
+        applyGoogleAccountClaimWithClient({
+          client,
+          claim: crossEnvironmentClaim,
+          context: { ...context, candidatePartyIds: [2] },
+        }),
+      ),
+    ).rejects.toThrow(/adapter_scope_environment_conflict/i);
+    const afterCrossEnvironment = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+        (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+        (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+        (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+    );
+    expect(afterCrossEnvironment.rows[0]).toEqual(beforeFailure.rows[0]);
+
+    const readback = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.parties)::int AS parties,
+        (SELECT count(*) FROM business_v2.party_external_refs)::int AS refs,
+        (SELECT count(*) FROM business_v2.identity_candidates
+          WHERE provider='heartbeat' AND environment='test'
+            AND source_scope='main-community' AND status='open'
+            AND NOT party_materialization_allowed)::int AS open_candidates,
+        (SELECT count(*) FROM business_v2.auth_accounts
+          WHERE account_state='accepted' AND binding_basis='accepted_claim'
+            AND party_id=1)::int AS accepted_auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions
+          WHERE result='resolved_claim_or_operation'
+            AND resolution_basis='accepted_claim' AND party_id=1)::int AS accepted_decisions,
+        (SELECT count(*) FROM business_v2.provider_projection_attempts)::int AS provider_attempts`),
+    );
+    expect(readback.rows[0]).toEqual({
+      parties: 2,
+      refs: 0,
+      open_candidates: 1,
+      accepted_auth_accounts: 1,
+      accepted_decisions: 1,
+      provider_attempts: 0,
     });
   });
 });
