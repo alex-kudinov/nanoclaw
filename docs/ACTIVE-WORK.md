@@ -1,5 +1,26 @@
 # NanoClaw active work
 
+2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
+projection, owner Codex with bounded Claude necessity review, `ready_for_deploy`,
+C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
+exact live release `3dd0eb671203f6f25bbd87afe7f97eeb911dac39`. This is a
+retrospective registration: implementation began from the Peri program's recorded
+authorization and minimum-sufficient checkpoint before the NanoClaw continuity row
+was added. Generalize only the existing signed asynchronous receiver from MCS to
+MCS plus six approved English Practitioner CCE one-time products; use exact
+catalog-declared Product Map labels; add Payment Log column P as explicit provider
+provenance for both existing Stripe and Adyen writers; and restore a rich mechanical
+Contador receipt. Preserve column J's literal `Stripe ID` header for existing
+maintenance consumers, all existing payment/enrollment/Encharge/receipt truth, the
+single host process and route, and All-Access on Heartbeat. No new endpoint, DDL,
+credential, queue, worker, scheduler, provider, synchronous dependency, payment, or
+customer communication is added. Focused 100/100, typecheck, and diff check pass;
+full suite is 4,419 pass/32 skip/19 unrelated baseline failures. Commits
+`4016d985` (NanoClaw) and `65d40c99f` (Tandemweb) are pushed. Next: immutable
+release build/verification, serialized Mini activation, Commerce 1.18.10 release,
+guarded provider-column readback/backfill for exact Adyen receipts, then replay only
+the pending AI Bookkeeper job and verify all destinations plus the rich message.
+
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
 `codex/grader-italian-attestation-20260914` from exact production release

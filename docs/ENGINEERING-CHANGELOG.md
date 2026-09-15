@@ -1,5 +1,53 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-001 provider-neutral Commerce Bookkeeper projection
+
+- State: `ready_for_deploy`; source and verification are committed/pushed, while
+  immutable release activation, Payment Log migration, and exact live replay remain
+  pending.
+- Change class: C4 because the existing asynchronous bridge writes operational
+  payment, roster, and PostgreSQL projections. It does not authorize or initiate a
+  provider payment.
+- The signed WordPress envelope now carries the purchase-snapshotted exact
+  Bookkeeper product label. NanoClaw accepts a bounded checkout product identifier
+  instead of one MCS literal, while retaining signature, freshness, event, amount,
+  currency, merchant-reference, PSP-reference, order, payer, and learner checks.
+- The deterministic recorder uses the exact signed Product Map label, preserves the
+  first recorded date on retry, acknowledges only after Payment Log, Student Roster,
+  PostgreSQL, and Contador-message completion, and emits a rich receipt with learner,
+  product, amount, provider ID, dates, truthful fee-pending state, and exact
+  destinations.
+- Payment Log column P is additive `Payment Provider`. Both existing Stripe and
+  Adyen writers write/read back their explicit provider, and the row filter expands
+  through P. Column J remains `Stripe ID` because current maintenance utilities
+  consume that header literally. Historical blanks are not inferred; the release
+  plan labels only PSP references independently present in the Adyen projection.
+- Tandemweb catalog v7 adds exactly seven Bookkeeper-name bindings: MCS and the six
+  approved English Practitioner CCE standalone products. All-Access and every
+  subscription remain outside Commerce.
+- Verification: NanoClaw focused receiver/webhook/Stripe coexistence tests 100/100,
+  typecheck and diff check pass under Node 22.23.2. Full suite is 4,419 pass, 32
+  skipped, 19 failures in five unrelated existing catalog/disposable/CNPC/
+  relationship fixtures. Tandemweb passed all 19 Commerce PHP suites, all 134
+  browser/checkout checks, deterministic catalog generation, PHP lint, and diff
+  check.
+- Independent review: two fresh-context Sonnet/high S1 reviews returned `KEEP`.
+  The second found that renaming column J could break literal-header consumers; the
+  implemented additive-column design removes that hazard. Combined measured review
+  cost was `$0.2919386`.
+- Commits: NanoClaw `4016d985` on
+  `codex/commerce-bookkeeper-provider-neutral-20260915`; Tandemweb `65d40c99f` on
+  `codex/adyen-sessions-20260909`. Both are pushed.
+- Deployment/migration: not yet performed. No Sheet, roster, PostgreSQL, WordPress
+  job, Slack, payment, enrollment, lifecycle, receipt, or customer state was changed
+  by this source commit.
+- Rollback/recovery: retain the current immutable NanoClaw release `3dd0eb67` and
+  current Commerce 1.18.9 package until each exact replacement is verified. Never
+  replay payment, Heartbeat, Encharge, or receipt work; only the pending Bookkeeper
+  job is eligible after release proof.
+- Documentation: Active Work, Project Map, Engineering Changelog, and the Peri
+  minimum-sufficient/S2 evidence set.
+
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 
 - State: ready_for_deploy; reviewed source and isolated verification complete,
