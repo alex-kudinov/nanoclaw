@@ -1,9 +1,4 @@
-import {
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  statSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -72,7 +67,11 @@ describe('LinkedIn native job-alert outbox', () => {
     };
 
     const created = captureLinkedInJobAlert(input);
-    expect(created).toMatchObject({ matched: true, captured: true, duplicate: false });
+    expect(created).toMatchObject({
+      matched: true,
+      captured: true,
+      duplicate: false,
+    });
     expect(created.path).toBeTruthy();
     expect(statSync(outboxDir).mode & 0o777).toBe(0o700);
     expect(statSync(created.path!).mode & 0o777).toBe(0o600);
@@ -82,7 +81,11 @@ describe('LinkedIn native job-alert outbox', () => {
     expect(JSON.stringify(persisted)).not.toContain(input.body);
 
     const replay = captureLinkedInJobAlert(input);
-    expect(replay).toMatchObject({ matched: true, captured: true, duplicate: true });
+    expect(replay).toMatchObject({
+      matched: true,
+      captured: true,
+      duplicate: true,
+    });
     expect(replay.path).toBe(created.path);
   });
 
@@ -110,7 +113,12 @@ describe('LinkedIn native job-alert outbox', () => {
       captureLinkedInJobAlert({
         ...base,
         senderEmail: 'jobalerts-noreply@linkedin.com',
-        rawHeaders: [{ name: 'Authentication-Results', value: 'mx.google.com; dmarc=fail header.from=linkedin.com' }],
+        rawHeaders: [
+          {
+            name: 'Authentication-Results',
+            value: 'mx.google.com; dmarc=fail header.from=linkedin.com',
+          },
+        ],
       }),
     ).toEqual({ matched: true, captured: false, duplicate: false });
     expect(() =>

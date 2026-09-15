@@ -309,8 +309,7 @@ describe('GmailChannel', () => {
             headers: [
               {
                 name: 'Authentication-Results',
-                value:
-                  'mx.google.com; dmarc=pass header.from=linkedin.com',
+                value: 'mx.google.com; dmarc=pass header.from=linkedin.com',
               },
             ],
           },

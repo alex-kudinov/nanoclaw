@@ -259,7 +259,9 @@ export function parseEmailBody(payload: gmail_v1.Schema$MessagePart): string {
  * need link targets. Raw HTML never enters an agent prompt or durable receipt.
  */
 export function parseEmailHtml(payload: gmail_v1.Schema$MessagePart): string {
-  const html = flattenParts(payload).find((part) => part.mimeType === 'text/html');
+  const html = flattenParts(payload).find(
+    (part) => part.mimeType === 'text/html',
+  );
   if (!html?.body?.data) return '';
   return decodeBase64Url(html.body.data).slice(0, MAX_RAW_HTML_LENGTH);
 }

@@ -147,7 +147,8 @@ export function extractLinkedInAlertLeads(
 ): LinkedInAlertLead[] {
   const source = html.slice(0, MAX_HTML_BYTES);
   const leads = new Map<string, LinkedInAlertLead>();
-  const anchor = /<a\b([^>]*?)\bhref\s*=\s*(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi;
+  const anchor =
+    /<a\b([^>]*?)\bhref\s*=\s*(["'])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi;
   for (const match of source.matchAll(anchor)) {
     const normalized = normalizeLinkedInJobUrl(match[3]);
     if (!normalized) continue;
@@ -195,7 +196,9 @@ function ensurePrivateDirectory(outboxDir: string): string {
   mkdirSync(outboxDir, { recursive: true, mode: 0o700 });
   const stat = lstatSync(outboxDir);
   if (!stat.isDirectory() || stat.isSymbolicLink()) {
-    throw new LinkedInAlertCaptureError('LinkedIn alert outbox is not a private directory');
+    throw new LinkedInAlertCaptureError(
+      'LinkedIn alert outbox is not a private directory',
+    );
   }
   chmodSync(outboxDir, 0o700);
   return realpathSync(outboxDir);
@@ -215,10 +218,14 @@ export function captureLinkedInJobAlert(
     return { matched: true, captured: false, duplicate: false };
   }
   if (!/^[a-zA-Z0-9_-]{4,200}$/.test(input.gmailMessageId)) {
-    throw new LinkedInAlertCaptureError('LinkedIn alert Gmail message ID is invalid');
+    throw new LinkedInAlertCaptureError(
+      'LinkedIn alert Gmail message ID is invalid',
+    );
   }
   if (!/^[a-zA-Z0-9_-]{4,200}$/.test(input.gmailThreadId)) {
-    throw new LinkedInAlertCaptureError('LinkedIn alert Gmail thread ID is invalid');
+    throw new LinkedInAlertCaptureError(
+      'LinkedIn alert Gmail thread ID is invalid',
+    );
   }
   const leads = extractLinkedInAlertLeads(input.html, input.body);
   if (leads.length === 0) {
