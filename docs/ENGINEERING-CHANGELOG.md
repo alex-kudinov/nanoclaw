@@ -1,5 +1,51 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-002 LinkedIn alert intake for Executive Search
+
+- State: `validating`; implementation and focused tests exist in the isolated
+  branch, while independent review, immutable release, and natural-provider
+  evidence remain pending.
+- Change class: C2. The host changes one inbound Gmail disposition and creates
+  private immutable discovery envelopes. It sends no message, changes no CRM or
+  application decision, and grants no agent capability.
+- Exact authenticated mail from `jobalerts-noreply@linkedin.com` with recognized
+  LinkedIn job pointers is captured before Mailman, Chief, proposal, hard-filter,
+  or classification paths. Raw body/HTML and tracking parameters are discarded;
+  the outbox retains only bounded job-pointer metadata and hashes.
+- Executive Search uses an explicit operator-triggered SSH pull over the existing
+  Tailnet path. It stores private replay-safe received/pending/resolved receipts,
+  resolves only an exact existing employer/public-ATS match, and surfaces
+  unmatched leads without treating email snippets as job descriptions.
+- Minimum-sufficient review: `KEEP`, with recurring timer polling removed from
+  this release until an exact-sender natural alert proves the provider format.
+- Verification: NanoClaw focused Gmail/parser/disposition/outbox 96/96 and
+  typecheck pass under Node 22.23.2. Its full suite is 4,441 passed / 32 skipped
+  with four failures in unchanged unrelated Academy Capacity, CNPC,
+  payment-method, and Trafft tests. Executive Search passes its full 93/93
+  root+nested suite plus app lint/typecheck/build.
+- Independent review: one bounded Sonnet/high round found a broken remote
+  `find` glob and retained-batch starvation. Both were corrected and covered by
+  direct glob reproduction plus a 101-envelope advancement regression. Review
+  usage: four model calls, maximum context 55,115, cache creation 50,274, cache
+  read 76,564, output 21,307; no second ceremonial round.
+- Integration proof: an actual authenticated SSH fixture transferred one
+  minimized envelope from the Mini path to a disposable Studio store, resolved
+  one exact ATS lead and retained one unmatched lead, with zero applications,
+  reports or schedules. Hidden-IAB proof showed zero/zero before explicit
+  import, then one matched/one pending, preserved after reload.
+- Files: `src/linkedin-job-alert-outbox.ts`, Gmail parser/channel/disposition and
+  focused tests, this changelog, Project Map, Security, Active Work, and
+  `docs/LINKEDIN-JOB-ALERT-OUTBOX.md`; Executive Search owns its separate intake
+  module, API/UI, tests and local evidence.
+- Deployment/migration: pending. No real Gmail message was read for this proof,
+  no production outbox/Studio receipt was created, and no schedule, LinkedIn
+  page fetch, briefing, application, employer contact, or customer/business
+  route changed. Synthetic Mini/Studio fixture artifacts were removed after
+  verification; private proof receipts remain on the Studio.
+- Rollback/recovery: remove the capture call and accepted reason while preserving
+  minimized outbox/Studio receipts. SSH or Studio outage leaves Mini envelopes
+  queued; exact replay remains idempotent.
+
 ## 2026-09-15 — NC-20260915-001 provider-neutral Commerce Bookkeeper projection
 
 - State: `ready_for_deploy`; source and verification are committed/pushed, while

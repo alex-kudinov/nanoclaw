@@ -54,9 +54,14 @@ import {
   formatEmailForAgent,
   parseEmailAttachments,
   parseEmailBody,
+  parseEmailHtml,
   parseEmailHeaders,
   resolveForwardedIdentity,
 } from '../gmail-parser.js';
+import {
+  captureLinkedInJobAlert,
+  ensureLinkedInJobAlertOutbox,
+} from '../linkedin-job-alert-outbox.js';
 import {
   compareHistoryIds,
   ensureHistoryIdBaseline,
@@ -91,6 +96,10 @@ import { registerChannel, RegisterGroupFn } from './registry.js';
 
 const STATE_KEY_LAST_CHECK = 'gmail_last_check';
 const GMAIL_GROUP_FOLDER = 'mailman';
+const LINKEDIN_JOB_ALERT_OUTBOX = path.join(
+  DATA_DIR,
+  'linkedin-job-alert-outbox',
+);
 
 /**
  * True when a message is our own outbound and must be skipped: it carries
@@ -174,6 +183,7 @@ export class GmailChannel implements Channel {
   }
 
   async connect(): Promise<void> {
+    ensureLinkedInJobAlertOutbox(LINKEDIN_JOB_ALERT_OUTBOX);
     this.gmail = getGmailClient();
 
     // Resolve label name → label ID
@@ -653,6 +663,54 @@ export class GmailChannel implements Channel {
     const effectiveSenderHeader = forwardedIdentity
       ? `${effectiveSenderName} <${effectiveSenderEmail}>`
       : headers.from;
+
+    // LinkedIn's native job alerts are provider-owned discovery pointers, not
+    // business correspondence. Capture trusted alerts before any Mailman,
+    // Chief, proposal, classifier, or Gmail-resource path. The durable outbox
+    // contains only minimized job pointers and hashes; no raw email body.
+    if (envelopeSenderEmail) {
+      const alert = captureLinkedInJobAlert({
+        gmailMessageId: msg.id,
+        gmailThreadId: threadId,
+        observedAt,
+        senderEmail: envelopeSenderEmail,
+        subject: headers.subject || '',
+        body: body || '',
+        html: parseEmailHtml(msg.payload),
+        rawHeaders,
+        outboxDir: LINKEDIN_JOB_ALERT_OUTBOX,
+      });
+      if (alert.captured && alert.envelope) {
+        this.recordTerminalDisposition({
+          messageId: msg.id,
+          disposition: 'accepted',
+          reasonKey: 'linkedin_job_alert_outbox_persisted',
+          observedAt,
+          evidenceParts: [
+            msg.id,
+            alert.envelope.envelopeId,
+            alert.envelope.sourceEvidenceSha256,
+          ],
+        });
+        logger.info(
+          {
+            messageId: msg.id,
+            envelopeId: alert.envelope.envelopeId,
+            leadCount: alert.envelope.leads.length,
+            duplicate: alert.duplicate,
+          },
+          'Gmail: LinkedIn job alert captured for Executive Search',
+        );
+        return false;
+      }
+      if (alert.matched) {
+        logger.warn(
+          { messageId: msg.id, sender: envelopeSenderEmail },
+          'Gmail: LinkedIn-like sender failed authentication and was not captured',
+        );
+      }
+    }
+
     const replyAllCandidates = forwardedIdentity
       ? []
       : deriveReplyAllCandidates(headers, {

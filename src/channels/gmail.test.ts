@@ -130,6 +130,7 @@ vi.mock('../gmail-parser.js', () => ({
     truncated: false,
   }),
   parseEmailBody: vi.fn().mockReturnValue('body'),
+  parseEmailHtml: vi.fn().mockReturnValue('<p>html</p>'),
   parseEmailHeaders: vi.fn().mockReturnValue({
     from: 'sender@example.com',
     fromName: 'Sender',
@@ -139,6 +140,15 @@ vi.mock('../gmail-parser.js', () => ({
     subject: 'Test',
   }),
   resolveForwardedIdentity: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock('../linkedin-job-alert-outbox.js', () => ({
+  ensureLinkedInJobAlertOutbox: vi.fn(),
+  captureLinkedInJobAlert: vi.fn().mockReturnValue({
+    matched: false,
+    captured: false,
+    duplicate: false,
+  }),
 }));
 
 // Mock registry
@@ -166,9 +176,11 @@ import { storeMessageDirect } from '../db.js';
 import {
   deriveReplyAllCandidates,
   parseEmailBody,
+  parseEmailHtml,
   parseEmailHeaders,
   resolveForwardedIdentity,
 } from '../gmail-parser.js';
+import { captureLinkedInJobAlert } from '../linkedin-job-alert-outbox.js';
 import { grantHostGmailResources } from '../gmail-ipc-policy.js';
 import {
   GmailInboundDispositionError,
@@ -176,6 +188,9 @@ import {
 } from '../gmail-inbound-disposition.js';
 
 const mockRouteClassifiedEmail = routeClassifiedEmail as ReturnType<
+  typeof vi.fn
+>;
+const mockCaptureLinkedInJobAlert = captureLinkedInJobAlert as ReturnType<
   typeof vi.fn
 >;
 const mockMatchRule = matchRule as ReturnType<typeof vi.fn>;
@@ -226,6 +241,11 @@ describe('GmailChannel', () => {
     mockMatchHardFilter.mockReturnValue(null);
     mockMatchRule.mockResolvedValue(null);
     mockIsAutoArchiveLabel.mockResolvedValue(false);
+    mockCaptureLinkedInJobAlert.mockReturnValue({
+      matched: false,
+      captured: false,
+      duplicate: false,
+    });
     mockRouteClassifiedEmail.mockResolvedValue({
       routed: false,
       action: 'unhandled',
@@ -266,6 +286,89 @@ describe('GmailChannel', () => {
     it('processes ordinary inbound — no SENT/DRAFT', () => {
       expect(isOwnOutbound(['INBOX', 'UNREAD'])).toBe(false);
       expect(isOwnOutbound([])).toBe(false);
+    });
+  });
+
+  describe('LinkedIn job-alert capture', () => {
+    it('persists a minimized outbox receipt before every agent and routing path', async () => {
+      mockParseEmailHeaders.mockReturnValueOnce({
+        from: 'LinkedIn Job Alerts <jobalerts-noreply@linkedin.com>',
+        fromName: 'LinkedIn Job Alerts',
+        replyTo: '',
+        to: 'test@example.com',
+        cc: '',
+        subject: 'New jobs for VP Engineering',
+      });
+      mockGmail.users.messages.get.mockResolvedValueOnce({
+        data: {
+          id: 'msg-linkedin-alert',
+          threadId: 'thr-linkedin-alert',
+          internalDate: '1785772571000',
+          labelIds: ['INBOX'],
+          payload: {
+            headers: [
+              {
+                name: 'Authentication-Results',
+                value:
+                  'mx.google.com; dmarc=pass header.from=linkedin.com',
+              },
+            ],
+          },
+        },
+      });
+      mockCaptureLinkedInJobAlert.mockReturnValueOnce({
+        matched: true,
+        captured: true,
+        duplicate: false,
+        path: '/tmp/nanoclaw-test/linkedin-job-alert-outbox/receipt.json',
+        envelope: {
+          schema: 'executive-search-linkedin-alert-v1',
+          envelopeId: 'b'.repeat(64),
+          gmailMessageId: 'msg-linkedin-alert',
+          gmailThreadId: 'thr-linkedin-alert',
+          observedAt: '2026-08-03T17:16:11.000Z',
+          sender: 'jobalerts-noreply@linkedin.com',
+          subject: 'New jobs for VP Engineering',
+          sourceEvidenceSha256: 'c'.repeat(64),
+          leads: [
+            {
+              linkedinJobId: '12345',
+              linkedinUrl: 'https://www.linkedin.com/jobs/view/12345',
+              title: 'VP Engineering',
+              context: 'Acme · Remote',
+            },
+          ],
+        },
+      });
+
+      const opts = createTestOpts();
+      const channel = new GmailChannel(opts);
+      await channel.connect();
+      const processed = await (channel as any).fetchAndProcess(
+        'msg-linkedin-alert',
+      );
+
+      expect(processed).toBe(false);
+      expect(mockCaptureLinkedInJobAlert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gmailMessageId: 'msg-linkedin-alert',
+          gmailThreadId: 'thr-linkedin-alert',
+          senderEmail: 'jobalerts-noreply@linkedin.com',
+          subject: 'New jobs for VP Engineering',
+        }),
+      );
+      expect(mockRecordDisposition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messageId: 'msg-linkedin-alert',
+          disposition: 'accepted',
+          reasonKey: 'linkedin_job_alert_outbox_persisted',
+        }),
+      );
+      expect(mockGrantHostGmailResources).not.toHaveBeenCalled();
+      expect(mockMatchHardFilter).not.toHaveBeenCalled();
+      expect(mockMatchRule).not.toHaveBeenCalled();
+      expect(mockRouteClassifiedEmail).not.toHaveBeenCalled();
+      expect(opts.onMessage).not.toHaveBeenCalled();
     });
   });
 

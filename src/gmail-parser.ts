@@ -7,6 +7,7 @@ import { gmail_v1 } from 'googleapis';
 import { redactSensitiveUrlQueryParameters } from './sensitive-url-redaction.js';
 
 const MAX_BODY_LENGTH = 10_000;
+const MAX_RAW_HTML_LENGTH = 250_000;
 const MAX_ATTACHMENT_MANIFEST_ITEMS = 20;
 const MAX_ATTACHMENT_FIELD_LENGTH = 180;
 const MAX_HEADER_LENGTH = 1_000;
@@ -251,6 +252,16 @@ export function parseEmailBody(payload: gmail_v1.Schema$MessagePart): string {
   }
 
   return '';
+}
+
+/**
+ * Return a bounded HTML part for deterministic host-owned integrations that
+ * need link targets. Raw HTML never enters an agent prompt or durable receipt.
+ */
+export function parseEmailHtml(payload: gmail_v1.Schema$MessagePart): string {
+  const html = flattenParts(payload).find((part) => part.mimeType === 'text/html');
+  if (!html?.body?.data) return '';
+  return decodeBase64Url(html.body.data).slice(0, MAX_RAW_HTML_LENGTH);
 }
 
 function flattenParts(
