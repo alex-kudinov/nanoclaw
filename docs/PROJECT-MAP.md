@@ -260,12 +260,22 @@ order or shutdown behavior.
 Gmail is both a channel and a business pipeline:
 
 1. push notification or safety polling detects mailbox changes;
-2. hard filters and label logic determine eligible mail;
-3. Mailman classifies and emits a structured label-write action;
-4. specialized groups can receive routed work;
-5. business interactions and classification state are written separately;
-6. outbound email crosses host recipient and content guards;
-7. approval-gated workflows remain pending until an authorized action.
+2. exact authenticated LinkedIn job alerts are minimized into a private
+   Executive Search outbox and return before any agent or business route;
+3. hard filters and label logic determine other eligible mail;
+4. Mailman classifies and emits a structured label-write action;
+5. specialized groups can receive routed work;
+6. business interactions and classification state are written separately;
+7. outbound email crosses host recipient and content guards;
+8. approval-gated workflows remain pending until an authorized action.
+
+`NC-20260915-002` adds only the capture half of a cross-host walking skeleton.
+The Mini stores immutable, content-minimized job pointers after aligned Gmail
+authentication. The Mac Studio pulls them explicitly over the existing SSH
+route and resolves only against an existing authoritative employer/ATS posting.
+There is no recurring poller, LinkedIn page fetch, mailbox credential copy,
+Sales/Chief handoff, report refresh, or application authority. See
+`docs/LINKEDIN-JOB-ALERT-OUTBOX.md`.
 
 `NC-20260903-002` makes classification a single typed, host-bound action. The
 host reloads exact Gmail source fields, validates the canonical enabled label

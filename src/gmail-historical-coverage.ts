@@ -97,6 +97,7 @@ const REASON_KEYS: readonly GmailInboundDispositionReason[] = [
   'inbound_message_persisted',
   'classified_route_persisted',
   'rule_auto_archive_completed',
+  'linkedin_job_alert_outbox_persisted',
   'legacy_message_persisted',
   'own_outbound',
   'spam_or_trash',
