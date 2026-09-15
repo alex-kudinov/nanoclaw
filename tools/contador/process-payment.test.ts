@@ -149,6 +149,21 @@ describe('formatPaymentSummary', () => {
   });
 });
 
+describe('Payment Log provider provenance', () => {
+  it('keeps the legacy ID header stable while writing and verifying Stripe provenance in column P', () => {
+    const source = readFileSync(
+      new URL('./process-payment.cjs', import.meta.url),
+      'utf8',
+    );
+    expect(source).toContain("const PAYMENT_PROVIDER_HEADER = 'Payment Provider'");
+    expect(source).toContain("'Payment Log!P1'");
+    expect(source).toContain("[['Stripe']]");
+    expect(source).toContain("provider === 'Stripe'");
+    expect(source).toContain('endColumnIndex: 16');
+    expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
+  });
+});
+
 describe('cohort persistence contract', () => {
   it('fills a missing Postgres cohort without overwriting an existing operator value', () => {
     const source = readFileSync(new URL('./process-payment.cjs', import.meta.url), 'utf8');

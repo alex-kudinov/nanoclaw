@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { createRequire } from 'module';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -11,6 +12,11 @@ const require = createRequire(import.meta.url);
 const recorder = require('../tools/contador/process-commerce-payment.cjs') as {
   column(index: number): string;
   psqlVars(values: Record<string, string>): string[];
+  formatCommerceSummary(
+    fact: Record<string, string>,
+    paymentLog: { verified: boolean; row: number; recordedDate: string },
+    roster: Array<{ tab: string; column: string; row: number }>,
+  ): string;
 };
 const secret = 'bookkeeper-relay-secret-that-is-long-enough';
 const now = Date.parse('2026-09-12T22:00:00Z');
@@ -34,6 +40,7 @@ function payload() {
       orderId: '20000000-0000-4000-8000-000000000002',
       merchantReference: 'TCA-ABC123',
       productId: 'mcq-program-a-foundations',
+      productName: 'Mentor Coaching Foundations (Program A)',
       amountCents: 29900,
       currency: 'USD',
       payer: {
@@ -71,6 +78,15 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(prepared.order.learner.email).toBe('learner@example.test');
   });
 
+  it('accepts a signed provider-neutral Practitioner product identity', () => {
+    const practitioner = payload();
+    practitioner.order.productId = 'practitioner-ai-for-coaches';
+    practitioner.order.productName = 'AI for Coaches';
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(practitioner));
+    expect(prepared.order.productId).toBe('practitioner-ai-for-coaches');
+    expect(prepared.order.productName).toBe('AI for Coaches');
+  });
+
   it('rejects tampering, stale deliveries, and order/payment mismatches', () => {
     const badSignature = signed();
     badSignature.signatureHeader = '0'.repeat(64);
@@ -87,6 +103,11 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(() => prepareCommerceBookkeeperEnvelope(signed(mismatch))).toThrow(
       /payment identity mismatch/,
     );
+    const invalidProduct = payload();
+    invalidProduct.order.productId = 'Practitioner AI';
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(invalidProduct)),
+    ).toThrow(/payment identity mismatch/);
   });
 
   it('keeps spreadsheet and SQL coordinates data-only', () => {
@@ -96,5 +117,55 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       '-v',
       "psp=x'; DROP TABLE payments;--",
     ]);
+  });
+
+  it('writes and verifies explicit Adyen provenance without renaming the legacy ID header', () => {
+    const source = readFileSync(
+      new URL(
+        '../tools/contador/process-commerce-payment.cjs',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    expect(source).toContain(
+      "const PAYMENT_PROVIDER_HEADER = 'Payment Provider'",
+    );
+    expect(source).toContain("'Payment Log!P1'");
+    expect(source).toContain("[['Adyen']]");
+    expect(source).toContain("provider !== 'Adyen'");
+    expect(source).toContain('endColumnIndex: 16');
+    expect(source).toContain('...(tab.basicFilter || {})');
+    expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
+  });
+
+  it('formats a rich mechanical receipt with provider and destination readback', () => {
+    const summary = recorder.formatCommerceSummary(
+      {
+        learnerName: 'Alex Kudinov',
+        learnerEmail: 'alex@example.test',
+        productName: 'AI for Coaches',
+        amountDollars: '1.00',
+        currency: 'USD',
+        pspReference: 'RTKPSQMVRMMV3RR9',
+        transactionDate: '9/15/2026',
+        recordedDate: '9/15/2026',
+      },
+      { verified: true, row: 430, recordedDate: '9/15/2026' },
+      [{ tab: 'Practitioner Series', column: 'AI for Coaches', row: 15 }],
+    );
+    expect(summary.split('\n')[0]).toBe(
+      'Payment received: Alex Kudinov — AI for Coaches — $1.00 USD',
+    );
+    expect(summary).toContain('Provider: Adyen · RTKPSQMVRMMV3RR9');
+    expect(summary).toContain('Paid: 9/15/2026 · Recorded: 9/15/2026');
+    expect(summary).toContain(
+      'Fee: pending — awaiting Adyen settlement/fee evidence',
+    );
+    expect(summary).toContain(
+      'Payment Log: recorded and verified (row 430; provider Adyen)',
+    );
+    expect(summary).toContain(
+      'Student Roster: recorded and verified (Practitioner Series → AI for Coaches (row 15))',
+    );
   });
 });
