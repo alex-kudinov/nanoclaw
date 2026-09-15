@@ -1036,6 +1036,11 @@ fee-pending status and exact Sheet/roster/database destinations. It must post th
 summary to the single registered El Contador channel before acknowledging
 WordPress. Missing group registration or Slack delivery is retryable; no Contador
 agent is spawned, and the existing Stripe case/receipt machinery is unchanged.
+Migration 168 removes migration 166's obsolete MCS-literal PostgreSQL product check
+and replaces it with the same bounded checkout-slug shape enforced by the signed
+receiver. It changes no row, table, index, owner or grant. Its rollback restores the
+literal check only while every retained row is still MCS and otherwise raises a
+visible refusal; ordinary code rollback preserves provider-neutral projection rows.
 
 `adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,

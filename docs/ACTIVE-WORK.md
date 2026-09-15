@@ -24,6 +24,13 @@ MCS-only. The job remains pending and is deferred until 2026-09-16T21:31Z. Next:
 complete the required necessity review for migration 168, apply/read back only that
 constraint correction after backup, then replay the same job once and verify
 PostgreSQL, rich Contador receipt, WordPress completion and no duplicate effects.
+Migration 168 is now implemented locally with a guarded rollback and disposable
+PostgreSQL proof. Approved Sonnet/high review `7c4f21e1-59a4-4e5e-8469-19d3e5de5f40`
+returned `KEEP`; both findings are closed by an exact receiver/SQL boundary corpus
+and a hard `rollback 168 refused` exception. Focused migration/receiver tests are
+10/10. Typecheck and the expanded migration/receiver suite now pass 12/12. State is
+`ready_for_deploy`: commit/release the exact bytes, take and validate the protected
+backup, apply/read back migration 168, and replay the one deferred job.
 
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
