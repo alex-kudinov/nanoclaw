@@ -161,7 +161,7 @@ export const TANDEM_IDENTITY_GATEWAY_ENABLED = ['true', '1'].includes(
   tandemIdentityGatewayEnabledRaw,
 );
 export const TANDEM_IDENTITY_GATEWAY_AUDIENCE =
-  'https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway';
+  'https://webhooks.tandemcoach.co/webhook/tandem-identity-binding-v1';
 export const TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL =
   'tandem-identity-runtime-dev@tandem-identity-dev-2026.iam.gserviceaccount.com';
 export const TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT = '114536406241819905948';
