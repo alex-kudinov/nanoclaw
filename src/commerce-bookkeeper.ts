@@ -53,6 +53,20 @@ export interface CommerceBookkeeperEnvelope {
     payer: { firstName: string; lastName: string; email: string };
     learner: { firstName: string; lastName: string; email: string };
     purchaseRelationship: 'self' | 'other';
+    cohort: null | {
+      key: string;
+      program: 'pcc' | 'actc';
+      module: number;
+      enrollmentScope: 'module' | 'full_program';
+      start: string;
+      end: string;
+      label: string;
+      range: string;
+      time: string;
+      timezone: 'America/New_York';
+      sessions: string[];
+      rosterValue: string;
+    };
   };
 }
 
@@ -91,6 +105,63 @@ function person(value: unknown, label: string) {
     firstName: text(p.firstName, `${label}.firstName`, 100),
     lastName: text(p.lastName, `${label}.lastName`, 100),
     email,
+  };
+}
+
+function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
+  if (value === null || value === undefined) return null;
+  const c = object(value, 'order.cohort');
+  const program = text(c.program, 'order.cohort.program', 4);
+  const module = Number(c.module);
+  const scope = text(c.enrollmentScope, 'order.cohort.enrollmentScope', 20);
+  const key = text(c.key, 'order.cohort.key', 40);
+  const start = text(c.start, 'order.cohort.start', 40);
+  const end = text(c.end, 'order.cohort.end', 40);
+  const label = text(c.label, 'order.cohort.label', 80);
+  const range = text(c.range, 'order.cohort.range', 120);
+  const time = text(c.time, 'order.cohort.time', 120);
+  const timezone = text(c.timezone, 'order.cohort.timezone', 40);
+  const rosterValue = text(c.rosterValue, 'order.cohort.rosterValue', 200);
+  const sessions = Array.isArray(c.sessions)
+    ? c.sessions.map((item, index) =>
+        text(item, `order.cohort.sessions.${index}`, 40),
+      )
+    : [];
+  const iso = /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/;
+  if (
+    !['pcc', 'actc'].includes(program) ||
+    !Number.isInteger(module) ||
+    module < 1 ||
+    module > 4 ||
+    !['module', 'full_program'].includes(scope) ||
+    !new RegExp(`^${program}-m${module}-[a-f0-9]{24}$`).test(key) ||
+    !iso.test(start) ||
+    !iso.test(end) ||
+    !Number.isFinite(Date.parse(start)) ||
+    !Number.isFinite(Date.parse(end)) ||
+    Date.parse(end) <= Date.parse(start) ||
+    timezone !== 'America/New_York' ||
+    sessions.length !== 4 ||
+    sessions.some(
+      (item) => !iso.test(item) || !Number.isFinite(Date.parse(item)),
+    ) ||
+    rosterValue !== `${label} — ${range}`
+  ) {
+    throw new CommerceBookkeeperRequestError('order.cohort invalid', 422);
+  }
+  return {
+    key,
+    program: program as 'pcc' | 'actc',
+    module,
+    enrollmentScope: scope as 'module' | 'full_program',
+    start,
+    end,
+    label,
+    range,
+    time,
+    timezone: 'America/New_York',
+    sessions,
+    rosterValue,
   };
 }
 
@@ -215,6 +286,7 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       payer: person(order.payer, 'order.payer'),
       learner: person(order.learner, 'order.learner'),
       purchaseRelationship: relationship,
+      cohort: cohort(order.cohort),
     },
   };
 }

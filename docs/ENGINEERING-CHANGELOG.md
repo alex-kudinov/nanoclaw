@@ -1,5 +1,25 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-002 credential Commerce cohort projection
+
+- State: `in_progress`; source verification is green, release pending.
+- The existing signed Commerce Bookkeeper envelope accepts either no cohort or
+  one exact PCC/ACTC selection with bound program, module, scope, key, four
+  canonical session timestamps, display facts and fill-only roster value.
+  Malformed or internally inconsistent cohort evidence fails before any Sheet or
+  PostgreSQL write.
+- The existing recorder continues exact Product Map routing. When a cohort is
+  present it requires the destination tab's existing `Cohort` column, writes only
+  a blank cell, preserves an operator/existing value, and reads the cell back
+  before acknowledging the WordPress job. The mechanical Slack receipt includes
+  the purchase-snapshotted cohort.
+- This adds no route, endpoint, table, migration, secret, worker, queue,
+  scheduler, agent or payment authority. Cohort source authority and checkout
+  validation remain in Tandem Commerce; NanoClaw is an idempotent destination.
+- Verification: pinned Node typecheck and focused Bookkeeper plus migration-168
+  tests pass 11/11. Immutable release build, deployment and first natural
+  credential purchase remain required.
+
 ## 2026-09-15 — NC-20260915-001 provider-neutral Commerce Bookkeeper projection
 
 - State: `ready_for_deploy`; source and verification are committed/pushed, while
