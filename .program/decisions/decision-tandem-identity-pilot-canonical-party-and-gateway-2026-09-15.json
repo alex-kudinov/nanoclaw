@@ -1,0 +1,16 @@
+{
+  "decision_id": "decision:tandem-identity-pilot-canonical-party-and-gateway-2026-09-15",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T21:40:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-login-tools-walking-skeleton",
+    "commitment:walking-skeleton-pilot-resolution",
+    "commitment:walking-skeleton-verify-release"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "After reviewing the read-only three-Party reconstruction, the owner approved the recommendation to designate existing Party 10069 as the canonical Party for the selected individual pilot account. This authorization is limited to the pilot: the two WordPress checkout-created Parties 11646 and 11647 remain unmerged and unchanged. It authorizes the smallest real development gateway/network path accepted by a fresh minimum-sufficient review; one owner-operated Google sign-in; one development-environment auth-account binding to Party 10069 only after the verified Firebase subject and selected account agree; development-preview deployment; and exact readback of /account plus the expected /tools denial because no legitimate entitlement exists. It does not authorize administrative Firebase user creation, synthetic verification, Party creation or merge, entitlement creation or grant, provider writes, another user, customer migration, production traffic or broader rollout.",
+  "source_task": "Current Codex owner response: yes, accepting Party 10069 and the smallest real gateway for the bounded login/binding canary."
+}

@@ -25,6 +25,12 @@ plus WordPress checkout prospects `11646` and `11647`; all lack verified claims
 or auth bindings, and none has Coaching Tools Plus. Next: owner explicitly
 designates the canonical Party and legitimate entitlement path, then separately
 authorizes the real gateway path for a truthful end-to-end development canary.
+The owner approved Party `10069` and the smallest real gateway. Fresh necessity
+review returned `KEEP` for one exact path-mounted Tailscale Funnel route into the
+existing server, with no new service/store. Implementation is waiting on the
+load-bearing independent readback of the Cloud Run service account's immutable
+numeric subject; Google Cloud Console requires the owner's fresh passkey. No
+endpoint, Funnel, IAM, binding or deployment state has changed.
 
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
 topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch

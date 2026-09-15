@@ -42,6 +42,16 @@
   `shared.coaching-tools-plus` component. No identity/access/provider write
   occurred. Evidence:
   `.program/evidence/NC-20260915-003-pilot-resolution-blocked.md`.
+- The owner approved Party `10069` for this pilot without merging the two
+  checkout duplicates and authorized the smallest real development gateway.
+  Current topology supports one path-mounted Tailscale Funnel route into the
+  existing NanoClaw HTTP process; Funnel is available and currently empty.
+  Fresh necessity review returned `KEEP`, requiring exact application-path
+  enforcement, stable replay identity, a bounded Funnel lease and independent
+  pre-pinning of the Cloud Run service account numeric subject. Google Cloud
+  requires fresh owner passkey verification for that IAM readback, so no source,
+  endpoint, Funnel, binding or deployment action has started. Evidence:
+  `.program/evidence/NC-20260915-003-gateway-subject-readback-waiting.md`.
 
 ## 2026-09-15 — NC-20260915-002 service-account transport verifier
 
