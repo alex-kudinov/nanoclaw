@@ -1024,10 +1024,23 @@ activate the unrelated Supervision production pilot or an MCS source/consumer.
 The WordPress Commerce compatibility delivery remains a host-mechanical
 Bookkeeper path: the adapter validates the signed order/native-notification
 envelope and completes only after exact Payment Log, Student Roster and
-PostgreSQL readback. It must then post that verified recorder summary to the
-single registered El Contador channel before acknowledging WordPress. Missing
-group registration or Slack delivery is retryable; no Contador agent is spawned,
-and the unchanged Stripe payment path retains its own case/receipt machinery.
+PostgreSQL readback. `NC-20260915-001` makes this receiver provider-neutral across
+MCS plus the six approved English Practitioner CCE one-time products by carrying
+one immutable, catalog-declared Product Map label; old MCS/AI snapshots may use
+their exact snapshotted title, while unknown labels still fail closed. Payment Log
+column P records explicit `Stripe` or `Adyen` provenance from both existing writers
+and stays inside the sortable row range; column J retains its legacy header for
+header-driven maintenance compatibility. The verified recorder summary contains
+the learner, product, amount, provider payment ID, paid/recorded dates, truthful
+fee-pending status and exact Sheet/roster/database destinations. It must post that
+summary to the single registered El Contador channel before acknowledging
+WordPress. Missing group registration or Slack delivery is retryable; no Contador
+agent is spawned, and the existing Stripe case/receipt machinery is unchanged.
+Migration 168 removes migration 166's obsolete MCS-literal PostgreSQL product check
+and replaces it with the same bounded checkout-slug shape enforced by the signed
+receiver. It changes no row, table, index, owner or grant. Its rollback restores the
+literal check only while every retained row is still MCS and otherwise raises a
+visible refusal; ordinary code rollback preserves provider-neutral projection rows.
 
 `adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,

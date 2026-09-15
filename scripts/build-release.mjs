@@ -317,6 +317,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_166_contador_adyen_payments.sql',
     'data/business/migrations/nanoclaw-v2/167_tandem_identity_control_plane.sql',
     'data/business/migrations/nanoclaw-v2/rollback_167_tandem_identity_control_plane.sql',
+    'data/business/migrations/nanoclaw-v2/168_contador_adyen_product_identity.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_168_contador_adyen_product_identity.sql',
     'scripts/verify-release.mjs',
     'scripts/validate-tandem-identity-d2-production.mjs',
     'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',

@@ -92,6 +92,29 @@
   or deployment exists. Production remains gated on real metadata-token/IAM/
   certificate evidence and an authorized HTTPS route.
 
+### 2026-09-15T21:53Z addendum — migration 168 review and source proof
+
+- Owner approved the additional review. Sonnet/high session
+  `7c4f21e1-59a4-4e5e-8469-19d3e5de5f40` returned `KEEP` and found two material
+  proof gaps: the SQL/receiver pattern equivalence needed mechanical evidence, and
+  unsafe rollback had to fail visibly rather than silently.
+- Migration 168 now replaces only the MCS-literal product constraint with the exact
+  1–100 lowercase-alphanumeric/internal-hyphen shape enforced by
+  `commerce-bookkeeper.ts`. Its guarded rollback raises
+  `rollback 168 refused` whenever any non-MCS row exists; code rollback preserves
+  provider-neutral evidence.
+- A real disposable PostgreSQL database proves first apply, exact reapply without
+  row changes, Practitioner admission, populated rollback refusal, safe MCS-only
+  rollback and reapply. The static corpus covers one-character, 100-character,
+  consecutive-hyphen, leading/trailing-hyphen, uppercase, underscore and 101-byte
+  cases against both source contracts. Focused migration/receiver tests pass 10/10.
+- Review usage: six model calls, 21,255 cache-create, 125,085 cache-read, 9,085
+  output tokens, maximum context 33,071, no warnings; cost `$0.200911`.
+- No production schema or pending job changed in this addendum. Backup, exact
+  migration apply/readback and one pending-job replay remain required.
+- Final local release gate: TypeScript typecheck passes and the focused migration,
+  prior Adyen-schema and signed Bookkeeper receiver suites pass 12/12.
+
 ## 2026-09-14 — NC-20260914-007 disposable claim proposal
 
 - Added an independent strict participant-only Company OS proposal validator.
