@@ -1046,6 +1046,12 @@ fee-pending status and exact Sheet/roster/database destinations. It must post th
 summary to the single registered El Contador channel before acknowledging
 WordPress. Missing group registration or Slack delivery is retryable; no Contador
 agent is spawned, and the existing Stripe case/receipt machinery is unchanged.
+For credential-family Commerce purchases, the same envelope may carry one bounded
+PCC/ACTC calendar selection already signed and snapshotted by WordPress. The
+recorder never derives or changes the selection: it fills the destination roster's
+existing `Cohort` cell only when blank, preserves an existing value, and requires
+readback before success. Capacity-managed ACC and combined Level 2 are not admitted
+by this contract.
 Migration 168 removes migration 166's obsolete MCS-literal PostgreSQL product check
 and replaces it with the same bounded checkout-slug shape enforced by the signed
 receiver. It changes no row, table, index, owner or grant. Its rollback restores the

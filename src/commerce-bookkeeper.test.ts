@@ -12,8 +12,12 @@ const require = createRequire(import.meta.url);
 const recorder = require('../tools/contador/process-commerce-payment.cjs') as {
   column(index: number): string;
   psqlVars(values: Record<string, string>): string[];
+  cohortRosterValue(
+    current: string,
+    cohort: { rosterValue: string } | null,
+  ): string;
   formatCommerceSummary(
-    fact: Record<string, string>,
+    fact: Record<string, unknown>,
     paymentLog: { verified: boolean; row: number; recordedDate: string },
     roster: Array<{ tab: string; column: string; row: number }>,
   ): string;
@@ -54,6 +58,7 @@ function payload() {
         email: 'learner@example.test',
       },
       purchaseRelationship: 'other',
+      cohort: null as null | Record<string, unknown>,
     },
   };
 }
@@ -87,6 +92,39 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(prepared.order.productName).toBe('AI for Coaches');
   });
 
+  it('accepts one bounded signed cohort and rejects malformed cohort evidence', () => {
+    const credential = payload();
+    credential.order.productId = 'pcc-module-1';
+    credential.order.productName = 'PCC Module 1: System Coaching Mindset';
+    credential.order.cohort = {
+      key: 'pcc-m1-0123456789abcdef01234567',
+      program: 'pcc',
+      module: 1,
+      enrollmentScope: 'module',
+      start: '2026-10-07T19:00:00-04:00',
+      end: '2026-10-28T21:00:00-04:00',
+      label: 'PCC Module 1',
+      range: 'Oct 7, 2026 - Oct 28, 2026',
+      time: '7:00 PM ET',
+      timezone: 'America/New_York',
+      sessions: [
+        '2026-10-07T19:00:00-04:00',
+        '2026-10-14T19:00:00-04:00',
+        '2026-10-21T19:00:00-04:00',
+        '2026-10-28T19:00:00-04:00',
+      ],
+      rosterValue: 'PCC Module 1 — Oct 7, 2026 - Oct 28, 2026',
+    };
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(credential));
+    expect(prepared.order.cohort?.key).toBe('pcc-m1-0123456789abcdef01234567');
+    const malformed = structuredClone(credential);
+    (malformed.order.cohort as Record<string, unknown>).rosterValue =
+      'browser supplied replacement';
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(malformed))).toThrow(
+      /order.cohort invalid/,
+    );
+  });
+
   it('rejects tampering, stale deliveries, and order/payment mismatches', () => {
     const badSignature = signed();
     badSignature.signatureHeader = '0'.repeat(64);
@@ -117,6 +155,16 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       '-v',
       "psp=x'; DROP TABLE payments;--",
     ]);
+    expect(
+      recorder.cohortRosterValue('', {
+        rosterValue: 'PCC Module 1 — Oct 2026',
+      }),
+    ).toBe('PCC Module 1 — Oct 2026');
+    expect(
+      recorder.cohortRosterValue('Existing cohort', {
+        rosterValue: 'Replacement',
+      }),
+    ).toBe('Existing cohort');
   });
 
   it('writes and verifies explicit Adyen provenance without renaming the legacy ID header', () => {
@@ -135,6 +183,9 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(source).toContain("provider !== 'Adyen'");
     expect(source).toContain('endColumnIndex: 16');
     expect(source).toContain('...(tab.basicFilter || {})');
+    expect(source).toContain("headers.findIndex(value => value === 'Cohort')");
+    expect(source).toContain('if (!before) await update(ROSTER_ID, cell, [[expected]])');
+    expect(source).toContain("fail('student roster cohort readback mismatch')");
     expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
   });
 
@@ -149,6 +200,7 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
         pspReference: 'RTKPSQMVRMMV3RR9',
         transactionDate: '9/15/2026',
         recordedDate: '9/15/2026',
+        cohort: null,
       },
       { verified: true, row: 430, recordedDate: '9/15/2026' },
       [{ tab: 'Practitioner Series', column: 'AI for Coaches', row: 15 }],
