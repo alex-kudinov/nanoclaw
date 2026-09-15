@@ -18,9 +18,13 @@ reviewed, committed and pushed on private Tandem Identity branch
 `codex/login-tools-walking-skeleton-20260915` at `d46fb591`: focused 55/55 and
 full 74 passed with four intentional Firestore skips; typecheck/build pass;
 Sonnet/high returned `PASS`. No deployment occurred because the installed
-gateway still guarantees `unbound`. Next: owner names the exact controlled
-account and canonical Party/entitlement, and separately authorizes the real
-gateway path needed for a truthful end-to-end development canary.
+gateway still guarantees `unbound`. The owner then named the pilot account.
+Read-only Company OS resolution found three active same-email Parties: long-
+lived Party `10069` with 13 exact Plutio/Trafft/Stripe/Tandem-web references,
+plus WordPress checkout prospects `11646` and `11647`; all lack verified claims
+or auth bindings, and none has Coaching Tools Plus. Next: owner explicitly
+designates the canonical Party and legitimate entitlement path, then separately
+authorizes the real gateway path for a truthful end-to-end development canary.
 
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
 topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch

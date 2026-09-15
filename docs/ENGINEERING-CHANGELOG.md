@@ -33,6 +33,15 @@
   entitlement grant, provider write, gateway transport or deployment occurred.
   Completion requires one owner-named controlled identity and exact Party/
   entitlement plus a separately authorized real gateway path.
+- Read-only owner-pilot reconstruction then found three unmerged same-email
+  Person records. Party `10069` is the only long-lived record and carries 13
+  exact Plutio, Trafft, Stripe and Tandem-web references; Parties `11646` and
+  `11647` are recent WordPress checkout-created prospects with no returned exact
+  refs. None has a verified identifier claim, Google auth binding or Coaching
+  Tools Plus entitlement. Eleven other Parties have the canonical
+  `shared.coaching-tools-plus` component. No identity/access/provider write
+  occurred. Evidence:
+  `.program/evidence/NC-20260915-003-pilot-resolution-blocked.md`.
 
 ## 2026-09-15 — NC-20260915-002 service-account transport verifier
 

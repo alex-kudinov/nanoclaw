@@ -1,0 +1,14 @@
+{
+  "decision_id": "decision:tandem-identity-owner-pilot-account-2026-09-15",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T21:31:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-login-tools-walking-skeleton"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "The owner selected one exact non-shared individual account for the Tandem Identity development pilot. To minimize personal data in governance, the normalized email is represented only by SHA-256 929e062a5f6c3a1708d539ddebfaf7b05d4fbceb009de8b8362b748bb3a5cf81. This authorizes read-only resolution of the account's existing canonical Party, exact provider references, identity conflicts and current coaching_tools.plus entitlement; use of that exact account for one owner-operated development sign-in; and a binding only after the verified Google subject, explicit owner selection, one exact existing Party and no conflicting/shared evidence all agree. It does not authorize administrative Firebase user creation, synthetic email verification, using a shared mailbox, creating or merging a Party, adding or changing an entitlement, mass migration, another customer, provider writes, production rollout or bypass of the separately required gateway/network authorization.",
+  "source_task": "Current Codex owner instruction selecting the exact pilot account; raw email intentionally omitted from this durable artifact."
+}
