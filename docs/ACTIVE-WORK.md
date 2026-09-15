@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-15T23:12Z — `NC-20260915-004` live-line credential Commerce
+integration, owner Codex, `ready_for_deploy`, C4/C5, isolated branch
+`codex/commerce-cohort-live-integration-20260915` from exact live identity
+release `50905fc8522c11a55a9fca782280b862a017daa6`. Production advanced on a
+divergent login-tools lineage while the Commerce cohort release was being built;
+the initial activation stopped at dry-run. This branch preserves the complete
+live identity gateway source and adds only provider-neutral Bookkeeper commits
+`4016d985`, migration-168 commit `59e84ead`, and credential-cohort commits
+`381f2567`/`fd7e08e7`. The source merges without runtime-code conflict; only
+continuity documentation required combination. Next: run exact integrated
+verification, build one immutable release and activate only after a zero-work
+drain. No payment, enrollment, Sheet, customer message, identity binding, Funnel
+or IAM mutation is authorized by this integration.
+
 2026-09-15T20:20Z — `NC-20260915-003` Tandem Identity login-to-tools walking
 skeleton, owner Codex, `blocked`, C5/C3. Company OS program work
 `work:tandem-identity-login-tools-walking-skeleton` is claimed at revision 357.

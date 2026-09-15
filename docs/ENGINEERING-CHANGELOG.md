@@ -1,5 +1,22 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-004 live-line credential Commerce integration
+
+- Exact production release `50905fc8522c11a55a9fca782280b862a017daa6`
+  advanced on the login-tools branch after the provider-neutral Commerce release.
+  A dry-run caught the divergent lineage before activation; no service pointer
+  changed.
+- The integration branch starts from that exact live commit and applies only the
+  reviewed provider-neutral receiver, migration 168 and credential cohort
+  projection commits. It retains every identity gateway source file and the
+  current runtime topology. Runtime source merges without conflict; Active Work
+  and this changelog were combined manually to preserve both ownership records.
+- No migration reapply is required: live PostgreSQL already has migration 168 and
+  one provider-neutral AI row. The immutable release must package the migration
+  for integrity while preserving the live generalized constraint.
+- Activation is gated on integrated typecheck/focused tests, clean immutable
+  release verification, exact current health and natural zero-work drain.
+
 ## 2026-09-15 — NC-20260915-002 credential Commerce cohort projection
 
 - State: `in_progress`; source verification is green, release pending.
