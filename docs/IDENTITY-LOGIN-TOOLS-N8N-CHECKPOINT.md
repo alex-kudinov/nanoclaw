@@ -17,7 +17,7 @@ deployed Cloud Run service is not yet configured to call a real gateway.
 
 The established public ingress is already:
 
-`identity-gateway.tandemcoach.co -> Cloudflare/LiteSpeed -> n8n on VPS -> Tailscale -> NanoClaw`
+`webhooks.tandemcoach.co -> Cloudflare/LiteSpeed -> n8n on VPS -> Tailscale -> NanoClaw`
 
 Live read-only proof established:
 
@@ -63,8 +63,8 @@ Evidence:
 
 | Obligation | Minimum accepted change | Failure if removed or broadened |
 | --- | --- | --- |
-| Public route | One active n8n POST webhook at `/webhook/tandem-identity-binding-v1` behind a dedicated `identity-gateway.tandemcoach.co` vhost on the existing VPS. | A generic proxy or alternate methods enlarge the public attack surface. |
-| Edge body bound | The dedicated LiteSpeed vhost sets `maxReqBodyLen` to 4096 before proxying its sole route to the existing loopback n8n runtime. | The n8n Webhook node necessarily receives a request before its Code node can reject it. |
+| Public route | One active n8n POST webhook at `/webhook/tandem-identity-binding-v1` behind the established `webhooks.tandemcoach.co` edge. | A generic proxy or alternate methods enlarge the public attack surface. |
+| Body bound | The existing n8n runtime retains its general 16 MB public-ingress ceiling. This workflow requires determinate length and rejects declared or reserialized bodies over 4 KiB before the private HTTP Request node. | A route-specific public-edge object would add operational machinery; omitting the pre-private gate would expose the Mini to oversized requests. |
 | Admission | A Code/branch gate requires a numeric content-length at or below 4 KiB, rejects transfer-encoding/chunked or missing length, and confirms the parsed JSON reserialization is at or below 4 KiB before forwarding. | Oversized or indeterminate-length payloads reach the private host. |
 | Authentication | Forward the `Authorization` header unchanged; NanoClaw verifies the Google token against the exact public webhook URL audience and pre-pinned service identity. | n8n becomes a trust authority or a confused audience is accepted. |
 | Private target | HTTP Request uses only fixed `http://100.115.115.206:8088/identity/v1/binding`, POST, JSON, two-second timeout. | Caller-selected URLs create SSRF or broaden private reach. |
@@ -75,9 +75,8 @@ Evidence:
 
 ## Next falsifiable proof and bounded work
 
-1. Add one version-controlled n8n workflow definition, one dedicated
-   LiteSpeed-vhost and Cloudflare-DNS declaration, and focused source-contract
-   tests.
+1. Add one version-controlled n8n workflow definition and focused
+   source-contract tests.
 2. Change only the pinned gateway audience in NanoClaw and the URL/audience
    examples/config in Tandem Identity to the exact n8n webhook URL.
 3. Run focused/full tests and bounded independent authentication review.
@@ -85,9 +84,9 @@ Evidence:
 5. Acquire only the exact VPS n8n workflow and affected release leases.
 6. Import the workflow inactive, read it back without credential values, then
    activate it.
-7. Install and validate the dedicated vhost, create/read back only its proxied
-   CNAME, and prove a body over 4 KiB is blocked at the VPS edge without an n8n
-   execution.
+7. Prove bodies over 4 KiB, missing length and chunked input do not invoke the
+   private HTTP Request node; retain n8n's established 16 MB process-level
+   public-ingress ceiling.
 8. Before a valid token, send a unique non-secret bearer sentinel through the
    public error path and prove it is absent from n8n execution persistence,
    manual-execution storage, workflow errors and relevant container logs. Prove
@@ -131,8 +130,10 @@ Required pre-activation corrections accepted:
   approximating it.
 
 Live correction: the Cloudflare Pro zone is already at its 20/20 custom-rule
-limit, so no rule was created and no existing rule was deleted or weakened.
-The smaller safe alternative is a dedicated hostname and LiteSpeed vhost on the
-same VPS and n8n process. The existing wildcard `*.tandemcoach.co` certificate
-covers it; the vhost-level 4096-byte limit applies before proxying and does not
-constrain unrelated n8n webhooks.
+limit, so no rule was created and no existing rule was deleted or weakened. A
+dedicated hostname/vhost was tested as an alternative but rolled back before
+traffic because it added a DNS and server-config obligation solely to narrow
+n8n's already bounded public-ingress memory exposure. The accepted minimum
+keeps the established shared edge and proves the 4 KiB limit before any private
+NanoClaw hop. The independent review classified n8n receiving the already
+bounded body before its Code node as an inherent property, not a source defect.
