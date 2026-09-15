@@ -1,5 +1,22 @@
 # NanoClaw active work
 
+2026-09-15T22:15Z — `NC-20260915-002` LinkedIn native-alert intake for
+Executive Search, owner Codex, `in_progress`, C2, isolated branch
+`codex/linkedin-alert-intake-20260915` from exact live release
+`59e84ead6b088f2eedb7d9baaeda323d34dd5f8a`. Capture only exact LinkedIn job
+alert mail before Mailman classification into a minimized, immutable private
+outbox on the production Mini; suppress those messages from Sales/Chief;
+export a bounded batch over the existing authenticated SSH path; and let the
+Mac Studio Executive Search app persist replay-safe received/pending/resolved
+lead receipts and resolve jobs only through configured employer/public ATS
+sources. No LinkedIn page fetch, mailbox credential copy, inbound application
+port, recurring timer, report refresh, application, employer contact, or
+customer/business email routing is added. Minimum-sufficient review returned
+KEEP while deferring recurring polling until one natural exact-sender alert
+proves the provider format. Next: fixture-prove capture/replay/suppression and
+explicit SSH import with one ATS match and one restart-persistent pending lead;
+then complete the risk-routed review, immutable releases, and live readback.
+
 2026-09-15T21:11Z — `NC-20260915-001` provider-neutral Commerce Bookkeeper
 projection, owner Codex with bounded Claude necessity review, `blocked`,
 C4, isolated branch `codex/commerce-bookkeeper-provider-neutral-20260915` from
