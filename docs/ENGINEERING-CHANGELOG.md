@@ -1,5 +1,40 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-002 service-account transport verifier
+
+- Selected a future Google-signed Cloud Run service-account ID token as the
+  smallest standard BFF-to-Company-OS caller identity after a current read-only
+  Cloud Run, Mac Mini, Tailscale and Cloudflare-path audit.
+- A fresh minimum-sufficient necessity review returned `KEEP` after removing a
+  production-shaped BFF token/client abstraction. The existing Tandem Identity
+  proposal producer remains unchanged.
+- Added one pure, unwired Company OS verifier using the existing
+  `google-auth-library`. It requires a strict RS256 header, Google issuer, exact
+  HTTPS audience, exact verified runtime service-account email, immutable
+  subject, bounded times, token/body byte limits and the unchanged strict
+  participant proposal.
+- An ephemeral in-memory issuer and the exact existing BFF artifact prove the
+  synthetic boundary. Generated disposable PostgreSQL preserves explicit
+  serializable transaction identity, accepts once, returns zero-write exact
+  replay and rejects altered claim-ID reuse through existing claim semantics.
+- Focused transport/cross-repository/database proof passed 23/23. Format,
+  typecheck, build and documentation continuity passed. Full NanoClaw reached
+  4,447 passed / 34 skipped / 20 unrelated failures with no identity failure;
+  payment reconciliation passed immediately in isolation and the pre-existing
+  Academy Capacity fixture remains independently red. Tandem Identity remained
+  44 passed / 4 intentional Firestore skips with typecheck/build passing.
+- One bounded Sonnet/high auth review returned `PASS`, no material findings and
+  no required correction. Session `6f3acb26-a59b-4bd6-8b0d-2dff28cc0f13`
+  used four model calls, 84,356 cache-create, 143,816 cache-read and 16,292
+  output tokens; maximum context was 89,197 with no usage warning.
+- Companion commits: Tandemweb topology/obligation checkpoint `e2e245e43` and
+  Tandem Identity runtime-unchanged boundary documentation `3a577a7`.
+- This is synthetic source/disposable evidence only. No endpoint, HTTP client,
+  metadata/certificate fetch, IAM/network/secret/config, runtime import, worker,
+  DDL/migration, real credential/user, Party/ref/access/provider/customer write
+  or deployment exists. Production remains gated on real metadata-token/IAM/
+  certificate evidence and an authorized HTTPS route.
+
 ## 2026-09-14 — NC-20260914-007 disposable claim proposal
 
 - Added an independent strict participant-only Company OS proposal validator.

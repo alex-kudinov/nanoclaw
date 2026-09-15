@@ -1,0 +1,14 @@
+{
+  "decision_id": "decision:tandem-identity-service-topology-next-piece-2026-09-15",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T14:25:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-service-topology-disposable"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "After the complete identity architecture, BFF proposal, Company OS derivation and repository cleanup were committed and pushed, the owner requested a handoff and continuation with the next piece. This authorizes the next minimum-sufficient identity slice: audit the current Cloud Run Tandem Identity, Mac Mini Company OS and available Google/Cloudflare/Tailscale connectivity boundaries; compare standard service-to-service authentication mechanisms; select the smallest real endpoint topology; and implement only a network-free or isolated disposable runtime proof after the required operational-obligation checkpoint and fresh necessity review. It authorizes clean isolated source worktrees, focused/full verification, bounded independent review when the auth/identity risk gate is met, and commit/push of reviewed source. It does not authorize creating or exposing a production endpoint, loading or rotating credentials, Secret Manager changes, Cloudflare/Tailscale/Google IAM mutations, real network delivery, real users, production identity bindings, Party/ref/access/enrollment/entitlement/customer/provider writes, deployment, activation or migration.",
+  "source_task": "Owner instruction in Codex: handoff and let's continue with the next piece."
+}

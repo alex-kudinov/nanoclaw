@@ -1,7 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import {
+  createSign,
+  generateKeyPairSync,
+  randomUUID,
+  type KeyObject,
+} from 'node:crypto';
 import { Pool, type PoolClient } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -12,6 +17,10 @@ import { prepareHeartbeatAggregateSnapshot } from './d3-heartbeat-snapshot.js';
 import { createGoogleAccountClaimEnvelope } from './google-account-claim.js';
 import { applyGoogleAccountClaimProposalWithClient } from './google-account-claim-proposal-store.js';
 import { applyGoogleAccountClaimWithClient } from './google-account-claim-store.js';
+import {
+  GOOGLE_SERVICE_ACCOUNT_ISSUER,
+  verifyGoogleServiceAccountClaimRequest,
+} from './google-service-account-transport.js';
 
 const ROOT = process.cwd();
 const PREFIX = 'nc_tandem_identity_d2_test_';
@@ -22,6 +31,78 @@ const migration = path.join(
   'data/business/migrations/nanoclaw-v2/167_tandem_identity_control_plane.sql',
 );
 let pool: Pool;
+
+const serviceAudience =
+  'https://company-os.identity.test.invalid/v1/account-claims';
+const servicePrincipal =
+  'tandem-identity-runtime-dev@tandem-identity-dev-2026.iam.gserviceaccount.com';
+const serviceSubject = '117037165711000000001';
+const serviceKeyId = 'ephemeral-google-fixture';
+const serviceKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+const serviceCertificates = {
+  [serviceKeyId]: serviceKeyPair.publicKey.export({
+    type: 'spki',
+    format: 'pem',
+  }) as string,
+};
+
+function signServiceToken(
+  privateKey: KeyObject,
+  overrides: Partial<{
+    iss: string;
+    aud: string;
+    sub: string;
+    email: string;
+    email_verified: boolean;
+    iat: number;
+    exp: number;
+  }> = {},
+): string {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(
+    JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: serviceKeyId }),
+  ).toString('base64url');
+  const payload = Buffer.from(
+    JSON.stringify({
+      iss: GOOGLE_SERVICE_ACCOUNT_ISSUER,
+      aud: serviceAudience,
+      sub: serviceSubject,
+      email: servicePrincipal,
+      email_verified: true,
+      iat: now - 5,
+      exp: now + 595,
+      ...overrides,
+    }),
+  ).toString('base64url');
+  const unsigned = `${header}.${payload}`;
+  return `${unsigned}.${createSign('RSA-SHA256')
+    .update(unsigned)
+    .sign(privateKey)
+    .toString('base64url')}`;
+}
+
+function serviceRequest(
+  body: unknown,
+  idToken = signServiceToken(serviceKeyPair.privateKey),
+) {
+  return {
+    idToken,
+    body: Buffer.from(JSON.stringify(body)),
+    certificates: serviceCertificates,
+    transportPolicy: {
+      expectedIssuer: 'https://accounts.google.com' as const,
+      expectedAudience: serviceAudience,
+      expectedPrincipalEmail: servicePrincipal,
+      expectedSubject: serviceSubject,
+      observedAt: new Date().toISOString(),
+    },
+    proposalPolicy: {
+      expectedProjectId: 'tandem-identity-dev-2026',
+      expectedEnvironment: 'test' as const,
+      observedAt: '2026-09-15T02:01:00.000Z',
+    },
+  };
+}
 
 function childEnv(): NodeJS.ProcessEnv {
   return Object.fromEntries(
@@ -913,11 +994,37 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       );
 
     const initial = await identityWriteCounts();
+    const authenticatedRequest = serviceRequest(proposal);
+    const authenticated =
+      await verifyGoogleServiceAccountClaimRequest(authenticatedRequest);
+    expect(authenticated).toMatchObject({
+      status: 'accepted',
+      reasonCode: 'SERVICE_IDENTITY_VALID',
+    });
+    if (authenticated.status !== 'accepted') {
+      throw new Error('authenticated transport fixture was rejected');
+    }
+
+    expect(
+      await verifyGoogleServiceAccountClaimRequest(
+        serviceRequest(
+          proposal,
+          signServiceToken(serviceKeyPair.privateKey, {
+            aud: 'https://wrong-audience.invalid',
+          }),
+        ),
+      ),
+    ).toMatchObject({
+      status: 'rejected',
+      reasonCode: 'SERVICE_IDENTITY_INVALID',
+    });
+    expect((await identityWriteCounts()).rows[0]).toEqual(initial.rows[0]);
+
     await expect(
       transaction((client) =>
         applyGoogleAccountClaimProposalWithClient({
           client,
-          proposal,
+          proposal: authenticated.proposal,
           policy,
         }),
       ),
@@ -970,7 +1077,11 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
     );
     const beforeAccepted = await identityWriteCounts();
     const accepted = await serializableTransaction((client) =>
-      applyGoogleAccountClaimProposalWithClient({ client, proposal, policy }),
+      applyGoogleAccountClaimProposalWithClient({
+        client,
+        proposal: authenticated.proposal,
+        policy,
+      }),
     );
     expect(accepted).toMatchObject({
       outcome: 'accepted',
@@ -996,8 +1107,18 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       decisions: beforeAccepted.rows[0].decisions + 1,
     });
 
+    const authenticatedReplay =
+      await verifyGoogleServiceAccountClaimRequest(authenticatedRequest);
+    expect(authenticatedReplay.status).toBe('accepted');
+    if (authenticatedReplay.status !== 'accepted') {
+      throw new Error('authenticated replay fixture was rejected');
+    }
     const replay = await serializableTransaction((client) =>
-      applyGoogleAccountClaimProposalWithClient({ client, proposal, policy }),
+      applyGoogleAccountClaimProposalWithClient({
+        client,
+        proposal: authenticatedReplay.proposal,
+        policy,
+      }),
     );
     expect(replay).toMatchObject({
       outcome: 'duplicate',
@@ -1011,17 +1132,29 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
       afterAccepted.rows[0],
     );
 
+    const alteredTransport = await verifyGoogleServiceAccountClaimRequest({
+      ...authenticatedRequest,
+      body: Buffer.from(
+        JSON.stringify({
+          ...proposal,
+          googleSubject: {
+            ...proposal.googleSubject,
+            authenticatedAt: '2026-09-15T01:58:59.000Z',
+          },
+        }),
+      ),
+    });
+    expect(alteredTransport.status).toBe('accepted');
+    if (alteredTransport.status !== 'accepted') {
+      throw new Error(
+        'altered transport fixture was rejected before claim semantics',
+      );
+    }
     await expect(
       serializableTransaction((client) =>
         applyGoogleAccountClaimProposalWithClient({
           client,
-          proposal: {
-            ...proposal,
-            googleSubject: {
-              ...proposal.googleSubject,
-              authenticatedAt: '2026-09-15T01:58:59.000Z',
-            },
-          },
+          proposal: alteredTransport.proposal,
           policy,
         }),
       ),

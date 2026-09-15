@@ -1,5 +1,27 @@
 # NanoClaw active work
 
+2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
+topology proof, owner Codex, `validating`, C5/C2. Isolated Company OS branch
+`codex/tandem-identity-service-topology-disposable-20260915` starts from the
+reviewed proposal source at `15b22f20`; Tandem Identity branch
+`codex/service-topology-disposable-20260915` starts from private `main` at
+`fc5714d`; the architecture/checkpoint branch
+`codex/tandem-identity-service-topology-20260915` starts from `fdd7e819b`.
+Scope is one current read-only topology audit, one minimum-sufficient obligation
+checkpoint and fresh necessity review, then only the accepted network-free
+disposable proof of a standard service identity. Likely files are the three
+identity/proposal source and test surfaces, exact architecture/checkpoint docs,
+this active-work record, project map, changelog and task evidence. No production
+endpoint, IAM/network/secret mutation, real credential or user, Party/ref/access/
+provider/customer write, runtime wiring, migration or deployment is authorized.
+The current audit and `KEEP` necessity verdict are recorded; one pure unwired
+Company OS verifier plus ephemeral test issuer passes focused, cross-repository
+and disposable database proof. Sonnet/high bounded auth review returned `PASS`
+with no material finding. Tandemweb checkpoint commit is `e2e245e43`; Tandem
+Identity runtime-unchanged documentation commit is `3a577a7`. Next: commit and
+push the reviewed Company OS source, then reconcile program continuity and exact
+remote refs. Deployment is not applicable and remains prohibited.
+
 2026-09-15T01:48Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
 Company-OS claim proposal, owner Codex, `complete`, C5/C2. Tandem Identity
 implementation `926774f`, reviewed source `4ca09d8` and remote-limit record
