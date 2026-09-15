@@ -1,6 +1,6 @@
 # LinkedIn job-alert outbox
 
-Status: walking skeleton for `NC-20260915-002`  
+Status: walking skeleton for `NC-20260915-002`
 Owner: NanoClaw host intake; Executive Search owns matching and disposition
 
 ## Boundary
