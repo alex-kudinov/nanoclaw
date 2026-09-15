@@ -36,10 +36,12 @@
   head `4ca09d8`, and Company OS implementation `512a4ee6`. These branches are
   source-only and unwired; deployment and live/provider verification are not
   applicable and remain explicitly prohibited.
-- Company OS completion head `97d13112` is pushed and remotely verified. Tandem
-  Identity local head `ab9f808` cannot be pushed because that repository has no
-  configured Git remote; no destination repository was invented. The program
-  item remains waiting only on that source-persistence decision.
+- The owner selected the same private GitHub account as `tandemweb`. Private
+  `alex-kudinov/tandem-identity` now exists, uses authenticated HTTPS, and the
+  exact reviewed branch is remotely verified at `fc5714d`. Company OS final
+  reviewed source/evidence checkpoint is `d6048eac`; the program item is
+  complete with no deployment, and canonical program evidence records the final
+  remote ref.
 
 ## 2026-09-14 — NC-20260914-006 dark Google account claim
 
