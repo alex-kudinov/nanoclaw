@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
-topology proof, owner Codex, `validating`, C5/C2. Isolated Company OS branch
+topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch
 `codex/tandem-identity-service-topology-disposable-20260915` starts from the
 reviewed proposal source at `15b22f20`; Tandem Identity branch
 `codex/service-topology-disposable-20260915` starts from private `main` at
@@ -18,9 +18,11 @@ The current audit and `KEEP` necessity verdict are recorded; one pure unwired
 Company OS verifier plus ephemeral test issuer passes focused, cross-repository
 and disposable database proof. Sonnet/high bounded auth review returned `PASS`
 with no material finding. Tandemweb checkpoint commit is `e2e245e43`; Tandem
-Identity runtime-unchanged documentation commit is `3a577a7`. Next: commit and
-push the reviewed Company OS source, then reconcile program continuity and exact
-remote refs. Deployment is not applicable and remains prohibited.
+Identity runtime-unchanged documentation commit is `3a577a7`; Company OS
+implementation `582a9b37` is pushed with exact remote readback. Company OS
+program revision 354 closes every continuity commitment. No implementation,
+release or deployment remains for this disposable proof; the next identity
+work must be a separately authorized customer-visible walking skeleton.
 
 2026-09-15T01:48Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
 Company-OS claim proposal, owner Codex, `complete`, C5/C2. Tandem Identity

@@ -29,6 +29,10 @@
   output tokens; maximum context was 89,197 with no usage warning.
 - Companion commits: Tandemweb topology/obligation checkpoint `e2e245e43` and
   Tandem Identity runtime-unchanged boundary documentation `3a577a7`.
+- Company OS implementation commit `582a9b37` is pushed with exact remote
+  readback. Final completion evidence is
+  `.program/evidence/NC-20260915-002-service-topology-complete.md`; Company OS
+  revision 354 closes all seven commitments with no active claim or lease.
 - This is synthetic source/disposable evidence only. No endpoint, HTTP client,
   metadata/certificate fetch, IAM/network/secret/config, runtime import, worker,
   DDL/migration, real credential/user, Party/ref/access/provider/customer write
