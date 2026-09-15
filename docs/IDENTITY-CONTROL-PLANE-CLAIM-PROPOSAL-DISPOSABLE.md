@@ -5,8 +5,9 @@ repository and generated disposable PostgreSQL evidence only
 
 Task: `NC-20260914-007`
 
-Reviewed implementation commits: Tandem Identity `926774f` (reviewed source
-head `4ca09d8`) and Company OS `512a4ee6`.
+Reviewed implementation commits: Tandem Identity `926774f` (local source head
+`ab9f808`; repository has no configured remote) and Company OS `512a4ee6`
+(pushed completion head `97d13112`).
 
 ## Outcome
 

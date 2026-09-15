@@ -1,10 +1,11 @@
 # NanoClaw active work
 
 2026-09-15T01:48Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
-Company-OS claim proposal, owner Codex, `complete`, C5/C2. Tandem Identity
-implementation `926774f` and reviewed source head `4ca09d8` are on
+Company-OS claim proposal, owner Codex, `waiting`, C5/C2. Tandem Identity
+implementation `926774f`, reviewed source `4ca09d8` and remote-limit record
+`ab9f808` are committed locally on
 `codex/claim-proposal-disposable-20260914`; Company OS implementation
-`512a4ee6` is on
+`512a4ee6` and pushed head `97d13112` are on
 `codex/tandem-identity-claim-proposal-disposable-20260914`. The existing BFF
 `/api/session` Firebase-verification sequence now proves an injected gateway can
 emit only a strict participant proposal with no Party/conflict authority.
@@ -19,6 +20,10 @@ bounded Sonnet/high review found and closed the transaction-boundary defect.
 Endpoint, network, credential, runtime wiring, DDL, real user, production
 identity/ref/access/customer/provider writes and deployment remain prohibited
 and absent.
+The Tandem Identity repository has no configured Git remote, so its reviewed
+branch cannot be pushed without an owner-selected destination. All engineering
+and verification are complete; only that exact push/readback remains. No
+deployment is waiting or authorized.
 
 2026-09-15T00:52Z — `NC-20260914-006` Tandem Identity authenticated
 account-claim dark foundation, owner Codex, `complete`, C5/C2, implementation
