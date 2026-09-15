@@ -46,7 +46,8 @@ export interface CommerceBookkeeperEnvelope {
   order: {
     orderId: string;
     merchantReference: string;
-    productId: 'mcq-program-a-foundations';
+    productId: string;
+    productName: string;
     amountCents: number;
     currency: 'USD';
     payer: { firstName: string; lastName: string; email: string };
@@ -154,6 +155,8 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     64,
   );
   const pspReference = text(n.pspReference, 'notification.pspReference', 100);
+  const productId = text(order.productId, 'order.productId', 100);
+  const productName = text(order.productName, 'order.productName', 200);
   const amountValue = Number(amount.value);
   const orderAmount = Number(order.amountCents);
   if (
@@ -165,7 +168,8 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     order.currency !== 'USD' ||
     amountValue !== orderAmount ||
     order.merchantReference !== merchantReference ||
-    order.productId !== 'mcq-program-a-foundations'
+    !/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/.test(productId) ||
+    /[\x00-\x1f\x7f]/.test(productName)
   ) {
     throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
   }
@@ -204,7 +208,8 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     order: {
       orderId: text(order.orderId, 'order.orderId', 36),
       merchantReference,
-      productId: 'mcq-program-a-foundations',
+      productId,
+      productName,
       amountCents: orderAmount,
       currency: 'USD',
       payer: person(order.payer, 'order.payer'),
