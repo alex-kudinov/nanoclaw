@@ -80,6 +80,7 @@ const SA_PATH =
 // was previously live only in an uncommitted operational checkout and was lost
 // from later immutable releases.
 const NOT_A_STUDENT = '(not a student)';
+const PAYMENT_PROVIDER_HEADER = 'Payment Provider';
 
 // ── HTTP timeout guard ──────────────────────────────────────────────────────
 // Node's https has NO default socket timeout: a stalled/half-open connection
@@ -270,6 +271,14 @@ function sheetsUpdate(sheetId, range, values) {
     `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
     { values },
   );
+}
+
+async function ensurePaymentProviderHeader() {
+  const current = String((await sheetsGet(SHEETS_PAYMENTS_ID, 'Payment Log!P1')).values?.[0]?.[0] || '').trim();
+  if (current && current !== PAYMENT_PROVIDER_HEADER) throw new Error('payment provider header conflict');
+  if (!current) await sheetsUpdate(SHEETS_PAYMENTS_ID, 'Payment Log!P1', [[PAYMENT_PROVIDER_HEADER]]);
+  const verified = String((await sheetsGet(SHEETS_PAYMENTS_ID, 'Payment Log!P1')).values?.[0]?.[0] || '').trim();
+  if (verified !== PAYMENT_PROVIDER_HEADER) throw new Error('payment provider header readback mismatch');
 }
 
 function sheetsClear(sheetId, range) {
@@ -890,6 +899,7 @@ async function main() {
   // 2a. Payment Log (private sheet) — upsert by Stripe ID (column I)
   if (SHEETS_PAYMENTS_ID && hasSaCreds) {
     try {
+      await ensurePaymentProviderHeader();
       let paymentLogRow = null;
       const logRow = [
         transactionDate,
@@ -925,13 +935,13 @@ async function main() {
         const appendResult = await sheetsAppend(SHEETS_PAYMENTS_ID, 'Payment Log!A:K', [logRow]);
         results.sheets_log = 'OK';
         // Extend BasicFilter to include newly appended row.
-        // endColumnIndex MUST span every per-row column (A:O) so they all sort
+        // endColumnIndex MUST span every per-row column (A:P) so they all sort
         // as a unit: Refund ID (L) + Refunded Amount (M) from mark-refunds, the
         // operator-editable Defer Month (N), and Payout Month (O). A filter that
         // stops short leaves a column outside the sort range, so a re-sort
         // reshuffles the rest while it stays frozen — orphaning that data from
         // its row (Status in K stays correct, masking the bug — that's how the
-        // Refund ID column got scrambled). Keep at 15 (A:O). Payout (O) is a
+        // Refund ID column got scrambled). Keep at 16 (A:P). Payout (O) is a
         // PER-ROW formula (= same-row Defer + 6mo), not an ARRAYFORMULA, so it
         // sorts with its row and recomputes when Defer is edited — verified to
         // survive sorts. Do NOT make O a whole-column ARRAYFORMULA again.
@@ -957,7 +967,7 @@ async function main() {
                       startRowIndex: 0,
                       startColumnIndex: 0,
                       endRowIndex: newRow,
-                      endColumnIndex: 15,
+                      endColumnIndex: 16,
                     },
                   },
                 },
@@ -967,13 +977,15 @@ async function main() {
         } catch { /* non-fatal — filter update is nice-to-have */ }
       }
       if (paymentLogRow !== null) {
+        await sheetsUpdate(SHEETS_PAYMENTS_ID, `Payment Log!P${paymentLogRow}`, [['Stripe']]);
         const readback = await sheetsGet(
           SHEETS_PAYMENTS_ID,
           `Payment Log!J${paymentLogRow}:K${paymentLogRow}`,
         );
         const [readbackId, readbackStatus] = readback.values?.[0] || [];
+        const provider = String((await sheetsGet(SHEETS_PAYMENTS_ID, `Payment Log!P${paymentLogRow}`)).values?.[0]?.[0] || '');
         paymentLogVerified =
-          readbackId === accountingStripeId && readbackStatus === paymentStatus;
+          readbackId === accountingStripeId && readbackStatus === paymentStatus && provider === 'Stripe';
         results.sheets_log = paymentLogVerified
           ? `${results.sheets_log} (readback verified)`
           : 'ERROR: payment log readback mismatch';
