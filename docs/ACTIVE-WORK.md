@@ -1,5 +1,21 @@
 # NanoClaw active work
 
+2026-09-15T20:20Z — `NC-20260915-003` Tandem Identity login-to-tools walking
+skeleton, owner Codex, `in_progress`, C5/C3. Company OS program work
+`work:tandem-identity-login-tools-walking-skeleton` is claimed at revision 357.
+Tandem Identity branch `codex/login-tools-walking-skeleton-20260915` starts from
+the runtime-unchanged topology documentation at `3a577a7`; Company OS continuity
+branch `codex/tandem-identity-login-tools-walking-skeleton-20260915` starts from
+the completed topology proof at `d4e6f39b`. Scope is the smallest customer-
+visible path: reuse the existing verified session and identity gateway so
+`/account` and `/tools` resolve one explicit Party and one exact coaching-tools
+entitlement. Unbound, ambiguous, missing/held access, logout, revocation and
+Company OS unavailability must fail closed. No new identity store, service,
+queue, worker, tunnel, generalized federation, provider write, mass migration
+or production rollout is authorized. The exact controlled pilot identity/Party
+binding is a named-human gate and will not be invented. Next: write the minimum-
+sufficient checkpoint and obtain a fresh necessity verdict before source work.
+
 2026-09-15T19:46Z — `NC-20260915-002` Tandem Identity authenticated service
 topology proof, owner Codex, `complete`, C5/C2. Isolated Company OS branch
 `codex/tandem-identity-service-topology-disposable-20260915` starts from the

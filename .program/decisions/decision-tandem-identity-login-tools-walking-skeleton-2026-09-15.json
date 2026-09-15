@@ -1,0 +1,14 @@
+{
+  "decision_id": "decision:tandem-identity-login-tools-walking-skeleton-2026-09-15",
+  "program_id": "program:company-os",
+  "kind": "authorization",
+  "status": "accepted",
+  "decided_at": "2026-09-15T20:20:00Z",
+  "decided_by": "Alex Kudinov",
+  "scope": [
+    "work:tandem-identity-login-tools-walking-skeleton"
+  ],
+  "charter_version": "1.0.0",
+  "rationale": "After reviewing the 30,000-foot program direction, the owner instructed Codex to proceed with the recommended customer-visible walking skeleton rather than more architecture. This authorizes the smallest existing-app path: one verified Tandem Account session reaches /account and /tools as the same explicitly bound Party, one exact coaching-tools entitlement controls access, logout/revocation and unavailable/unbound states fail closed, and the established development preview may be updated and live-verified after tests and risk-gated review. It authorizes isolated source worktrees, deterministic in-memory/disposable tests, documentation, commit/push and the normal development-preview release. It does not authorize inventing or selecting a pilot person, using a shared mailbox as an individual, marking a synthetic email verified, creating a real Firebase user, binding a production auth account or Party, granting an entitlement, mutating Heartbeat or another provider, migrating customers, adding a database/table/queue/worker/service/tunnel, or production rollout. The exact controlled pilot identity and binding remain a named-human gate.",
+  "source_task": "Current Codex owner instruction: proceed, following the accepted 30,000-foot walking-skeleton recommendation."
+}
