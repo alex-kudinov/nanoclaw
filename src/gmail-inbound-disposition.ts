@@ -23,6 +23,7 @@ export type GmailInboundAcceptedReason =
   | 'inbound_message_persisted'
   | 'classified_route_persisted'
   | 'rule_auto_archive_completed'
+  | 'linkedin_job_alert_outbox_persisted'
   | 'legacy_message_persisted';
 
 export type GmailInboundRejectedReason =
@@ -85,6 +86,7 @@ const ACCEPTED_REASONS = new Set<GmailInboundDispositionReason>([
   'inbound_message_persisted',
   'classified_route_persisted',
   'rule_auto_archive_completed',
+  'linkedin_job_alert_outbox_persisted',
   'legacy_message_persisted',
 ]);
 

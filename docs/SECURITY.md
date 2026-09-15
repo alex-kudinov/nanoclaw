@@ -305,6 +305,17 @@ the other seven Heartbeat actions, and every lifecycle consumer remain off.
 
 ## Gmail capability and resource policy
 
+LinkedIn native job-alert capture is a host-only pre-classification exception,
+not a Gmail capability granted to an agent. The host requires the exact
+`jobalerts-noreply@linkedin.com` envelope sender plus Gmail-added aligned DMARC
+or DKIM pass and at least one numeric LinkedIn job pointer. It writes only a
+bounded, query-stripped envelope to a private `0700` outbox with `0600` files,
+then records a terminal inbound receipt before returning. Raw email/HTML,
+recipient data, tokens, and tracking parameters are not persisted. The path
+does not grant Mailman, Chief, or Executive Search Gmail credentials and does
+not expose Executive Search beyond loopback. See
+`docs/LINKEDIN-JOB-ALERT-OUTBOX.md`.
+
 Mailman Gmail calls carry a host-minted per-turn identity. An unapproved send
 attempt from an inbound-classification turn remains quarantined and cannot call
 Gmail, but is treated as an expected role-boundary denial rather than false
