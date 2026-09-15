@@ -1,5 +1,18 @@
 # NanoClaw active work
 
+2026-09-15T23:38Z — `NC-20260915-002` LinkedIn native-alert intake,
+`complete`, C2. The final live-line branch
+`codex/linkedin-commerce-live-integration-20260915` merges the reviewed
+LinkedIn capture with the currently deployed identity and credential Commerce
+lineage. Immutable release `189531ac2e96b58d720e90fc71255e71c8cb3e6d`
+is live on `mini-claw.local`; Gmail and Slack are connected, the outbox is
+private mode `0700`, and activation occurred with zero active/waiting containers
+and no actionable pending-send states. Future authenticated LinkedIn alerts are
+captured before Mailman/Sales/Chief routing. The current outbox contains zero
+files because the already-received alert predated the final live capture.
+Natural provider-format capture remains the only outstanding observation; it
+does not block the browser-backed Executive Search discovery path.
+
 2026-09-15T23:12Z — `NC-20260915-004` live-line credential Commerce
 integration, owner Codex, `ready_for_deploy`, C4/C5, isolated branch
 `codex/commerce-cohort-live-integration-20260915` from exact live identity

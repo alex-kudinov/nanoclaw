@@ -1,5 +1,23 @@
 # NanoClaw engineering changelog
 
+### 2026-09-15T23:38Z — LinkedIn capture and Commerce live-line integration
+
+- Merged the reviewed LinkedIn alert capture into the exact live credential
+  Commerce lineage and activated immutable release
+  `189531ac2e96b58d720e90fc71255e71c8cb3e6d` from a zero-work boundary.
+- Artifact hash is
+  `6d7c2683e241e2d6d61bdb8484b0dd78bb897d9d01eda986da7f77ab4de33a06`;
+  the rollback plist is
+  `com.nanoclaw.plist.rollback-c1474ed9524b-2026-09-15T23-37-23-411Z`.
+- Live health proves the exact commit/root, Node 22.23.2, connected Gmail and
+  Slack, zero active/waiting containers, and a private `0700` LinkedIn outbox.
+  The outbox is empty because the existing email arrived before this release;
+  the next authenticated alert is the natural provider-format proof.
+- Integrated typecheck and release verification pass. Focused Gmail/parser/
+  disposition/outbox tests pass 102/102; the full integrated suite is 4,484
+  passed / 34 skipped with four unchanged unrelated Academy Capacity, CNPC,
+  payment-reconciliation and Trafft failures.
+
 ## 2026-09-15 — NC-20260915-004 live-line credential Commerce integration
 
 - Exact production release `50905fc8522c11a55a9fca782280b862a017daa6`
