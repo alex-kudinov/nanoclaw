@@ -1,9 +1,12 @@
 # Tandem Identity Google Account-Claim Dark Foundation
 
-Status: source-only and unwired; verified with synthetic data and disposable
-PostgreSQL only
+Status: independently reviewed, source-only and unwired; verified with synthetic
+data and disposable PostgreSQL only
 
 Task: `NC-20260914-006`
+
+Reviewed implementation commit: `2669e9cf` on
+`codex/tandem-identity-account-claim-dark-20260914`.
 
 ## Outcome
 

@@ -29,6 +29,10 @@
   round is warranted. The review used 13 model calls, 113,010 cache-create,
   965,527 cache-read and 13,591 output tokens; its 119,643-token maximum context
   exceeded the 100k target and is recorded as an orchestration warning.
+- Source implementation commit: `2669e9cf` on
+  `codex/tandem-identity-account-claim-dark-20260914`. This is an unwired source
+  result, so deployment and live/provider verification are not applicable and
+  remain explicitly prohibited.
 
 ## 2026-09-14 — NC-20260914-001 Tandem Identity D3 Heartbeat reconciliation
 
