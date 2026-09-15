@@ -1,0 +1,1119 @@
+diff --git a/package.json b/package.json
+index 111ec530..5129a099 100644
+--- a/package.json
++++ b/package.json
+@@ -53,6 +53,7 @@
+     "tandem-identity-d3:prepare": "./scripts/with-pinned-node.sh node scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs",
+     "tandem-identity-d3:import": "./scripts/with-pinned-node.sh node dist/identity-control-plane/d3-heartbeat-reconciliation-cli.js",
+     "tandem-identity-d3:validate": "./scripts/with-pinned-node.sh node scripts/validate-tandem-identity-d3-production.mjs",
++    "tandem-identity:pilot-bind": "./scripts/with-pinned-node.sh tsx scripts/bind-tandem-identity-pilot.ts",
+     "academy-capacity-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-disposable.mjs",
+     "academy-capacity-reconciliation:validate": "./scripts/with-pinned-node.sh node scripts/validate-academy-capacity-reconciliation.mjs",
+     "academy-capacity-shadow:disposable": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-shadow-population-disposable.mjs",
+diff --git a/src/config.ts b/src/config.ts
+index 818e28a0..a415a50c 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -147,6 +147,29 @@ export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
+ export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
+ export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
+
++const tandemIdentityGatewayEnv = readEnvFile([
++  'TANDEM_IDENTITY_GATEWAY_ENABLED',
++]);
++const tandemIdentityGatewayEnabledRaw =
++  tandemIdentityGatewayEnv.TANDEM_IDENTITY_GATEWAY_ENABLED || 'false';
++if (!['false', 'true', '0', '1'].includes(tandemIdentityGatewayEnabledRaw)) {
++  throw new Error(
++    'TANDEM_IDENTITY_GATEWAY_ENABLED must be true, false, 1, or 0',
++  );
++}
++export const TANDEM_IDENTITY_GATEWAY_ENABLED = ['true', '1'].includes(
++  tandemIdentityGatewayEnabledRaw,
++);
++export const TANDEM_IDENTITY_GATEWAY_AUDIENCE =
++  'https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway';
++export const TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL =
++  'tandem-identity-runtime-dev@tandem-identity-dev-2026.iam.gserviceaccount.com';
++export const TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT = '114536406241819905948';
++export const TANDEM_IDENTITY_GATEWAY_PROJECT_ID = 'tandem-identity-dev-2026';
++export const TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID = 10069;
++export const TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256 =
++  '929e062a5f6c3a1708d539ddebfaf7b05d4fbceb009de8b8362b748bb3a5cf81';
++
+ // Dedicated Adyen TEST Standard webhook admission. The HMAC key is loaded only
+ // into the host process from the local .env file; it is never exposed through
+ // /health, webhook listings, agent containers, or tracked configuration.
+diff --git a/src/identity-control-plane/d2-student-lifecycle-shadow.disposable.test.ts b/src/identity-control-plane/d2-student-lifecycle-shadow.disposable.test.ts
+index 2b0e6f18..91c01add 100644
+--- a/src/identity-control-plane/d2-student-lifecycle-shadow.disposable.test.ts
++++ b/src/identity-control-plane/d2-student-lifecycle-shadow.disposable.test.ts
+@@ -21,6 +21,7 @@ import {
+   GOOGLE_SERVICE_ACCOUNT_ISSUER,
+   verifyGoogleServiceAccountClaimRequest,
+ } from './google-service-account-transport.js';
++import { bindLoginToolsPilotWithClient } from './login-tools-gateway.js';
+
+ const ROOT = process.cwd();
+ const PREFIX = 'nc_tandem_identity_d2_test_';
+@@ -199,6 +200,7 @@ beforeAll(() => {
+     `CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin;
+      CREATE TABLE business_v2.parties (
+        id bigserial PRIMARY KEY,
++       party_type text NOT NULL DEFAULT 'person',
+        merged_into bigint REFERENCES business_v2.parties(id)
+      );
+      CREATE TABLE business_v2.party_external_refs (
+@@ -267,6 +269,25 @@ beforeAll(() => {
+            AND resolution_receipt_sha256 IS NOT NULL)
+        )
+      );
++     CREATE TABLE business_v2.student_enrollments_v2 (
++       id bigserial PRIMARY KEY,
++       participant_party_id bigint NOT NULL REFERENCES business_v2.parties(id),
++       state text NOT NULL,
++       effective_at timestamptz,
++       ended_at timestamptz,
++       created_at timestamptz NOT NULL DEFAULT now()
++     );
++     CREATE TABLE business_v2.student_component_entitlements (
++       id bigserial PRIMARY KEY,
++       entitlement_key text NOT NULL UNIQUE,
++       enrollment_id bigint NOT NULL REFERENCES business_v2.student_enrollments_v2(id),
++       component_key text NOT NULL,
++       state text NOT NULL,
++       version integer NOT NULL DEFAULT 0,
++       updated_at timestamptz NOT NULL DEFAULT now()
++     );
++     ALTER TABLE business_v2.student_enrollments_v2 OWNER TO nanoclaw_admin;
++     ALTER TABLE business_v2.student_component_entitlements OWNER TO nanoclaw_admin;
+      CREATE TABLE business_v2.party_context_adapter_registrations (
+        id bigserial PRIMARY KEY,
+        adapter_key text NOT NULL,
+@@ -1320,4 +1341,87 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
+       beforeDecisionConflict.rows[0],
+     );
+   });
++
++  it('binds the owner-approved development pilot once with stable replay identity', async () => {
++    const bindingRequest = {
++      kind: 'tandem_identity_binding_lookup' as const,
++      schemaVersion: 1 as const,
++      projectId: 'tandem-identity-dev-2026',
++      uid: 'firebase-owner-pilot-uid',
++      verifiedEmailSha256: 'f'.repeat(64),
++    };
++    const bindingPolicy = {
++      projectId: 'tandem-identity-dev-2026',
++      environment: 'development' as const,
++      pilotPartyId: 2,
++      pilotEmailSha256: 'f'.repeat(64),
++      decisionRef: '.program/decisions/pilot.json',
++      decisionUuid: '50000000-0000-4000-8000-000000000001',
++      callerSubject: '114536406241819905948',
++    };
++    const protectedCounts = () =>
++      transaction((client) =>
++        client.query(`SELECT
++          (SELECT count(*) FROM business_v2.parties)::int AS parties,
++          (SELECT count(*) FROM business_v2.party_external_refs)::int AS refs,
++          (SELECT count(*) FROM business_v2.student_component_entitlements)::int AS entitlements,
++          (SELECT count(*) FROM business_v2.provider_projection_attempts)::int AS provider_attempts`),
++      );
++    const before = await protectedCounts();
++    const accepted = await serializableTransaction((client) =>
++      bindLoginToolsPilotWithClient({
++        client,
++        request: bindingRequest,
++        policy: bindingPolicy,
++        observedAt: '2026-09-15T21:45:00.000Z',
++      }),
++    );
++    expect(accepted).toMatchObject({
++      outcome: 'accepted',
++      receiptInserted: 1,
++      authAccountsInserted: 1,
++      decisionsInserted: 1,
++      partyWrites: 0,
++      referenceWrites: 0,
++      entitlementWrites: 0,
++      providerWrites: 0,
++    });
++    expect((await protectedCounts()).rows[0]).toEqual(before.rows[0]);
++
++    const replay = await serializableTransaction((client) =>
++      bindLoginToolsPilotWithClient({
++        client,
++        request: bindingRequest,
++        policy: bindingPolicy,
++        observedAt: '2026-09-15T22:15:00.000Z',
++      }),
++    );
++    expect(replay).toMatchObject({
++      outcome: 'duplicate',
++      receiptInserted: 0,
++      authAccountsInserted: 0,
++      decisionsInserted: 0,
++    });
++
++    const afterReplay = await transaction((client) =>
++      client.query(`SELECT
++        (SELECT count(*) FROM business_v2.auth_accounts
++          WHERE environment='development' AND party_id=2)::int AS auth_accounts,
++        (SELECT count(*) FROM business_v2.identity_resolution_decisions
++          WHERE decision_uuid='50000000-0000-4000-8000-000000000001')::int AS decisions`),
++    );
++    expect(afterReplay.rows[0]).toEqual({ auth_accounts: 1, decisions: 1 });
++
++    await expect(
++      serializableTransaction((client) =>
++        bindLoginToolsPilotWithClient({
++          client,
++          request: { ...bindingRequest, uid: 'altered-pilot-uid' },
++          policy: bindingPolicy,
++          observedAt: '2026-09-15T22:30:00.000Z',
++        }),
++      ),
++    ).rejects.toThrow();
++    expect((await protectedCounts()).rows[0]).toEqual(before.rows[0]);
++  });
+ });
+diff --git a/src/index.ts b/src/index.ts
+index a023ff3b..b5b5245f 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -41,6 +41,13 @@ import {
+   STUDENT_LIFECYCLE_WEBHOOK_PATH,
+   TANDEM_COMMERCE_BOOKKEEPER_KEY,
+   TANDEM_COMMERCE_BOOKKEEPER_PATH,
++  TANDEM_IDENTITY_GATEWAY_AUDIENCE,
++  TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL,
++  TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT,
++  TANDEM_IDENTITY_GATEWAY_ENABLED,
++  TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256,
++  TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID,
++  TANDEM_IDENTITY_GATEWAY_PROJECT_ID,
+   TRIGGER_PATTERN,
+   WEBHOOK_PORT,
+   WEBHOOK_SECRET,
+@@ -151,6 +158,11 @@ import { runJob } from './job-runner.js';
+ import { isIncidentProposal } from './healer/remediation.js';
+ import { writeJobsSnapshot } from './job-snapshot.js';
+ import { WebhookServer } from './webhook-server.js';
++import {
++  GoogleServiceCallerVerifier,
++  LOGIN_TOOLS_GATEWAY_PATH,
++  lookupLoginToolsBindingWithClient,
++} from './identity-control-plane/login-tools-gateway.js';
+ import { handleCommerceBookkeeper } from './commerce-bookkeeper.js';
+ import {
+   archiveWebhook as archiveWebhookImpl,
+@@ -2240,10 +2252,41 @@ async function main(): Promise<void> {
+   // Start webhook server — listens on all interfaces (including Tailscale)
+   // for inbound trigger events from Tailscale-connected machines.
+   const heartbeatPath = path.join(DATA_DIR, 'heartbeat.json');
++  const tandemIdentityCallerVerifier = TANDEM_IDENTITY_GATEWAY_ENABLED
++    ? new GoogleServiceCallerVerifier({
++        audience: TANDEM_IDENTITY_GATEWAY_AUDIENCE,
++        principalEmail: TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL,
++        subject: TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT,
++      })
++    : null;
+   const webhookServer = new WebhookServer({
+     port: WEBHOOK_PORT,
+     webhooksFile: WEBHOOKS_FILE,
+     globalSecret: WEBHOOK_SECRET,
++    ...(tandemIdentityCallerVerifier
++      ? {
++          tandemIdentityGateway: {
++            path: LOGIN_TOOLS_GATEWAY_PATH,
++            verifyCaller: (idToken: string) =>
++              tandemIdentityCallerVerifier.verify(idToken),
++            lookup: (request: unknown, observedAt: string) =>
++              withAgentContext('tandem-identity-gateway', (client) =>
++                lookupLoginToolsBindingWithClient({
++                  client,
++                  request,
++                  policy: {
++                    projectId: TANDEM_IDENTITY_GATEWAY_PROJECT_ID,
++                    environment: 'development',
++                    pilotPartyId: TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID,
++                    pilotEmailSha256:
++                      TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256,
++                  },
++                  observedAt,
++                }),
++              ),
++          },
++        }
++      : {}),
+     adyenTestWebhook: ADYEN_TEST_WEBHOOK_CONFIG,
+     commerceBookkeeper: {
+       enabled:
+diff --git a/src/webhook-server.test.ts b/src/webhook-server.test.ts
+index 4b80c157..91384f67 100644
+--- a/src/webhook-server.test.ts
++++ b/src/webhook-server.test.ts
+@@ -210,6 +210,94 @@ describe('WebhookServer', () => {
+     await server.stop().catch(() => {});
+   });
+
++  it('exposes only the exact authenticated identity gateway path', async () => {
++    await server.stop();
++    const verifyCaller = vi.fn(async () => undefined);
++    const lookup = vi.fn(async () => ({ status: 'unbound' as const }));
++    deps = makeDeps({
++      tandemIdentityGateway: {
++        path: '/identity/v1/binding',
++        verifyCaller,
++        lookup,
++      },
++    });
++    server = new WebhookServer(deps);
++    await server.start();
++    deps.port = server.getPort();
++    const body = JSON.stringify({
++      kind: 'tandem_identity_binding_lookup',
++      schemaVersion: 1,
++      projectId: 'tandem-identity-dev-2026',
++      uid: 'firebase-pilot-uid',
++      verifiedEmailSha256: 'a'.repeat(64),
++    });
++    const accepted = await makeRequest(deps.port, {
++      path: '/identity/v1/binding',
++      headers: { authorization: `Bearer ${'a'.repeat(200)}` },
++      body,
++    });
++    expect(accepted).toEqual({ status: 200, body: '{"status":"unbound"}' });
++    expect(verifyCaller).toHaveBeenCalledWith('a'.repeat(200));
++    expect(lookup).toHaveBeenCalledOnce();
++
++    await expect(
++      makeRequest(deps.port, {
++        path: '/identity/v1/binding',
++        method: 'GET',
++        body: '',
++      }),
++    ).resolves.toMatchObject({ status: 405 });
++    await expect(
++      makeRequest(deps.port, {
++        path: '/identity/v1/binding/extra',
++        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
++        body: '',
++      }),
++    ).resolves.toMatchObject({ status: 404 });
++    await expect(
++      makeRequest(deps.port, {
++        path: '/%69dentity/v1/binding',
++        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
++        body: '',
++      }),
++    ).resolves.toMatchObject({ status: 404 });
++  });
++
++  it('rejects identity gateway requests before lookup on auth or shape failure', async () => {
++    await server.stop();
++    const verifyCaller = vi.fn(async (_idToken: string): Promise<void> => {
++      throw new Error('invalid caller');
++    });
++    const lookup = vi.fn(async () => ({ status: 'unbound' as const }));
++    deps = makeDeps({
++      tandemIdentityGateway: {
++        path: '/identity/v1/binding',
++        verifyCaller,
++        lookup,
++      },
++    });
++    server = new WebhookServer(deps);
++    await server.start();
++    deps.port = server.getPort();
++    await expect(
++      makeRequest(deps.port, {
++        path: '/identity/v1/binding',
++        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
++      }),
++    ).resolves.toMatchObject({ status: 401 });
++    expect(lookup).not.toHaveBeenCalled();
++
++    verifyCaller.mockImplementation(async () => undefined);
++    await expect(
++      makeRequest(deps.port, {
++        path: '/identity/v1/binding',
++        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
++        body: '{',
++      }),
++    ).resolves.toMatchObject({ status: 400 });
++    expect(lookup).not.toHaveBeenCalled();
++  });
++
+   it('returns 404 for unknown webhook ID', async () => {
+     const res = await makeRequest(deps.port, {
+       path: '/hook/does-not-exist',
+diff --git a/src/webhook-server.ts b/src/webhook-server.ts
+index 21fde21e..3576c5a5 100644
+--- a/src/webhook-server.ts
++++ b/src/webhook-server.ts
+@@ -99,6 +99,11 @@ import {
+   type CommerceBookkeeperEnvelope,
+   type CommerceBookkeeperResult,
+ } from './commerce-bookkeeper.js';
++import {
++  LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES,
++  LoginToolsGatewayRequestSchema,
++  type LoginToolsGatewayResponse,
++} from './identity-control-plane/login-tools-gateway.js';
+
+ // Minimal compatible slice of the runContainerAgent signature
+ type RunAgentFn = (
+@@ -165,6 +170,14 @@ export interface WebhookServerDeps {
+   port: number;
+   webhooksFile: string;
+   globalSecret: string;
++  tandemIdentityGateway?: {
++    path: string;
++    verifyCaller: (idToken: string) => Promise<void>;
++    lookup: (
++      request: unknown,
++      observedAt: string,
++    ) => Promise<LoginToolsGatewayResponse>;
++  };
+   heartbeatPath: string;
+   getRegisteredGroups: () => Record<string, RegisteredGroup>;
+   runAgent: RunAgentFn;
+@@ -531,6 +544,100 @@ export class WebhookServer {
+     req: http.IncomingMessage,
+     res: http.ServerResponse,
+   ): Promise<void> {
++    const identityGateway = this.deps.tandemIdentityGateway;
++    if (identityGateway && req.url !== identityGateway.path) {
++      let decodedPath = '';
++      try {
++        decodedPath = decodeURIComponent((req.url ?? '').split('?')[0]);
++      } catch {
++        decodedPath = '/identity/invalid-encoding';
++      }
++      if (decodedPath.startsWith('/identity/')) {
++        if (['POST', 'PUT', 'PATCH'].includes(req.method ?? '')) {
++          await readBodyBounded(req, LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES).catch(
++            () => undefined,
++          );
++        }
++        res.writeHead(404, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify({ error: 'not_found' }));
++        return;
++      }
++    }
++    if (identityGateway && req.url === identityGateway.path) {
++      if (req.method !== 'POST') {
++        res.writeHead(405, {
++          'Content-Type': 'application/json',
++          Allow: 'POST',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify({ error: 'method_not_allowed' }));
++        return;
++      }
++      const authorization = req.headers.authorization;
++      const match = authorization?.match(/^Bearer ([A-Za-z0-9._-]{100,8192})$/);
++      if (!match) {
++        res.writeHead(401, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify({ error: 'service_identity_required' }));
++        return;
++      }
++      try {
++        await identityGateway.verifyCaller(match[1]);
++      } catch {
++        res.writeHead(401, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify({ error: 'service_identity_invalid' }));
++        return;
++      }
++      let parsed: unknown;
++      try {
++        const rawBody = await readBodyBounded(
++          req,
++          LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES,
++        );
++        parsed = LoginToolsGatewayRequestSchema.parse(
++          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawBody)),
++        );
++      } catch (error) {
++        const tooLarge = error instanceof RequestBodyTooLargeError;
++        res.writeHead(tooLarge ? 413 : 400, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(
++          JSON.stringify({
++            error: tooLarge ? 'request_too_large' : 'invalid_request',
++          }),
++        );
++        return;
++      }
++      try {
++        const response = await identityGateway.lookup(
++          parsed,
++          new Date().toISOString(),
++        );
++        res.writeHead(200, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify(response));
++      } catch {
++        res.writeHead(503, {
++          'Content-Type': 'application/json',
++          'Cache-Control': 'no-store',
++        });
++        res.end(JSON.stringify({ error: 'identity_gateway_unavailable' }));
++      }
++      return;
++    }
++
+     // GET /health — raw metrics for external watchdog (no auth — Tailscale only)
+     if (req.method === 'GET' && req.url === '/health') {
+       let heartbeat: Record<string, unknown> = {};
+diff --git a/.env.example b/.env.example
+index f38e5bd..4bcff92 100644
+--- a/.env.example
++++ b/.env.example
+@@ -12,6 +12,6 @@ SESSION_HOURS=12
+ PASSKEY_RP_ID=localhost
+ PASSKEY_RP_NAME=Tandem Coaching
+ PASSKEY_CHALLENGE_MINUTES=5
+-COMPANY_OS_IDENTITY_URL=
+-# Production token comes from Secret Manager; never commit it.
+-COMPANY_OS_IDENTITY_TOKEN=
++COMPANY_OS_IDENTITY_GATEWAY_URL=
++COMPANY_OS_IDENTITY_GATEWAY_AUDIENCE=
++COMPANY_OS_IDENTITY_GATEWAY_TIMEOUT_MS=1500
+diff --git a/package-lock.json b/package-lock.json
+index ada7624..ce92283 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -13,6 +13,7 @@
+         "express": "5.2.1",
+         "firebase": "12.19.0",
+         "firebase-admin": "14.4.0",
++        "google-auth-library": "10.6.1",
+         "helmet": "8.3.0",
+         "zod": "4.6.4"
+       },
+@@ -1453,7 +1454,6 @@
+       "resolved": "https://registry.npmjs.org/@isaacs/cliui/-/cliui-8.0.2.tgz",
+       "integrity": "sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "string-width": "^5.1.2",
+         "string-width-cjs": "npm:string-width@^4.2.0",
+@@ -1471,7 +1471,6 @@
+       "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-6.3.0.tgz",
+       "integrity": "sha512-WpDfL7NO6j7tH88IDBNVdUJxDh9nmCteAVW9dsep846XdwF4naCBK+/tGLX3KJgcpgMRXCFlTM2hKGoK9FsdrQ==",
+       "license": "MIT",
+-      "optional": true,
+       "engines": {
+         "node": ">=12"
+       },
+@@ -1484,7 +1483,6 @@
+       "resolved": "https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.2.3.tgz",
+       "integrity": "sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==",
+       "license": "MIT",
+-      "optional": true,
+       "engines": {
+         "node": ">=12"
+       },
+@@ -1496,15 +1494,13 @@
+       "version": "9.2.2",
+       "resolved": "https://registry.npmjs.org/emoji-regex/-/emoji-regex-9.2.2.tgz",
+       "integrity": "sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==",
+-      "license": "MIT",
+-      "optional": true
++      "license": "MIT"
+     },
+     "node_modules/@isaacs/cliui/node_modules/string-width": {
+       "version": "5.1.2",
+       "resolved": "https://registry.npmjs.org/string-width/-/string-width-5.1.2.tgz",
+       "integrity": "sha512-HnLOCR3vjcY8beoNLtcjZ5/nxn2afmME6lhrDrebokqMap+XbeW8n9TXpPDOqdGK5qcI3oT0GKTW6wC7EMiVqA==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "eastasianwidth": "^0.2.0",
+         "emoji-regex": "^9.2.2",
+@@ -1522,7 +1518,6 @@
+       "resolved": "https://registry.npmjs.org/strip-ansi/-/strip-ansi-7.2.0.tgz",
+       "integrity": "sha512-yDPMNjp4WyfYBkHnjIRLfca1i6KMyGCtsVgoKe/z1+6vukgaENdgGBZt+ZmKPc4gavvEZ5OgHfHdrazhgNyG7w==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "ansi-regex": "^6.2.2"
+       },
+@@ -1538,7 +1533,6 @@
+       "resolved": "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-8.1.0.tgz",
+       "integrity": "sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "ansi-styles": "^6.1.0",
+         "string-width": "^5.0.1",
+@@ -2614,8 +2608,7 @@
+       "version": "1.0.2",
+       "resolved": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
+       "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==",
+-      "license": "MIT",
+-      "optional": true
++      "license": "MIT"
+     },
+     "node_modules/base64-js": {
+       "version": "1.5.1",
+@@ -2688,7 +2681,6 @@
+       "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.1.4.tgz",
+       "integrity": "sha512-hGfVzPxthbf3+2yjg/RBs60cB0FhqBS/zvdV/4wn4/BmN0bNMMHPc4V/BbFieqf1TKAGGAHnY4eSjajCl0f2Xg==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "balanced-match": "^1.0.0"
+       }
+@@ -2854,7 +2846,6 @@
+       "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
+       "integrity": "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "path-key": "^3.1.0",
+         "shebang-command": "^2.0.0",
+@@ -2962,8 +2953,7 @@
+       "version": "0.2.0",
+       "resolved": "https://registry.npmjs.org/eastasianwidth/-/eastasianwidth-0.2.0.tgz",
+       "integrity": "sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==",
+-      "license": "MIT",
+-      "optional": true
++      "license": "MIT"
+     },
+     "node_modules/ecdsa-sig-formatter": {
+       "version": "1.0.11",
+@@ -3389,12 +3379,60 @@
+         "@google-cloud/storage": "^8.1.0"
+       }
+     },
++    "node_modules/firebase-admin/node_modules/gaxios": {
++      "version": "7.3.1",
++      "resolved": "https://registry.npmjs.org/gaxios/-/gaxios-7.3.1.tgz",
++      "integrity": "sha512-kB3rzJV7d9juLZh8/56QTXCwQfxyhdOMdyYk1HdQKFtF8TJTDTZQJtixWIwXdE9Jji91mC41DUNpjleo4L4eAQ==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "extend": "^3.0.2",
++        "https-proxy-agent": "^7.0.1",
++        "node-fetch": "^3.3.2"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/firebase-admin/node_modules/google-auth-library": {
++      "version": "10.9.1",
++      "resolved": "https://registry.npmjs.org/google-auth-library/-/google-auth-library-10.9.1.tgz",
++      "integrity": "sha512-i1ydyHrqcIxXkWh/uBmVkzCvIuq5yiK2ATndIe5XxKholrG/MTYP9xGYka4sQhrbIAgGjL2B6NOE7rFaiF3fXw==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "base64-js": "^1.3.0",
++        "ecdsa-sig-formatter": "^1.0.11",
++        "gaxios": "^7.1.4",
++        "gcp-metadata": "8.1.2",
++        "google-logging-utils": "1.1.3",
++        "jws": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/firebase-admin/node_modules/node-fetch": {
++      "version": "3.3.2",
++      "resolved": "https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz",
++      "integrity": "sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==",
++      "license": "MIT",
++      "dependencies": {
++        "data-uri-to-buffer": "^4.0.0",
++        "fetch-blob": "^3.1.4",
++        "formdata-polyfill": "^4.0.10"
++      },
++      "engines": {
++        "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/node-fetch"
++      }
++    },
+     "node_modules/foreground-child": {
+       "version": "3.3.1",
+       "resolved": "https://registry.npmjs.org/foreground-child/-/foreground-child-3.3.1.tgz",
+       "integrity": "sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "cross-spawn": "^7.0.6",
+         "signal-exit": "^4.0.1"
+@@ -3639,7 +3677,6 @@
+       "integrity": "sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==",
+       "deprecated": "Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "foreground-child": "^3.1.0",
+         "jackspeak": "^3.1.2",
+@@ -3656,14 +3693,14 @@
+       }
+     },
+     "node_modules/google-auth-library": {
+-      "version": "10.9.1",
+-      "resolved": "https://registry.npmjs.org/google-auth-library/-/google-auth-library-10.9.1.tgz",
+-      "integrity": "sha512-i1ydyHrqcIxXkWh/uBmVkzCvIuq5yiK2ATndIe5XxKholrG/MTYP9xGYka4sQhrbIAgGjL2B6NOE7rFaiF3fXw==",
++      "version": "10.6.1",
++      "resolved": "https://registry.npmjs.org/google-auth-library/-/google-auth-library-10.6.1.tgz",
++      "integrity": "sha512-5awwuLrzNol+pFDmKJd0dKtZ0fPLAtoA5p7YO4ODsDu6ONJUVqbYwvv8y2ZBO5MBNp9TJXigB19710kYpBPdtA==",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "base64-js": "^1.3.0",
+         "ecdsa-sig-formatter": "^1.0.11",
+-        "gaxios": "^7.1.4",
++        "gaxios": "7.1.3",
+         "gcp-metadata": "8.1.2",
+         "google-logging-utils": "1.1.3",
+         "jws": "^4.0.0"
+@@ -3673,14 +3710,15 @@
+       }
+     },
+     "node_modules/google-auth-library/node_modules/gaxios": {
+-      "version": "7.3.1",
+-      "resolved": "https://registry.npmjs.org/gaxios/-/gaxios-7.3.1.tgz",
+-      "integrity": "sha512-kB3rzJV7d9juLZh8/56QTXCwQfxyhdOMdyYk1HdQKFtF8TJTDTZQJtixWIwXdE9Jji91mC41DUNpjleo4L4eAQ==",
++      "version": "7.1.3",
++      "resolved": "https://registry.npmjs.org/gaxios/-/gaxios-7.1.3.tgz",
++      "integrity": "sha512-YGGyuEdVIjqxkxVH1pUTMY/XtmmsApXrCVv5EU25iX6inEPbV+VakJfLealkBtJN69AQmh1eGOdCl9Sm1UP6XQ==",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "extend": "^3.0.2",
+         "https-proxy-agent": "^7.0.1",
+-        "node-fetch": "^3.3.2"
++        "node-fetch": "^3.3.2",
++        "rimraf": "^5.0.1"
+       },
+       "engines": {
+         "node": ">=18"
+@@ -4110,15 +4148,13 @@
+       "version": "2.0.0",
+       "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
+       "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==",
+-      "license": "ISC",
+-      "optional": true
++      "license": "ISC"
+     },
+     "node_modules/jackspeak": {
+       "version": "3.4.3",
+       "resolved": "https://registry.npmjs.org/jackspeak/-/jackspeak-3.4.3.tgz",
+       "integrity": "sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==",
+       "license": "BlueOak-1.0.0",
+-      "optional": true,
+       "dependencies": {
+         "@isaacs/cliui": "^8.0.2"
+       },
+@@ -4673,7 +4709,6 @@
+       "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-9.0.9.tgz",
+       "integrity": "sha512-OBwBN9AL4dqmETlpS2zasx+vTeWclWzkblfZk7KTA5j3jeOONz/tRCnZomUyvNg83wL5Zv9Ss6HMJXAgL8R2Yg==",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "brace-expansion": "^2.0.2"
+       },
+@@ -4689,7 +4724,6 @@
+       "resolved": "https://registry.npmjs.org/minipass/-/minipass-7.1.3.tgz",
+       "integrity": "sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==",
+       "license": "BlueOak-1.0.0",
+-      "optional": true,
+       "engines": {
+         "node": ">=16 || 14 >=14.17"
+       }
+@@ -4867,8 +4901,7 @@
+       "version": "1.0.1",
+       "resolved": "https://registry.npmjs.org/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz",
+       "integrity": "sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==",
+-      "license": "BlueOak-1.0.0",
+-      "optional": true
++      "license": "BlueOak-1.0.0"
+     },
+     "node_modules/parseurl": {
+       "version": "1.3.3",
+@@ -4900,7 +4933,6 @@
+       "resolved": "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz",
+       "integrity": "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==",
+       "license": "MIT",
+-      "optional": true,
+       "engines": {
+         "node": ">=8"
+       }
+@@ -4910,7 +4942,6 @@
+       "resolved": "https://registry.npmjs.org/path-scurry/-/path-scurry-1.11.1.tgz",
+       "integrity": "sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==",
+       "license": "BlueOak-1.0.0",
+-      "optional": true,
+       "dependencies": {
+         "lru-cache": "^10.2.0",
+         "minipass": "^5.0.0 || ^6.0.2 || ^7.0.0"
+@@ -4926,8 +4957,7 @@
+       "version": "10.4.3",
+       "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.3.tgz",
+       "integrity": "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==",
+-      "license": "ISC",
+-      "optional": true
++      "license": "ISC"
+     },
+     "node_modules/path-to-regexp": {
+       "version": "8.4.2",
+@@ -5169,7 +5199,6 @@
+       "resolved": "https://registry.npmjs.org/rimraf/-/rimraf-5.0.10.tgz",
+       "integrity": "sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "glob": "^10.3.7"
+       },
+@@ -5325,7 +5354,6 @@
+       "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
+       "integrity": "sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "shebang-regex": "^3.0.0"
+       },
+@@ -5338,7 +5366,6 @@
+       "resolved": "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz",
+       "integrity": "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==",
+       "license": "MIT",
+-      "optional": true,
+       "engines": {
+         "node": ">=8"
+       }
+@@ -5427,7 +5454,6 @@
+       "resolved": "https://registry.npmjs.org/signal-exit/-/signal-exit-4.1.0.tgz",
+       "integrity": "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==",
+       "license": "ISC",
+-      "optional": true,
+       "engines": {
+         "node": ">=14"
+       },
+@@ -5516,7 +5542,6 @@
+       "resolved": "https://registry.npmjs.org/string-width/-/string-width-4.2.3.tgz",
+       "integrity": "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "emoji-regex": "^8.0.0",
+         "is-fullwidth-code-point": "^3.0.0",
+@@ -5544,7 +5569,6 @@
+       "resolved": "https://registry.npmjs.org/strip-ansi/-/strip-ansi-6.0.1.tgz",
+       "integrity": "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "ansi-regex": "^5.0.1"
+       },
+@@ -6054,7 +6078,6 @@
+       "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
+       "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
+       "license": "ISC",
+-      "optional": true,
+       "dependencies": {
+         "isexe": "^2.0.0"
+       },
+@@ -6105,7 +6128,6 @@
+       "resolved": "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz",
+       "integrity": "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==",
+       "license": "MIT",
+-      "optional": true,
+       "dependencies": {
+         "ansi-styles": "^4.0.0",
+         "string-width": "^4.1.0",
+diff --git a/package.json b/package.json
+index 6c1ed59..c9a9c72 100644
+--- a/package.json
++++ b/package.json
+@@ -23,6 +23,7 @@
+     "express": "5.2.1",
+     "firebase": "12.19.0",
+     "firebase-admin": "14.4.0",
++    "google-auth-library": "10.6.1",
+     "helmet": "8.3.0",
+     "zod": "4.6.4"
+   },
+diff --git a/src/config.ts b/src/config.ts
+index 1a93710..b3902ba 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -1,22 +1,49 @@
+ import { z } from "zod";
+
+ const schema = z.object({
+-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
++  NODE_ENV: z
++    .enum(["development", "test", "production"])
++    .default("development"),
+   PORT: z.coerce.number().int().min(1).max(65535).default(8080),
+   GOOGLE_CLOUD_PROJECT: z.string().min(3),
+   PUBLIC_ORIGIN: z.string().url(),
+   FIREBASE_API_KEY: z.string().min(1),
+-  FIREBASE_AUTH_DOMAIN: z.string().min(1).regex(/^[A-Za-z0-9.-]+$/),
++  FIREBASE_AUTH_DOMAIN: z
++    .string()
++    .min(1)
++    .regex(/^[A-Za-z0-9.-]+$/),
+   FIREBASE_APP_ID: z.string().min(1),
+   FIREBASE_APP_CHECK_SITE_KEY: z.string().min(1).optional(),
+   APP_CHECK_MODE: z.enum(["off", "monitor", "enforce"]).default("off"),
+-  APP_CHECK_TIMEOUT_MS: z.coerce.number().int().min(250).max(10000).default(3000),
++  APP_CHECK_TIMEOUT_MS: z.coerce
++    .number()
++    .int()
++    .min(250)
++    .max(10000)
++    .default(3000),
+   SESSION_HOURS: z.coerce.number().min(1).max(336).default(12),
+-  PASSKEY_RP_ID: z.string().min(1).regex(/^[A-Za-z0-9.-]+$/),
++  PASSKEY_RP_ID: z
++    .string()
++    .min(1)
++    .regex(/^[A-Za-z0-9.-]+$/),
+   PASSKEY_RP_NAME: z.string().min(1).max(100).default("Tandem Coaching"),
+   PASSKEY_CHALLENGE_MINUTES: z.coerce.number().int().min(1).max(15).default(5),
+-  COMPANY_OS_IDENTITY_URL: z.string().url().optional().or(z.literal("")),
+-  COMPANY_OS_IDENTITY_TOKEN: z.string().optional()
++  COMPANY_OS_IDENTITY_GATEWAY_URL: z
++    .string()
++    .url()
++    .optional()
++    .or(z.literal("")),
++  COMPANY_OS_IDENTITY_GATEWAY_AUDIENCE: z
++    .string()
++    .url()
++    .optional()
++    .or(z.literal("")),
++  COMPANY_OS_IDENTITY_GATEWAY_TIMEOUT_MS: z.coerce
++    .number()
++    .int()
++    .min(250)
++    .max(5000)
++    .default(1500),
+ });
+
+ export type AppConfig = {
+@@ -41,6 +68,11 @@ export type AppConfig = {
+     rpName: string;
+     challengeMinutes: number;
+   };
++  companyOsIdentityGateway?: {
++    url: string;
++    audience: string;
++    timeoutMs: number;
++  };
+ };
+
+ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+@@ -50,10 +82,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+     throw new Error("PUBLIC_ORIGIN must use HTTPS in production");
+   }
+   if (value.PASSKEY_RP_ID !== publicUrl.hostname) {
+-    throw new Error("PASSKEY_RP_ID must exactly match the PUBLIC_ORIGIN hostname");
++    throw new Error(
++      "PASSKEY_RP_ID must exactly match the PUBLIC_ORIGIN hostname",
++    );
+   }
+   if (value.APP_CHECK_MODE !== "off" && !value.FIREBASE_APP_CHECK_SITE_KEY) {
+-    throw new Error("FIREBASE_APP_CHECK_SITE_KEY is required when APP_CHECK_MODE is enabled");
++    throw new Error(
++      "FIREBASE_APP_CHECK_SITE_KEY is required when APP_CHECK_MODE is enabled",
++    );
++  }
++  const gatewayUrl = value.COMPANY_OS_IDENTITY_GATEWAY_URL || "";
++  const gatewayAudience = value.COMPANY_OS_IDENTITY_GATEWAY_AUDIENCE || "";
++  if ((gatewayUrl === "") !== (gatewayAudience === "")) {
++    throw new Error(
++      "COMPANY_OS_IDENTITY_GATEWAY_URL and COMPANY_OS_IDENTITY_GATEWAY_AUDIENCE must be configured together",
++    );
++  }
++  if (
++    value.NODE_ENV === "production" &&
++    gatewayUrl !== "" &&
++    new URL(gatewayUrl).protocol !== "https:"
++  ) {
++    throw new Error(
++      "COMPANY_OS_IDENTITY_GATEWAY_URL must use HTTPS in production",
++    );
+   }
+   return {
+     nodeEnv: value.NODE_ENV,
+@@ -68,14 +120,25 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+       appCheck: {
+         mode: value.APP_CHECK_MODE,
+         timeoutMs: value.APP_CHECK_TIMEOUT_MS,
+-        ...(value.FIREBASE_APP_CHECK_SITE_KEY ? { siteKey: value.FIREBASE_APP_CHECK_SITE_KEY } : {})
+-      }
++        ...(value.FIREBASE_APP_CHECK_SITE_KEY
++          ? { siteKey: value.FIREBASE_APP_CHECK_SITE_KEY }
++          : {}),
++      },
+     },
+     sessionHours: value.SESSION_HOURS,
+     passkeys: {
+       rpId: value.PASSKEY_RP_ID,
+       rpName: value.PASSKEY_RP_NAME,
+-      challengeMinutes: value.PASSKEY_CHALLENGE_MINUTES
+-    }
++      challengeMinutes: value.PASSKEY_CHALLENGE_MINUTES,
++    },
++    ...(gatewayUrl
++      ? {
++          companyOsIdentityGateway: {
++            url: gatewayUrl,
++            audience: gatewayAudience,
++            timeoutMs: value.COMPANY_OS_IDENTITY_GATEWAY_TIMEOUT_MS,
++          },
++        }
++      : {}),
+   };
+ }
+diff --git a/src/server.ts b/src/server.ts
+index d0c1444..9879d23 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -7,12 +7,14 @@ import { FirestorePasskeyStore } from "./passkeys/firestore-passkey-store.js";
+ import { PasskeyService } from "./passkeys/passkey-service.js";
+ import { SimpleWebAuthnEngine } from "./passkeys/simplewebauthn-engine.js";
+ import { createFirebaseAppAttestationProvider } from "./app-check.js";
++import { CompanyOsIdentityGateway } from "./company-os-identity-gateway.js";
+
+ const config = loadConfig();
+ const firebaseAuth = createFirebaseAuthProvider(config.projectId);
+-const appAttestation = config.firebaseWeb.appCheck.mode === "off"
+-  ? undefined
+-  : createFirebaseAppAttestationProvider();
++const appAttestation =
++  config.firebaseWeb.appCheck.mode === "off"
++    ? undefined
++    : createFirebaseAppAttestationProvider();
+ const passkeys = new PasskeyService(
+   new FirestorePasskeyStore(getFirestore()),
+   new SimpleWebAuthnEngine(),
+@@ -20,17 +22,26 @@ const passkeys = new PasskeyService(
+     rpId: config.passkeys.rpId,
+     rpName: config.passkeys.rpName,
+     origin: config.publicOrigin,
+-    challengeTtlMs: config.passkeys.challengeMinutes * 60 * 1000
+-  }
++    challengeTtlMs: config.passkeys.challengeMinutes * 60 * 1000,
++  },
+ );
++const identityGateway = config.companyOsIdentityGateway
++  ? new CompanyOsIdentityGateway(config.companyOsIdentityGateway)
++  : new UnconfiguredIdentityGateway();
+ const app = createApp({
+   config,
+   auth: firebaseAuth,
+-  identityGateway: new UnconfiguredIdentityGateway(),
++  identityGateway,
+   passkeys,
+-  ...(appAttestation ? { appAttestation } : {})
++  ...(appAttestation ? { appAttestation } : {}),
+ });
+
+ app.listen(config.port, "0.0.0.0", () => {
+-  console.log(JSON.stringify({ level: "info", event: "server_started", port: config.port }));
++  console.log(
++    JSON.stringify({
++      level: "info",
++      event: "server_started",
++      port: config.port,
++    }),
++  );
+ });
+diff --git a/tests/config.test.ts b/tests/config.test.ts
+index a166968..4ff1640 100644
+--- a/tests/config.test.ts
++++ b/tests/config.test.ts
+@@ -13,31 +13,58 @@ const base = {
+   SESSION_HOURS: "12",
+   PASSKEY_RP_ID: "localhost",
+   PASSKEY_RP_NAME: "Tandem Coaching",
+-  PASSKEY_CHALLENGE_MINUTES: "5"
++  PASSKEY_CHALLENGE_MINUTES: "5",
+ };
+
+ describe("loadConfig", () => {
+   it("binds the passkey RP ID to the public origin host", () => {
+     expect(loadConfig(base).passkeys.rpId).toBe("localhost");
+-    expect(() => loadConfig({ ...base, PASSKEY_RP_ID: "tandemcoach.co" })).toThrow(
+-      "PASSKEY_RP_ID must exactly match"
+-    );
++    expect(() =>
++      loadConfig({ ...base, PASSKEY_RP_ID: "tandemcoach.co" }),
++    ).toThrow("PASSKEY_RP_ID must exactly match");
+   });
+
+   it("requires HTTPS in production", () => {
+     expect(() => loadConfig({ ...base, NODE_ENV: "production" })).toThrow(
+-      "PUBLIC_ORIGIN must use HTTPS"
++      "PUBLIC_ORIGIN must use HTTPS",
+     );
+   });
+
+   it("requires a reCAPTCHA key when App Check monitoring or enforcement is enabled", () => {
+     expect(() => loadConfig({ ...base, APP_CHECK_MODE: "monitor" })).toThrow(
+-      "FIREBASE_APP_CHECK_SITE_KEY is required"
++      "FIREBASE_APP_CHECK_SITE_KEY is required",
+     );
+-    expect(loadConfig({
+-      ...base,
+-      APP_CHECK_MODE: "enforce",
+-      FIREBASE_APP_CHECK_SITE_KEY: "site-key"
+-    }).firebaseWeb.appCheck).toEqual({ mode: "enforce", siteKey: "site-key", timeoutMs: 3000 });
++    expect(
++      loadConfig({
++        ...base,
++        APP_CHECK_MODE: "enforce",
++        FIREBASE_APP_CHECK_SITE_KEY: "site-key",
++      }).firebaseWeb.appCheck,
++    ).toEqual({ mode: "enforce", siteKey: "site-key", timeoutMs: 3000 });
++  });
++
++  it("requires a complete HTTPS Company OS gateway configuration", () => {
++    expect(() =>
++      loadConfig({
++        ...base,
++        COMPANY_OS_IDENTITY_GATEWAY_URL: "https://mini.example.ts.net/gateway",
++      }),
++    ).toThrow("must be configured together");
++    expect(
++      loadConfig({
++        ...base,
++        NODE_ENV: "production",
++        PUBLIC_ORIGIN: "https://app.tandemcoach.co",
++        PASSKEY_RP_ID: "app.tandemcoach.co",
++        COMPANY_OS_IDENTITY_GATEWAY_URL:
++          "https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway",
++        COMPANY_OS_IDENTITY_GATEWAY_AUDIENCE:
++          "https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway",
++      }).companyOsIdentityGateway,
++    ).toEqual({
++      url: "https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway",
++      audience: "https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway",
++      timeoutMs: 1500,
++    });
+   });
+ });

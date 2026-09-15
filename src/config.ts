@@ -147,6 +147,29 @@ export const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
 export const WEBHOOKS_FILE = path.join(DATA_DIR, 'webhooks.json');
 export const HARD_FILTERS_FILE = path.join(DATA_DIR, 'hard-filters.json');
 
+const tandemIdentityGatewayEnv = readEnvFile([
+  'TANDEM_IDENTITY_GATEWAY_ENABLED',
+]);
+const tandemIdentityGatewayEnabledRaw =
+  tandemIdentityGatewayEnv.TANDEM_IDENTITY_GATEWAY_ENABLED || 'false';
+if (!['false', 'true', '0', '1'].includes(tandemIdentityGatewayEnabledRaw)) {
+  throw new Error(
+    'TANDEM_IDENTITY_GATEWAY_ENABLED must be true, false, 1, or 0',
+  );
+}
+export const TANDEM_IDENTITY_GATEWAY_ENABLED = ['true', '1'].includes(
+  tandemIdentityGatewayEnabledRaw,
+);
+export const TANDEM_IDENTITY_GATEWAY_AUDIENCE =
+  'https://mini-claw.raptor-insen.ts.net/tandem-identity-gateway';
+export const TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL =
+  'tandem-identity-runtime-dev@tandem-identity-dev-2026.iam.gserviceaccount.com';
+export const TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT = '114536406241819905948';
+export const TANDEM_IDENTITY_GATEWAY_PROJECT_ID = 'tandem-identity-dev-2026';
+export const TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID = 10069;
+export const TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256 =
+  '929e062a5f6c3a1708d539ddebfaf7b05d4fbceb009de8b8362b748bb3a5cf81';
+
 // Dedicated Adyen TEST Standard webhook admission. The HMAC key is loaded only
 // into the host process from the local .env file; it is never exposed through
 // /health, webhook listings, agent containers, or tracked configuration.

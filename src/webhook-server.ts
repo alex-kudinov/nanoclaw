@@ -99,6 +99,11 @@ import {
   type CommerceBookkeeperEnvelope,
   type CommerceBookkeeperResult,
 } from './commerce-bookkeeper.js';
+import {
+  LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES,
+  LoginToolsGatewayRequestSchema,
+  type LoginToolsGatewayResponse,
+} from './identity-control-plane/login-tools-gateway.js';
 
 // Minimal compatible slice of the runContainerAgent signature
 type RunAgentFn = (
@@ -165,6 +170,14 @@ export interface WebhookServerDeps {
   port: number;
   webhooksFile: string;
   globalSecret: string;
+  tandemIdentityGateway?: {
+    path: string;
+    verifyCaller: (idToken: string) => Promise<void>;
+    lookup: (
+      request: unknown,
+      observedAt: string,
+    ) => Promise<LoginToolsGatewayResponse>;
+  };
   heartbeatPath: string;
   getRegisteredGroups: () => Record<string, RegisteredGroup>;
   runAgent: RunAgentFn;
@@ -429,11 +442,20 @@ function saveWebhooks(filePath: string, webhooks: WebhookDefinition[]): void {
 export class WebhookServer {
   private server: http.Server;
   private deps: WebhookServerDeps;
+  private identityGatewayNamespace: string | null;
   private webhooks: WebhookDefinition[] = [];
   private watcher: fs.StatWatcher | null = null;
 
   constructor(deps: WebhookServerDeps) {
     this.deps = deps;
+    const gatewayPath = deps.tandemIdentityGateway?.path;
+    const namespaceMatch = gatewayPath?.match(/^(\/[^/?#]+)\/[^?#]+$/);
+    if (gatewayPath && !namespaceMatch) {
+      throw new Error('identity gateway path must be an exact nested path');
+    }
+    this.identityGatewayNamespace = namespaceMatch
+      ? `${namespaceMatch[1]}/`
+      : null;
     this.server = http.createServer((req, res) => {
       this.handleRequest(req, res).catch((err) => {
         logger.error({ err }, 'Webhook server: unhandled request error');
@@ -531,6 +553,103 @@ export class WebhookServer {
     req: http.IncomingMessage,
     res: http.ServerResponse,
   ): Promise<void> {
+    const identityGateway = this.deps.tandemIdentityGateway;
+    if (identityGateway && req.url !== identityGateway.path) {
+      let decodedPath = '';
+      try {
+        decodedPath = decodeURIComponent((req.url ?? '').split('?')[0]);
+      } catch {
+        decodedPath = '/identity/invalid-encoding';
+      }
+      if (
+        this.identityGatewayNamespace &&
+        decodedPath.startsWith(this.identityGatewayNamespace)
+      ) {
+        if (['POST', 'PUT', 'PATCH'].includes(req.method ?? '')) {
+          await readBodyBounded(req, LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES).catch(
+            () => undefined,
+          );
+        }
+        res.writeHead(404, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify({ error: 'not_found' }));
+        return;
+      }
+    }
+    if (identityGateway && req.url === identityGateway.path) {
+      if (req.method !== 'POST') {
+        res.writeHead(405, {
+          'Content-Type': 'application/json',
+          Allow: 'POST',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify({ error: 'method_not_allowed' }));
+        return;
+      }
+      const authorization = req.headers.authorization;
+      const match = authorization?.match(/^Bearer ([A-Za-z0-9._-]{100,8192})$/);
+      if (!match) {
+        res.writeHead(401, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify({ error: 'service_identity_required' }));
+        return;
+      }
+      try {
+        await identityGateway.verifyCaller(match[1]);
+      } catch {
+        res.writeHead(401, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify({ error: 'service_identity_invalid' }));
+        return;
+      }
+      let parsed: unknown;
+      try {
+        const rawBody = await readBodyBounded(
+          req,
+          LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES,
+        );
+        parsed = LoginToolsGatewayRequestSchema.parse(
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawBody)),
+        );
+      } catch (error) {
+        const tooLarge = error instanceof RequestBodyTooLargeError;
+        res.writeHead(tooLarge ? 413 : 400, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(
+          JSON.stringify({
+            error: tooLarge ? 'request_too_large' : 'invalid_request',
+          }),
+        );
+        return;
+      }
+      try {
+        const response = await identityGateway.lookup(
+          parsed,
+          new Date().toISOString(),
+        );
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify(response));
+      } catch {
+        res.writeHead(503, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(JSON.stringify({ error: 'identity_gateway_unavailable' }));
+      }
+      return;
+    }
+
     // GET /health — raw metrics for external watchdog (no auth — Tailscale only)
     if (req.method === 'GET' && req.url === '/health') {
       let heartbeat: Record<string, unknown> = {};

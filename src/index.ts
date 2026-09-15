@@ -41,6 +41,13 @@ import {
   STUDENT_LIFECYCLE_WEBHOOK_PATH,
   TANDEM_COMMERCE_BOOKKEEPER_KEY,
   TANDEM_COMMERCE_BOOKKEEPER_PATH,
+  TANDEM_IDENTITY_GATEWAY_AUDIENCE,
+  TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL,
+  TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT,
+  TANDEM_IDENTITY_GATEWAY_ENABLED,
+  TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256,
+  TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID,
+  TANDEM_IDENTITY_GATEWAY_PROJECT_ID,
   TRIGGER_PATTERN,
   WEBHOOK_PORT,
   WEBHOOK_SECRET,
@@ -151,6 +158,11 @@ import { runJob } from './job-runner.js';
 import { isIncidentProposal } from './healer/remediation.js';
 import { writeJobsSnapshot } from './job-snapshot.js';
 import { WebhookServer } from './webhook-server.js';
+import {
+  GoogleServiceCallerVerifier,
+  LOGIN_TOOLS_GATEWAY_PATH,
+  lookupLoginToolsBindingWithClient,
+} from './identity-control-plane/login-tools-gateway.js';
 import { handleCommerceBookkeeper } from './commerce-bookkeeper.js';
 import {
   archiveWebhook as archiveWebhookImpl,
@@ -2240,10 +2252,41 @@ async function main(): Promise<void> {
   // Start webhook server — listens on all interfaces (including Tailscale)
   // for inbound trigger events from Tailscale-connected machines.
   const heartbeatPath = path.join(DATA_DIR, 'heartbeat.json');
+  const tandemIdentityCallerVerifier = TANDEM_IDENTITY_GATEWAY_ENABLED
+    ? new GoogleServiceCallerVerifier({
+        audience: TANDEM_IDENTITY_GATEWAY_AUDIENCE,
+        principalEmail: TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL,
+        subject: TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT,
+      })
+    : null;
   const webhookServer = new WebhookServer({
     port: WEBHOOK_PORT,
     webhooksFile: WEBHOOKS_FILE,
     globalSecret: WEBHOOK_SECRET,
+    ...(tandemIdentityCallerVerifier
+      ? {
+          tandemIdentityGateway: {
+            path: LOGIN_TOOLS_GATEWAY_PATH,
+            verifyCaller: (idToken: string) =>
+              tandemIdentityCallerVerifier.verify(idToken),
+            lookup: (request: unknown, observedAt: string) =>
+              withAgentContext('tandem-identity-gateway', (client) =>
+                lookupLoginToolsBindingWithClient({
+                  client,
+                  request,
+                  policy: {
+                    projectId: TANDEM_IDENTITY_GATEWAY_PROJECT_ID,
+                    environment: 'development',
+                    pilotPartyId: TANDEM_IDENTITY_GATEWAY_PILOT_PARTY_ID,
+                    pilotEmailSha256:
+                      TANDEM_IDENTITY_GATEWAY_PILOT_EMAIL_SHA256,
+                  },
+                  observedAt,
+                }),
+              ),
+          },
+        }
+      : {}),
     adyenTestWebhook: ADYEN_TEST_WEBHOOK_CONFIG,
     commerceBookkeeper: {
       enabled:

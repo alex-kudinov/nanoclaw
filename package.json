@@ -53,6 +53,7 @@
     "tandem-identity-d3:prepare": "./scripts/with-pinned-node.sh node scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs",
     "tandem-identity-d3:import": "./scripts/with-pinned-node.sh node dist/identity-control-plane/d3-heartbeat-reconciliation-cli.js",
     "tandem-identity-d3:validate": "./scripts/with-pinned-node.sh node scripts/validate-tandem-identity-d3-production.mjs",
+    "tandem-identity:pilot-bind": "./scripts/with-pinned-node.sh tsx scripts/bind-tandem-identity-pilot.ts",
     "academy-capacity-disposable:verify": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-disposable.mjs",
     "academy-capacity-reconciliation:validate": "./scripts/with-pinned-node.sh node scripts/validate-academy-capacity-reconciliation.mjs",
     "academy-capacity-shadow:disposable": "./scripts/with-pinned-node.sh node scripts/verify-academy-capacity-shadow-population-disposable.mjs",

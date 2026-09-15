@@ -4,8 +4,9 @@ Date: 2026-09-15
 
 Task: `NC-20260915-003`
 
-Status: `KEEP` with load-bearing corrections accepted; no endpoint, network or
-binding change has occurred
+Status: `KEEP`; immutable caller subject independently pinned; bounded source
+and independent review complete; no endpoint, network or binding change has
+occurred
 
 ## Customer result and current boundary
 
@@ -66,11 +67,12 @@ availability architecture.
 | --- | --- | --- |
 | Public ingress | One Tailscale Funnel HTTPS mount for one exact gateway path to `127.0.0.1:8088`; no other NanoClaw route mounted. | Exposing the port/root would broaden attack surface to unrelated webhook/admin routes. |
 | Caller identity | Verify Google signature/JWKS, issuer, exact Funnel audience, exact Cloud Run service-account email and immutable subject before reading the body. | Email-only or token-derived policy permits a recreated/wrong workload or confused audience. |
-| Request contract | Strict, bounded development-only login observation: project, UID, verified-email fingerprint, auth time and observed time. It carries no Party ID or entitlement. | Letting the BFF choose Party/access moves canonical authority out of Company OS. |
+| Request contract | Strict, bounded development-only lookup: project, UID and optional verified-email fingerprint. It carries no Party ID, entitlement, authentication time or caller-supplied observation time. | Letting the BFF choose Party/access moves canonical authority out of Company OS. |
 | Pilot binding | Company OS policy pins the accepted owner decision, email fingerprint and Party `10069`; insert one migration-167 receipt/decision and versioned development auth account only after all facts agree. | General email matching could bind the wrong duplicate Party. |
 | Read projection | Resolve existing accepted auth subject to Party; read current canonical Coaching Tools Plus component rows and map them into the public projection. Party `10069` currently returns no grant. | A hardcoded allowlist or synthetic entitlement becomes a second access authority. |
-| Idempotency/recovery | Exact repeat is zero-write. Changed subject/body/Party/decision fails. If disabling is required, append the next auth-account version as disabled; never delete the receipt. | Repeated login could duplicate bindings or an incorrect binding could become irrecoverable. |
-| BFF client | Reuse Google Application Default Credentials to mint an audience-bound ID token and call the exact gateway URL with a short timeout. No downloaded key or Company OS bearer secret. | A long-lived secret adds custody/rotation or an unbounded call stalls login. |
+| Idempotency/recovery | Exact repeat is zero-write. Changed UID, Party, owner decision or caller subject fails with all binding/evidence counts unchanged. The tested disable mode appends a rollback receipt and disabled auth-account version; it never deletes history. | Repeated login could duplicate bindings or an incorrect binding could become irrecoverable. |
+| BFF client | Reuse Google Application Default Credentials to mint an audience-bound ID token and call the exact gateway URL with a short timeout and a hard streaming response limit. No downloaded key or Company OS bearer secret. | A long-lived secret adds custody/rotation or an unbounded call stalls login. |
+| Database execution | Reuse the existing host admin pool only through fixed, parameterized lookup statements and transaction-local audit attribution. The public contract cannot supply SQL identifiers, Party IDs or entitlement keys. | A new login role/grant would add a durable operational obligation for this one pilot; dynamic SQL or caller-selected authority would make the existing pool unsafe. |
 | Operations | Existing NanoClaw release, Tailscale Funnel status/readback, exact route health, structured value-redacted errors and rollback command. | A source build or Funnel receipt alone would not prove the live path or safe rollback. |
 
 ## Bounded implementation proof
@@ -83,8 +85,8 @@ availability architecture.
    failures stop before database work.
 3. Add one Tandem Identity gateway client behind the existing `IdentityGateway`
    interface. The runtime enables it only with exact development URL, audience,
-   principal email and immutable subject configuration; otherwise it remains
-   unconfigured and fail-closed.
+   gateway URL and audience configuration; otherwise it remains unconfigured
+   and fail-closed. Company OS pins the principal email and immutable subject.
 4. Run focused/full tests and bounded independent auth review. Reconcile the
    actual diff against this obligation table.
 5. Commit/push both isolated branches. Acquire narrow resource leases only for
@@ -96,6 +98,16 @@ availability architecture.
    account bound to Party `10069`, `/account` bound, `/tools` denied, exact
    replay zero-write, both services healthy and no other Party/provider/access
    counts changed.
+
+The bounded independent review completed in two rounds. R1 stopped because its
+packet omitted the load-bearing files. R2 read those files and returned `PASS
+WITH CORRECTIONS`: no authentication, authorization, isolation or replay defect
+remained. The corrections are now resolved: the host runtime is confirmed to
+use the existing `nanoclaw_admin` pool rather than a nonexistent per-agent role;
+the endpoint still exposes only fixed parameterized reads, so a new database
+role was deliberately not added for this one pilot; the BFF now stops streaming
+at 16 KiB; and the append-only disable operation is implemented and exercised
+against disposable PostgreSQL.
 
 ## Stop conditions
 
@@ -136,12 +148,20 @@ Load-bearing corrections accepted before implementation:
 - rollback removes public ingress first, then restores releases/configuration,
   and disables any accepted binding append-only without deleting history.
 
+Google Cloud IAM readback completed before implementation: the enabled,
+keyless runtime service account
+`tandem-identity-runtime-dev@tandem-identity-dev-2026.iam.gserviceaccount.com`
+has immutable numeric subject `114536406241819905948`. The exact issuer,
+audience, email and this subject will be injected policy; no value is learned
+from a first request.
+
 ## Rollback
 
 - Disable the exact Funnel mount with the matching `off` command and verify
   empty Funnel status.
 - Restore the prior Tandem Identity and NanoClaw immutable releases/config.
 - If a development auth binding was accepted, append a disabled auth-account
-  version with a rollback receipt; never delete or rewrite history.
+  version with a separately authorized rollback decision and receipt using the
+  tested operator CLI disable manifest; never delete or rewrite history.
 - Reverify public BFF health, private Company OS health, unchanged provider/
   entitlement state and zero public gateway reachability.

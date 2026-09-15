@@ -210,6 +210,94 @@ describe('WebhookServer', () => {
     await server.stop().catch(() => {});
   });
 
+  it('exposes only the exact authenticated identity gateway path', async () => {
+    await server.stop();
+    const verifyCaller = vi.fn(async () => undefined);
+    const lookup = vi.fn(async () => ({ status: 'unbound' as const }));
+    deps = makeDeps({
+      tandemIdentityGateway: {
+        path: '/identity/v1/binding',
+        verifyCaller,
+        lookup,
+      },
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    const body = JSON.stringify({
+      kind: 'tandem_identity_binding_lookup',
+      schemaVersion: 1,
+      projectId: 'tandem-identity-dev-2026',
+      uid: 'firebase-pilot-uid',
+      verifiedEmailSha256: 'a'.repeat(64),
+    });
+    const accepted = await makeRequest(deps.port, {
+      path: '/identity/v1/binding',
+      headers: { authorization: `Bearer ${'a'.repeat(200)}` },
+      body,
+    });
+    expect(accepted).toEqual({ status: 200, body: '{"status":"unbound"}' });
+    expect(verifyCaller).toHaveBeenCalledWith('a'.repeat(200));
+    expect(lookup).toHaveBeenCalledOnce();
+
+    await expect(
+      makeRequest(deps.port, {
+        path: '/identity/v1/binding',
+        method: 'GET',
+        body: '',
+      }),
+    ).resolves.toMatchObject({ status: 405 });
+    await expect(
+      makeRequest(deps.port, {
+        path: '/identity/v1/binding/extra',
+        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
+        body: '',
+      }),
+    ).resolves.toMatchObject({ status: 404 });
+    await expect(
+      makeRequest(deps.port, {
+        path: '/%69dentity/v1/binding',
+        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
+        body: '',
+      }),
+    ).resolves.toMatchObject({ status: 404 });
+  });
+
+  it('rejects identity gateway requests before lookup on auth or shape failure', async () => {
+    await server.stop();
+    const verifyCaller = vi.fn(async (_idToken: string): Promise<void> => {
+      throw new Error('invalid caller');
+    });
+    const lookup = vi.fn(async () => ({ status: 'unbound' as const }));
+    deps = makeDeps({
+      tandemIdentityGateway: {
+        path: '/identity/v1/binding',
+        verifyCaller,
+        lookup,
+      },
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    await expect(
+      makeRequest(deps.port, {
+        path: '/identity/v1/binding',
+        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
+      }),
+    ).resolves.toMatchObject({ status: 401 });
+    expect(lookup).not.toHaveBeenCalled();
+
+    verifyCaller.mockImplementation(async () => undefined);
+    await expect(
+      makeRequest(deps.port, {
+        path: '/identity/v1/binding',
+        headers: { authorization: `Bearer ${'a'.repeat(200)}` },
+        body: '{',
+      }),
+    ).resolves.toMatchObject({ status: 400 });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
   it('returns 404 for unknown webhook ID', async () => {
     const res = await makeRequest(deps.port, {
       path: '/hook/does-not-exist',

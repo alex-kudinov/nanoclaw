@@ -21,6 +21,11 @@ import {
   GOOGLE_SERVICE_ACCOUNT_ISSUER,
   verifyGoogleServiceAccountClaimRequest,
 } from './google-service-account-transport.js';
+import {
+  bindLoginToolsPilotWithClient,
+  disableLoginToolsPilotBindingWithClient,
+  lookupLoginToolsBindingWithClient,
+} from './login-tools-gateway.js';
 
 const ROOT = process.cwd();
 const PREFIX = 'nc_tandem_identity_d2_test_';
@@ -199,6 +204,7 @@ beforeAll(() => {
     `CREATE SCHEMA business_v2 AUTHORIZATION nanoclaw_admin;
      CREATE TABLE business_v2.parties (
        id bigserial PRIMARY KEY,
+       party_type text NOT NULL DEFAULT 'person',
        merged_into bigint REFERENCES business_v2.parties(id)
      );
      CREATE TABLE business_v2.party_external_refs (
@@ -267,6 +273,25 @@ beforeAll(() => {
            AND resolution_receipt_sha256 IS NOT NULL)
        )
      );
+     CREATE TABLE business_v2.student_enrollments_v2 (
+       id bigserial PRIMARY KEY,
+       participant_party_id bigint NOT NULL REFERENCES business_v2.parties(id),
+       state text NOT NULL,
+       effective_at timestamptz,
+       ended_at timestamptz,
+       created_at timestamptz NOT NULL DEFAULT now()
+     );
+     CREATE TABLE business_v2.student_component_entitlements (
+       id bigserial PRIMARY KEY,
+       entitlement_key text NOT NULL UNIQUE,
+       enrollment_id bigint NOT NULL REFERENCES business_v2.student_enrollments_v2(id),
+       component_key text NOT NULL,
+       state text NOT NULL,
+       version integer NOT NULL DEFAULT 0,
+       updated_at timestamptz NOT NULL DEFAULT now()
+     );
+     ALTER TABLE business_v2.student_enrollments_v2 OWNER TO nanoclaw_admin;
+     ALTER TABLE business_v2.student_component_entitlements OWNER TO nanoclaw_admin;
      CREATE TABLE business_v2.party_context_adapter_registrations (
        id bigserial PRIMARY KEY,
        adapter_key text NOT NULL,
@@ -1319,5 +1344,187 @@ describe('Tandem Identity D2 disposable PostgreSQL mirror', () => {
     expect((await identityWriteCounts()).rows[0]).toEqual(
       beforeDecisionConflict.rows[0],
     );
+  });
+
+  it('binds the owner-approved development pilot once with stable replay identity', async () => {
+    const bindingRequest = {
+      kind: 'tandem_identity_binding_lookup' as const,
+      schemaVersion: 1 as const,
+      projectId: 'tandem-identity-dev-2026',
+      uid: 'firebase-owner-pilot-uid',
+      verifiedEmailSha256: 'f'.repeat(64),
+    };
+    const bindingPolicy = {
+      projectId: 'tandem-identity-dev-2026',
+      environment: 'development' as const,
+      pilotPartyId: 2,
+      pilotEmailSha256: 'f'.repeat(64),
+      decisionRef: '.program/decisions/pilot.json',
+      decisionUuid: '50000000-0000-4000-8000-000000000001',
+      callerSubject: '114536406241819905948',
+    };
+    const protectedCounts = () =>
+      transaction((client) =>
+        client.query(`SELECT
+          (SELECT count(*) FROM business_v2.parties)::int AS parties,
+          (SELECT count(*) FROM business_v2.party_external_refs)::int AS refs,
+          (SELECT count(*) FROM business_v2.student_component_entitlements)::int AS entitlements,
+          (SELECT count(*) FROM business_v2.provider_projection_attempts)::int AS provider_attempts`),
+      );
+    const bindingCounts = () =>
+      transaction((client) =>
+        client.query(`SELECT
+          (SELECT count(*) FROM business_v2.identity_event_receipts)::int AS receipts,
+          (SELECT count(*) FROM business_v2.identity_event_related_refs)::int AS related_refs,
+          (SELECT count(*) FROM business_v2.auth_accounts)::int AS auth_accounts,
+          (SELECT count(*) FROM business_v2.identity_resolution_decisions)::int AS decisions,
+          (SELECT count(*) FROM business_v2.party_context_adapter_registrations)::int AS adapters`),
+      );
+    const before = await protectedCounts();
+    const accepted = await serializableTransaction((client) =>
+      bindLoginToolsPilotWithClient({
+        client,
+        request: bindingRequest,
+        policy: bindingPolicy,
+        observedAt: '2026-09-15T21:45:00.000Z',
+      }),
+    );
+    expect(accepted).toMatchObject({
+      outcome: 'accepted',
+      receiptInserted: 1,
+      authAccountsInserted: 1,
+      decisionsInserted: 1,
+      partyWrites: 0,
+      referenceWrites: 0,
+      entitlementWrites: 0,
+      providerWrites: 0,
+    });
+    expect((await protectedCounts()).rows[0]).toEqual(before.rows[0]);
+
+    const replay = await serializableTransaction((client) =>
+      bindLoginToolsPilotWithClient({
+        client,
+        request: bindingRequest,
+        policy: bindingPolicy,
+        observedAt: '2026-09-15T22:15:00.000Z',
+      }),
+    );
+    expect(replay).toMatchObject({
+      outcome: 'duplicate',
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+      decisionsInserted: 0,
+    });
+
+    const afterReplay = await transaction((client) =>
+      client.query(`SELECT
+        (SELECT count(*) FROM business_v2.auth_accounts
+          WHERE environment='development' AND party_id=2)::int AS auth_accounts,
+        (SELECT count(*) FROM business_v2.identity_resolution_decisions
+          WHERE decision_uuid='50000000-0000-4000-8000-000000000001')::int AS decisions`),
+    );
+    expect(afterReplay.rows[0]).toEqual({ auth_accounts: 1, decisions: 1 });
+    const acceptedBindingCounts = await bindingCounts();
+
+    const conflicts = [
+      {
+        request: { ...bindingRequest, uid: 'altered-pilot-uid' },
+        policy: bindingPolicy,
+      },
+      {
+        request: bindingRequest,
+        policy: { ...bindingPolicy, pilotPartyId: 1 },
+      },
+      {
+        request: bindingRequest,
+        policy: {
+          ...bindingPolicy,
+          decisionRef: '.program/decisions/altered-pilot.json',
+          decisionUuid: '50000000-0000-4000-8000-000000000002',
+        },
+      },
+      {
+        request: bindingRequest,
+        policy: { ...bindingPolicy, callerSubject: 'altered-caller-subject' },
+      },
+    ];
+    for (const conflict of conflicts) {
+      await expect(
+        serializableTransaction((client) =>
+          bindLoginToolsPilotWithClient({
+            client,
+            request: conflict.request,
+            policy: conflict.policy,
+            observedAt: '2026-09-15T22:30:00.000Z',
+          }),
+        ),
+      ).rejects.toThrow();
+      expect((await bindingCounts()).rows[0]).toEqual(
+        acceptedBindingCounts.rows[0],
+      );
+    }
+    expect((await protectedCounts()).rows[0]).toEqual(before.rows[0]);
+
+    const disablePolicy = {
+      ...bindingPolicy,
+      rollbackDecisionRef: '.program/decisions/pilot-rollback.json',
+      rollbackDecisionUuid: '50000000-0000-4000-8000-000000000003',
+    };
+    const disabled = await serializableTransaction((client) =>
+      disableLoginToolsPilotBindingWithClient({
+        client,
+        request: bindingRequest,
+        policy: disablePolicy,
+        observedAt: '2026-09-15T23:00:00.000Z',
+      }),
+    );
+    expect(disabled).toEqual({
+      outcome: 'disabled',
+      receiptInserted: 1,
+      authAccountsInserted: 1,
+    });
+    await expect(
+      serializableTransaction((client) =>
+        lookupLoginToolsBindingWithClient({
+          client,
+          request: bindingRequest,
+          policy: bindingPolicy,
+          observedAt: '2026-09-15T23:01:00.000Z',
+        }),
+      ),
+    ).resolves.toEqual({ status: 'unbound' });
+    await expect(
+      serializableTransaction((client) =>
+        disableLoginToolsPilotBindingWithClient({
+          client,
+          request: bindingRequest,
+          policy: disablePolicy,
+          observedAt: '2026-09-15T23:15:00.000Z',
+        }),
+      ),
+    ).resolves.toEqual({
+      outcome: 'duplicate',
+      receiptInserted: 0,
+      authAccountsInserted: 0,
+    });
+    const disabledBindingCounts = await bindingCounts();
+    await expect(
+      serializableTransaction((client) =>
+        disableLoginToolsPilotBindingWithClient({
+          client,
+          request: bindingRequest,
+          policy: {
+            ...disablePolicy,
+            rollbackDecisionRef: '.program/decisions/other-rollback.json',
+            rollbackDecisionUuid: '50000000-0000-4000-8000-000000000004',
+          },
+          observedAt: '2026-09-15T23:30:00.000Z',
+        }),
+      ),
+    ).rejects.toThrow(/rollback_conflict/);
+    expect((await bindingCounts()).rows[0]).toEqual(
+      disabledBindingCounts.rows[0],
+    );
+    expect((await protectedCounts()).rows[0]).toEqual(before.rows[0]);
   });
 });
