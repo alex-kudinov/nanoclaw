@@ -37,6 +37,8 @@ live transport.
   `8dc277b4f6bc06e3233329cc64e7bb4708051343686c090d4d259f45ef356c66`.
 - Verification: 44 passed, four Firestore integration tests intentionally
   skipped; Node 22 typecheck and build passed.
+- Implementation commit `926774f`; reviewed documentation/source head
+  `4ca09d8`.
 
 ## Company OS proof
 
@@ -68,6 +70,7 @@ live transport.
   11/11, and the Academy Capacity shadow timeout passed immediately in isolation,
   2/2. Effective comparison is 4,436 passing with the same 19 baseline failures.
   No identity-control-plane test failed.
+- Company OS implementation commit `512a4ee6`.
 
 ## Independent review
 

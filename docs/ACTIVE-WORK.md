@@ -1,17 +1,24 @@
 # NanoClaw active work
 
-2026-09-15T01:16Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
-Company-OS claim proposal, owner Codex, `in_progress`, C5/C2, isolated branches
-`codex/claim-proposal-disposable-20260914` and
-`codex/tandem-identity-claim-proposal-disposable-20260914`. Reuse the existing
-BFF `/api/session` Firebase-verification sequence, emit only a strict
-participant proposal with no Party/conflict authority, independently validate
-it in Company OS, derive current identifier candidates/open exception in a
-serializable generated database transaction and reuse migration 167 for atomic
-acceptance/replay. Fresh S2 necessity review removed bespoke HMAC, second token
-verification, duplicate fixture, staff/payer and live transport. Endpoint,
-network, credential, runtime wiring, DDL, real user, production identity/ref/
-access/customer/provider writes and deployment are prohibited.
+2026-09-15T01:48Z — `NC-20260914-007` Tandem Identity disposable BFF-to-
+Company-OS claim proposal, owner Codex, `complete`, C5/C2. Tandem Identity
+implementation `926774f` and reviewed source head `4ca09d8` are on
+`codex/claim-proposal-disposable-20260914`; Company OS implementation
+`512a4ee6` is on
+`codex/tandem-identity-claim-proposal-disposable-20260914`. The existing BFF
+`/api/session` Firebase-verification sequence now proves an injected gateway can
+emit only a strict participant proposal with no Party/conflict authority.
+Company OS independently validates the exact neutral artifact, derives current
+identifier candidates/open exception in one transaction, pins the PostgreSQL
+transaction ID against serializable-autocommit bypass, and reuses migration 167
+for atomic acceptance/replay. Focused 19/19, Tandem 44 passed/four intentional
+Firestore skips, typecheck, build, format and docs continuity pass. Fresh S2
+necessity review removed bespoke
+HMAC, second token verifier, duplicate fixture, staff/payer and live transport;
+bounded Sonnet/high review found and closed the transaction-boundary defect.
+Endpoint, network, credential, runtime wiring, DDL, real user, production
+identity/ref/access/customer/provider writes and deployment remain prohibited
+and absent.
 
 2026-09-15T00:52Z — `NC-20260914-006` Tandem Identity authenticated
 account-claim dark foundation, owner Codex, `complete`, C5/C2, implementation

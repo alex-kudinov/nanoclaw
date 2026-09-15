@@ -32,6 +32,10 @@
   passes, so no second review round is warranted. Four model calls used 71,968
   cache-create, 138,150 cache-read and 28,000 output tokens; maximum context was
   83,647.
+- Source commits: Tandem Identity implementation `926774f`, reviewed source
+  head `4ca09d8`, and Company OS implementation `512a4ee6`. These branches are
+  source-only and unwired; deployment and live/provider verification are not
+  applicable and remain explicitly prohibited.
 
 ## 2026-09-14 — NC-20260914-006 dark Google account claim
 

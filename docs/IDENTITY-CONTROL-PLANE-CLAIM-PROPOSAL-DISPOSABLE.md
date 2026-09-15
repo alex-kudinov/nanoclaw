@@ -1,9 +1,12 @@
 # Tandem Identity Claim-Proposal Disposable Receiver
 
-Status: source-only and unwired; synthetic cross-repository and generated
-disposable PostgreSQL evidence only
+Status: independently reviewed, source-only and unwired; synthetic cross-
+repository and generated disposable PostgreSQL evidence only
 
 Task: `NC-20260914-007`
+
+Reviewed implementation commits: Tandem Identity `926774f` (reviewed source
+head `4ca09d8`) and Company OS `512a4ee6`.
 
 ## Outcome
 
