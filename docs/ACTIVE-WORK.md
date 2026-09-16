@@ -1,7 +1,7 @@
 # NanoClaw active work
 
-2026-09-16T13:08Z — `NC-20260916-001` Commerce refund Bookkeeper projection,
-owner Codex, `validating`, C4, isolated branch
+2026-09-16T20:35Z — `NC-20260916-001` Commerce refund Bookkeeper projection,
+owner Codex, `complete`, C4, isolated branch
 `codex/commerce-refund-bookkeeper-20260916` from exact live release
 `ebd07d52e8e7433068086b749ab023fb53ddf5c3`. Extend only the existing signed
 Commerce Bookkeeper receiver and deterministic recorder so a signed successful
@@ -17,9 +17,15 @@ then release and replay only the one preserved TEST refund job. S1 returned KEEP
 for the narrow branch/table/status/no-roster path and REMOVE for any new runner.
 Focused 81/81, typecheck, format and continuity pass; full suite has 4,501 pass,
 34 skip, one flaky predecessor that passed isolated and three exact live-line
-predecessor failures outside the changed files. Next: bounded diff review,
-commit/build, migration-170 backup/apply, exact release, Commerce 1.22.1 payload
-deploy and one preserved TEST refund-job replay/readback.
+predecessor failures outside the changed files. Bounded Sonnet/high review
+corrected monotonic full-refund status. Exact immutable release
+`eb8af47caa654738c671b34d94363a5b4e940aa3` is live and healthy. Current-lineage
+Commerce 1.27.1 commit `2360637d6` supplied the bounded refund envelope, and
+only preserved TEST job `8380a51d-31c7-4d71-9b4e-fdd234917e1c` was replayed.
+Payment Log reads `refunded`; migration 170 has exactly one linked $1 row with
+zero remaining; the 14-sheet Student Roster fingerprint is unchanged; one
+mechanical Contador receipt exists; the WordPress job is complete; Production
+refunds remain zero.
 
 2026-09-16T00:45Z — `NC-20260915-005` ACC/combined Commerce capacity
 integration, owner Codex with bounded Sonnet/high review, `validating`, C5,

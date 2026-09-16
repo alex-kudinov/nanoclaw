@@ -63,6 +63,18 @@ refund projection after signed `REFUND success`; Student Roster, access,
 capacity and original payment rows remain unchanged. Once any refund row exists,
 the SQL rollback must refuse; host-code rollback preserves the evidence.
 
+The exact `NC-20260916-001` immutable release
+`eb8af47caa654738c671b34d94363a5b4e940aa3` is live. Its artifact hash is
+`e9087bc5a0fba0b556fe20881138ced7160d3df871c24033c0a99a24afad8119`
+across 1,400 files under pinned Node 22.23.2. A verified zero-work drain
+preceded dry-run and activation; the three expected launch pointers changed,
+and rollback is
+`~/Library/LaunchAgents/com.nanoclaw.plist.rollback-ebd07d52e8e7-2026-09-16T20-22-10-687Z`.
+Post-activation health proved the exact commit/root, connected Gmail/Slack and
+zero active/waiting/outgoing work. The one preserved TEST refund replay then
+created the first migration-170 row, so SQL rollback must now refuse while
+ordinary host-code rollback preserves the row.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact

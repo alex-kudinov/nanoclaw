@@ -2,8 +2,8 @@
 
 ## 2026-09-16 — NC-20260916-001 Commerce refund Bookkeeper projection
 
-- State: `validating`; source, focused verification and S1/S2 are complete;
-  commit, migration, release and preserved TEST-job replay remain pending.
+- State: `complete`; exact reviewed source, migration, immutable release and the
+  one preserved TEST-job replay are live-verified.
 - Change class: C4 because the existing asynchronous Bookkeeper path changes
   financial projections after WordPress-authoritative signed refund success.
 - Outcome: the existing signed receiver admits exact `REFUND success` envelopes
@@ -37,6 +37,21 @@
 - Rollback: host-code rollback preserves refund evidence. SQL rollback 170 is
   permitted only while the refund table is empty and otherwise raises a visible
   refusal.
+- Release and live outcome: immutable release
+  `eb8af47caa654738c671b34d94363a5b4e940aa3` replaced
+  `ebd07d52e8e7433068086b749ab023fb53ddf5c3` after a verified zero-work drain;
+  activation changed only the code-root, expected-commit and program-argument
+  pointers and returned exact healthy release identity under Node 22.23.2.
+  Commerce 1.27.1 commit `2360637d6` then delivered only the bounded refund
+  envelope from current live lineage. The exact preserved TEST job completed at
+  attempt 15 with `projected_notified`: Payment Log row 488 is `refunded` with
+  provider Adyen, `business_v2.contador_adyen_refunds` has one linked $1 row
+  with cumulative $1 and zero remaining, the 14-sheet/732-populated-row Student
+  Roster fingerprint stayed
+  `5be12b8acfe5ea01ed4abae30a97f09b01b40f998ed72462402a09cc20838611`,
+  and exactly one mechanical refund receipt reports roster unchanged and
+  database verified. No other Commerce job replayed and Production refunds
+  remain zero.
 - Documentation: Active Work, Project Map, Release Integrity, Contador prompt,
   structure-only schema, S1 request/response and S2 reconciliation.
 
