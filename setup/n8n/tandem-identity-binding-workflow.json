@@ -1,0 +1,214 @@
+{
+  "id": "tandem-identity-binding-v1",
+  "name": "Tandem Identity Binding to Company OS",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tandem-identity-binding-v1",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "identity-webhook",
+      "name": "Identity Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "tandem-identity-binding-v1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const envelope = $input.first().json || {};\nconst headers = envelope.headers && typeof envelope.headers === 'object'\n  ? envelope.headers\n  : {};\nconst readHeader = (name) => {\n  const entry = Object.entries(headers).find(\n    ([key]) => key.toLowerCase() === name,\n  );\n  return entry ? String(entry[1]) : '';\n};\nconst contentLength = readHeader('content-length');\nconst transferEncoding = readHeader('transfer-encoding');\nconst contentType = readHeader('content-type').split(';', 1)[0].trim().toLowerCase();\nconst reject = (statusCode, error) => [{\n  json: { route: 'reject', statusCode, responseBody: { error } },\n}];\nif (transferEncoding || !contentLength) {\n  return reject(411, 'content_length_required');\n}\nif (!/^(0|[1-9][0-9]*)$/.test(contentLength)) {\n  return reject(400, 'content_length_invalid');\n}\nconst declaredBytes = Number(contentLength);\nif (!Number.isSafeInteger(declaredBytes) || declaredBytes > 4096) {\n  return reject(413, 'request_too_large');\n}\nif (contentType !== 'application/json') {\n  return reject(415, 'json_required');\n}\nconst body = envelope.body;\nlet serialized;\ntry {\n  serialized = JSON.stringify(body);\n} catch {\n  return reject(400, 'json_invalid');\n}\nif (typeof serialized !== 'string') {\n  return reject(400, 'json_invalid');\n}\nif (Buffer.byteLength(serialized, 'utf8') > 4096) {\n  return reject(413, 'request_too_large');\n}\nreturn [{\n  json: {\n    route: 'forward',\n    authorization: readHeader('authorization'),\n    body,\n  },\n}];"
+      },
+      "id": "transport-admission",
+      "name": "Transport Admission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "forward-route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "forward",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "admitted",
+      "name": "Admitted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://100.115.115.206:8088/identity/v1/binding",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 2000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "relay-to-company-os",
+      "name": "Relay to Company OS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-company-os",
+      "name": "Return Company OS Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [1160, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.responseBody) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-rejected",
+      "name": "Return Transport Rejection",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [920, 400]
+    }
+  ],
+  "connections": {
+    "Identity Webhook": {
+      "main": [
+        [
+          {
+            "node": "Transport Admission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transport Admission": {
+      "main": [
+        [
+          {
+            "node": "Admitted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admitted?": {
+      "main": [
+        [
+          {
+            "node": "Relay to Company OS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Transport Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Relay to Company OS": {
+      "main": [
+        [
+          {
+            "node": "Return Company OS Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "executionTimeout": 10
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
