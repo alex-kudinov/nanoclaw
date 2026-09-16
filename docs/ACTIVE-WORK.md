@@ -1,5 +1,26 @@
 # NanoClaw active work
 
+2026-09-16T13:08Z — `NC-20260916-001` Commerce refund Bookkeeper projection,
+owner Codex, `validating`, C4, isolated branch
+`codex/commerce-refund-bookkeeper-20260916` from exact live release
+`ebd07d52e8e7433068086b749ab023fb53ddf5c3`. Extend only the existing signed
+Commerce Bookkeeper receiver and deterministic recorder so a signed successful
+Adyen `REFUND` can update the existing Payment Log status and append one
+idempotent, PII-free PostgreSQL refund projection. Preserve the original payment
+row, Student Roster/access/capacity state, the one existing route/process/queue,
+and all AUTHORISATION behavior. Add migration 170 plus guarded empty-only
+rollback; no provider call, email, customer communication, roster mutation,
+access action, new service, worker, queue, scheduler or credential. Next: record
+the minimum-sufficient checkpoint, obtain fresh S1 necessity review, implement
+the walking skeleton, verify disposable PostgreSQL and receiver/recorder tests,
+then release and replay only the one preserved TEST refund job. S1 returned KEEP
+for the narrow branch/table/status/no-roster path and REMOVE for any new runner.
+Focused 81/81, typecheck, format and continuity pass; full suite has 4,501 pass,
+34 skip, one flaky predecessor that passed isolated and three exact live-line
+predecessor failures outside the changed files. Next: bounded diff review,
+commit/build, migration-170 backup/apply, exact release, Commerce 1.22.1 payload
+deploy and one preserved TEST refund-job replay/readback.
+
 2026-09-16T00:45Z — `NC-20260915-005` ACC/combined Commerce capacity
 integration, owner Codex with bounded Sonnet/high review, `validating`, C5,
 isolated branch `codex/acc-capacity-commerce-20260915` from exact live merge

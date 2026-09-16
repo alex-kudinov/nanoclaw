@@ -16,10 +16,19 @@ const recorder = require('../tools/contador/process-commerce-payment.cjs') as {
     current: string,
     cohort: { rosterValue: string } | null,
   ): string;
+  refundPaymentLogStatus(refund: { remainingPaidCents: number }): string;
+  finalRefundPaymentLogStatus(
+    current: string,
+    refund: { remainingPaidCents: number },
+  ): string;
   formatCommerceSummary(
     fact: Record<string, unknown>,
     paymentLog: { verified: boolean; row: number; recordedDate: string },
     roster: Array<{ tab: string; column: string; row: number }>,
+  ): string;
+  formatCommerceRefundSummary(
+    envelope: Record<string, unknown>,
+    paymentLog: { verified: boolean; row: number; status: string },
   ): string;
 };
 const secret = 'bookkeeper-relay-secret-that-is-long-enough';
@@ -73,6 +82,31 @@ function signed(value = payload()) {
   return { rawBody, signatureHeader, relaySecret: secret, now };
 }
 
+function refundPayload() {
+  const value = payload();
+  const notification = {
+    ...value.notification,
+    pspReference: 'RFND7CXWRGM7NKZ3',
+    merchantReference: 'TCA-ABC123-RF-01',
+    eventCode: 'REFUND',
+    amount: { value: 9900, currency: 'USD' },
+    originalReference: 'WPFT7CXWRGM7NKZ3',
+  };
+  return {
+    ...value,
+    notification,
+    refund: {
+      refundId: '30000000-0000-4000-8000-000000000003',
+      requestReference: 'TCA-ABC123-RF-01',
+      paymentPspReference: 'WPFT7CXWRGM7NKZ3',
+      refundPspReference: 'RFND7CXWRGM7NKZ3',
+      amountCents: 9900,
+      cumulativeRefundedCents: 9900,
+      remainingPaidCents: 20000,
+    },
+  };
+}
+
 describe('Tandem Commerce Bookkeeper adapter', () => {
   it('accepts the signed native Adyen notification plus matching order facts', () => {
     const prepared = prepareCommerceBookkeeperEnvelope(signed());
@@ -90,6 +124,25 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     const prepared = prepareCommerceBookkeeperEnvelope(signed(practitioner));
     expect(prepared.order.productId).toBe('practitioner-ai-for-coaches');
     expect(prepared.order.productName).toBe('AI for Coaches');
+  });
+
+  it('accepts an exact signed refund and rejects cross-payment or cumulative mismatch', () => {
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(refundPayload()));
+    expect(prepared.notification.eventCode).toBe('REFUND');
+    expect(prepared.refund?.paymentPspReference).toBe('WPFT7CXWRGM7NKZ3');
+    expect(prepared.refund?.remainingPaidCents).toBe(20000);
+
+    const wrongPayment = refundPayload();
+    wrongPayment.notification.originalReference = 'OTHERPAYMENT';
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(wrongPayment)),
+    ).toThrow(/refund identity mismatch/);
+
+    const wrongCumulative = refundPayload();
+    wrongCumulative.refund.remainingPaidCents = 19999;
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(wrongCumulative)),
+    ).toThrow(/refund identity mismatch/);
   });
 
   it('accepts one bounded signed cohort and rejects malformed cohort evidence', () => {
@@ -233,5 +286,35 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(summary).toContain(
       'Student Roster: recorded and verified (Practitioner Series → AI for Coaches (row 15))',
     );
+  });
+
+  it('projects refund status without a roster mutation and formats exact provider refs', () => {
+    expect(recorder.refundPaymentLogStatus({ remainingPaidCents: 20000 })).toBe(
+      'partially refunded',
+    );
+    expect(recorder.refundPaymentLogStatus({ remainingPaidCents: 0 })).toBe(
+      'refunded',
+    );
+    expect(
+      recorder.finalRefundPaymentLogStatus('refunded', {
+        remainingPaidCents: 20000,
+      }),
+    ).toBe('refunded');
+    expect(
+      recorder.finalRefundPaymentLogStatus('partially refunded', {
+        remainingPaidCents: 0,
+      }),
+    ).toBe('refunded');
+    const summary = recorder.formatCommerceRefundSummary(refundPayload(), {
+      verified: true,
+      row: 430,
+      status: 'partially refunded',
+    });
+    expect(summary).toContain('Refund recorded: $99.00 USD');
+    expect(summary).toContain(
+      'refund RFND7CXWRGM7NKZ3 · payment WPFT7CXWRGM7NKZ3',
+    );
+    expect(summary).toContain('Payment Log: status partially refunded');
+    expect(summary).toContain('Student Roster: unchanged by refund policy');
   });
 });

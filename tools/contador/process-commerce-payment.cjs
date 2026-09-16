@@ -128,6 +128,35 @@ async function recordPaymentLog(fact) {
   return { verified: true, row: sheetRow, recordedDate: row[1] };
 }
 
+function refundPaymentLogStatus(refund) {
+  if (!refund || !Number.isSafeInteger(refund.remainingPaidCents) || refund.remainingPaidCents < 0) fail('refund status invalid');
+  return refund.remainingPaidCents === 0 ? 'refunded' : 'partially refunded';
+}
+
+function finalRefundPaymentLogStatus(current, refund) {
+  const existing = String(current || '').trim().toLowerCase();
+  return existing === 'refunded' ? 'refunded' : refundPaymentLogStatus(refund);
+}
+
+async function recordRefundPaymentLog(envelope) {
+  const refund = envelope.refund;
+  if (!refund) fail('refund evidence missing');
+  await ensurePaymentProviderHeader();
+  const ids = (await get(PAYMENTS_ID, 'Payment Log!J:J')).values || [];
+  const matches = ids
+    .map((row, index) => ({ id: String(row[0] || ''), index }))
+    .filter(entry => entry.index > 0 && entry.id === refund.paymentPspReference);
+  if (matches.length !== 1) fail('original payment log row unavailable');
+  const sheetRow = matches[0].index + 1;
+  const currentStatus = String((await get(PAYMENTS_ID, `Payment Log!K${sheetRow}`)).values?.[0]?.[0] || '').trim();
+  const status = finalRefundPaymentLogStatus(currentStatus, refund);
+  if (status !== currentStatus) await update(PAYMENTS_ID, `Payment Log!K${sheetRow}`, [[status]]);
+  const identity = (await get(PAYMENTS_ID, `Payment Log!J${sheetRow}:K${sheetRow}`)).values?.[0] || [];
+  const provider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
+  if (identity[0] !== refund.paymentPspReference || identity[1] !== status || provider !== 'Adyen') fail('refund payment log readback mismatch');
+  return { verified: true, row: sheetRow, status };
+}
+
 async function recordRoster(fact) {
   const productRows = ((await get(ROSTER_ID, 'Product Map!A:C')).values || [])
     .filter(row => String(row[0] || '').trim() === fact.productName && row[1] && row[2]);
@@ -201,6 +230,49 @@ function recordPostgres(envelope, fact) {
   return output.split('\n').some(line => line.trim() === `${envelope.deliveryId}|${fact.pspReference}`);
 }
 
+function recordPostgresRefund(envelope) {
+  const refund = envelope.refund;
+  if (!refund) fail('refund evidence missing');
+  const values = {
+    delivery: envelope.deliveryId,
+    refundid: refund.refundId,
+    orderid: envelope.order.orderId,
+    refundpsp: refund.refundPspReference,
+    paymentpsp: refund.paymentPspReference,
+    requestref: refund.requestReference,
+    merchant: envelope.order.merchantReference,
+    amount: String(refund.amountCents),
+    cumulative: String(refund.cumulativeRefundedCents),
+    remaining: String(refund.remainingPaidCents),
+    currency: envelope.order.currency,
+    eventdate: envelope.notification.eventDate,
+    evidence: crypto.createHash('sha256').update(JSON.stringify(envelope)).digest('hex'),
+  };
+  const sql = `
+    INSERT INTO business_v2.contador_adyen_refunds
+      (delivery_id,refund_id,order_id,refund_psp_reference,payment_psp_reference,request_reference,merchant_reference,amount_cents,cumulative_refunded_cents,remaining_paid_cents,currency,event_date,evidence_sha256)
+    SELECT :'delivery'::uuid,:'refundid'::uuid,:'orderid'::uuid,:'refundpsp',:'paymentpsp',:'requestref',:'merchant',:'amount'::bigint,:'cumulative'::bigint,:'remaining'::bigint,:'currency',:'eventdate'::timestamptz,:'evidence'
+      FROM business_v2.contador_adyen_payments p
+     WHERE p.psp_reference=:'paymentpsp'
+       AND p.order_id=:'orderid'::uuid
+       AND p.merchant_reference=:'merchant'
+       AND p.amount_cents=:'cumulative'::bigint + :'remaining'::bigint
+    ON CONFLICT (refund_psp_reference) DO UPDATE
+      SET last_seen_at=now(),delivery_id=EXCLUDED.delivery_id
+    WHERE business_v2.contador_adyen_refunds.refund_id=EXCLUDED.refund_id
+      AND business_v2.contador_adyen_refunds.order_id=EXCLUDED.order_id
+      AND business_v2.contador_adyen_refunds.payment_psp_reference=EXCLUDED.payment_psp_reference
+      AND business_v2.contador_adyen_refunds.request_reference=EXCLUDED.request_reference
+      AND business_v2.contador_adyen_refunds.merchant_reference=EXCLUDED.merchant_reference
+      AND business_v2.contador_adyen_refunds.amount_cents=EXCLUDED.amount_cents
+      AND business_v2.contador_adyen_refunds.cumulative_refunded_cents=EXCLUDED.cumulative_refunded_cents
+      AND business_v2.contador_adyen_refunds.remaining_paid_cents=EXCLUDED.remaining_paid_cents
+      AND business_v2.contador_adyen_refunds.currency=EXCLUDED.currency;
+    SELECT delivery_id::text,refund_psp_reference FROM business_v2.contador_adyen_refunds WHERE refund_psp_reference=:'refundpsp';`;
+  const output = execFileSync('psql', [...psqlVars(values), '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'], { input: sql, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  return output.split('\n').some(line => line.trim() === `${envelope.deliveryId}|${refund.refundPspReference}`);
+}
+
 function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
   const roster = rosterDestinations.map(destination => `${destination.tab} → ${destination.column} (row ${destination.row})`).join('; ');
   return [
@@ -216,9 +288,38 @@ function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
   ].join('\n');
 }
 
+function formatCommerceRefundSummary(envelope, paymentLog) {
+  const refund = envelope.refund;
+  if (!refund) fail('refund evidence missing');
+  return [
+    `Refund recorded: $${(refund.amountCents / 100).toFixed(2)} ${envelope.order.currency} — ${envelope.order.productName}`,
+    `Provider: Adyen · refund ${refund.refundPspReference} · payment ${refund.paymentPspReference}`,
+    `Reference: ${refund.requestReference}`,
+    `Cumulative refunded: $${(refund.cumulativeRefundedCents / 100).toFixed(2)} · Remaining paid: $${(refund.remainingPaidCents / 100).toFixed(2)}`,
+    `Payment Log: status ${paymentLog.status} and verified (row ${paymentLog.row}; provider Adyen)`,
+    'Student Roster: unchanged by refund policy',
+    'Database: refund recorded and verified',
+  ].join('\n');
+}
+
 async function main() {
   if (!PAYMENTS_ID || !ROSTER_ID || !SA_PATH || !fs.existsSync(SA_PATH)) fail('bookkeeper configuration missing');
   const envelope = await readInput();
+  if (envelope.refund) {
+    const paymentLog = await recordRefundPaymentLog(envelope);
+    const postgresVerified = recordPostgresRefund(envelope);
+    const result = {
+      deliveryId: envelope.deliveryId,
+      provider: 'adyen',
+      providerPaymentId: envelope.refund.refundPspReference,
+      paymentLogVerified: paymentLog.verified,
+      studentRosterVerified: true,
+      postgresVerified,
+      summary: formatCommerceRefundSummary(envelope, paymentLog),
+    };
+    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
+    return;
+  }
   const event = new Date(envelope.notification.eventDate);
   if (!Number.isFinite(event.getTime())) fail('event date invalid');
   const format = date => `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
@@ -241,4 +342,4 @@ async function main() {
 
 if (require.main === module) main().catch(error => { console.error(`[EL CONTADOR] ${error.message}`); process.exit(1); });
 
-module.exports = { column, psqlVars, cohortRosterValue, formatCommerceSummary };
+module.exports = { column, psqlVars, cohortRosterValue, refundPaymentLogStatus, finalRefundPaymentLogStatus, formatCommerceSummary, formatCommerceRefundSummary };

@@ -35,9 +35,10 @@ export interface CommerceBookkeeperEnvelope {
   sentAt: string;
   notification: {
     pspReference: string;
+    originalReference?: string;
     merchantReference: string;
     merchantAccountCode: string;
-    eventCode: 'AUTHORISATION';
+    eventCode: 'AUTHORISATION' | 'REFUND';
     eventDate: string;
     success: 'true';
     amount: { value: number; currency: 'USD' };
@@ -67,6 +68,15 @@ export interface CommerceBookkeeperEnvelope {
       sessions: string[];
       rosterValue: string;
     };
+  };
+  refund: null | {
+    refundId: string;
+    requestReference: string;
+    paymentPspReference: string;
+    refundPspReference: string;
+    amountCents: number;
+    cumulativeRefundedCents: number;
+    remainingPaidCents: number;
   };
 }
 
@@ -230,17 +240,79 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   const productName = text(order.productName, 'order.productName', 200);
   const amountValue = Number(amount.value);
   const orderAmount = Number(order.amountCents);
+  const orderMerchantReference = text(
+    order.merchantReference,
+    'order.merchantReference',
+    64,
+  );
   if (
-    n.eventCode !== 'AUTHORISATION' ||
     n.success !== 'true' ||
     !Number.isSafeInteger(amountValue) ||
     amountValue <= 0 ||
     amount.currency !== 'USD' ||
     order.currency !== 'USD' ||
-    amountValue !== orderAmount ||
-    order.merchantReference !== merchantReference ||
     !/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/.test(productId) ||
     /[\x00-\x1f\x7f]/.test(productName)
+  ) {
+    throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
+  }
+  let refund: CommerceBookkeeperEnvelope['refund'] = null;
+  if (n.eventCode === 'REFUND') {
+    const rawRefund = object(raw.refund, 'refund');
+    const refundId = text(rawRefund.refundId, 'refund.refundId', 36);
+    const requestReference = text(
+      rawRefund.requestReference,
+      'refund.requestReference',
+      80,
+    );
+    const paymentPspReference = text(
+      rawRefund.paymentPspReference,
+      'refund.paymentPspReference',
+      100,
+    );
+    const refundPspReference = text(
+      rawRefund.refundPspReference,
+      'refund.refundPspReference',
+      100,
+    );
+    const refundAmount = Number(rawRefund.amountCents);
+    const cumulativeRefunded = Number(rawRefund.cumulativeRefundedCents);
+    const remainingPaid = Number(rawRefund.remainingPaidCents);
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        refundId,
+      ) ||
+      !requestReference.startsWith(`${orderMerchantReference}-RF-`) ||
+      !/^TCA-[A-Z0-9-]+-RF-[0-9]{2,}$/.test(requestReference) ||
+      merchantReference !== requestReference ||
+      pspReference !== refundPspReference ||
+      text(n.originalReference, 'notification.originalReference', 100) !==
+        paymentPspReference ||
+      !Number.isSafeInteger(refundAmount) ||
+      !Number.isSafeInteger(cumulativeRefunded) ||
+      !Number.isSafeInteger(remainingPaid) ||
+      refundAmount <= 0 ||
+      amountValue !== refundAmount ||
+      cumulativeRefunded < refundAmount ||
+      cumulativeRefunded > orderAmount ||
+      remainingPaid !== orderAmount - cumulativeRefunded
+    ) {
+      throw new CommerceBookkeeperRequestError('refund identity mismatch', 422);
+    }
+    refund = {
+      refundId,
+      requestReference,
+      paymentPspReference,
+      refundPspReference,
+      amountCents: refundAmount,
+      cumulativeRefundedCents: cumulativeRefunded,
+      remainingPaidCents: remainingPaid,
+    };
+  } else if (
+    n.eventCode !== 'AUTHORISATION' ||
+    (raw.refund !== null && raw.refund !== undefined) ||
+    amountValue !== orderAmount ||
+    orderMerchantReference !== merchantReference
   ) {
     throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
   }
@@ -264,13 +336,18 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     sentAt,
     notification: {
       pspReference,
+      ...(refund === null
+        ? {}
+        : {
+            originalReference: refund.paymentPspReference,
+          }),
       merchantReference,
       merchantAccountCode: text(
         n.merchantAccountCode,
         'notification.merchantAccountCode',
         200,
       ),
-      eventCode: 'AUTHORISATION',
+      eventCode: refund === null ? 'AUTHORISATION' : 'REFUND',
       eventDate,
       success: 'true',
       amount: { value: amountValue, currency: 'USD' },
@@ -278,7 +355,7 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     },
     order: {
       orderId: text(order.orderId, 'order.orderId', 36),
-      merchantReference,
+      merchantReference: orderMerchantReference,
       productId,
       productName,
       amountCents: orderAmount,
@@ -288,6 +365,7 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       purchaseRelationship: relationship,
       cohort: cohort(order.cohort),
     },
+    refund,
   };
 }
 

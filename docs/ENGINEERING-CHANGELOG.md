@@ -1,5 +1,45 @@
 # NanoClaw engineering changelog
 
+## 2026-09-16 — NC-20260916-001 Commerce refund Bookkeeper projection
+
+- State: `validating`; source, focused verification and S1/S2 are complete;
+  commit, migration, release and preserved TEST-job replay remain pending.
+- Change class: C4 because the existing asynchronous Bookkeeper path changes
+  financial projections after WordPress-authoritative signed refund success.
+- Outcome: the existing signed receiver admits exact `REFUND success` envelopes
+  with refund/payment PSPs, request/order references, exact amount and stable
+  sequence-bounded cumulative/remaining totals. The existing recorder updates
+  only the original Payment Log status, explicitly leaves Student Roster
+  unchanged, appends one PII-free migration-170 refund projection and produces
+  the mechanical Contador receipt before WordPress completion.
+- Topology: no new endpoint, service, process, queue, worker, scheduler,
+  credential, provider call, customer communication or access/capacity action.
+- Verification: focused receiver/webhook/payment-migration/refund-migration
+  suite passes 81/81; pinned Node typecheck, formatting and documentation
+  continuity pass. Full suite is 4,501 pass / 34 skip / four initial failures;
+  the payment-method concurrency case passed immediately in isolated rerun and
+  the remaining three are the exact live-line predecessor failures (Academy
+  Capacity operator fixture, CNPC wrapper-source assertion and Trafft stale-date
+  fixture), outside changed files.
+- Necessity review: isolated Sonnet/high session
+  `7e780d32-65e0-4a81-8883-563177d7290a` returned KEEP for all five obligations
+  and REMOVE for any new runner. It used three turns, 15,591 cache-create,
+  41,446 cache-read and 1,136 output tokens; reported cost was about $0.08203.
+- Correctness review: Sonnet/high session
+  `ae5cb79c-8915-406c-8e5a-eec4424d403f` found one material ordering defect:
+  a delayed partial refund could regress Payment Log from `refunded` to
+  `partially refunded`. The recorder now reads the current status and makes full
+  refund terminal; focused tests cover both directions. The review used ten
+  turns, 54,202 cache-create, 90,720 cache-read and 19,601 output tokens;
+  reported cost was about $0.43098. No second correctness round is needed
+  because the correction is a pure monotonic reducer with direct regression
+  assertions.
+- Rollback: host-code rollback preserves refund evidence. SQL rollback 170 is
+  permitted only while the refund table is empty and otherwise raises a visible
+  refusal.
+- Documentation: Active Work, Project Map, Release Integrity, Contador prompt,
+  structure-only schema, S1 request/response and S2 reconciliation.
+
 ## 2026-09-15 — NC-20260915-005 provider-neutral ACC capacity commitments
 
 - Extends the existing signed Commerce Bookkeeper cohort envelope to canonical

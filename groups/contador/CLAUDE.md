@@ -26,6 +26,14 @@ You run for invoice handoffs and operator follow-ups. New Stripe payment and
 refund webhooks are processed mechanically by the host; they do not need an
 agent turn.
 
+### Host-owned Tandem Commerce refund
+
+The existing signed Commerce Bookkeeper receiver handles confirmed Adyen
+refunds mechanically. It may update only the original Payment Log status and
+append the PII-free refund projection after exact readback. Student Roster,
+access, enrollment, capacity and the original payment facts remain unchanged.
+Do not run either payment script manually or post a second refund receipt.
+
 ### Host-owned new payment
 
 The host owns the fulfillment case, runs the deterministic script, verifies

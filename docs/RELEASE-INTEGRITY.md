@@ -53,6 +53,16 @@ unchanged, and prove exact reapplication is a no-op. Once any non-MCS row exists
 the rollback must refuse visibly; host-code rollback preserves the generalized
 constraint and provider-neutral payment evidence.
 
+Beginning with `NC-20260916-001`, the archive also binds migration 170 and its
+guarded rollback. Migration 170 adds one PII-free Adyen refund compatibility
+projection linked to the retained original payment. Packaging does not apply it.
+Apply only after a validated custom-format `business_v2` backup; verify the new
+table, foreign key, owner/grant boundary, zero initial rows and exact reapply.
+The runtime may update only the existing Payment Log status cell and append a
+refund projection after signed `REFUND success`; Student Roster, access,
+capacity and original payment rows remain unchanged. Once any refund row exists,
+the SQL rollback must refuse; host-code rollback preserves the evidence.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact

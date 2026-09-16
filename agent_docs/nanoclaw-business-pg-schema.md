@@ -1525,6 +1525,26 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   last_seen_at                  timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.contador_adyen_refunds
+
+```
+  delivery_id                   uuid                 NOT NULL
+  refund_id                     uuid                 NOT NULL
+  order_id                      uuid                 NOT NULL
+  refund_psp_reference          text                 NOT NULL
+  payment_psp_reference         text                 NOT NULL
+  request_reference             text                 NOT NULL
+  merchant_reference            text                 NOT NULL
+  amount_cents                  bigint               NOT NULL
+  cumulative_refunded_cents     bigint               NOT NULL
+  remaining_paid_cents          bigint               NOT NULL
+  currency                      text                 NOT NULL
+  event_date                    timestamp with time zone NOT NULL
+  evidence_sha256               text                 NOT NULL
+  first_seen_at                 timestamp with time zone NOT NULL DEFAULT=now()
+  last_seen_at                  timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.contador_payment_fulfillment_aliases
 
 ```

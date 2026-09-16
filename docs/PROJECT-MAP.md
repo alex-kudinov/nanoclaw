@@ -1058,6 +1058,15 @@ receiver. It changes no row, table, index, owner or grant. Its rollback restores
 literal check only while every retained row is still MCS and otherwise raises a
 visible refusal; ordinary code rollback preserves provider-neutral projection rows.
 
+`NC-20260916-001` extends that same signed Commerce Bookkeeper route for exact
+`REFUND success` events. WordPress supplies the refund PSP, original payment PSP,
+refund/order references, exact amount and cumulative/remaining totals. NanoClaw
+updates only the original Payment Log status, explicitly leaves Student Roster
+unchanged, appends one PII-free migration-170 refund projection and posts the
+mechanical Contador receipt before acknowledging the existing retry job. It does
+not call Adyen or mutate access, capacity, lifecycle, learner, original payment,
+amount, provider ID or date.
+
 `adyen-session-result-adapter.ts` is an environment-explicit static verifier for
 the static authenticated Session result. It binds the root merchant reference,
 stored Session ID, one Authorised PSP payment, exact amount/currency and actual
