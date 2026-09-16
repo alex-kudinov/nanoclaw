@@ -100,6 +100,10 @@ import {
   type CommerceBookkeeperResult,
 } from './commerce-bookkeeper.js';
 import {
+  recordAcademyCapacityWebsiteSale,
+  type AcademyCapacitySaleFact,
+} from './academy-capacity-sale-ingress.js';
+import {
   LOGIN_TOOLS_GATEWAY_MAX_BODY_BYTES,
   LoginToolsGatewayRequestSchema,
   type LoginToolsGatewayResponse,
@@ -208,6 +212,9 @@ export interface WebhookServerDeps {
     handle: (
       envelope: CommerceBookkeeperEnvelope,
     ) => Promise<CommerceBookkeeperResult>;
+    recordCapacitySale?: (
+      fact: AcademyCapacitySaleFact,
+    ) => ReturnType<typeof recordAcademyCapacityWebsiteSale>;
   };
   // Phase 1 webhook reliability — envelope archive + dispatch tracking.
   // When provided, every accepted /hook/:id request is recorded in
@@ -320,6 +327,59 @@ function humanizeFormSubtype(value: string): string {
     .replace(/\b(icf|acc|pcc|mcc|mcs|mcq|mcqf)\b/gi, (word) =>
       word.toUpperCase(),
     );
+}
+
+const COMMERCE_CAPACITY_PRODUCTS = new Set([
+  'acc-module-1',
+  'acc-full',
+  'acc-pcc-full',
+]);
+
+export async function commitCommerceCapacity(
+  envelope: CommerceBookkeeperEnvelope,
+  record: (
+    fact: AcademyCapacitySaleFact,
+  ) => ReturnType<
+    typeof recordAcademyCapacityWebsiteSale
+  > = recordAcademyCapacityWebsiteSale,
+): Promise<string | null> {
+  if (
+    envelope.order.cohort?.program !== 'acc' ||
+    !COMMERCE_CAPACITY_PRODUCTS.has(envelope.order.productId)
+  ) {
+    return null;
+  }
+  let capacity;
+  try {
+    capacity = await record({
+      version: 1,
+      eligible: true,
+      payment_provider: 'adyen',
+      provider_payment_id: envelope.notification.pspReference,
+      product_slug: envelope.order.productId,
+      cohort_program: 'acc',
+      cohort_start: envelope.order.cohort.start,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message ===
+        'academy-capacity-sale: exact pool/offer mapping not found'
+    ) {
+      throw new CommerceBookkeeperRequestError(
+        'academy_capacity_mapping_unavailable',
+        409,
+      );
+    }
+    throw error;
+  }
+  if (!capacity || capacity.state !== 'applied') {
+    throw new CommerceBookkeeperRequestError(
+      `academy_capacity_${capacity?.code ?? 'commitment_missing'}`,
+      409,
+    );
+  }
+  return `Capacity: committed and verified (${capacity.code}; case ${capacity.caseKey})`;
 }
 
 function describeFormSubmission(subtype: string | null): string {
@@ -889,13 +949,19 @@ export class WebhookServer {
           relaySecret: commerceBookkeeper.relaySecret,
         });
         const result = await commerceBookkeeper.handle(envelope);
+        let summary = result.summary;
+        const capacitySummary = await commitCommerceCapacity(
+          envelope,
+          commerceBookkeeper.recordCapacitySale,
+        );
+        if (capacitySummary) summary = `${summary}\n${capacitySummary}`;
         const contadorGroups = Object.entries(
           this.deps.getRegisteredGroups(),
         ).filter(([, group]) => group.folder === 'contador');
         if (contadorGroups.length !== 1) {
           throw new Error('Commerce Bookkeeper group unavailable');
         }
-        await this.deps.sendMessage(contadorGroups[0][0], result.summary, {
+        await this.deps.sendMessage(contadorGroups[0][0], summary, {
           fromGroup: 'contador',
         });
         logger.info(
@@ -919,7 +985,14 @@ export class WebhookServer {
             : 503;
         logger.warn({ status }, 'Commerce Bookkeeper delivery rejected');
         res.writeHead(status, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'delivery rejected' }));
+        res.end(
+          JSON.stringify({
+            error: 'delivery rejected',
+            ...(error instanceof CommerceBookkeeperRequestError
+              ? { code: error.message }
+              : {}),
+          }),
+        );
       }
       return;
     }

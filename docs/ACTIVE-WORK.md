@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-16T00:45Z — `NC-20260915-005` ACC/combined Commerce capacity
+integration, owner Codex with bounded Sonnet/high review, `validating`, C5,
+isolated branch `codex/acc-capacity-commerce-20260915` from exact live merge
+`189531ac2e96b58d720e90fc71255e71c8cb3e6d`. Reuse only the accepted local
+available/sold-out projection plus post-fulfillment durable commitments; add
+provider-scoped Adyen identity, ACC cohort admission, four missing readiness
+pools and explicit review failures. No checkout holds, new worker/queue/schema,
+automatic waitlist action or real validation charge. Focused 78/78, disposable
+PostgreSQL, typecheck and formatting pass; full root is 4,491 pass / 34 skip /
+three independently confirmed predecessor failures. Sonnet/high found one
+new-user multi-group queue-readback gap; Tandem Commerce corrected it and all 20
+PHP suites pass. Next: commit/build immutable artifacts, reconcile exact live
+lineage, then migrate/deploy NanoClaw before Commerce under short leases.
+
 2026-09-15T23:12Z — `NC-20260915-004` live-line credential Commerce
 integration, owner Codex, `ready_for_deploy`, C4/C5, isolated branch
 `codex/commerce-cohort-live-integration-20260915` from exact live identity

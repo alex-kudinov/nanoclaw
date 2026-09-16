@@ -73,6 +73,7 @@ const LOWER_SNAKE = /^[a-z][a-z0-9_]{0,99}$/;
 const SAFE_IDEMPOTENCY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,499}$/;
 const COMMITMENT_SCOPES = new Set([
   'website_stripe_sale',
+  'website_adyen_sale',
   'invoice',
   'check',
   'sponsor',

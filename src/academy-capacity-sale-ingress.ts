@@ -9,7 +9,10 @@ import {
 export interface AcademyCapacitySaleFact {
   version: 1;
   eligible: boolean;
-  payment_intent_id: string;
+  payment_provider?: 'stripe' | 'adyen';
+  provider_payment_id?: string;
+  /** Legacy Stripe field retained so deployed Contador sentinels replay identically. */
+  payment_intent_id?: string;
   product_slug: string | null;
   cohort_program: string | null;
   cohort_start: string | null;
@@ -34,9 +37,15 @@ export async function recordAcademyCapacityWebsiteSale(
   deps: Partial<SaleIngressDeps> = {},
 ): Promise<CapacityOperatorResult | null> {
   if (!fact.eligible) return null;
+  const provider = fact.payment_provider ?? 'stripe';
+  const providerPaymentId =
+    fact.provider_payment_id ?? fact.payment_intent_id ?? '';
   if (
     fact.version !== 1 ||
-    !/^pi_[A-Za-z0-9_]+$/.test(fact.payment_intent_id) ||
+    !['stripe', 'adyen'].includes(provider) ||
+    (provider === 'stripe'
+      ? !/^pi_[A-Za-z0-9_]+$/.test(providerPaymentId)
+      : !/^[A-Za-z0-9._:-]{1,100}$/.test(providerPaymentId)) ||
     !fact.product_slug ||
     !/^[a-z0-9][a-z0-9._:-]{0,199}$/.test(fact.product_slug) ||
     !['acc', 'mcs-practicum'].includes(fact.cohort_program ?? '') ||
@@ -52,14 +61,17 @@ export async function recordAcademyCapacityWebsiteSale(
   }:${date}`;
   const evidenceSha256 = hash(
     [
-      fact.payment_intent_id,
+      provider,
+      providerPaymentId,
       fact.product_slug,
       fact.cohort_program,
       fact.cohort_start,
       deliveryBlockKey,
     ].join('|'),
   );
-  const identity = hash(fact.payment_intent_id).slice(0, 32);
+  const providerIdentity =
+    provider === 'stripe' ? providerPaymentId : `adyen:${providerPaymentId}`;
+  const identity = hash(providerIdentity).slice(0, 32);
   let result: CapacityOperatorResult | null = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const target = await runtime.query<{
@@ -90,8 +102,9 @@ export async function recordAcademyCapacityWebsiteSale(
       commitmentKey: `commitment:website:${identity}`,
       poolKey: row.pool_key,
       expectedPoolVersion: poolVersion,
-      sourceScope: 'website_stripe_sale',
-      idempotencyKey: fact.payment_intent_id,
+      sourceScope:
+        provider === 'stripe' ? 'website_stripe_sale' : 'website_adyen_sale',
+      idempotencyKey: providerIdentity,
       offerKey: fact.product_slug,
       catalogRevision: Number(row.catalog_revision),
       orderKey: null,

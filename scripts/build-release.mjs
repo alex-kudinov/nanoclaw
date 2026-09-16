@@ -319,6 +319,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_167_tandem_identity_control_plane.sql',
     'data/business/migrations/nanoclaw-v2/168_contador_adyen_product_identity.sql',
     'data/business/migrations/nanoclaw-v2/rollback_168_contador_adyen_product_identity.sql',
+    'data/business/migrations/nanoclaw-v2/169_acc_capacity_readiness.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_169_acc_capacity_readiness.sql',
     'scripts/verify-release.mjs',
     'scripts/validate-tandem-identity-d2-production.mjs',
     'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',

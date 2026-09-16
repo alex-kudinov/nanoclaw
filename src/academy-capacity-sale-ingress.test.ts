@@ -153,4 +153,71 @@ describe('Academy capacity website-sale ingress', () => {
       execute.mock.calls[1][1].caseKey,
     );
   });
+
+  it('uses a provider-scoped Adyen identity while preserving legacy Stripe idempotency', async () => {
+    const query = vi.fn(async () => ({
+      rows: [
+        {
+          pool_key: 'pool:acc:oct',
+          pool_version: 3,
+          ends_at: '2026-10-28T21:00:00-04:00',
+          catalog_revision: 1,
+        },
+      ],
+      rowCount: 1,
+    }));
+    const execute = vi.fn(async (_group, command) => ({
+      caseKey: command.caseKey,
+      commandType: command.type,
+      state: 'applied' as const,
+      code: 'command_applied',
+      replayed: false,
+      resultSha256: 'c'.repeat(64),
+      summary: {},
+    }));
+    const base = {
+      version: 1 as const,
+      eligible: true,
+      product_slug: 'acc-module-1',
+      cohort_program: 'acc',
+      cohort_start: '2026-10-07T19:00:00-04:00',
+    };
+    await recordAcademyCapacityWebsiteSale(
+      {
+        ...base,
+        payment_provider: 'adyen',
+        provider_payment_id: 'PSP123456789',
+      },
+      { query: query as never, execute: execute as never },
+    );
+    await recordAcademyCapacityWebsiteSale(
+      { ...base, payment_intent_id: 'pi_PSP123456789' },
+      { query: query as never, execute: execute as never },
+    );
+    const adyen = execute.mock.calls[0][1];
+    const stripe = execute.mock.calls[1][1];
+    expect(adyen).toMatchObject({
+      sourceScope: 'website_adyen_sale',
+      idempotencyKey: 'adyen:PSP123456789',
+    });
+    expect(stripe).toMatchObject({
+      sourceScope: 'website_stripe_sale',
+      idempotencyKey: 'pi_PSP123456789',
+    });
+    expect(adyen.commitmentKey).not.toBe(stripe.commitmentKey);
+    execute.mockClear();
+    await recordAcademyCapacityWebsiteSale(
+      {
+        ...base,
+        payment_provider: 'adyen',
+        provider_payment_id: 'PSP123456789',
+      },
+      { query: query as never, execute: execute as never },
+    );
+    expect(execute.mock.calls[0][1]).toMatchObject({
+      commitmentKey: adyen.commitmentKey,
+      idempotencyKey: adyen.idempotencyKey,
+      caseKey: adyen.caseKey,
+    });
+  });
 });

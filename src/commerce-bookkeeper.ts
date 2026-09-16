@@ -55,7 +55,7 @@ export interface CommerceBookkeeperEnvelope {
     purchaseRelationship: 'self' | 'other';
     cohort: null | {
       key: string;
-      program: 'pcc' | 'actc';
+      program: 'acc' | 'pcc' | 'actc';
       module: number;
       enrollmentScope: 'module' | 'full_program';
       start: string;
@@ -129,7 +129,7 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
     : [];
   const iso = /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/;
   if (
-    !['pcc', 'actc'].includes(program) ||
+    !['acc', 'pcc', 'actc'].includes(program) ||
     !Number.isInteger(module) ||
     module < 1 ||
     module > 4 ||
@@ -151,7 +151,7 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
   }
   return {
     key,
-    program: program as 'pcc' | 'actc',
+    program: program as 'acc' | 'pcc' | 'actc',
     module,
     enrollmentScope: scope as 'module' | 'full_program',
     start,

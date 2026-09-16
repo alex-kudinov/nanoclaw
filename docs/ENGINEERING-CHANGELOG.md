@@ -1,5 +1,35 @@
 # NanoClaw engineering changelog
 
+## 2026-09-15 — NC-20260915-005 provider-neutral ACC capacity commitments
+
+- Extends the existing signed Commerce Bookkeeper cohort envelope to canonical
+  ACC selections and reuses the owner-approved simple-sync Capacity path after
+  Payment Log, roster and PostgreSQL readback. No checkout hold or synchronous
+  NanoClaw dependency is reintroduced.
+- Existing Stripe identity remains the raw `pi_*`; Adyen uses the distinct
+  `adyen:<pspReference>` idempotency identity and
+  `website_adyen_sale` source scope. Only ACC Module 1, ACC Full and combined
+  Full consume the shared Module 1 pool; Modules 2-4 remain cohort-bearing but
+  outside that pool.
+- Migration 169 registers the four missing published Module 1 starts, four
+  12-seat pools and the existing three offer mappings. It creates no learner,
+  assignment, reservation, commitment, payment, message or access. Exact
+  reapply, empty rollback and conflict refusal are proven in disposable
+  PostgreSQL.
+- Missing mapping and full-pool outcomes remain explicit review results. The
+  host cannot acknowledge WordPress or post the Bookkeeper success receipt
+  before one applied/replayed Capacity commitment.
+- Focused payment/capacity proof passes 78/78 plus typecheck and formatting.
+  Full root proof passes 4,491 with 34 skips and three unchanged baseline
+  failures independently reproduced on the predecessor lineage: Capacity
+  disposable expired-hold expectation, CNPC source-wrapper literal, and the
+  date-sensitive Trafft freshness expectation.
+- Bounded Sonnet/high review found one material combined-program gap: the
+  brand-new-user path did not read back both groups. Tandem Commerce now fails
+  unless every snapshotted group is present in the existing durable pending-
+  enrollment queue; the result remains truthfully `invited` until activation.
+  The payment/status/idempotency/migration boundaries otherwise passed review.
+
 ## 2026-09-15 — NC-20260915-004 live-line credential Commerce integration
 
 - Exact production release `50905fc8522c11a55a9fca782280b862a017daa6`

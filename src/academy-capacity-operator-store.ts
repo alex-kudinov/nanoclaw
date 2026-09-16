@@ -37,6 +37,7 @@ export type CapacityOperatorCommand =
       expectedPoolVersion: number;
       sourceScope:
         | 'website_stripe_sale'
+        | 'website_adyen_sale'
         | 'invoice'
         | 'check'
         | 'sponsor'

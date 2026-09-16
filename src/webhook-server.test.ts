@@ -2,7 +2,12 @@ import crypto from 'crypto';
 import http from 'http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { WebhookServer, WebhookServerDeps } from './webhook-server.js';
+import {
+  commitCommerceCapacity,
+  WebhookServer,
+  WebhookServerDeps,
+} from './webhook-server.js';
+import type { CommerceBookkeeperEnvelope } from './commerce-bookkeeper.js';
 import { recordFailure, recordSuccess } from './circuit-breaker.js';
 import { WebhookDefinition } from './types.js';
 import { standardWebhookSigningPayload } from './adyen-webhook.js';
@@ -329,15 +334,15 @@ describe('WebhookServer', () => {
         eventCode: 'AUTHORISATION',
         eventDate: new Date().toISOString(),
         success: 'true',
-        amount: { value: 29900, currency: 'USD' },
+        amount: { value: 39900, currency: 'USD' },
         additionalData: { hmacSignature: 'native' },
       },
       order: {
         orderId: '20000000-0000-4000-8000-000000000002',
         merchantReference: 'TCA-ABC',
-        productId: 'mcq-program-a-foundations',
-        productName: 'Mentor Coaching Foundations (Program A)',
-        amountCents: 29900,
+        productId: 'acc-module-1',
+        productName: 'ACC Module 1: Coaching Fundamentals',
+        amountCents: 39900,
         currency: 'USD',
         purchaseRelationship: 'self',
         payer: {
@@ -349,6 +354,25 @@ describe('WebhookServer', () => {
           firstName: 'Alex',
           lastName: 'Buyer',
           email: 'buyer@example.test',
+        },
+        cohort: {
+          key: 'acc-m1-0123456789abcdef01234567',
+          program: 'acc',
+          module: 1,
+          enrollmentScope: 'module',
+          start: '2026-10-07T19:00:00-04:00',
+          end: '2026-10-28T21:00:00-04:00',
+          label: 'ACC Module 1',
+          range: 'Oct 7, 2026 - Oct 28, 2026',
+          time: '7:00 PM ET',
+          timezone: 'America/New_York',
+          sessions: [
+            '2026-10-07T19:00:00-04:00',
+            '2026-10-14T19:00:00-04:00',
+            '2026-10-21T19:00:00-04:00',
+            '2026-10-28T19:00:00-04:00',
+          ],
+          rosterValue: 'ACC Module 1 — Oct 7, 2026 - Oct 28, 2026',
         },
       },
     });
@@ -367,8 +391,23 @@ describe('WebhookServer', () => {
       postgresVerified: true,
       summary: 'recorded',
     }));
+    const recordCapacitySale = vi.fn(async () => ({
+      caseKey: 'website-sale:adyen:pool-v1',
+      commandType: 'commit_seat' as const,
+      state: 'applied' as const,
+      code: 'command_applied',
+      replayed: false,
+      resultSha256: 'f'.repeat(64),
+      summary: {},
+    }));
     deps = makeDeps({
-      commerceBookkeeper: { enabled: true, path, relaySecret, handle },
+      commerceBookkeeper: {
+        enabled: true,
+        path,
+        relaySecret,
+        handle,
+        recordCapacitySale,
+      },
       getRegisteredGroups: vi.fn(() => ({
         'slack:CONTADOR': {
           ...testGroup,
@@ -394,10 +433,19 @@ describe('WebhookServer', () => {
       deliveryId: '10000000-0000-4000-8000-000000000001',
     });
     expect(handle).toHaveBeenCalledOnce();
+    expect(recordCapacitySale).toHaveBeenCalledWith({
+      version: 1,
+      eligible: true,
+      payment_provider: 'adyen',
+      provider_payment_id: 'PSP123',
+      product_slug: 'acc-module-1',
+      cohort_program: 'acc',
+      cohort_start: '2026-10-07T19:00:00-04:00',
+    });
     expect(deps.sendMessage).toHaveBeenCalledOnce();
     expect(deps.sendMessage).toHaveBeenCalledWith(
       'slack:CONTADOR',
-      'recorded',
+      'recorded\nCapacity: committed and verified (command_applied; case website-sale:adyen:pool-v1)',
       { fromGroup: 'contador' },
     );
   });
@@ -474,6 +522,43 @@ describe('WebhookServer', () => {
     expect(response.status).toBe(503);
     expect(handle).toHaveBeenCalledOnce();
     expect(deps.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('surfaces capacity mapping and full-pool failures as bounded actionable review codes', async () => {
+    const envelope = {
+      notification: { pspReference: 'PSP-CAPACITY-1' },
+      order: {
+        productId: 'acc-full',
+        cohort: {
+          program: 'acc',
+          start: '2026-10-07T19:00:00-04:00',
+        },
+      },
+    } as unknown as CommerceBookkeeperEnvelope;
+    await expect(
+      commitCommerceCapacity(envelope, async () => {
+        throw new Error(
+          'academy-capacity-sale: exact pool/offer mapping not found',
+        );
+      }),
+    ).rejects.toMatchObject({
+      message: 'academy_capacity_mapping_unavailable',
+      statusCode: 409,
+    });
+    await expect(
+      commitCommerceCapacity(envelope, async () => ({
+        caseKey: 'website-sale:full',
+        commandType: 'commit_seat',
+        state: 'needs_review',
+        code: 'capacity_unavailable',
+        replayed: false,
+        resultSha256: 'a'.repeat(64),
+        summary: {},
+      })),
+    ).rejects.toMatchObject({
+      message: 'academy_capacity_capacity_unavailable',
+      statusCode: 409,
+    });
   });
 
   it('returns 503 for Adyen TEST when provider-native admission is not configured', async () => {
