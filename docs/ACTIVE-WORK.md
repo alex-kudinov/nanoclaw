@@ -1,5 +1,25 @@
 # NanoClaw active work
 
+2026-09-18T01:08Z — `NC-20260917-002` admit canonical ACC roster cohort
+identities, owner Codex with bounded Sonnet/high review, `validating`, C4,
+isolated branch `codex/acc-cohort-roster-translation-20260917` from exact live
+release `3972d9f545b333a5b565dd46208214a352e7f7e6`. Tandemweb will freeze ACC
+roster values as canonical `YYYY-MM` identifiers instead of display copy. The
+existing signed Bookkeeper validator must accept that exact ACC shape while
+retaining the current label-plus-range contract for PCC/ACTC; the Sheet writer
+remains byte-preserving and fill-only. No schema, route, process, worker, queue,
+scheduler, payment, provider, enrollment, access, customer message or broad
+roster rewrite. Next: implement the validator regression, run focused/full
+verification and bounded cross-repository review, then release Company OS
+before the two Tandemweb plugins and correct one guarded roster cell. The
+validator and webhook suites pass 72/72; it accepts `YYYY-MM` only for ACC and
+retains the prior PCC/ACTC display-value contract. Pinned typecheck and
+continuity pass; the full suite is 4,502 pass / 34 skip / four failures, with
+the payment-method race passing isolated and the other three exact known
+predecessor baselines. Bounded correctness review returned PASS; both LOW test
+hardening observations are mechanically closed. Next: commit, build and
+activate Company OS before Tandemweb release.
+
 2026-09-18T00:22Z — `NC-20260917-001` repair Adyen Commerce capacity
 commitments, owner Codex with bounded Sonnet/high review, `validating`, C4,
 isolated branch `codex/adyen-capacity-source-fix-20260917` from exact live

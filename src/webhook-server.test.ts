@@ -372,7 +372,7 @@ describe('WebhookServer', () => {
             '2026-10-21T19:00:00-04:00',
             '2026-10-28T19:00:00-04:00',
           ],
-          rosterValue: 'ACC Module 1 — Oct 7, 2026 - Oct 28, 2026',
+          rosterValue: '2026-10',
         },
       },
     });

@@ -177,11 +177,17 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       key: 'acc-m1-0123456789abcdef01234567',
       program: 'acc',
       label: 'ACC Module 1',
-      rosterValue: 'ACC Module 1 — Oct 7, 2026 - Oct 28, 2026',
+      rosterValue: '2026-10',
     });
     expect(
       prepareCommerceBookkeeperEnvelope(signed(acc)).order.cohort?.program,
     ).toBe('acc');
+    const accDisplayValue = structuredClone(acc);
+    (accDisplayValue.order.cohort as Record<string, unknown>).rosterValue =
+      'ACC Module 1 — Oct 7, 2026 - Oct 28, 2026';
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(accDisplayValue)),
+    ).toThrow(/order.cohort invalid/);
     const malformed = structuredClone(credential);
     (malformed.order.cohort as Record<string, unknown>).rosterValue =
       'browser supplied replacement';

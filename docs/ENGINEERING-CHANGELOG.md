@@ -1,5 +1,39 @@
 # NanoClaw engineering changelog
 
+## 2026-09-17 — NC-20260917-002 canonical ACC roster cohort identities
+
+- State: `validating`; source and focused verification are complete; full
+  verification, review, commit and release remain pending.
+- Change class: C4 because the existing post-payment Bookkeeper path writes the
+  student roster after signed payment truth.
+- Outcome: the signed Commerce envelope validator now requires the canonical
+  `YYYY-MM` roster identity for ACC while preserving the existing
+  label-plus-range contract for PCC and ACTC. The Sheet writer remains
+  unchanged, byte-preserving, fill-only and readback-gated.
+- Files: `src/commerce-bookkeeper.ts`, `src/commerce-bookkeeper.test.ts`,
+  `src/webhook-server.test.ts`, `docs/ACTIVE-WORK.md`, and this changelog.
+- Verification: pinned focused Bookkeeper/webhook suites pass 72/72; typecheck
+  and continuity pass. The full suite is 4,502 pass / 34 skip / four failures:
+  the payment-method concurrency case passes isolated and the remaining three
+  are the exact known predecessor Capacity, CNPC and date-sensitive Trafft
+  failures.
+- Independent review: bounded Sonnet/high session
+  `d79020be-f79b-4de4-82ea-acee207fa122` returned PASS. It found two LOW test
+  hardening gaps: four compatibility-map rows lacked direct assertions, and a
+  malformed explicit cohort token could fall through to the map. Both are now
+  mechanically closed; all six rows and malformed/mixed/conflicting/unknown
+  boundaries are direct tests, so no second review round is warranted. Usage:
+  six model calls, 138,473 cache-create, 544,709 cache-read and 18,576 output
+  tokens; maximum context 150,151 exceeded the bounded target and is recorded
+  as orchestration debt.
+- Topology: no schema, route, service, process, worker, queue, scheduler,
+  credential, provider call, payment, enrollment, access or customer-message
+  change.
+- Deployment: not committed or deployed. No Bookkeeper replay or roster write
+  has occurred.
+- Rollback: ordinary code rollback restores the old validation predicate;
+  existing payment, order and roster evidence is preserved.
+
 ## 2026-09-17 — NC-20260917-001 Adyen capacity commitment source repair
 
 - State: `validating`; source, focused/full verification and bounded review are
