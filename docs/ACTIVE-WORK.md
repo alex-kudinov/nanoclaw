@@ -13,9 +13,12 @@ route, worker, queue, scheduler, payment/provider call, customer message,
 manual capacity adjustment or new authority. Focused reducer/ingress tests pass
 21/21; pinned typecheck and continuity pass; the full suite passes 4,503 with
 the same three unrelated predecessor failures. Bounded Sonnet/high correctness
-review returned PASS with no material finding. Next: commit and push, build and
-activate an immutable release, then verify the two preserved WordPress
-Bookkeeper jobs complete with one capacity reservation each and no duplicate
+review returned PASS with no material finding. Exact release `44edb85d` was
+activated, but the first bounded retry exposed a second durable guard: both old
+denials are cached by the operator case key, so the corrected reducer was never
+re-entered. The ingress now versions only that case key while preserving the
+stable commitment and payment idempotency keys. Next: verify, amend the release,
+then retry the same two jobs and prove one reservation each with no duplicate
 payment or roster effects.
 
 2026-09-16T13:08Z — `NC-20260916-001` Commerce refund Bookkeeper projection,

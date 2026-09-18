@@ -96,9 +96,10 @@ export async function recordAcademyCapacityWebsiteSale(
     const poolVersion = Number(row.pool_version);
     result = await runtime.execute('capacity', {
       type: 'commit_seat',
-      // The version suffix keeps a stale optimistic attempt auditable while a
-      // fresh pool read can retry the same payment without replaying its denial.
-      caseKey: `website-sale:${identity}:pool-v${poolVersion}`,
+      // The contract version retires cached denials from the pre-Adyen-source
+      // reducer while the stable commitment/idempotency keys still prevent a
+      // second seat. The pool suffix separately handles optimistic races.
+      caseKey: `website-sale-v2:${identity}:pool-v${poolVersion}`,
       commitmentKey: `commitment:website:${identity}`,
       poolKey: row.pool_key,
       expectedPoolVersion: poolVersion,

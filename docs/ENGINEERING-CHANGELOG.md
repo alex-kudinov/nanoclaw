@@ -12,12 +12,19 @@
   core Capacity reducer allowlist contained only `website_stripe_sale` and
   non-website commitment sources. Two paid Adyen jobs therefore failed with
   `academy_capacity_invalid_commitment_source` after their earlier idempotent
-  projections completed.
+  projections completed. The first corrected live retry then proved those old
+  denials were replayed from the durable operator case before the reducer; both
+  cases remained denied and no reservation was written.
 - Outcome: the reducer now admits exactly `website_adyen_sale`; unknown sources
-  still throw `invalid_commitment_source`. No schema, topology, route, worker,
-  queue, scheduler, provider call, customer message or manual capacity change
-  is added.
+  still throw `invalid_commitment_source`. The ingress advances only its
+  operator-case contract key to `website-sale-v2`, retiring the two cached
+  denials while preserving stable commitment and provider-payment idempotency
+  keys, so an already-applied seat still cannot duplicate. No schema, topology,
+  route, worker, queue, scheduler, provider call, customer message or manual
+  capacity change is added.
 - Files: `src/academy-capacity.ts`, `src/academy-capacity.test.ts`,
+  `src/academy-capacity-sale-ingress.ts`,
+  `src/academy-capacity-sale-ingress.test.ts`,
   `docs/ACTIVE-WORK.md`, `docs/ENGINEERING-CHANGELOG.md`.
 - Verification: the real reducer plus ingress suite passes 21/21 under pinned
   Node 22.23.2; typecheck and documentation continuity pass. The full suite is
@@ -31,8 +38,11 @@
   2,355,022 cache-read and 8,580 output tokens; the oversized 218,146-token
   context and cache reread are recorded as an orchestration defect and no
   second round will be run.
-- Deployment: not yet committed or deployed. The existing WordPress jobs stay
-  retryable; no payment or manual replay has been initiated.
+- Deployment: commit `44edb85d` was built and activated as an immutable release
+  with exact health/Node/code-root verification and rollback to `eb8af47c`.
+  One bounded retry of the two existing jobs reproduced the cached-denial
+  boundary; both remain pending, no reservation was written and no payment was
+  initiated. A corrected release is pending.
 - Rollback/recovery: ordinary code rollback removes the new source admission;
   idempotent Bookkeeper retries preserve the already-complete payment, roster
   and PostgreSQL projections.

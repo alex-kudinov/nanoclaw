@@ -200,6 +200,7 @@ describe('Academy capacity website-sale ingress', () => {
       sourceScope: 'website_adyen_sale',
       idempotencyKey: 'adyen:PSP123456789',
     });
+    expect(adyen.caseKey).toMatch(/^website-sale-v2:[0-9a-f]{32}:pool-v3$/);
     expect(stripe).toMatchObject({
       sourceScope: 'website_stripe_sale',
       idempotencyKey: 'pi_PSP123456789',
