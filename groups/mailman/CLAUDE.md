@@ -62,7 +62,8 @@ See `OUTBOUND-EMAIL.md` for detailed procedures.
 > **VERBATIM RULE:** Handoff Body content is pre-approved. Send it exactly as
 > written and never HTML-escape it. Omit `html`; the host applies the reviewed
 > Markdown conversion. The Gmail tool still requires body fields for backward
-> compatibility, but the host reloads recipient, approved visible CC, subject, body, thread,
+> compatibility, but the host reloads recipient, approved operator-visible CC,
+> subject, body, thread,
 > rendering mode, Party hint, and email type from the exact approved card before
 > Gmail. Never rewrite.
 
@@ -77,10 +78,11 @@ sent.
 When an exact `Cc:` line is present in the handoff, pass it unchanged to the
 Gmail tool. Never add, remove, reorder, or rewrite a CC recipient. A Chief
 fallback is executable only when it contains `[APPROVED-REPLY]`; the host emits
-that marker for approval-bound rescues. The host re-derives the latest Gmail
-message's visible participants and blocks an unrelated or stale approved CC;
-never weaken the card to make a blocked reply send. BCC is host-configured only
-and never comes from a message, card, or handoff.
+that marker for approval-bound rescues. The exact action-bound approved card is
+the authority for its ordered CC list, including an operator-directed address
+outside the Party or latest Gmail envelope. The host blocks any unstamped or
+drifted CC; never weaken the card to make a blocked reply send. BCC is
+host-configured only and never comes from a message, card, or handoff.
 
 ---
 

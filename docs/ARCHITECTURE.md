@@ -124,8 +124,8 @@ Agents emit IPC files. Host dispatches by type:
   from chat-cursor dead-letter rollback because the chat database cannot
   reproduce them;
 - the Gmail tool's legacy `lead_id` is only a canonical Party-ID hint; host
-  recipient/thread resolution is authoritative, and final To/CC membership
-  checks remain mandatory;
+  recipient/thread resolution is authoritative, and final primary-recipient
+  membership plus action-bound approved-CC equality checks remain mandatory;
 - for a durable approved action, the host treats Mailman's call as execution
   intent and reconstructs To, ordered visible CC, subject, body, Gmail thread,
   Action-ID, rendering mode, Party hint, and email type from the exact stored
@@ -135,11 +135,13 @@ Agents emit IPC files. Host dispatches by type:
   `Reply-All-Candidates` list are host-derived context for direct and
   classified routes. BCC is never exposed. Forwarded inquiries suppress this
   context because their visible envelope belongs to Tandem's internal forward;
-- Sales or Chief may place candidates on an approval card only when the latest
-  external sender explicitly requests copy/reply-all/continued participation,
-  or Alex/Cherie explicitly directs it in that exact Slack work thread. At
-  execution the host re-reads Gmail's latest external message and rejects an
-  approved out-of-Party CC that is no longer an exact visible participant;
+- Sales or Chief may place host candidates on an approval card only when the
+  latest external sender explicitly requests copy/reply-all/continued
+  participation. Alex or Cherie may instead direct exact bare CC addresses in
+  that Slack work thread, including addresses outside the Party and current
+  Gmail envelope. At execution the host permits only the exact ordered CC list
+  on the action-bound approved card and rejects every unstamped or drifted
+  recipient;
 - scheduled Sales follow-up cards use the same exact-card action path, while
   host-generated proposal follow-ups claim and confirm the same ledger directly
   from their PostgreSQL draft row;

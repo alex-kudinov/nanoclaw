@@ -79,18 +79,16 @@ describe('Sales to Mailman approval contract', () => {
     );
   });
 
-  it('keeps Mailman verbatim and revalidates approved Cc against live Gmail evidence', () => {
+  it('keeps Mailman verbatim and binds approved Cc to the exact action', () => {
     expect(normalizedMailmanPrompt).toContain(
       'pass it unchanged to the Gmail tool',
     );
     expect(mailmanPrompt).toContain('never weaken the card');
     expect(mailmanProcedure).toContain('at most ten visible CC recipients');
     expect(normalizedMailmanProcedure).toContain(
-      "exact approved address is visible on Gmail's latest external message",
+      'exact action-bound approved card authorizes its CC list',
     );
-    expect(mailmanProcedure).toContain('Never supply BCC.');
-    expect(mailmanProcedure).toContain(
-      'latest-visible-thread-participant checks',
-    );
+    expect(normalizedMailmanProcedure).toContain('Never supply BCC.');
+    expect(mailmanProcedure).toContain('approved-CC equality checks');
   });
 });

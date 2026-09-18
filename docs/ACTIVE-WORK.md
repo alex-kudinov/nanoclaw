@@ -1,5 +1,32 @@
 # NanoClaw active work
 
+2026-09-18T12:35Z — `NC-20260918-001` honor exact owner-directed email CC
+recipients, owner Codex with fresh necessity and bounded Sonnet/high review,
+`ready_for_review`, C5, isolated branch `codex/owner-directed-cc-20260918` from exact
+live release `e5b309669b5073137a9da451298b49306d5f9d08`. Current observable result:
+an exact action-bound approved card may carry a CC, but Gmail blocks any
+out-of-Party address that is neither a configured mailbox nor visible on the
+latest external message; this rejected Alex's explicit instruction to copy
+`cherie@tandemcoach.co`. Required evidence remains exact human approval,
+immutable To/Cc/subject/body, one Action-ID, BCC prohibition, address/count
+validation, one-time execution, and Gmail receipt. Obligation delta: no schema,
+state, worker, queue, scheduler, external dependency, or second send path; the
+existing exact approved card/action becomes sufficient authority for its
+operator-visible CC list, while unapproved or drifted recipients remain blocked.
+Removing the exact-card/action match would reopen fabricated-recipient risk, so
+it remains mandatory. Next falsifiable proof: focused regressions must accept an
+exact action-approved off-thread CC on both send and reply, reject missing or
+drifted approval and BCC/duplicate/over-ten cards, then pass the email-critical
+gate, independent review, immutable release, and live health verification. S1
+necessity review returned `KEEP`; focused tests pass 121/121, typecheck passes,
+and the complete email-critical gate passes 808/808 plus runner 45/45. The full
+suite passes 4,508 with 34 skips and the same three predecessor Capacity, CNPC,
+and date-sensitive Trafft failures reproduced on the live base. State is
+`ready_for_review`. No customer email or synthetic external send is authorized
+as a canary. Strict-MCP bounded Sonnet/high implementation review returned
+`PASS` with no material finding; next is commit, push, immutable build,
+activation, and live health verification.
+
 2026-09-18T03:00Z — `NC-20260917-003` finite website installment contracts,
 owner Codex with bounded Sonnet/high review, `ready_for_review`, C4, isolated
 branch `codex/finite-installments-20260917` from exact live lineage `724a5a5c1`.
@@ -799,6 +826,44 @@ outside the current client conversation.
 | `NC-20260723-001` | Company-OS improvement plan                                                | Codex + Claude validator           | `codex/continuity-reconciliation` @ `157cb1b` | `ready_for_review`    | C1    | `docs/COMPANY-OS-IMPROVEMENT-PLAN.md`, project-map index                                                                                                                  | Complete the separately tracked NC-20260729-001 adversarial validation, reconcile the roadmap, then push; roadmap items remain proposed unless explicitly marked | 2026-07-29T12:23Z |
 
 ## Task details
+
+### NC-20260918-001
+
+- Trigger: Alex explicitly instructed Sales to copy
+  `cherie@tandemcoach.co` on Sai's custom-360 reply. The exact CC appeared on
+  the approved card, but the final recipient guard required Party membership,
+  configured-mailbox identity, or latest-inbound visibility and terminally
+  blocked the action before Gmail.
+- Minimum-sufficient gate: preserve the existing exact operator-visible card,
+  explicit approval, one Action-ID, stored/execution equality, BCC prohibition,
+  maximum ten unique bare CC addresses, primary-recipient Party/thread check,
+  content hash, one-time claim, and Gmail receipt. Add no schema, state, worker,
+  queue, scheduler, dependency, resolver, tool, or second send path.
+- Necessity review: fresh bounded Sonnet/high R2 returned `KEEP`. The largest
+  avoidable burden is any Party widening, name-to-address resolver, or CC
+  exception queue. The smallest path is to treat the existing exact
+  action-bound approved CC list as its recipient authority. The reviewer noted
+  only a non-blocking UX risk that an approver must notice an outside-Party
+  address; the card already exposes the exact `Cc:` line.
+- Implementation: `verifyAdditionalRecipients` accepts a deliverable CC list
+  only when execution order equals the host-rehydrated approved list. An
+  unapproved CC still requires Party membership. Reserved/malformed addresses,
+  drift, BCC, duplicates, primary-recipient reuse, and more than ten recipients
+  remain blocked. Sales accepts exact Alex/Cherie-directed bare addresses beyond
+  `Reply-All-Candidates` and forbids name-to-address inference; Mailman passes
+  only the exact card list.
+- Verification: Node 22.23.2 focused recipient/parser/execution/prompt suites
+  pass 121/121; typecheck passes; `test:email-critical` passes 808/808 plus the
+  independent runner's 45/45. The unrestricted suite passes 4,508 with 34
+  skips and three failures. The exact same Capacity, CNPC wrapper-literal, and
+  date-sensitive Trafft failures reproduce on the live base and do not touch
+  this change.
+- Current boundary: local source is `ready_for_review`. No email, Slack post,
+  approval/action mutation, database/provider write, deployment, restart, or
+  production configuration change has occurred. Strict-MCP bounded
+  Sonnet/high implementation review returned `PASS` with no material finding;
+  commit/push/build/verify/activate the exact release and prove live health.
+  Outcome validation waits for the next natural owner-directed CC action.
 
 ### NC-20260909-003
 

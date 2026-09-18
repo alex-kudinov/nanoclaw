@@ -244,19 +244,23 @@ describe('Sales request-first prompt contract', () => {
     );
   });
 
-  it('uses visible recipients as bounded context rather than automatic reply-all authority', () => {
-    expect(workflows).toContain('## Visible recipients and bounded reply-all');
+  it('uses visible recipients as bounded context and exact operator-directed CC authority', () => {
+    expect(workflows).toContain('## Visible recipients and owner-directed CC');
     expect(workflows).toContain('`Reply-All-Candidates` list');
     expect(workflows).toContain(
       'If no explicit intent exists, omit `Cc:` even when',
     );
     expect(workflows).toContain(
-      'must be a bare address from the host-supplied',
+      'use only the exact bare addresses they state in this work',
     );
+    expect(workflows).toContain(
+      'those addresses do not need to appear in `Reply-All-Candidates`',
+    );
+    expect(workflows).toContain('Never\nresolve a name to an address');
     expect(normalizedContract).toContain(
       'BCC is intentionally unavailable and must never be requested, inferred, or placed on a card.',
     );
-    expect(normalizedContractLower).toContain('never exceed ten cc recipients');
+    expect(normalizedContractLower).toContain('or exceed ten cc recipients');
     expect(role).toContain('carry it across EVERY round');
     expect(role).toContain(
       '`Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context`',

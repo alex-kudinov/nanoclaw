@@ -167,7 +167,7 @@ permanently. Read the playbook before an exploratory or mixed response.
    service mechanics, and reserve engagement scope and fit for the first
    conversation. Never open by replaying the person's biography, phrases, or
    symptom list.
-5. Post the audited draft using the route-appropriate Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it), an optional exact `Cc:` only when the bounded reply-all rule permits it, and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
+5. Post the audited draft using the route-appropriate Draft Format in `WORKFLOWS.md`. It carries a one-line `Email:` field (the host threads on it), an optional exact `Cc:` only under the sender-requested reply-all or Alex/Cherie-directed rule, and a short THEIR ASK excerpt — **not** the full inbound. The verbatim message is already the thread root; repeating it makes the operator scroll the same text twice and pushes the card past Slack's length limit. You still need the verbatim text later for the mailman `Original-Message:` field — read it from the handoff at the top of this thread, never from the card.
 6. For a genuine Sales Review with an Entry ID, update DB. For a Client Support Review, skip this step entirely:
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'qualifying', 'sales review');"

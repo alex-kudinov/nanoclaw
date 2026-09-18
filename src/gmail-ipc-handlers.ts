@@ -285,7 +285,6 @@ function verifyAdditionalRecipients(
   context: VerifiedPartyContext,
   opts: {
     approvedCc?: string;
-    approvedThreadParticipants?: ReadonlySet<string>;
   } = {},
 ): RecipientVerification {
   const recipients = splitRecipients(value).map(normalizeRecipient);
@@ -300,31 +299,30 @@ function verifyAdditionalRecipients(
       reason: 'CC rejected: execution recipients differ from the approved card',
     };
   }
-  const configuredInternal = configuredMailboxRecipients();
-  const approvedInternal = new Set(approved);
-  const approvedThreadParticipants = new Set(
-    [...(opts.approvedThreadParticipants ?? [])].map(normalizeRecipient),
-  );
+
+  // An Action-ID is minted only after a human approves one exact card, and the
+  // host rehydrates approvedCc from that card before this boundary. Once the
+  // execution list matches it exactly, the approval is the recipient authority:
+  // Alex or Cherie may deliberately copy someone who is not part of the lead's
+  // Party and was not visible on the inbound message. Validate deliverability
+  // again here, but do not replace explicit human authority with Party/header
+  // membership.
+  if (opts.approvedCc !== undefined) {
+    for (const recipient of recipients) {
+      const deliverable = checkRecipient(recipient, new Set([recipient]));
+      if (!deliverable.ok) {
+        return {
+          ok: false,
+          reason: `CC rejected: ${deliverable.reason}`,
+        };
+      }
+    }
+    return { ok: true, context };
+  }
+
   for (const recipient of recipients) {
     const check = checkRecipient(recipient, context.emails);
-    const participantShapeCheck = checkRecipient(
-      recipient,
-      new Set([recipient]),
-    );
-    if (
-      !check.ok &&
-      !(
-        opts.approvedCc !== undefined &&
-        approvedInternal.has(recipient) &&
-        configuredInternal.has(recipient)
-      ) &&
-      !(
-        opts.approvedCc !== undefined &&
-        approvedInternal.has(recipient) &&
-        approvedThreadParticipants.has(recipient) &&
-        participantShapeCheck.ok
-      )
-    ) {
+    if (!check.ok) {
       return {
         ok: false,
         reason: `CC rejected: ${check.reason}`,
@@ -452,7 +450,7 @@ export async function handleGmailReply(
       html: data.html,
       cc: data.cc,
       recipientOverride: GMAIL_TEST_RECIPIENT || undefined,
-      prepareSend: async ({ to, cc, visibleReplyAllCandidates }) => {
+      prepareSend: async ({ to, cc }) => {
         if (
           data.approvedRecipient &&
           normalizeRecipient(to) !== normalizeRecipient(data.approvedRecipient)
@@ -482,10 +480,6 @@ export async function handleGmailReply(
         }
         const ccCheck = verifyAdditionalRecipients(cc, verification.context, {
           approvedCc: data.actionId ? data.approvedCc : undefined,
-          approvedThreadParticipants:
-            data.actionId && data.approvedCc
-              ? new Set(visibleReplyAllCandidates)
-              : undefined,
         });
         if (!ccCheck.ok) {
           throw new RecipientPolicyError(

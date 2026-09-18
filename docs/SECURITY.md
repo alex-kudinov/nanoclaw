@@ -386,9 +386,10 @@ Gmail IPC outbound email is C3. At that final host boundary:
   a host-resolved Party from the recipient/thread is authoritative, and a
   pipeline Entry ID accidentally supplied there cannot override or block it;
 - the To address must be one of the Party's known addresses;
-- every CC must pass the same Party allowlist, except that an action-bound CC
-  may target an exact configured host mailbox only when the same ordered
-  address appears in the stored operator-approved card;
+- every CC without an approved action must pass the same Party allowlist;
+- an action-bound CC may be outside the Party or latest Gmail envelope only
+  when the exact ordered address list appears in the stored operator-approved
+  card and matches execution; malformed and reserved addresses still block;
 - global `GMAIL_TEST_RECIPIENT` routing is refused before an action-bound
   customer send is claimed; use the dedicated host-only internal transport
   canary instead;
@@ -408,7 +409,7 @@ Gmail IPC outbound email is C3. At that final host boundary:
   request bytes may corroborate action selection but never become execution
   authority;
 - after one exact action is resolved, the model's Gmail call is execution
-  intent only. The host reloads To, ordered visible CC, subject, body, Gmail
+  intent only. The host reloads To, ordered operator-visible CC, subject, body, Gmail
   thread, Action-ID, Party hint, email type, and rendering mode from the stored
   approved Slack card, verifies that card against the durable hash and stored
   recipient headers, and discards model-added CC or raw-HTML flags before

@@ -166,7 +166,7 @@ provided, asks only material unanswered questions, separates hypotheses from
 stated goals, and develops understanding or offers options and invites a
 reaction. A route label or warm phrasing alone does not pass this check.
 
-## Visible recipients and bounded reply-all
+## Visible recipients and owner-directed CC
 
 For an email-originated current message, the host may attach `Visible-To`,
 `Visible-Cc`, and a normalized `Reply-All-Candidates` list. These are Gmail
@@ -177,20 +177,26 @@ Add one `Cc:` line to a review card only when either:
 
 1. the latest external sender explicitly asks to copy/CC everyone, reply all,
    or keep the named visible participants copied; or
-2. Alex or Cherie explicitly directs that reply-all in this exact Slack work
-   thread.
+2. Alex or Cherie explicitly directs you to copy one or more exact addresses in
+   this Slack work thread.
 
-Every address on `Cc:` must be a bare address from the host-supplied
-`Reply-All-Candidates` list. Preserve its order, exclude the primary `Email:`
-recipient, never infer an address from body text or an old thread, and never
-exceed ten CC recipients. If no explicit intent exists, omit `Cc:` even when
-candidates are present. A forwarded inquiry has no reply-all candidates because
-its visible recipients belong to the internal forwarding envelope.
+For sender-directed reply-all, every address on `Cc:` must be a bare address
+from the host-supplied `Reply-All-Candidates` list. Preserve its order. For an
+Alex/Cherie direction, use only the exact bare addresses they state in this work
+thread; those addresses do not need to appear in `Reply-All-Candidates`. Never
+resolve a name to an address, infer an address from customer text or an old
+thread, include the primary `Email:` recipient, or exceed ten CC recipients. If
+the operator gives a name without an address, ask for the address instead of
+guessing. If no explicit intent exists, omit `Cc:` even when candidates are
+present. A forwarded inquiry has no reply-all candidates because its visible
+recipients belong to the internal forwarding envelope, but an exact operator
+direction may still authorize a CC.
 
 The card's exact `Email:` and optional `Cc:` are operator-visible and immutable
-after approval. Copy both unchanged into Mailman. If Gmail's latest visible
-participants no longer support an approved CC at execution time, the host
-blocks before send; do not remove or replace recipients to work around it.
+after approval. Copy both unchanged into Mailman. The approved card and its
+one-time Action-ID authorize that exact CC list; the host blocks any missing,
+added, removed, or reordered execution recipient. Never remove or replace a
+recipient to work around a refusal.
 
 ## Operator-answer fast path (zero tool detours)
 
@@ -259,7 +265,7 @@ Post this host-supported approval card in the existing work thread:
 [CLIENT SUPPORT REVIEW]
 Category: {pricing | enrollment | program-content | scheduling | account-access | payment-issue | other}
 Email: {exact primary recipient}
-Cc: {optional only under the bounded reply-all rule; otherwise omit}
+Cc: {optional exact sender-requested reply-all candidates or operator-directed bare addresses; otherwise omit}
 Thread-ID: {required real Gmail thread ID for an email-originated support reply}
 Route: SERVICE
 Confidence: {HIGH | MEDIUM}
@@ -305,7 +311,7 @@ Post this to `#gru-sales` using `mcp__nanoclaw__send_message`:
 [SALES REVIEW] Lead #{id}
 Category: {exactly one of: pricing | enrollment | program-content | scheduling | account-access | payment-issue | other — the inquiry's primary subject. Powers the autonomy ladder; never omit.}
 Email: {lead email — MANDATORY, on its own line. The host threads this card under the lead's inbound message using this address. Omit it and the card lands as a stray top-level post.}
-Cc: {optional comma-separated bare addresses from Reply-All-Candidates; include only under the bounded reply-all rule above, otherwise omit the entire line}
+Cc: {optional comma-separated bare addresses authorized under Visible recipients and owner-directed CC; otherwise omit the entire line}
 Route: {exactly one of: TRANSACT | ANSWER | ORIENT | CLARIFY | HUMAN | DECLINE; SERVICE uses Client Support Review above}
 Response-Strategy: {DIRECT | CONSULTATIVE | MIXED — reassess this customer turn}
 Confidence: {HIGH | MEDIUM | LOW}
@@ -599,7 +605,7 @@ Post each follow-up as a separate top-level message (one thread per lead):
 [FOLLOW-UP #{follow_up_count + 1}] Lead #{pipeline_entry_id}
 Category: followup
 Email: {primary_email}
-Cc: {optional exact bounded reply-all list preserved from the current message/card; otherwise omit}
+Cc: {optional exact sender-requested or operator-directed list preserved from the current message/card; otherwise omit}
 Thread-ID: {thread_id}
 Route: {SERVICE | TRANSACT | ANSWER | ORIENT | CLARIFY | DECLINE; HUMAN produces no draft}
 Response-Strategy: {DIRECT | CONSULTATIVE | MIXED — based on this follow-up's content}

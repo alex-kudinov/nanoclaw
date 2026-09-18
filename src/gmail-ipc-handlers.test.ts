@@ -769,10 +769,9 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(logOutboundEmailInteraction).toHaveBeenCalled();
   });
 
-  it('blocks an approved CC that is neither party-related nor visible on the latest message', async () => {
+  it('allows an exact operator-approved CC that is neither party-related nor visible on the latest message', async () => {
     businessState.emails = new Set(['sender@external.com']);
     visibleReplyAllCandidates = ['actual-colleague@external.com'];
-    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
 
     await handleGmailReply(
       makePayload({
@@ -780,14 +779,47 @@ describe('recipient guard (tina@example.com incident)', () => {
         threadId: 'thread-abc',
         actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
         approvedRecipient: 'sender@external.com',
-        cc: 'invented-colleague@external.com',
-        approvedCc: 'invented-colleague@external.com',
+        cc: 'owner-directed-colleague@external.com',
+        approvedCc: 'owner-directed-colleague@external.com',
+      }),
+    );
+
+    expect(replyToThread).toHaveBeenCalledTimes(1);
+    expect(logOutboundEmailInteraction).toHaveBeenCalled();
+  });
+
+  it('allows an exact operator-approved CC on a standalone send without Party membership', async () => {
+    businessState.emails = new Set(['prospect@external.com']);
+
+    await handleGmailSend(
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        cc: 'cherie@tandemcoach.co',
+        approvedCc: 'cherie@tandemcoach.co',
+      }),
+    );
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ cc: 'cherie@tandemcoach.co' }),
+    );
+  });
+
+  it('still blocks a reserved address even when it matches the approved CC', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailSend(
+      makePayload({
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        cc: 'copied@example.com',
+        approvedCc: 'copied@example.com',
       }),
       postToChief,
     );
 
-    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
-    expect(postToChief.mock.calls[0][0]).toMatch(/EMAIL BLOCKED.*CC rejected/);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toMatch(
+      /EMAIL BLOCKED.*reserved\/placeholder domain/,
+    );
   });
 
   it('allows a configured internal CC only when the exact action-bound card approved it', async () => {

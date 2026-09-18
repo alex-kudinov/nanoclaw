@@ -1,5 +1,39 @@
 # NanoClaw engineering changelog
 
+## 2026-09-18 — NC-20260918-001 owner-directed approved CC authority
+
+- State: `ready_for_review`; implementation and local verification are complete.
+- Change class: C5 because the change adjusts the final recipient/privacy trust
+  boundary for approved customer email.
+- Trigger: an exact approved reply carrying Alex's explicit
+  `Cc: cherie@tandemcoach.co` instruction was blocked before Gmail because the
+  CC was outside the customer's Party, configured sender mailboxes, and latest
+  visible inbound recipients.
+- Outcome: the existing action-bound human-approved card now authorizes its
+  exact ordered CC list for both sends and replies. Unapproved CC continues to
+  require Party membership. Primary To/Party/thread checks, exact content and
+  recipient rehydration, BCC prohibition, uniqueness/count limits, reserved
+  address rejection, one-time execution, and Gmail-confirmed receipts remain.
+- Topology: no schema, migration, durable field, worker, queue, scheduler,
+  dependency, address resolver, tool, or second send path. Names are never
+  resolved to addresses; Alex/Cherie must state exact bare addresses.
+- Verification: focused recipient/parser/execution/prompt suites pass 121/121;
+  pinned typecheck passes; the email-critical gate passes 808/808 plus runner
+  45/45. The full suite passes 4,508 with 34 skips and the same three unrelated
+  predecessor Capacity, CNPC and date-sensitive Trafft failures reproduced on
+  exact live base `e5b30966`.
+- Independent review: the pre-implementation necessity round returned `KEEP`.
+  Strict-MCP bounded Sonnet/high implementation review session
+  `c752f807-17a6-4519-9eb6-20c51bbde7eb` returned `PASS` with no material
+  finding. It verified card-time address closure, approval/execution CC
+  equality, action-only authority, reserved-address rejection, unchanged
+  primary alias scope, host rehydration, and test-routing CC removal. Usage:
+  ten model calls, 137,403 cache-create, 307,136 cache-read, 19,693 output
+  tokens.
+- Deployment: not yet committed or deployed. No customer email or synthetic
+  external canary was sent; natural owner-directed CC is the outcome gate after
+  activation.
+
 ## 2026-09-17 — NC-20260917-003 finite website installment contracts
 
 - State: `ready_for_review`; default-off source and focused verification are complete.

@@ -1267,7 +1267,7 @@ Current local schema contains:
 - `jobs` and `job_run_logs` — host job definitions/history;
 - `email_tracking` — outbound email metadata;
 - `pending_sends` — durable approved-email actions: host action ID, approval
-  thread, normalized To and ordered visible CC recipients, approved
+  thread, normalized To and ordered operator-visible CC recipients, approved
   subject/body hash, current execution state, Gmail receipt, and visible
   failure state. Deployed NC-20260820-003 adds only the exact inbound source
   Gmail message ID so a Company Work-bound Chief read can be re-authorized
@@ -1993,15 +1993,15 @@ IDs such as `985` from blocking an exact approved action for Party `11152`.
 
 For an exact approved action, Mailman's Gmail payload is now execution intent,
 not content authority. The host reloads the approved Slack card by its durable
-`draft_ts`/channel binding, re-parses To, ordered visible CC, subject, and body,
+`draft_ts`/channel binding, re-parses To, ordered operator-visible CC, subject, and body,
 verifies the stored hash and recipient headers, and replaces model-supplied
 recipient, CC, subject, body, thread, Action-ID, Party hint, email type, and
 rendering flags before the one-time claim. Model-added CC and raw-HTML flags are
 discarded; an approved CC is restored only from the action-bound card. A CC
-that is not on the customer Party may pass on a reply only when it exactly
-matches the card and is still visible on Gmail's latest external message at
-execution time; configured internal mailbox identities remain separately
-allowed. Exact `[FOLLOW-UP #N]` cards now enter
+that is not on the customer Party or Gmail's latest external message may pass
+only when the exact ordered list matches the action-bound approved card.
+Unapproved CC continues to require Party membership. Exact `[FOLLOW-UP #N]`
+cards now enter
 this same path and require `Email`, `Thread-ID`, fenced `Subject`, and fenced
 body fields. Host-generated proposal follow-ups use their PostgreSQL draft row
 as approval authority and the same one-time action/receipt ledger, preventing a
@@ -2148,11 +2148,12 @@ Chief. Candidates exclude the primary recipient, duplicates, configured
 send-as/reply-to/BCC mailboxes, and are capped at ten. BCC is never exposed.
 Forwarded inquiries suppress the visible-recipient context because their
 envelope is the internal forward rather than the external conversation. The
-minion may propose a CC only from that list and only on explicit latest-sender
-or exact-thread operator intent; the exact operator-visible `Cc:` line is
-immutable after approval. Gmail is re-read at execution and must still show
-each out-of-Party approved address on the latest external message. Unapproved,
-invented, stale, standalone, and more-than-ten recipient paths remain blocked.
+minion may propose reply-all CC only from that list and on explicit
+latest-sender intent. Alex or Cherie may instead direct exact bare addresses in
+the work thread; no name-to-address inference is allowed. The exact
+operator-visible `Cc:` line is immutable after approval and the one-time action
+authorizes only that ordered list. Unapproved, drifted, malformed, reserved,
+duplicate, primary-recipient, and more-than-ten CC paths remain blocked.
 
 ## 12. Integrations
 
