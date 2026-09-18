@@ -2,7 +2,9 @@
 
 ## 2026-09-18 — NC-20260918-001 owner-directed approved CC authority
 
-- State: `ready_for_review`; implementation and local verification are complete.
+- State: `deployed_unverified`; implementation, review, immutable release, and
+  live runtime verification are complete. Natural owner-directed CC outcome
+  evidence remains pending.
 - Change class: C5 because the change adjusts the final recipient/privacy trust
   boundary for approved customer email.
 - Trigger: an exact approved reply carrying Alex's explicit
@@ -30,9 +32,28 @@
   primary alias scope, host rehydration, and test-routing CC removal. Usage:
   ten model calls, 137,403 cache-create, 307,136 cache-read, 19,693 output
   tokens.
-- Deployment: not yet committed or deployed. No customer email or synthetic
-  external canary was sent; natural owner-directed CC is the outcome gate after
-  activation.
+- Release: commit `610a5db953d959ddc74695195955d5c42f86f6fb`, source tree
+  `bc32fbf803327af5b3fa33731faa38373f4bf70a`, artifact hash
+  `320c7f2a806b912bcf3c6c196de4a0bcf3cb5a3de97d834a99f32922490a2c9e`,
+  1,404 files, archive hash
+  `766ccd3cafca40a4d914de662f47a2d9c977035f96f81b79d39eaf3ba02fe5df`.
+  Independent local extraction and Mini verification agree.
+- Prompt activation: operational Sales/Mailman instructions matched the prior
+  live release before deployment, were backed up under
+  `NC-20260918-001-20260918T1752Z`, installed from the verified target release,
+  and byte-match it at hashes `41df21a8`, `c4ace9bd`, `7d3821ac`, and
+  `94721feb`.
+- Activation/live proof: the guarded activator changed only code root, expected
+  commit, and executable; rollback plist
+  `com.nanoclaw.plist.rollback-e5b309669b50-2026-09-18T17-53-05-153Z` is
+  retained. PID 98917 is the sole listener and reports exact verified release
+  `610a5db9`, matching code root and Node 22.23.2. Gmail/Slack are connected,
+  Slack outgoing depth and active/waiting work are zero, no circuit breaker is
+  open, and active approved-send states are zero.
+- Outcome boundary: no customer email, Slack post, action mutation, or synthetic
+  external canary occurred. The blocked Sai action was not reused. The next
+  natural exact owner-directed CC plus Gmail-confirmed receipt closes outcome
+  validation.
 
 ## 2026-09-17 — NC-20260917-003 finite website installment contracts
 

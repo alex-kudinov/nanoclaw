@@ -2,7 +2,7 @@
 
 2026-09-18T12:35Z — `NC-20260918-001` honor exact owner-directed email CC
 recipients, owner Codex with fresh necessity and bounded Sonnet/high review,
-`ready_for_review`, C5, isolated branch `codex/owner-directed-cc-20260918` from exact
+`deployed_unverified`, C5, isolated branch `codex/owner-directed-cc-20260918` from exact
 live release `e5b309669b5073137a9da451298b49306d5f9d08`. Current observable result:
 an exact action-bound approved card may carry a CC, but Gmail blocks any
 out-of-Party address that is neither a configured mailbox nor visible on the
@@ -24,8 +24,10 @@ suite passes 4,508 with 34 skips and the same three predecessor Capacity, CNPC,
 and date-sensitive Trafft failures reproduced on the live base. State is
 `ready_for_review`. No customer email or synthetic external send is authorized
 as a canary. Strict-MCP bounded Sonnet/high implementation review returned
-`PASS` with no material finding; next is commit, push, immutable build,
-activation, and live health verification.
+`PASS` with no material finding. Immutable release `610a5db953d9` is live on
+the Mini with exact verified code root, Node 22.23.2, one listener, connected
+Gmail/Slack, empty queues/actions, and four operational prompt hashes matching
+the release. Natural owner-directed CC remains the outcome-validation gate.
 
 2026-09-18T03:00Z — `NC-20260917-003` finite website installment contracts,
 owner Codex with bounded Sonnet/high review, `ready_for_review`, C4, isolated
@@ -858,12 +860,24 @@ outside the current client conversation.
   skips and three failures. The exact same Capacity, CNPC wrapper-literal, and
   date-sensitive Trafft failures reproduce on the live base and do not touch
   this change.
-- Current boundary: local source is `ready_for_review`. No email, Slack post,
-  approval/action mutation, database/provider write, deployment, restart, or
-  production configuration change has occurred. Strict-MCP bounded
-  Sonnet/high implementation review returned `PASS` with no material finding;
-  commit/push/build/verify/activate the exact release and prove live health.
-  Outcome validation waits for the next natural owner-directed CC action.
+- Release: commit `610a5db953d959ddc74695195955d5c42f86f6fb`, source tree
+  `bc32fbf803327af5b3fa33731faa38373f4bf70a`, artifact hash
+  `320c7f2a806b912bcf3c6c196de4a0bcf3cb5a3de97d834a99f32922490a2c9e`,
+  1,404 files, archive hash
+  `766ccd3cafca40a4d914de662f47a2d9c977035f96f81b79d39eaf3ba02fe5df`.
+  Local and Mini verification agree. The activator changed only the three
+  release pointers and retained rollback plist
+  `com.nanoclaw.plist.rollback-e5b309669b50-2026-09-18T17-53-05-153Z`.
+- Live verification: PID 98917 is the sole `:8088` listener and reports exact
+  verified release `610a5db9`, matching code root and Node 22.23.2. Gmail and
+  Slack are connected, Slack outgoing depth is zero, no circuit breaker is
+  open, active/waiting work is zero, and active approved-send states are zero.
+  Reviewed Sales/Mailman prompts were backed up under
+  `NC-20260918-001-20260918T1752Z` and byte-match the release after install.
+- Current boundary: runtime is live-verified; state remains
+  `deployed_unverified` until the next natural owner-directed CC action receives
+  one Gmail-confirmed receipt. No email, Slack post, approval/action mutation,
+  database/provider write, or synthetic external canary occurred in this task.
 
 ### NC-20260909-003
 
