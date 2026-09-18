@@ -218,6 +218,33 @@ const commerceBookkeeperEnv = readEnvFile([
   'TANDEM_COMMERCE_BOOKKEEPER_PATH',
   'TANDEM_COMMERCE_BOOKKEEPER_KEY',
 ]);
+const finiteBillingEnv = readEnvFile([
+  'FINITE_BILLING_ENABLED',
+  'FINITE_BILLING_RELAY_PATH',
+  'FINITE_BILLING_RELAY_SECRET',
+]);
+export const FINITE_BILLING_ENABLED =
+  (process.env.FINITE_BILLING_ENABLED ||
+    finiteBillingEnv.FINITE_BILLING_ENABLED ||
+    '') === 'true';
+export const FINITE_BILLING_RELAY_PATH =
+  process.env.FINITE_BILLING_RELAY_PATH ||
+  finiteBillingEnv.FINITE_BILLING_RELAY_PATH ||
+  '';
+export const FINITE_BILLING_RELAY_SECRET =
+  process.env.FINITE_BILLING_RELAY_SECRET ||
+  finiteBillingEnv.FINITE_BILLING_RELAY_SECRET ||
+  '';
+if (
+  FINITE_BILLING_RELAY_PATH &&
+  !/^\/hook\/[A-Za-z0-9._-]{16,200}$/.test(FINITE_BILLING_RELAY_PATH)
+)
+  throw new Error('FINITE_BILLING_RELAY_PATH is invalid');
+if (
+  FINITE_BILLING_ENABLED &&
+  (FINITE_BILLING_RELAY_PATH === '' || FINITE_BILLING_RELAY_SECRET.length < 32)
+)
+  throw new Error('Finite billing configuration is incomplete');
 export const TANDEM_COMMERCE_BOOKKEEPER_PATH =
   process.env.TANDEM_COMMERCE_BOOKKEEPER_PATH ||
   commerceBookkeeperEnv.TANDEM_COMMERCE_BOOKKEEPER_PATH ||

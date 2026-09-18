@@ -100,6 +100,10 @@ import {
   type CommerceBookkeeperResult,
 } from './commerce-bookkeeper.js';
 import {
+  verifyFiniteBillingRelay,
+  type FiniteBillingRelay,
+} from './finite-billing.js';
+import {
   recordAcademyCapacityWebsiteSale,
   type AcademyCapacitySaleFact,
 } from './academy-capacity-sale-ingress.js';
@@ -215,6 +219,14 @@ export interface WebhookServerDeps {
     recordCapacitySale?: (
       fact: AcademyCapacitySaleFact,
     ) => ReturnType<typeof recordAcademyCapacityWebsiteSale>;
+  };
+  finiteBilling?: {
+    enabled: boolean;
+    path: string;
+    relaySecret: string;
+    accept: (
+      input: FiniteBillingRelay,
+    ) => Promise<{ contractId: string; replay: boolean }>;
   };
   // Phase 1 webhook reliability — envelope archive + dispatch tracking.
   // When provided, every accepted /hook/:id request is recorded in
@@ -911,6 +923,53 @@ export class WebhookServer {
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    const finiteBilling = this.deps.finiteBilling;
+    if (
+      req.method === 'POST' &&
+      finiteBilling?.enabled === true &&
+      req.url?.split('?')[0] === finiteBilling.path
+    ) {
+      let rawBody: Buffer;
+      try {
+        rawBody = await readBodyBounded(req, 64 * 1024);
+      } catch (error) {
+        res.writeHead(error instanceof RequestBodyTooLargeError ? 413 : 400, {
+          'Content-Type': 'application/json',
+        });
+        res.end(JSON.stringify({ error: 'request rejected' }));
+        return;
+      }
+      try {
+        const activation = verifyFiniteBillingRelay({
+          rawBody,
+          signature: req.headers['x-tandem-commerce-billing-signature'],
+          secret: finiteBilling.relaySecret,
+        });
+        const result = await finiteBilling.accept(activation);
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(
+          JSON.stringify({
+            accepted: true,
+            contractId: result.contractId,
+            replay: result.replay,
+          }),
+        );
+      } catch (error) {
+        logger.warn(
+          { error: error instanceof Error ? error.message : 'unknown' },
+          'Finite billing activation rejected',
+        );
+        res.writeHead(error instanceof SyntaxError ? 400 : 422, {
+          'Content-Type': 'application/json',
+        });
+        res.end(JSON.stringify({ error: 'activation rejected' }));
+      }
       return;
     }
 

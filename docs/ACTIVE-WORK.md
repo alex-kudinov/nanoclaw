@@ -1,5 +1,19 @@
 # NanoClaw active work
 
+2026-09-18T03:00Z — `NC-20260917-003` finite website installment contracts,
+owner Codex with bounded Sonnet/high review, `ready_for_review`, C4, isolated
+branch `codex/finite-installments-20260917` from exact live lineage `724a5a5c1`.
+Add default-off host-owned finite contracts, exactly N obligations, one
+attempt per obligation, earliest-unpaid due claiming, durable ambiguous
+dispatch state, and one recovery-required record after a definite rejection.
+Commerce retains the provider token and dispatch adapter; Company OS never
+receives a usable token. Focused finite-billing and webhook suites pass 66/66,
+pinned typecheck passes, and bounded review found one material schema omission
+for `dispatch_unknown`; it is corrected with a regression assertion. No
+Production flag, credential, migration, schedule loop, provider request,
+payment, invoice send or customer message has occurred. Next: commit both
+source branches, run release reconciliation, and deploy default-off source only.
+
 2026-09-18T01:38Z — `NC-20260917-002` admit canonical ACC roster cohort
 identities, owner Codex with bounded Sonnet/high review, `complete`, C4,
 isolated branch `codex/acc-cohort-roster-translation-20260917` from exact live

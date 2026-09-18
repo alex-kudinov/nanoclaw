@@ -1,5 +1,15 @@
 # NanoClaw engineering changelog
 
+## 2026-09-17 — NC-20260917-003 finite website installment contracts
+
+- State: `ready_for_review`; default-off source and focused verification are complete.
+- Change class: C4 because the dormant path can initiate future stored-method payments when separately configured and enabled.
+- Outcome: migration 171 adds a host-owned finite contract, explicit obligation, one-attempt, append-only receipt and recovery-required model. `src/finite-billing.ts` validates signed activation facts, preserves no-N+1 and earliest-unpaid ordering, records ambiguous dispatch durably, and exposes one deterministic sweep callable without registering a standing schedule.
+- Boundaries: no usable provider token enters Company OS; no automatic retry, customer send, custom schedule, open-ended renewal, Production enablement or due-date override exists.
+- Verification: focused finite-billing plus webhook suites pass 66/66; pinned typecheck and diff checks pass. Commerce companion verification is recorded in the Peri program evidence.
+- Independent review: one Sonnet/high round found one material mismatch between the application `dispatch_unknown` state and the PostgreSQL CHECK. Migration 171 now admits that blocked state and the focused test asserts it; no re-review is needed for the mechanical correction.
+- Deployment/migration: not yet applied. Rollback is runtime disablement; the rollback migration refuses destructive deletion of financial evidence.
+
 ## 2026-09-17 — NC-20260917-002 canonical ACC roster cohort identities
 
 - State: `complete`; source, verification, review, immutable release, live

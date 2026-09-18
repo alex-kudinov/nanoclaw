@@ -41,6 +41,9 @@ import {
   STUDENT_LIFECYCLE_WEBHOOK_PATH,
   TANDEM_COMMERCE_BOOKKEEPER_KEY,
   TANDEM_COMMERCE_BOOKKEEPER_PATH,
+  FINITE_BILLING_ENABLED,
+  FINITE_BILLING_RELAY_PATH,
+  FINITE_BILLING_RELAY_SECRET,
   TANDEM_IDENTITY_GATEWAY_AUDIENCE,
   TANDEM_IDENTITY_GATEWAY_CALLER_EMAIL,
   TANDEM_IDENTITY_GATEWAY_CALLER_SUBJECT,
@@ -164,6 +167,7 @@ import {
   lookupLoginToolsBindingWithClient,
 } from './identity-control-plane/login-tools-gateway.js';
 import { handleCommerceBookkeeper } from './commerce-bookkeeper.js';
+import { FiniteBillingStore } from './finite-billing.js';
 import {
   archiveWebhook as archiveWebhookImpl,
   markDispatched as markDispatchedImpl,
@@ -2295,6 +2299,15 @@ async function main(): Promise<void> {
       path: TANDEM_COMMERCE_BOOKKEEPER_PATH,
       relaySecret: TANDEM_COMMERCE_BOOKKEEPER_KEY,
       handle: handleCommerceBookkeeper,
+    },
+    finiteBilling: {
+      enabled: FINITE_BILLING_ENABLED,
+      path: FINITE_BILLING_RELAY_PATH,
+      relaySecret: FINITE_BILLING_RELAY_SECRET,
+      accept: (input) =>
+        new FiniteBillingStore((work) =>
+          withAgentContext('finite-billing', work),
+        ).accept(input),
     },
     heartbeatPath,
     getRegisteredGroups: () => registeredGroups,
