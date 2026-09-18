@@ -2,8 +2,8 @@
 
 ## 2026-09-17 — NC-20260917-001 Adyen capacity commitment source repair
 
-- State: `validating`; source, focused/full verification and bounded review are
-  complete; commit and production release remain pending.
+- State: `complete`; source, verification, review, two bounded release steps
+  and exact live recovery readback are complete.
 - Change class: C4 because the existing asynchronous post-payment Bookkeeper
   path commits a paid learner seat after payment, roster and PostgreSQL
   projection readback.
@@ -42,7 +42,18 @@
   with exact health/Node/code-root verification and rollback to `eb8af47c`.
   One bounded retry of the two existing jobs reproduced the cached-denial
   boundary; both remain pending, no reservation was written and no payment was
-  initiated. A corrected release is pending.
+  initiated. Correction commit `3972d9f5` then built archive SHA-256
+  `52f333cc5e1b704042e018868d3f9736e8674bdd61684797cf33aa5b1d359a0c`,
+  verified and activated with rollback to `44edb85d`. Health reports exact
+  release/code-root, Node 22.23.2, connected Gmail/Slack and empty runtime
+  queues.
+- Live outcome: WordPress jobs `a38fb4a0-d4d5-48ea-867a-5adeb1f9158e` and
+  `b84584d1-8ad5-4566-ba50-42e65f242879` are complete with
+  `projected_notified`. PostgreSQL has exactly one commitment for each
+  `adyen:QQ4T5SJMQ5FDH9H6` and `adyen:FC87J426P8SR4LG6`, both with channel
+  `commitment`, source `website_adyen_sale`, state `held`, and exactly one
+  corresponding `contador_adyen_payments` row. No new payment or duplicate
+  payment projection was created.
 - Rollback/recovery: ordinary code rollback removes the new source admission;
   idempotent Bookkeeper retries preserve the already-complete payment, roster
   and PostgreSQL projections.

@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-18T00:22Z — `NC-20260917-001` repair Adyen Commerce capacity
-commitments, owner Codex with bounded Sonnet/high review, `validating`, C4,
+commitments, owner Codex with bounded Sonnet/high review, `complete`, C4,
 isolated branch `codex/adyen-capacity-source-fix-20260917` from exact live
 release `eb8af47caa654738c671b34d94363a5b4e940aa3`. The signed Commerce
 Bookkeeper ingress already emits the canonical `website_adyen_sale` source, but
@@ -17,9 +17,12 @@ review returned PASS with no material finding. Exact release `44edb85d` was
 activated, but the first bounded retry exposed a second durable guard: both old
 denials are cached by the operator case key, so the corrected reducer was never
 re-entered. The ingress now versions only that case key while preserving the
-stable commitment and payment idempotency keys. Next: verify, amend the release,
-then retry the same two jobs and prove one reservation each with no duplicate
-payment or roster effects.
+stable commitment and payment idempotency keys. Exact release `3972d9f5` is
+live and healthy with rollback to `44edb85d`; both preserved WordPress jobs are
+complete as `projected_notified`. PostgreSQL has exactly one
+`website_adyen_sale` commitment and one payment projection per PSP. This task
+is complete; no payment, refund, customer message or manual capacity adjustment
+was created.
 
 2026-09-16T13:08Z — `NC-20260916-001` Commerce refund Bookkeeper projection,
 owner Codex, `validating`, C4, isolated branch
