@@ -323,6 +323,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_170_contador_adyen_refunds.sql',
     'data/business/migrations/nanoclaw-v2/169_acc_capacity_readiness.sql',
     'data/business/migrations/nanoclaw-v2/rollback_169_acc_capacity_readiness.sql',
+    'data/business/migrations/nanoclaw-v2/171_finite_billing_contracts.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_171_finite_billing_contracts.sql',
     'scripts/verify-release.mjs',
     'scripts/validate-tandem-identity-d2-production.mjs',
     'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',
