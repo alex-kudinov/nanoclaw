@@ -2,8 +2,8 @@
 
 ## 2026-09-17 — NC-20260917-002 canonical ACC roster cohort identities
 
-- State: `validating`; source and focused verification are complete; full
-  verification, review, commit and release remain pending.
+- State: `complete`; source, verification, review, immutable release, live
+  projection proof and the one guarded roster correction are complete.
 - Change class: C4 because the existing post-payment Bookkeeper path writes the
   student roster after signed payment truth.
 - Outcome: the signed Commerce envelope validator now requires the canonical
@@ -29,10 +29,33 @@
 - Topology: no schema, route, service, process, worker, queue, scheduler,
   credential, provider call, payment, enrollment, access or customer-message
   change.
-- Deployment: not committed or deployed. No Bookkeeper replay or roster write
-  has occurred.
-- Rollback: ordinary code rollback restores the old validation predicate;
-  existing payment, order and roster evidence is preserved.
+- Release: commit `618880fbe188a15e913a081c40eb3bd68a452363`, source tree
+  `96b414c32187afebce56088e31855dcfcbe5eb97`, artifact hash
+  `fa054ce6484f48c399fe74cccb4e0d3eefc09d4214627ccded981c38e94a5818`,
+  archive hash
+  `64904a114e8faecccee8b65941bf60cdd851eebff8a8b2b2802607313c2bcf74`.
+  The Mini independently verified the bundle and activated it from exact live
+  `3972d9f5`. Health, launchd and the sole listener converge on PID 45738,
+  Node 22.23.2, the exact code root, connected Gmail/Slack, zero active or
+  waiting work and a healthy student-lifecycle store. Rollback plist:
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-3972d9f545b3-2026-09-18T01-36-17-314Z`.
+- Cross-system live proof: Tandem Commerce 1.40.18 and Tandem Snippets 1.7.4
+  are active with source hashes matching commit `640cb6145`. The live calendar
+  and Commerce resolver agree on the bounded transition rows, including
+  Oct Module 1 -> `2026-10`, Oct Module 2 -> `2026-09`, Nov Module 1 ->
+  `2026-11`, Nov Module 2 -> `2026-10`, Dec Module 3 -> `2026-10` and Dec
+  Module 4 -> `2026-09`. A premature plugin activation was immediately rolled
+  back while one unrelated NanoClaw task drained; database readback proved
+  zero Commerce submissions during that interval. After Company OS activated,
+  the verified plugin pair was reactivated in declared order.
+- Roster correction: the existing guarded Sheets operation uniquely matched
+  `arorus@gmail.com`, required the exact old display value, changed only
+  `ACC!N59`, and API readback verified `2026-10`. No payment, Bookkeeper replay,
+  enrollment, access change or customer message occurred.
+- Rollback: restore the retained Mini plist and the VPS plugin backup at
+  `/home/tca/plugin-backups/acc-cohort-gap-final-20260917T2037`. Existing
+  payment and order evidence remains preserved; the intentionally corrected
+  roster cell is not automatically reverted.
 
 ## 2026-09-17 — NC-20260917-001 Adyen capacity commitment source repair
 

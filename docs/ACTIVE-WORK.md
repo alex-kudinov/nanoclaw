@@ -1,7 +1,7 @@
 # NanoClaw active work
 
-2026-09-18T01:08Z — `NC-20260917-002` admit canonical ACC roster cohort
-identities, owner Codex with bounded Sonnet/high review, `validating`, C4,
+2026-09-18T01:38Z — `NC-20260917-002` admit canonical ACC roster cohort
+identities, owner Codex with bounded Sonnet/high review, `complete`, C4,
 isolated branch `codex/acc-cohort-roster-translation-20260917` from exact live
 release `3972d9f545b333a5b565dd46208214a352e7f7e6`. Tandemweb will freeze ACC
 roster values as canonical `YYYY-MM` identifiers instead of display copy. The
@@ -17,8 +17,15 @@ retains the prior PCC/ACTC display-value contract. Pinned typecheck and
 continuity pass; the full suite is 4,502 pass / 34 skip / four failures, with
 the payment-method race passing isolated and the other three exact known
 predecessor baselines. Bounded correctness review returned PASS; both LOW test
-hardening observations are mechanically closed. Next: commit, build and
-activate Company OS before Tandemweb release.
+hardening observations are mechanically closed. Exact immutable release
+`618880fbe188a15e913a081c40eb3bd68a452363` is live on Node 22.23.2 with
+verified source tree `96b414c32187afebce56088e31855dcfcbe5eb97` and artifact
+hash `fa054ce6484f48c399fe74cccb4e0d3eefc09d4214627ccded981c38e94a5818`.
+Health, launchd and the sole listener agree; Gmail/Slack are connected and the
+runtime queues are empty. Tandem Commerce 1.40.18 and Tandem Snippets 1.7.4
+were then activated, live rows resolve the exact transition identities, and
+the one guarded Manpreet roster cell reads back `2026-10`. No payment was
+created.
 
 2026-09-18T00:22Z — `NC-20260917-001` repair Adyen Commerce capacity
 commitments, owner Codex with bounded Sonnet/high review, `validating`, C4,
