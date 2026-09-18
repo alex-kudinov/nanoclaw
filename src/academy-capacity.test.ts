@@ -291,6 +291,52 @@ describe('Academy capacity domain', () => {
     );
   });
 
+  it('accepts the canonical Adyen sale source while rejecting unknown commitment sources', () => {
+    const enrollments = createEmptyEnrollmentFoundationState();
+    const initial = capacityFixture(1);
+    const committed = reserveCapacity(initial, enrollments, {
+      reservationKey: 'commitment:adyen:psp-test:1',
+      poolKey: 'pool:acc:m1:2026-09-07',
+      expectedPoolVersion: 1,
+      channel: 'commitment',
+      sourceScope: 'website_adyen_sale',
+      idempotencyKey: 'adyen:psp-test',
+      offerKey: 'acc-full',
+      catalogRevision: 1,
+      orderKey: null,
+      seatKey: null,
+      expiresAt: '2026-09-28T17:00:00Z',
+      reason: 'verified website sale',
+      sourceEvidenceSha256: SHA_D,
+      actor: 'commerce-capacity-host',
+      occurredAt: NOW,
+    });
+    expect(
+      showInventory(committed, enrollments, 'pool:acc:m1:2026-09-07', NOW),
+    ).toMatchObject({ committed: 1, available: 0, publicState: 'sold_out' });
+    expectCode(
+      () =>
+        reserveCapacity(initial, enrollments, {
+          reservationKey: 'commitment:unknown:1',
+          poolKey: 'pool:acc:m1:2026-09-07',
+          expectedPoolVersion: 1,
+          channel: 'commitment',
+          sourceScope: 'website_unknown_sale',
+          idempotencyKey: 'unknown:1',
+          offerKey: 'acc-full',
+          catalogRevision: 1,
+          orderKey: null,
+          seatKey: null,
+          expiresAt: '2026-09-28T17:00:00Z',
+          reason: 'unsupported source',
+          sourceEvidenceSha256: SHA_D,
+          actor: 'commerce-capacity-host',
+          occurredAt: NOW,
+        }),
+      'invalid_commitment_source',
+    );
+  });
+
   it('changes capacity with version and commitment-floor guards', () => {
     const enrollments = createEmptyEnrollmentFoundationState();
     let state = capacityFixture(1);

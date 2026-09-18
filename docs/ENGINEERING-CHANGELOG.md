@@ -1,5 +1,45 @@
 # NanoClaw engineering changelog
 
+## 2026-09-17 — NC-20260917-001 Adyen capacity commitment source repair
+
+- State: `validating`; source, focused/full verification and bounded review are
+  complete; commit and production release remain pending.
+- Change class: C4 because the existing asynchronous post-payment Bookkeeper
+  path commits a paid learner seat after payment, roster and PostgreSQL
+  projection readback.
+- Root cause: the signed Commerce ingress already emitted the canonical
+  `website_adyen_sale` source, and the type/store boundary admitted it, but the
+  core Capacity reducer allowlist contained only `website_stripe_sale` and
+  non-website commitment sources. Two paid Adyen jobs therefore failed with
+  `academy_capacity_invalid_commitment_source` after their earlier idempotent
+  projections completed.
+- Outcome: the reducer now admits exactly `website_adyen_sale`; unknown sources
+  still throw `invalid_commitment_source`. No schema, topology, route, worker,
+  queue, scheduler, provider call, customer message or manual capacity change
+  is added.
+- Files: `src/academy-capacity.ts`, `src/academy-capacity.test.ts`,
+  `docs/ACTIVE-WORK.md`, `docs/ENGINEERING-CHANGELOG.md`.
+- Verification: the real reducer plus ingress suite passes 21/21 under pinned
+  Node 22.23.2; typecheck and documentation continuity pass. The full suite is
+  4,503 pass / 34 skip / three exact unrelated predecessor failures: Capacity
+  disposable expired-hold expectation, CNPC wrapper-source assertion and the
+  date-sensitive Trafft freshness expectation.
+- Independent review: one bounded Sonnet/high round, session
+  `422cfc49-7922-4c40-8799-d70007ffb3ab`, returned PASS with no material
+  findings across the Capacity allowlist and the paired Commerce recovery
+  transaction/browser paths. It used 14 model calls, 218,144 cache-create,
+  2,355,022 cache-read and 8,580 output tokens; the oversized 218,146-token
+  context and cache reread are recorded as an orchestration defect and no
+  second round will be run.
+- Deployment: not yet committed or deployed. The existing WordPress jobs stay
+  retryable; no payment or manual replay has been initiated.
+- Rollback/recovery: ordinary code rollback removes the new source admission;
+  idempotent Bookkeeper retries preserve the already-complete payment, roster
+  and PostgreSQL projections.
+- Documentation: Active Work and this changelog. Project Map and Release
+  Integrity are unchanged because topology, authority and release procedure do
+  not change.
+
 ## 2026-09-16 — NC-20260916-001 Commerce refund Bookkeeper projection
 
 - State: `validating`; source, focused verification and S1/S2 are complete;

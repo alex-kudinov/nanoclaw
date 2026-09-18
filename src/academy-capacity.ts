@@ -202,6 +202,7 @@ const RESERVATION_CHANNELS = new Set<ReservationChannel>([
 ]);
 const COMMITMENT_SOURCE_SCOPES = new Set([
   'website_stripe_sale',
+  'website_adyen_sale',
   'invoice',
   'check',
   'sponsor',
