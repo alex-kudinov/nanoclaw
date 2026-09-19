@@ -83,8 +83,9 @@ describe('grader file message dispatch', () => {
 
   it('rejects an unsupported submission language before any external action', async () => {
     const { dataDir, payload } = fixture();
-    (payload as unknown as { submission_language: string }).submission_language =
-      'de';
+    (
+      payload as unknown as { submission_language: string }
+    ).submission_language = 'de';
     const post = vi.fn();
 
     await expect(

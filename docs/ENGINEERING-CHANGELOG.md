@@ -495,23 +495,28 @@
   `codex/tandem-identity-account-claim-dark-20260914`. This is an unwired source
   result, so deployment and live/provider verification are not applicable and
   remain explicitly prohibited.
+
 ## 2026-09-18 — NC-20260918-001 exact-root Polish submission attestation
 
 - State: reviewed source and isolated verification complete; immutable release
   and live Polish canary pending.
 - Change class: C5 because the existing privileged source-language assertion now
   accepts one additional language value.
-- The existing main/chief-only grader-file request accepts `pl` alongside `it`.
+- Current production `610a5db9` no longer contained the previously reviewed
+  Italian attestation path after a divergent lineage switch. The current-line
+  integration restores the exact reviewed path and accepts `pl` alongside `it`.
   Polish participates in the existing request hash, receipt, exact-root in-memory
   binding, and fail-closed run-context injection without changing course locale or
   English feedback language.
 - Omission remains unchanged and unsupported `de` remains rejected before staging.
   No new route, durable state, worker, language detection, translation-primary
   grading, certificate behavior, or provider dependency is introduced.
-- Focused verification passed four files / 51 tests, typecheck, documentation
-  continuity, capabilities check, changed-source formatting, and shared toolbox
-  adapter tests. The full suite passed 4,433 with 32 skipped and three unrelated
-  failures in existing capacity, CNPC, and relationship-context tests.
+- Current-line verification passed five focused files / 165 tests, typecheck,
+  documentation continuity, capabilities, runtime doctor, email replay, the
+  809-host/45-runner email-critical gate, changed-source formatting, and shared
+  toolbox adapter tests. The full suite passed 4,517 with 34 skipped and four
+  failures; the payment-method race passed immediately in isolation, leaving
+  the same three current-production Capacity, CNPC, and Trafft baselines.
 - Necessity review returned `KEEP`: the smallest path is the closed-enum extension
   plus one exact-root Polish production canary.
 - Bounded Claude Sonnet/high review returned `ACCEPT` in session
