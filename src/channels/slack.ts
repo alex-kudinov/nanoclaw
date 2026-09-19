@@ -1480,7 +1480,6 @@ export class SlackChannel implements Channel {
     file: Buffer,
     filename: string,
     sourceGroup: string,
-    beforePersist?: (messageTs: string) => void,
   ): Promise<{ messageTs: string; fileIds: string[] }> {
     assertExternalWriteAllowed({
       system: 'slack',
@@ -1510,18 +1509,16 @@ export class SlackChannel implements Channel {
         filename,
         title: filename,
       });
-      beforePersist?.(root.ts);
     } catch (err) {
-      // A root whose upload or host attestation setup did not complete must not
-      // become a grader work item. Best-effort rollback keeps Slack clean; the
-      // host's pending receipt still prevents an uncertain automatic retry if
-      // deletion itself fails.
+      // A file-less root must not become a grader work item. Best-effort
+      // rollback keeps Slack clean; the host's pending receipt still prevents
+      // an uncertain automatic retry if deletion itself fails.
       try {
         await this.app.client.chat.delete({ channel: channelId, ts: root.ts });
       } catch (deleteErr) {
         logger.error(
           { jid, rootTs: root.ts, deleteErr },
-          'Grader file setup failed and root rollback was not confirmed',
+          'Grader file upload failed and root rollback was not confirmed',
         );
       }
       throw err;

@@ -19,7 +19,6 @@
 
 import { escapeXml } from './router.js';
 import type { LiveAssignment } from './grader-assignment-fetch.js';
-import type { GraderSubmissionLanguage } from './grader-file-message.js';
 
 /** Bounded far above the host's container-slot count; eviction is a backstop. */
 const MAX_CONTEXTS = 200;
@@ -37,7 +36,6 @@ export interface GraderRunContext {
   completionCourse?: string;
   locale?: string;
   feedbackLanguage?: string;
-  submissionLanguage?: GraderSubmissionLanguage;
   localeProfile?: string;
   /**
    * `heartbeat` means the live assignment was fetched and verified for this run.
@@ -62,10 +60,6 @@ export interface GraderRunBinding {
 
 const contexts = new Map<string, StoredGraderRunContext>();
 const latestRunByThread = new Map<string, string>();
-const submissionLanguageByThread = new Map<
-  string,
-  { language: GraderSubmissionLanguage; registeredAtMs: number }
->();
 
 function threadKeyFor(jid: string, threadTs: string): string {
   return `${jid}||${threadTs}`;
@@ -181,47 +175,10 @@ export function clearLatestGraderThreadContext(
   latestRunByThread.delete(threadKeyFor(jid, threadTs));
 }
 
-/**
- * Bind a privileged file request's declared source language to its exact Slack
- * root. The transport calls this before persisting the root into NanoClaw, so a
- * grader run cannot race ahead and miss the host attestation.
- */
-export function setGraderSubmissionLanguageAttestation(
-  jid: string,
-  threadTs: string,
-  language: GraderSubmissionLanguage,
-  nowMs: number = Date.now(),
-): void {
-  const key = threadKeyFor(jid, threadTs);
-  submissionLanguageByThread.delete(key);
-  submissionLanguageByThread.set(key, { language, registeredAtMs: nowMs });
-  while (submissionLanguageByThread.size > MAX_CONTEXTS) {
-    const oldest = submissionLanguageByThread.keys().next().value;
-    if (oldest === undefined) break;
-    submissionLanguageByThread.delete(oldest);
-  }
-}
-
-export function getGraderSubmissionLanguageAttestation(
-  jid: string,
-  threadTs: string,
-  nowMs: number = Date.now(),
-): GraderSubmissionLanguage | undefined {
-  const key = threadKeyFor(jid, threadTs);
-  const stored = submissionLanguageByThread.get(key);
-  if (!stored) return undefined;
-  if (nowMs - stored.registeredAtMs > CONTEXT_TTL_MS) {
-    submissionLanguageByThread.delete(key);
-    return undefined;
-  }
-  return stored.language;
-}
-
 /** Test-only: drop registry state between cases. */
 export function _resetGraderRunContexts(): void {
   contexts.clear();
   latestRunByThread.clear();
-  submissionLanguageByThread.clear();
 }
 
 const CONTEXT_PREAMBLE = [
@@ -274,15 +231,6 @@ export function formatHostAssignmentContext(context: GraderRunContext): string {
     `<feedback_language>${escapeXml(context.feedbackLanguage ?? 'en')}</feedback_language>`,
     `<locale_profile>${escapeXml(context.localeProfile ?? 'calibration/grading-voice.md')}</locale_profile>`,
   ];
-  if (context.submissionLanguage) {
-    lines.push(
-      `<submission_language>${escapeXml(context.submissionLanguage)}</submission_language>`,
-      'The privileged sender attested the submission language for this exact',
-      'Slack root. It may differ from the course locale. Grade the original in',
-      'that language while keeping all student-facing feedback in the feedback',
-      'language above.',
-    );
-  }
   if (context.mode === 'snapshot-only' || !context.live) {
     lines.push(
       `<assignment_title>${escapeXml(context.title)}</assignment_title>`,

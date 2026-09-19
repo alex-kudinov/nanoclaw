@@ -80,7 +80,6 @@ import {
 import {
   dispatchGraderFileMessage,
   GraderFileMessagePayload,
-  type GraderSubmissionLanguage,
   isGraderFileMessageType,
 } from './grader-file-message.js';
 import {
@@ -172,7 +171,6 @@ export interface IpcDeps {
     file: Buffer,
     filename: string,
     sourceGroup: string,
-    submissionLanguage?: GraderSubmissionLanguage,
   ) => Promise<{ messageTs: string; fileIds?: string[] }>;
   // Required for grader-to-grader text. Absence fails closed.
   deliverGraderOutput?: (
