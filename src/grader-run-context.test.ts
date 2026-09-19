@@ -198,8 +198,8 @@ describe('the run-context registry', () => {
   });
 
   it('binds a privileged submission-language attestation to one exact root', () => {
-    setGraderSubmissionLanguageAttestation(JID, THREAD, 'it', NOW);
-    expect(getGraderSubmissionLanguageAttestation(JID, THREAD, NOW)).toBe('it');
+    setGraderSubmissionLanguageAttestation(JID, THREAD, 'pl', NOW);
+    expect(getGraderSubmissionLanguageAttestation(JID, THREAD, NOW)).toBe('pl');
     expect(
       getGraderSubmissionLanguageAttestation(JID, 'other-thread', NOW),
     ).toBeUndefined();
@@ -261,6 +261,22 @@ describe('formatHostAssignmentContext', () => {
     expect(block).toContain('<locale>en-US</locale>');
     expect(block).toContain('<feedback_language>en</feedback_language>');
     expect(block).toContain('It may differ from the course locale');
+  });
+
+  it('carries a host-attested Polish original while preserving English feedback', () => {
+    const block = formatHostAssignmentContext(
+      context({
+        courseVariant: 'foundation',
+        locale: 'en-US',
+        feedbackLanguage: 'en',
+        submissionLanguage: 'pl',
+      }),
+    );
+
+    expect(block).toContain('<submission_language>pl</submission_language>');
+    expect(block).toContain('<locale>en-US</locale>');
+    expect(block).toContain('<feedback_language>en</feedback_language>');
+    expect(block).toContain('Grade the original in');
   });
 
   it('does not invent a submission-language attestation', () => {

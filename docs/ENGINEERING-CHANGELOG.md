@@ -1,5 +1,31 @@
 # NanoClaw engineering changelog
 
+## 2026-09-18 — NC-20260918-001 exact-root Polish submission attestation
+
+- State: reviewed source and isolated verification complete; immutable release
+  and live Polish canary pending.
+- Change class: C5 because the existing privileged source-language assertion now
+  accepts one additional language value.
+- The existing main/chief-only grader-file request accepts `pl` alongside `it`.
+  Polish participates in the existing request hash, receipt, exact-root in-memory
+  binding, and fail-closed run-context injection without changing course locale or
+  English feedback language.
+- Omission remains unchanged and unsupported `de` remains rejected before staging.
+  No new route, durable state, worker, language detection, translation-primary
+  grading, certificate behavior, or provider dependency is introduced.
+- Focused verification passed four files / 51 tests, typecheck, documentation
+  continuity, capabilities check, changed-source formatting, and shared toolbox
+  adapter tests. The full suite passed 4,433 with 32 skipped and three unrelated
+  failures in existing capacity, CNPC, and relationship-context tests.
+- Necessity review returned `KEEP`: the smallest path is the closed-enum extension
+  plus one exact-root Polish production canary.
+- Bounded Claude Sonnet/high review returned `ACCEPT` in session
+  `52e2e0a6-590e-498f-b35a-dd42f94b6dfa` (11 model calls, 64,277 cache-create,
+  544,417 cache-read, 11,649 output tokens, maximum context 70,910). Codex
+  independently confirmed the exact-root setter is wired through `src/index.ts`
+  into `SlackChannel.postGraderFileMessage()`, whose test proves the callback runs
+  before the grader-visible row is persisted.
+
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 
 - State: ready_for_deploy; reviewed source and isolated verification complete,

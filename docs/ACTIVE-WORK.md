@@ -1,5 +1,25 @@
 # NanoClaw active work
 
+2026-09-18T19:40Z — `NC-20260918-001` exact-root Polish submission
+attestation for the Foundation grader, owner Codex with fresh-context necessity
+review and bounded Claude review, `ready_for_deploy`, C5, isolated branch
+`codex/grader-polish-attestation-20260918` from exact live release
+`3dd0eb671203f6f25bbd87afe7f97eeb911dac39`. Current live evidence: Michał
+Bloch's `facilitation-m6` root correctly refuses Polish-original grading because
+the privileged host enum accepts only `it`; an authenticated Slack owner reply
+cannot replace host context. Proposed minimum slice: extend only the existing
+main/chief-only `submission_language` enum with `pl`, preserving exact-root
+binding, request-hash/idempotency checks, TTL, English course identity,
+English feedback language, and fail-closed behavior when omitted. No new route,
+schema, worker, queue, scheduler, durable student state, broad locale policy,
+translation-primary evidence, or certificate action. Necessity review returned
+`KEEP`; 51 focused tests, typecheck, continuity, toolbox checks, and the bounded
+Sonnet/high trust-boundary review are complete. Codex separately verified the
+reviewer's non-blocking observation against the actual `src/index.ts` callback
+and `src/channels/slack.ts` before-persist ordering. Next proof: immutable
+release/live health, then one new Polish-attested copy of the same verified file
+and an explicit grader verdict.
+
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
 `codex/grader-italian-attestation-20260914` from exact production release

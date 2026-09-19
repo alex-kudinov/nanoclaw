@@ -204,8 +204,9 @@ message IPC:
 - a request-bound idempotency receipt is `pending` before the first Slack side
   effect and `complete` only after the upload and NanoClaw persistence succeed;
   a pending/uncertain receipt suppresses automatic retry;
-- `NC-20260914-002` permits optional `submission_language=it` only on this same
-  main/chief request, includes it in request identity and receipt, and binds it
+- `NC-20260914-002` and `NC-20260918-001` permit optional
+  `submission_language=it|pl` only on this same main/chief request, include it
+  in request identity and receipt, and bind it
   in memory to the exact Slack root before that root becomes grader-visible;
   chat text, submission prose, and translations cannot create or override it;
 - upload failure triggers best-effort deletion of the file-less Slack root and
@@ -216,9 +217,9 @@ the current macOS temporary root, or the operator's Downloads directory. It
 uses the existing authenticated SSH route to stage into the production Mac
 Mini's IPC, fails closed until the compiled host advertises support, and waits
 for the host receipt; it does not receive Slack credentials or write SQLite
-message rows. The Italian attestation changes neither the course locale nor
-its feedback language and disappears on host restart or TTL expiry. File
-contents still leave the host for the
+message rows. The Italian or Polish attestation changes neither the course
+locale nor its feedback language and disappears on host restart or TTL expiry.
+File contents still leave the host for the
 operator-authorized `#gru-grader` workflow, so deployment and a sanitized live
 canary remain separate C5 review gates.
 
