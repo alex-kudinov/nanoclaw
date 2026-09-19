@@ -97,6 +97,29 @@ describe('grader file message dispatch', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('accepts a host-attested Polish submission language', async () => {
+    const { dataDir, payload } = fixture();
+    payload.submission_language = 'pl';
+    const post = vi.fn(async () => ({ messageTs: '1785685710.379680' }));
+
+    const result = await dispatchGraderFileMessage('main', payload, {
+      dataDir,
+      targetJid: 'slack:GRADER',
+      postGraderFileMessage: post,
+    });
+
+    expect(result.status).toBe('complete');
+    expect(result.receipt.submissionLanguage).toBe('pl');
+    expect(post).toHaveBeenCalledWith(
+      'slack:GRADER',
+      payload.text,
+      Buffer.from('student submission'),
+      'submission.txt',
+      'main',
+      'pl',
+    );
+  });
+
   it('does not reuse an idempotency key with a different language attestation', async () => {
     const { dataDir, payload } = fixture();
     const post = vi.fn(async () => ({ messageTs: '1785685710.379679' }));

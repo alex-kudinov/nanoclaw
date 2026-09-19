@@ -5,7 +5,7 @@ import path from 'node:path';
 const MAX_GRADER_FILE_BYTES = 25 * 1024 * 1024;
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const SHA256_RE = /^[a-f0-9]{64}$/;
-export const GRADER_SUBMISSION_LANGUAGES = ['it'] as const;
+export const GRADER_SUBMISSION_LANGUAGES = ['it', 'pl'] as const;
 export type GraderSubmissionLanguage =
   (typeof GRADER_SUBMISSION_LANGUAGES)[number];
 
