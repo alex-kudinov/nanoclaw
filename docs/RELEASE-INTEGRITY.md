@@ -78,7 +78,10 @@ The Commerce producer must precede this consumer release. Active Commerce
 `payment_option_and_submit/scheme` for manual finite/custom schedules and
 `apple_pay_recurring_proof/applepay` for Apple Pay. Do not activate a Company
 OS build requiring those fields against an older producer; if that readback no
-longer holds, stop before migration or activation.
+longer holds, stop before migration or activation. Commerce 1.44.3 must be
+active before Company OS activation because it begins signing
+`order.rosterPolicy`; the old receiver safely ignores that additive field,
+while the new receiver correctly rejects a missing policy.
 
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree

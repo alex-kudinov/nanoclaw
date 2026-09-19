@@ -22,9 +22,9 @@ precede the producer; direct active-plugin readback proves Commerce 1.44.2
 already signs both ordinary finite and custom manual-card contracts with
 `payment_option_and_submit/scheme`, and Apple Pay with
 `apple_pay_recurring_proof/applepay`. Keep the universal exact pair, apply
-migration 172 after backup, immutable-release Company OS after the already-live
-producer, then release Commerce 1.44.3 and replay only the retained TEST jobs
-through exact receipt readback.
+Commerce 1.44.3 first so its additive signed `rosterPolicy` reaches the old
+permissive receiver, then apply migration 172 after backup and immutable-release
+Company OS. Replay only the retained TEST jobs through exact receipt readback.
 
 2026-09-18T12:35Z — `NC-20260918-001` honor exact owner-directed email CC
 recipients, owner Codex with fresh necessity and bounded Sonnet/high review,

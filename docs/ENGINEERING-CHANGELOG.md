@@ -34,6 +34,10 @@
   custom schedules and `apple_pay_recurring_proof/applepay` for Apple Pay.
   Company OS therefore deploys second; no code correction is required. Claude
   usage transcripts were unavailable from the runner for both rounds.
+- Release order: Commerce 1.44.3 deploys first. The old receiver ignores its
+  additive signed `rosterPolicy`; the new receiver requires it. Migration 172
+  and the Company OS release follow only after active Commerce readback, which
+  avoids a window where new catalog payments lack the required field.
 - Deployment/migration: not yet committed, migrated or deployed. No new
   provider call, payment, customer message, roster write or Live canary is
   authorized. Existing retained TEST jobs remain retryable.
