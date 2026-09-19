@@ -498,8 +498,8 @@
 
 ## 2026-09-18 — NC-20260918-001 exact-root Polish submission attestation
 
-- State: exact release deployed and live Polish canary accepted; Heartbeat and
-  tracker writeback remain pending.
+- State: complete; exact release, live Polish canary, Heartbeat writeback,
+  tracker mirror, completion notices, and readiness reconciliation verified.
 - Change class: C5 because the existing privileged source-language assertion now
   accepts one additional language value.
 - Current production `610a5db9` no longer contained the previously reviewed
@@ -543,6 +543,18 @@
   `1789780363.493139` and returned explicit `PASS` with English feedback. The
   prior unattested root remains historical evidence only. Lize Rech's separate
   owner re-trigger root `1789773428.463499` also returned explicit `PASS`.
+- Heartbeat writeback: both Module 6 submissions visibly read back
+  `Submission Approved` with the complete saved English feedback. The manifest-
+  pinned tracker reads Lize `K92=P` and Michał `K172=P` on the exact verified
+  email plus `en-US` rows; feedback and certificate-status cells remain blank.
+- Readiness: the canonical MCS roster and live Heartbeat access groups both show
+  neither student is in Practicum. Live progress is 89% for each and neither has
+  completed `Your Feedback Matters`, so both are correctly
+  `awaiting_course_feedback` and no certificate was routed. The exact mandatory
+  completion notice was sent once and read back at 8:57 PM for Lize in
+  conversation `c629ee74-ee93-48c7-9748-c4f82e2d1762` and Michał in
+  `75f7102b-30f5-4058-a6d9-f0ca47493ee1`. The final run ledger validates with
+  zero active Slack roots and a complete certificate sweep.
 
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 

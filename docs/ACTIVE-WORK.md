@@ -332,7 +332,7 @@ prohibited and absent.
 
 2026-09-18T19:40Z — `NC-20260918-001` exact-root Polish submission
 attestation for the Foundation grader, owner Codex with fresh-context necessity
-review and bounded Claude review, `deployed_unverified`, C5, isolated branch
+review and bounded Claude review, `complete`, C5, isolated branch
 `codex/grader-polish-currentline-20260918` from exact current production release
 `610a5db953d959ddc74695195955d5c42f86f6fb`. Current live evidence: Michał
 Bloch's `facilitation-m6` root lacks trusted Polish-original context; the current
@@ -351,8 +351,13 @@ the exact three current-production Capacity, CNPC, and Trafft baselines. Exact
 release `ea3f6532ef76cecc0c2ee5716348b2028b85d790` is live and healthy; the
 reviewed grader prompt is synchronized and the exact Polish canary root
 `1789780363.493139` returned `PASS`. Lize's re-trigger root
-`1789773428.463499` also returned `PASS`. Next proof: Heartbeat approval plus
-exact tracker readback for both students, followed by ordinary readiness gates.
+`1789773428.463499` also returned `PASS`. Heartbeat shows `Submission Approved`
+with saved feedback for both students; tracker readback is Lize `K92=P` and
+Michał `K172=P`. Exact completion notices were read back at 8:57 PM in
+conversations `c629ee74-ee93-48c7-9748-c4f82e2d1762` and
+`75f7102b-30f5-4058-a6d9-f0ca47493ee1`. Both students are non-Practicum, at
+89%, and have not completed `Your Feedback Matters`, so both remain
+`awaiting_course_feedback`; no certificate action is due.
 
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
