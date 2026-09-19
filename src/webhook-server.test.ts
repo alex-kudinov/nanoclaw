@@ -345,6 +345,7 @@ describe('WebhookServer', () => {
         amountCents: 39900,
         currency: 'USD',
         purchaseRelationship: 'self',
+        rosterPolicy: 'catalog',
         payer: {
           firstName: 'Alex',
           lastName: 'Buyer',
@@ -476,6 +477,7 @@ describe('WebhookServer', () => {
         amountCents: 29900,
         currency: 'USD',
         purchaseRelationship: 'self',
+        rosterPolicy: 'catalog',
         payer: {
           firstName: 'Alex',
           lastName: 'Buyer',

@@ -1,5 +1,31 @@
 # NanoClaw active work
 
+2026-09-19T18:08Z — `NC-20260919-001` complete custom-invoice installment
+projection, owner Codex with bounded Sonnet/high review, `validating`, C4,
+isolated branch `codex/custom-invoice-projection-20260919` from exact live
+release `ea3f6532ef76cecc0c2ee5716348b2028b85d790`. Commerce signed and charged
+both USD 1.00 TEST obligations exactly once, but Company OS rejects activation
+because the existing finite-contract schema excludes custom invoice cadence,
+fee fields, source invoice and the initial-method field; the existing Commerce
+Bookkeeper recorder also requires every payment to have a Student Roster
+destination. Extend only those two existing signed routes: accept and validate
+the exact custom schedule while retaining the same finite tables/worker, and
+carry one signed `rosterPolicy` so ad-hoc invoice payments still require Payment
+Log and PostgreSQL readback but never invent a Student Roster write. Migration
+172 may widen only the existing cadence CHECK to include `custom`. No new
+route, table, worker, queue, scheduler, credential, provider call, payment,
+customer message, Party/entitlement merge or fulfillment action. Next: complete
+the reviewed release sequence after focused 81/81, typecheck, continuity,
+format and the full 4,523-pass/34-skip baseline with its exact three predecessor
+failures. S1 returned `KEEP`. Bounded review found that the consumer must not
+precede the producer; direct active-plugin readback proves Commerce 1.44.2
+already signs both ordinary finite and custom manual-card contracts with
+`payment_option_and_submit/scheme`, and Apple Pay with
+`apple_pay_recurring_proof/applepay`. Keep the universal exact pair, apply
+migration 172 after backup, immutable-release Company OS after the already-live
+producer, then release Commerce 1.44.3 and replay only the retained TEST jobs
+through exact receipt readback.
+
 2026-09-18T12:35Z — `NC-20260918-001` honor exact owner-directed email CC
 recipients, owner Codex with fresh necessity and bounded Sonnet/high review,
 `ready_for_review`, C5, isolated branch `codex/owner-directed-cc-20260918` from exact

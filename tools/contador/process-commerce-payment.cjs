@@ -282,7 +282,9 @@ function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
     `Paid: ${fact.transactionDate} · Recorded: ${paymentLog.recordedDate}`,
     'Fee: pending — awaiting Adyen settlement/fee evidence',
     `Payment Log: recorded and verified (row ${paymentLog.row}; provider Adyen)`,
-    `Student Roster: recorded and verified (${roster})`,
+    fact.rosterPolicy === 'none'
+      ? 'Student Roster: not applicable — invoice payment'
+      : `Student Roster: recorded and verified (${roster})`,
     ...(fact.cohort ? [`Cohort: ${fact.cohort.rosterValue}`] : []),
     'Database: recorded and verified',
   ].join('\n');
@@ -329,14 +331,14 @@ async function main() {
     transactionDate: format(event), recordedDate: format(new Date()),
     learnerName: `${learner.firstName} ${learner.lastName}`.trim(), learnerEmail: learner.email.toLowerCase(),
     productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
-    cohort: envelope.order.cohort || null,
+    cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
   };
   // Each destination is idempotent by provider payment ID. A retry repairs an
   // incomplete prior delivery and only succeeds after exact readback.
   const paymentLog = await recordPaymentLog(fact);
-  const rosterDestinations = await recordRoster(fact);
+  const rosterDestinations = envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact);
   const postgresVerified = recordPostgres(envelope, fact);
-  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: rosterDestinations.length > 0, postgresVerified, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
+  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0, postgresVerified, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
   console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
 }
 

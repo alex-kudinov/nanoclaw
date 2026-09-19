@@ -1,6 +1,6 @@
 # Schema: nanoclaw_business (Postgres)
 
-Generated: 2026-09-14T03:13:35.398Z
+Generated: 2026-09-19T18:24:06.660Z
 
 Covers the public.* and business_v2.* schemas. business_v2 tables are
 headed with their schema prefix; access them via business_v2.v_* views and
@@ -1705,6 +1705,89 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
   updated_at                    timestamp with time zone NOT NULL DEFAULT=now()
   last_updated_by               text                 NOT NULL DEFAULT='unknown'::text
+```
+
+## business_v2.finite_billing_attempts
+
+```
+  attempt_id                    uuid                 NOT NULL
+  obligation_id                 uuid                 NOT NULL
+  attempt_ordinal               integer              NOT NULL DEFAULT=0
+  idempotency_key               text                 NOT NULL
+  command_sha256                text                 NOT NULL
+  state                         text                 NOT NULL
+  provider_reference            text
+  created_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.finite_billing_contracts
+
+```
+  contract_id                   uuid                 NOT NULL
+  environment                   text                 NOT NULL
+  billing_principal_id          uuid                 NOT NULL
+  commerce_binding_id           uuid                 NOT NULL
+  product_id                    text                 NOT NULL
+  cadence                       text                 NOT NULL
+  timezone                      text                 NOT NULL
+  obligation_count              integer              NOT NULL
+  total_cents                   bigint               NOT NULL
+  currency                      text                 NOT NULL
+  schedule_sha256               text                 NOT NULL
+  consent_sha256                text                 NOT NULL
+  binding_evidence_sha256       text                 NOT NULL
+  first_submission_id           uuid                 NOT NULL
+  first_order_id                uuid                 NOT NULL
+  first_psp_reference           text                 NOT NULL
+  state                         text                 NOT NULL
+  version                       integer              NOT NULL DEFAULT=0
+  activated_at                  timestamp with time zone NOT NULL
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.finite_billing_obligations
+
+```
+  obligation_id                 uuid                 NOT NULL
+  contract_id                   uuid                 NOT NULL
+  ordinal                       integer              NOT NULL
+  due_at                        timestamp with time zone NOT NULL
+  amount_cents                  bigint               NOT NULL
+  currency                      text                 NOT NULL
+  state                         text                 NOT NULL
+  paid_psp_reference            text
+  version                       integer              NOT NULL DEFAULT=0
+  lease_token                   uuid
+  lease_until                   timestamp with time zone
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.finite_billing_receipts
+
+```
+  receipt_sha256                text                 NOT NULL
+  contract_id                   uuid                 NOT NULL
+  obligation_id                 uuid
+  attempt_id                    uuid
+  kind                          text                 NOT NULL
+  source_id                     text                 NOT NULL
+  recorded_at                   timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+```
+
+## business_v2.finite_billing_recovery_requests
+
+```
+  request_id                    uuid                 NOT NULL
+  contract_id                   uuid                 NOT NULL
+  obligation_id                 uuid                 NOT NULL
+  attempt_id                    uuid                 NOT NULL
+  amount_cents                  bigint               NOT NULL
+  currency                      text                 NOT NULL
+  state                         text                 NOT NULL
+  source_id                     text                 NOT NULL
+  created_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
+  updated_at                    timestamp with time zone NOT NULL DEFAULT=clock_timestamp()
 ```
 
 ## business_v2.identity_candidates

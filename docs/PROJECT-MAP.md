@@ -1052,6 +1052,22 @@ recorder never derives or changes the selection: it fills the destination roster
 existing `Cohort` cell only when blank, preserves an existing value, and requires
 readback before success. Capacity-managed ACC and combined Level 2 are not admitted
 by this contract.
+
+`NC-20260919-001` keeps the same signed receiver and makes roster applicability
+explicit. Commerce signs `order.rosterPolicy=catalog` for existing catalog
+purchases and `none` only for its server-owned invoice fulfillment modes. A
+`none` payment must still pass Payment Log and PostgreSQL readback and produces
+an explicit Student Roster not-applicable receipt; it never infers from payer,
+email, title, billing profile, or product text and performs no roster call.
+Missing, unknown, or cohort-bearing `none` policy fails closed.
+
+The existing finite-billing route also accepts the exact discriminated
+`custom_invoice_installments` contract: custom cadence, source invoice UUID,
+two-to-eight ordered obligations and exact base-plus-fee arithmetic. Schedule,
+consent, first-payment and selection/initial-method bindings remain verified;
+the provider token remains in Commerce. Migration 172 widens only the existing
+cadence CHECK to admit `custom`; its rollback refuses after any custom row.
+No new table, worker, scheduler or provider path is introduced.
 Migration 168 removes migration 166's obsolete MCS-literal PostgreSQL product check
 and replaces it with the same bounded checkout-slug shape enforced by the signed
 receiver. It changes no row, table, index, owner or grant. Its rollback restores the

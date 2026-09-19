@@ -325,6 +325,8 @@ try {
     'data/business/migrations/nanoclaw-v2/rollback_169_acc_capacity_readiness.sql',
     'data/business/migrations/nanoclaw-v2/171_finite_billing_contracts.sql',
     'data/business/migrations/nanoclaw-v2/rollback_171_finite_billing_contracts.sql',
+    'data/business/migrations/nanoclaw-v2/172_custom_invoice_billing_cadence.sql',
+    'data/business/migrations/nanoclaw-v2/rollback_172_custom_invoice_billing_cadence.sql',
     'scripts/verify-release.mjs',
     'scripts/validate-tandem-identity-d2-production.mjs',
     'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',

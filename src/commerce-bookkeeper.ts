@@ -51,6 +51,7 @@ export interface CommerceBookkeeperEnvelope {
     productName: string;
     amountCents: number;
     currency: 'USD';
+    rosterPolicy: 'catalog' | 'none';
     payer: { firstName: string; lastName: string; email: string };
     learner: { firstName: string; lastName: string; email: string };
     purchaseRelationship: 'self' | 'other';
@@ -334,6 +335,14 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       422,
     );
   }
+  const rosterPolicy = order.rosterPolicy;
+  if (rosterPolicy !== 'catalog' && rosterPolicy !== 'none') {
+    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
+  }
+  const preparedCohort = cohort(order.cohort);
+  if (rosterPolicy === 'none' && preparedCohort !== null) {
+    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
+  }
   return {
     schemaVersion: 1,
     deliveryId,
@@ -364,10 +373,11 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       productName,
       amountCents: orderAmount,
       currency: 'USD',
+      rosterPolicy,
       payer: person(order.payer, 'order.payer'),
       learner: person(order.learner, 'order.learner'),
       purchaseRelationship: relationship,
-      cohort: cohort(order.cohort),
+      cohort: preparedCohort,
     },
     refund,
   };

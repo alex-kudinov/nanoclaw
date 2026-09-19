@@ -1,0 +1,493 @@
+diff --git a/scripts/build-release.mjs b/scripts/build-release.mjs
+index 6dbfc4a6..e200a0a8 100644
+--- a/scripts/build-release.mjs
++++ b/scripts/build-release.mjs
+@@ -325,6 +325,8 @@ try {
+     'data/business/migrations/nanoclaw-v2/rollback_169_acc_capacity_readiness.sql',
+     'data/business/migrations/nanoclaw-v2/171_finite_billing_contracts.sql',
+     'data/business/migrations/nanoclaw-v2/rollback_171_finite_billing_contracts.sql',
++    'data/business/migrations/nanoclaw-v2/172_custom_invoice_billing_cadence.sql',
++    'data/business/migrations/nanoclaw-v2/rollback_172_custom_invoice_billing_cadence.sql',
+     'scripts/verify-release.mjs',
+     'scripts/validate-tandem-identity-d2-production.mjs',
+     'scripts/prepare-tandem-identity-d3-heartbeat-snapshot.mjs',
+diff --git a/src/commerce-bookkeeper.test.ts b/src/commerce-bookkeeper.test.ts
+index 672b328f..efc56055 100644
+--- a/src/commerce-bookkeeper.test.ts
++++ b/src/commerce-bookkeeper.test.ts
+@@ -56,6 +56,7 @@ function payload() {
+       productName: 'Mentor Coaching Foundations (Program A)',
+       amountCents: 29900,
+       currency: 'USD',
++      rosterPolicy: 'catalog',
+       payer: {
+         firstName: 'Alex',
+         lastName: 'Buyer',
+@@ -126,6 +127,45 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
+     expect(prepared.order.productName).toBe('AI for Coaches');
+   });
+
++  it('accepts explicit no-roster invoice payments and rejects inferred or contradictory policy', () => {
++    const invoice = payload();
++    invoice.order.productId = 'invoice-0713aac48f0eba63d80d7a71';
++    invoice.order.productName = 'Custom invoice installments - TEST';
++    invoice.order.rosterPolicy = 'none';
++    const prepared = prepareCommerceBookkeeperEnvelope(signed(invoice));
++    expect(prepared.order.rosterPolicy).toBe('none');
++    expect(prepared.order.cohort).toBeNull();
++
++    const missing = structuredClone(invoice) as any;
++    delete missing.order.rosterPolicy;
++    expect(() => prepareCommerceBookkeeperEnvelope(signed(missing))).toThrow(
++      /rosterPolicy invalid/,
++    );
++    const contradictory = structuredClone(invoice);
++    contradictory.order.cohort = {
++      key: 'pcc-m1-0123456789abcdef01234567',
++      program: 'pcc',
++      module: 1,
++      enrollmentScope: 'module',
++      start: '2026-10-07T19:00:00-04:00',
++      end: '2026-10-28T21:00:00-04:00',
++      label: 'PCC Module 1',
++      range: 'Oct 7, 2026 - Oct 28, 2026',
++      time: '7:00 PM ET',
++      timezone: 'America/New_York',
++      sessions: [
++        '2026-10-07T19:00:00-04:00',
++        '2026-10-14T19:00:00-04:00',
++        '2026-10-21T19:00:00-04:00',
++        '2026-10-28T19:00:00-04:00',
++      ],
++      rosterValue: 'PCC Module 1 — Oct 7, 2026 - Oct 28, 2026',
++    };
++    expect(() =>
++      prepareCommerceBookkeeperEnvelope(signed(contradictory)),
++    ).toThrow(/rosterPolicy invalid/);
++  });
++
+   it('accepts an exact signed refund and rejects cross-payment or cumulative mismatch', () => {
+     const prepared = prepareCommerceBookkeeperEnvelope(signed(refundPayload()));
+     expect(prepared.notification.eventCode).toBe('REFUND');
+@@ -260,6 +300,12 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
+     );
+     expect(source).toContain("fail('student roster cohort readback mismatch')");
+     expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
++    expect(source).toContain(
++      "envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact)",
++    );
++    expect(source).toContain(
++      "studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0",
++    );
+   });
+
+   it('formats a rich mechanical receipt with provider and destination readback', () => {
+@@ -274,6 +320,7 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
+         transactionDate: '9/15/2026',
+         recordedDate: '9/15/2026',
+         cohort: null,
++        rosterPolicy: 'catalog',
+       },
+       { verified: true, row: 430, recordedDate: '9/15/2026' },
+       [{ tab: 'Practitioner Series', column: 'AI for Coaches', row: 15 }],
+@@ -294,6 +341,29 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
+     );
+   });
+
++  it('formats explicit no-roster invoice payment readback', () => {
++    const summary = recorder.formatCommerceSummary(
++      {
++        learnerName: 'Alex Kudinov',
++        learnerEmail: 'alex@example.test',
++        productName: 'Custom invoice installments - TEST',
++        amountDollars: '1.00',
++        currency: 'USD',
++        pspReference: 'INVOICEPSP1',
++        transactionDate: '9/19/2026',
++        recordedDate: '9/19/2026',
++        cohort: null,
++        rosterPolicy: 'none',
++      },
++      { verified: true, row: 431, recordedDate: '9/19/2026' },
++      [],
++    );
++    expect(summary).toContain(
++      'Student Roster: not applicable — invoice payment',
++    );
++    expect(summary).not.toContain('Student Roster: recorded and verified');
++  });
++
+   it('projects refund status without a roster mutation and formats exact provider refs', () => {
+     expect(recorder.refundPaymentLogStatus({ remainingPaidCents: 20000 })).toBe(
+       'partially refunded',
+diff --git a/src/commerce-bookkeeper.ts b/src/commerce-bookkeeper.ts
+index db00dad1..0709bebc 100644
+--- a/src/commerce-bookkeeper.ts
++++ b/src/commerce-bookkeeper.ts
+@@ -51,6 +51,7 @@ export interface CommerceBookkeeperEnvelope {
+     productName: string;
+     amountCents: number;
+     currency: 'USD';
++    rosterPolicy: 'catalog' | 'none';
+     payer: { firstName: string; lastName: string; email: string };
+     learner: { firstName: string; lastName: string; email: string };
+     purchaseRelationship: 'self' | 'other';
+@@ -334,6 +335,14 @@ export function prepareCommerceBookkeeperEnvelope(input: {
+       422,
+     );
+   }
++  const rosterPolicy = order.rosterPolicy;
++  if (rosterPolicy !== 'catalog' && rosterPolicy !== 'none') {
++    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
++  }
++  const preparedCohort = cohort(order.cohort);
++  if (rosterPolicy === 'none' && preparedCohort !== null) {
++    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
++  }
+   return {
+     schemaVersion: 1,
+     deliveryId,
+@@ -364,10 +373,11 @@ export function prepareCommerceBookkeeperEnvelope(input: {
+       productName,
+       amountCents: orderAmount,
+       currency: 'USD',
++      rosterPolicy,
+       payer: person(order.payer, 'order.payer'),
+       learner: person(order.learner, 'order.learner'),
+       purchaseRelationship: relationship,
+-      cohort: cohort(order.cohort),
++      cohort: preparedCohort,
+     },
+     refund,
+   };
+diff --git a/src/finite-billing.test.ts b/src/finite-billing.test.ts
+index e33c52da..968ee736 100644
+--- a/src/finite-billing.test.ts
++++ b/src/finite-billing.test.ts
+@@ -62,6 +62,7 @@ function activation() {
+       disclosure,
+       disclosureSha256: createHash('sha256').update(disclosure).digest('hex'),
+       selectionMethod: 'payment_option_and_submit' as const,
++      initialPaymentMethod: 'scheme' as const,
+     },
+     binding: {
+       bindingId: randomUUID(),
+@@ -90,6 +91,68 @@ describe('finite billing contracts', () => {
+     value.contract.obligations[2].amountCents = 89999;
+     expect(() => validateFiniteBillingActivation(value)).toThrow();
+   });
++  it('accepts an exact custom invoice schedule and rejects fee, source, method, and digest drift', () => {
++    const value = activation();
++    const obligations = value.contract.obligations.slice(0, 2).map((item) => ({
++      ...item,
++      amountCents: 100,
++      baseAmountCents: 97,
++      feeAmountCents: 3,
++    }));
++    const schedule = {
++      schemaVersion: 1 as const,
++      contractId: value.contract.contractId,
++      billingPrincipalId: value.contract.billingPrincipalId,
++      productId: 'invoice-0713aac48f0eba63d80d7a71',
++      paymentOptionId: 'invoice-schedule:custom-test',
++      kind: 'custom_invoice_installments' as const,
++      cadence: 'custom' as const,
++      timezone: 'America/Chicago' as const,
++      count: 2,
++      totalCents: 200,
++      currency: 'USD',
++      acceptedAt: value.contract.acceptedAt,
++      obligations,
++      sourceInvoiceId: randomUUID(),
++    };
++    const custom = {
++      ...value,
++      contract: {
++        ...schedule,
++        scheduleSha256: digest(schedule),
++        disclosure: value.contract.disclosure,
++        disclosureSha256: value.contract.disclosureSha256,
++        selectionMethod: 'payment_option_and_submit' as const,
++        initialPaymentMethod: 'scheme' as const,
++      },
++      firstPayment: {
++        ...value.firstPayment,
++        amountCents: 100,
++      },
++    };
++    expect(validateFiniteBillingActivation(custom).contract.kind).toBe(
++      'custom_invoice_installments',
++    );
++
++    const badFee = structuredClone(custom);
++    badFee.contract.obligations[1].feeAmountCents = 4;
++    expect(() => validateFiniteBillingActivation(badFee)).toThrow(
++      'finite_billing_amount_mismatch',
++    );
++    const badSource = structuredClone(custom) as any;
++    badSource.contract.sourceInvoiceId = 'not-an-invoice-id';
++    expect(() => validateFiniteBillingActivation(badSource)).toThrow();
++    const badMethod = structuredClone(custom) as any;
++    badMethod.contract.initialPaymentMethod = 'applepay';
++    expect(() => validateFiniteBillingActivation(badMethod)).toThrow(
++      'finite_billing_initial_method_conflict',
++    );
++    const badDigest = structuredClone(custom);
++    badDigest.contract.sourceInvoiceId = randomUUID();
++    expect(() => validateFiniteBillingActivation(badDigest)).toThrow(
++      'finite_billing_schedule_conflict',
++    );
++  });
+   it('verifies exact bytes and rejects stale or changed signatures', () => {
+     const value = activation();
+     const body = Buffer.from(JSON.stringify(value));
+diff --git a/src/finite-billing.ts b/src/finite-billing.ts
+index c2b02d45..56d00b99 100644
+--- a/src/finite-billing.ts
++++ b/src/finite-billing.ts
+@@ -11,36 +11,63 @@ const uuid = z.uuid();
+ const sha = z.string().regex(/^[a-f0-9]{64}$/);
+ const instant = z.iso.datetime({ offset: true });
+ const money = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+-const obligationSchema = z
++const obligationFields = {
++  obligationId: uuid,
++  ordinal: z.number().int().min(1).max(24),
++  amountCents: money,
++  currency: z.string().regex(/^[A-Z]{3}$/),
++  dueAt: instant,
++};
++const obligationSchema = z.object(obligationFields).strict();
++const customInvoiceObligationSchema = z
+   .object({
+-    obligationId: uuid,
+-    ordinal: z.number().int().min(1).max(24),
+-    amountCents: money,
+-    currency: z.string().regex(/^[A-Z]{3}$/),
+-    dueAt: instant,
++    ...obligationFields,
++    baseAmountCents: money,
++    feeAmountCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+   })
+   .strict();
+-const contractSchema = z
++const contractFields = {
++  schemaVersion: z.literal(1),
++  contractId: uuid,
++  billingPrincipalId: uuid,
++  productId: z.string().regex(/^[a-z0-9-]{1,100}$/),
++  paymentOptionId: z.string().min(2).max(100),
++  timezone: z.literal('America/Chicago'),
++  totalCents: money,
++  currency: z.string().regex(/^[A-Z]{3}$/),
++  acceptedAt: instant,
++  scheduleSha256: sha,
++  disclosure: z.string().min(40).max(4000),
++  disclosureSha256: sha,
++  selectionMethod: z.enum([
++    'payment_option_and_submit',
++    'apple_pay_recurring_proof',
++  ]),
++  initialPaymentMethod: z.enum(['scheme', 'applepay']),
++};
++const finiteContractSchema = z
+   .object({
+-    schemaVersion: z.literal(1),
+-    contractId: uuid,
+-    billingPrincipalId: uuid,
+-    productId: z.string().regex(/^[a-z0-9-]{1,100}$/),
+-    paymentOptionId: z.string().min(2).max(100),
++    ...contractFields,
+     kind: z.literal('finite_installments'),
+     cadence: z.enum(['monthly', 'quarterly', 'annual']),
+-    timezone: z.literal('America/Chicago'),
+     count: z.number().int().min(2).max(24),
+-    totalCents: money,
+-    currency: z.string().regex(/^[A-Z]{3}$/),
+-    acceptedAt: instant,
+     obligations: z.array(obligationSchema).min(2).max(24),
+-    scheduleSha256: sha,
+-    disclosure: z.string().min(40).max(4000),
+-    disclosureSha256: sha,
+-    selectionMethod: z.literal('payment_option_and_submit'),
+   })
+   .strict();
++const customInvoiceContractSchema = z
++  .object({
++    ...contractFields,
++    kind: z.literal('custom_invoice_installments'),
++    cadence: z.literal('custom'),
++    count: z.number().int().min(2).max(8),
++    obligations: z.array(customInvoiceObligationSchema).min(2).max(8),
++    sourceInvoiceId: uuid,
++  })
++  .strict();
++const contractSchema = z.discriminatedUnion('kind', [
++  finiteContractSchema,
++  customInvoiceContractSchema,
++]);
+ export const finiteBillingActivationSchema = z
+   .object({
+     schemaVersion: z.literal(1),
+@@ -133,6 +160,14 @@ export function validateFiniteBillingActivation(
+     c.obligations.reduce((sum, o) => sum + o.amountCents, 0) === c.totalCents,
+     'finite_billing_amount_mismatch',
+   );
++  if (c.kind === 'custom_invoice_installments') {
++    ensure(
++      c.obligations.every(
++        (o) => o.baseAmountCents + o.feeAmountCents === o.amountCents,
++      ),
++      'finite_billing_amount_mismatch',
++    );
++  }
+   ensure(
+     c.obligations.every(
+       (o, i) =>
+@@ -145,8 +180,16 @@ export function validateFiniteBillingActivation(
+     disclosure,
+     disclosureSha256,
+     selectionMethod,
++    initialPaymentMethod,
+     ...schedule
+   } = c;
++  ensure(
++    (selectionMethod === 'payment_option_and_submit' &&
++      initialPaymentMethod === 'scheme') ||
++      (selectionMethod === 'apple_pay_recurring_proof' &&
++        initialPaymentMethod === 'applepay'),
++    'finite_billing_initial_method_conflict',
++  );
+   ensure(
+     digest(schedule) === scheduleSha256,
+     'finite_billing_schedule_conflict',
+diff --git a/src/webhook-server.test.ts b/src/webhook-server.test.ts
+index 6fbe02e4..713f30bf 100644
+--- a/src/webhook-server.test.ts
++++ b/src/webhook-server.test.ts
+@@ -345,6 +345,7 @@ describe('WebhookServer', () => {
+         amountCents: 39900,
+         currency: 'USD',
+         purchaseRelationship: 'self',
++        rosterPolicy: 'catalog',
+         payer: {
+           firstName: 'Alex',
+           lastName: 'Buyer',
+@@ -476,6 +477,7 @@ describe('WebhookServer', () => {
+         amountCents: 29900,
+         currency: 'USD',
+         purchaseRelationship: 'self',
++        rosterPolicy: 'catalog',
+         payer: {
+           firstName: 'Alex',
+           lastName: 'Buyer',
+diff --git a/tools/contador/process-commerce-payment.cjs b/tools/contador/process-commerce-payment.cjs
+index 6e295033..0b4aad10 100644
+--- a/tools/contador/process-commerce-payment.cjs
++++ b/tools/contador/process-commerce-payment.cjs
+@@ -282,7 +282,9 @@ function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
+     `Paid: ${fact.transactionDate} · Recorded: ${paymentLog.recordedDate}`,
+     'Fee: pending — awaiting Adyen settlement/fee evidence',
+     `Payment Log: recorded and verified (row ${paymentLog.row}; provider Adyen)`,
+-    `Student Roster: recorded and verified (${roster})`,
++    fact.rosterPolicy === 'none'
++      ? 'Student Roster: not applicable — invoice payment'
++      : `Student Roster: recorded and verified (${roster})`,
+     ...(fact.cohort ? [`Cohort: ${fact.cohort.rosterValue}`] : []),
+     'Database: recorded and verified',
+   ].join('\n');
+@@ -329,14 +331,14 @@ async function main() {
+     transactionDate: format(event), recordedDate: format(new Date()),
+     learnerName: `${learner.firstName} ${learner.lastName}`.trim(), learnerEmail: learner.email.toLowerCase(),
+     productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
+-    cohort: envelope.order.cohort || null,
++    cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
+   };
+   // Each destination is idempotent by provider payment ID. A retry repairs an
+   // incomplete prior delivery and only succeeds after exact readback.
+   const paymentLog = await recordPaymentLog(fact);
+-  const rosterDestinations = await recordRoster(fact);
++  const rosterDestinations = envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact);
+   const postgresVerified = recordPostgres(envelope, fact);
+-  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: rosterDestinations.length > 0, postgresVerified, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
++  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0, postgresVerified, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
+   console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
+ }
+
+diff --git a/wordpress/tandem-commerce/includes/class-tandem-commerce-actions.php b/wordpress/tandem-commerce/includes/class-tandem-commerce-actions.php
+index 0e11bb5f1..85965e9fe 100644
+--- a/wordpress/tandem-commerce/includes/class-tandem-commerce-actions.php
++++ b/wordpress/tandem-commerce/includes/class-tandem-commerce-actions.php
+@@ -70,7 +70,8 @@ final class Tandem_Commerce_Actions {
+         if ($job['action_key'] === 'billing.payment') return $this->billing_payment($order, $job);
+         if ($job['action_key'] === 'documents.generate') {
+             $this->documents->ensure($order['order_id'], 'receipt');
+-            if (is_array($snapshot['billingProfile'] ?? null) || $this->store->native_invoice_for_order((string) $order['order_id']) !== null) {
++            $commercial = $this->security->open($order['commercial_snapshot_ciphertext'], (string) ($order['encryption_key_version'] ?? 'v1'));
++            if (self::paid_invoice_allowed($commercial) && (is_array($snapshot['billingProfile'] ?? null) || $this->store->native_invoice_for_order((string) $order['order_id']) !== null)) {
+                 $this->documents->ensure($order['order_id'], 'paid_invoice');
+             }
+             return 'generated';
+@@ -83,6 +84,15 @@ final class Tandem_Commerce_Actions {
+         throw new RuntimeException('action_unknown');
+     }
+
++    /** @param array<string,mixed> $commercial */
++    private static function paid_invoice_allowed(array $commercial): bool {
++        $fulfillment_mode = (string) ($commercial['fulfillmentMode'] ?? '');
++        if ($fulfillment_mode === 'invoice_installments') return false;
++        if ($fulfillment_mode !== 'invoice_installment_payment') return true;
++        $plan_payment = is_array($commercial['billingPayment'] ?? null) ? $commercial['billingPayment'] : [];
++        return ($plan_payment['final'] ?? false) === true;
++    }
++
+     private function heartbeat(array $snapshot, array $order): string {
+         if ($this->config['heartbeatKey'] === '') throw new RuntimeException('heartbeat_unconfigured');
+         $commercial = $this->security->open($order['commercial_snapshot_ciphertext'], (string) ($order['encryption_key_version'] ?? 'v1'));
+@@ -336,6 +346,7 @@ final class Tandem_Commerce_Actions {
+                 'orderId' => $order['order_id'], 'merchantReference' => $order['merchant_reference'],
+                 'productId' => $order['product_id'], 'productName' => $bookkeeper_name,
+                 'amountCents' => (int) $order['amount_cents'], 'currency' => $order['currency'],
++                'rosterPolicy' => in_array(($commercial['fulfillmentMode'] ?? null), ['invoice_only','invoice_installments','invoice_installment_payment'], true) ? 'none' : 'catalog',
+                 'payer' => $snapshot['payer'], 'learner' => $snapshot['learner'], 'purchaseRelationship' => $snapshot['relationship'],
+                 'cohort' => is_array($commercial['enrollment']['cohort'] ?? null) ? $commercial['enrollment']['cohort'] : null,
+             ],
+diff --git a/wordpress/tandem-commerce/tests/test-automatic-receipt-email.php b/wordpress/tandem-commerce/tests/test-automatic-receipt-email.php
+index 39e8e86ba..448cd8365 100644
+--- a/wordpress/tandem-commerce/tests/test-automatic-receipt-email.php
++++ b/wordpress/tandem-commerce/tests/test-automatic-receipt-email.php
+@@ -6,6 +6,7 @@ define('ABSPATH', __DIR__ . '/');
+
+ require_once dirname(__DIR__) . '/includes/class-tandem-commerce-store.php';
+ require_once dirname(__DIR__) . '/includes/class-tandem-commerce-documents.php';
++require_once dirname(__DIR__) . '/includes/class-tandem-commerce-actions.php';
+
+ function automatic_receipt_check(bool $condition, string $message): void {
+     if (!$condition) { fwrite(STDERR, "FAIL: {$message}\n"); exit(1); }
+@@ -25,6 +26,7 @@ automatic_receipt_check($manual === ['Content-Type: text/html; charset=UTF-8'],
+ $storeSource = (string) file_get_contents(dirname(__DIR__) . '/includes/class-tandem-commerce-store.php');
+ $actionsSource = (string) file_get_contents(dirname(__DIR__) . '/includes/class-tandem-commerce-actions.php');
+ $documentsSource = (string) file_get_contents(dirname(__DIR__) . '/includes/class-tandem-commerce-documents.php');
++$paidInvoiceAllowed = new ReflectionMethod(Tandem_Commerce_Actions::class, 'paid_invoice_allowed');
+
+ automatic_receipt_check(
+     str_contains($storeSource, "\$actions = ['documents.generate', 'receipt.email']") &&
+@@ -60,6 +62,18 @@ automatic_receipt_check(
+     str_contains($storeSource, "if (\$fulfillment_mode === 'invoice_only') return ['documents.generate', 'receipt.email', 'paid_invoice.email', 'nanoclaw.bookkeeper.notify'];"),
+     'invoice-only payment schedules both automatic documents without historical backfill'
+ );
++automatic_receipt_check(
++    $paidInvoiceAllowed->invoke(null, ['fulfillmentMode' => 'invoice_installments']) === false &&
++    $paidInvoiceAllowed->invoke(null, ['fulfillmentMode' => 'invoice_installment_payment', 'billingPayment' => ['final' => false]]) === false &&
++    $paidInvoiceAllowed->invoke(null, ['fulfillmentMode' => 'invoice_installment_payment', 'billingPayment' => ['final' => true]]) === true &&
++    $paidInvoiceAllowed->invoke(null, ['fulfillmentMode' => 'invoice_only']) === true,
++    'custom invoice installment one never creates a paid-in-full document while the final obligation may reuse the issued invoice'
++);
++automatic_receipt_check(
++    str_contains($actionsSource, "['invoice_only','invoice_installments','invoice_installment_payment']") &&
++    str_contains($actionsSource, "? 'none' : 'catalog'"),
++    'signed Bookkeeper payload makes hosted invoice roster non-applicability explicit without inferring from payer or product text'
++);
+ automatic_receipt_check(
+     str_contains($actionsSource, "preg_match('/^academy_capacity_[a-z0-9_]{1,80}$/', \$code)") &&
+     str_contains($actionsSource, 'throw new RuntimeException($code)'),

@@ -56,6 +56,7 @@ function payload() {
       productName: 'Mentor Coaching Foundations (Program A)',
       amountCents: 29900,
       currency: 'USD',
+      rosterPolicy: 'catalog',
       payer: {
         firstName: 'Alex',
         lastName: 'Buyer',
@@ -124,6 +125,45 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     const prepared = prepareCommerceBookkeeperEnvelope(signed(practitioner));
     expect(prepared.order.productId).toBe('practitioner-ai-for-coaches');
     expect(prepared.order.productName).toBe('AI for Coaches');
+  });
+
+  it('accepts explicit no-roster invoice payments and rejects inferred or contradictory policy', () => {
+    const invoice = payload();
+    invoice.order.productId = 'invoice-0713aac48f0eba63d80d7a71';
+    invoice.order.productName = 'Custom invoice installments - TEST';
+    invoice.order.rosterPolicy = 'none';
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(invoice));
+    expect(prepared.order.rosterPolicy).toBe('none');
+    expect(prepared.order.cohort).toBeNull();
+
+    const missing = structuredClone(invoice) as any;
+    delete missing.order.rosterPolicy;
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(missing))).toThrow(
+      /rosterPolicy invalid/,
+    );
+    const contradictory = structuredClone(invoice);
+    contradictory.order.cohort = {
+      key: 'pcc-m1-0123456789abcdef01234567',
+      program: 'pcc',
+      module: 1,
+      enrollmentScope: 'module',
+      start: '2026-10-07T19:00:00-04:00',
+      end: '2026-10-28T21:00:00-04:00',
+      label: 'PCC Module 1',
+      range: 'Oct 7, 2026 - Oct 28, 2026',
+      time: '7:00 PM ET',
+      timezone: 'America/New_York',
+      sessions: [
+        '2026-10-07T19:00:00-04:00',
+        '2026-10-14T19:00:00-04:00',
+        '2026-10-21T19:00:00-04:00',
+        '2026-10-28T19:00:00-04:00',
+      ],
+      rosterValue: 'PCC Module 1 — Oct 7, 2026 - Oct 28, 2026',
+    };
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(contradictory)),
+    ).toThrow(/rosterPolicy invalid/);
   });
 
   it('accepts an exact signed refund and rejects cross-payment or cumulative mismatch', () => {
@@ -260,6 +300,12 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     );
     expect(source).toContain("fail('student roster cohort readback mismatch')");
     expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
+    expect(source).toContain(
+      "envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact)",
+    );
+    expect(source).toContain(
+      "studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0",
+    );
   });
 
   it('formats a rich mechanical receipt with provider and destination readback', () => {
@@ -274,6 +320,7 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
         transactionDate: '9/15/2026',
         recordedDate: '9/15/2026',
         cohort: null,
+        rosterPolicy: 'catalog',
       },
       { verified: true, row: 430, recordedDate: '9/15/2026' },
       [{ tab: 'Practitioner Series', column: 'AI for Coaches', row: 15 }],
@@ -292,6 +339,29 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(summary).toContain(
       'Student Roster: recorded and verified (Practitioner Series → AI for Coaches (row 15))',
     );
+  });
+
+  it('formats explicit no-roster invoice payment readback', () => {
+    const summary = recorder.formatCommerceSummary(
+      {
+        learnerName: 'Alex Kudinov',
+        learnerEmail: 'alex@example.test',
+        productName: 'Custom invoice installments - TEST',
+        amountDollars: '1.00',
+        currency: 'USD',
+        pspReference: 'INVOICEPSP1',
+        transactionDate: '9/19/2026',
+        recordedDate: '9/19/2026',
+        cohort: null,
+        rosterPolicy: 'none',
+      },
+      { verified: true, row: 431, recordedDate: '9/19/2026' },
+      [],
+    );
+    expect(summary).toContain(
+      'Student Roster: not applicable — invoice payment',
+    );
+    expect(summary).not.toContain('Student Roster: recorded and verified');
   });
 
   it('projects refund status without a roster mutation and formats exact provider refs', () => {

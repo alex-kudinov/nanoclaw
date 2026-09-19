@@ -4,6 +4,16 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Migration 172 is the narrow custom-invoice successor to the existing live
+finite-billing migration 171. It changes only the cadence CHECK on
+`business_v2.finite_billing_contracts` to admit the exact signed `custom`
+schedule alongside monthly, quarterly and annual plans. It adds no relation,
+column, index, grant, owner change, row or worker. Runtime validation still
+requires the source invoice UUID, exact obligation IDs/order/dates/currency,
+base-plus-fee arithmetic, schedule and consent digests, first-payment match and
+selection/initial-method pairing. SQL rollback refuses once a custom contract
+exists; runtime rollback preserves financial evidence and the wider CHECK.
+
 Source-only migration 167 is the Tandem Identity D1 persistence contract over
 the existing migration-137 relationship-context foundation. It adds explicit
 environment/effective manifest declarations and 12 admin-only receipt,

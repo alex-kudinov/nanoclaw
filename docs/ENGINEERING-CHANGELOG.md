@@ -1,5 +1,46 @@
 # NanoClaw engineering changelog
 
+## 2026-09-19 — NC-20260919-001 custom invoice installment projection
+
+- State: `validating`; implementation and focused local verification are
+  complete, while full verification, review, migration, release and retained
+  TEST-job replay remain.
+- Change class: C4 because the existing signed routes project payment and
+  recurring-contract truth into Company OS after provider-confirmed payment.
+- Trigger: Commerce completed both USD 1.00 TEST obligations exactly once, but
+  Company OS rejected the custom contract schema and the Bookkeeper recorder
+  required a Student Roster destination that ad-hoc invoices do not have.
+- Outcome: the existing finite-billing validator admits a strict custom invoice
+  schedule with fee/source/initial-method proof; migration 172 widens only the
+  cadence CHECK. The existing Bookkeeper envelope carries signed
+  `rosterPolicy`; invoice payments still require Payment Log and PostgreSQL
+  readback while explicitly making Student Roster not applicable.
+- Topology: no new route, table, column, index, process, queue, worker,
+  scheduler, credential, provider adapter, payment or customer action.
+- Files: `src/finite-billing.ts`, `src/finite-billing.test.ts`,
+  `src/custom-invoice-billing-migration.test.ts`, migration/rollback 172,
+  `src/commerce-bookkeeper.ts`, `src/commerce-bookkeeper.test.ts`,
+  `src/webhook-server.test.ts`, `tools/contador/process-commerce-payment.cjs`,
+  release manifest/docs/continuity surfaces.
+- Verification: minimum-sufficient Sonnet/high S1 returned `KEEP`; focused
+  finite-billing, disposable migration, Bookkeeper and webhook suites pass
+  81/81 under pinned Node 22.23.2; pinned typecheck passes.
+- Independent review: the first bounded correctness round found one material
+  deployment-compatibility concern: `initialPaymentMethod` and the widened
+  selection method are required universally. The load-bearing follow-up
+  confirmed the implementation should remain universal but required producer-
+  before-consumer evidence. Direct active-plugin readback proves Commerce
+  1.44.2 already emits `payment_option_and_submit/scheme` for manual finite and
+  custom schedules and `apple_pay_recurring_proof/applepay` for Apple Pay.
+  Company OS therefore deploys second; no code correction is required. Claude
+  usage transcripts were unavailable from the runner for both rounds.
+- Deployment/migration: not yet committed, migrated or deployed. No new
+  provider call, payment, customer message, roster write or Live canary is
+  authorized. Existing retained TEST jobs remain retryable.
+- Rollback/recovery: migration 172 rollback is empty-custom-only; after custom
+  evidence exists, disable/restore runtime code while preserving the wider
+  constraint and all financial rows.
+
 ## 2026-09-18 — NC-20260918-001 owner-directed approved CC authority
 
 - State: `ready_for_review`; implementation and local verification are complete.

@@ -11,36 +11,63 @@ const uuid = z.uuid();
 const sha = z.string().regex(/^[a-f0-9]{64}$/);
 const instant = z.iso.datetime({ offset: true });
 const money = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
-const obligationSchema = z
+const obligationFields = {
+  obligationId: uuid,
+  ordinal: z.number().int().min(1).max(24),
+  amountCents: money,
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  dueAt: instant,
+};
+const obligationSchema = z.object(obligationFields).strict();
+const customInvoiceObligationSchema = z
   .object({
-    obligationId: uuid,
-    ordinal: z.number().int().min(1).max(24),
-    amountCents: money,
-    currency: z.string().regex(/^[A-Z]{3}$/),
-    dueAt: instant,
+    ...obligationFields,
+    baseAmountCents: money,
+    feeAmountCents: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   })
   .strict();
-const contractSchema = z
+const contractFields = {
+  schemaVersion: z.literal(1),
+  contractId: uuid,
+  billingPrincipalId: uuid,
+  productId: z.string().regex(/^[a-z0-9-]{1,100}$/),
+  paymentOptionId: z.string().min(2).max(100),
+  timezone: z.literal('America/Chicago'),
+  totalCents: money,
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  acceptedAt: instant,
+  scheduleSha256: sha,
+  disclosure: z.string().min(40).max(4000),
+  disclosureSha256: sha,
+  selectionMethod: z.enum([
+    'payment_option_and_submit',
+    'apple_pay_recurring_proof',
+  ]),
+  initialPaymentMethod: z.enum(['scheme', 'applepay']),
+};
+const finiteContractSchema = z
   .object({
-    schemaVersion: z.literal(1),
-    contractId: uuid,
-    billingPrincipalId: uuid,
-    productId: z.string().regex(/^[a-z0-9-]{1,100}$/),
-    paymentOptionId: z.string().min(2).max(100),
+    ...contractFields,
     kind: z.literal('finite_installments'),
     cadence: z.enum(['monthly', 'quarterly', 'annual']),
-    timezone: z.literal('America/Chicago'),
     count: z.number().int().min(2).max(24),
-    totalCents: money,
-    currency: z.string().regex(/^[A-Z]{3}$/),
-    acceptedAt: instant,
     obligations: z.array(obligationSchema).min(2).max(24),
-    scheduleSha256: sha,
-    disclosure: z.string().min(40).max(4000),
-    disclosureSha256: sha,
-    selectionMethod: z.literal('payment_option_and_submit'),
   })
   .strict();
+const customInvoiceContractSchema = z
+  .object({
+    ...contractFields,
+    kind: z.literal('custom_invoice_installments'),
+    cadence: z.literal('custom'),
+    count: z.number().int().min(2).max(8),
+    obligations: z.array(customInvoiceObligationSchema).min(2).max(8),
+    sourceInvoiceId: uuid,
+  })
+  .strict();
+const contractSchema = z.discriminatedUnion('kind', [
+  finiteContractSchema,
+  customInvoiceContractSchema,
+]);
 export const finiteBillingActivationSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -133,6 +160,14 @@ export function validateFiniteBillingActivation(
     c.obligations.reduce((sum, o) => sum + o.amountCents, 0) === c.totalCents,
     'finite_billing_amount_mismatch',
   );
+  if (c.kind === 'custom_invoice_installments') {
+    ensure(
+      c.obligations.every(
+        (o) => o.baseAmountCents + o.feeAmountCents === o.amountCents,
+      ),
+      'finite_billing_amount_mismatch',
+    );
+  }
   ensure(
     c.obligations.every(
       (o, i) =>
@@ -145,8 +180,16 @@ export function validateFiniteBillingActivation(
     disclosure,
     disclosureSha256,
     selectionMethod,
+    initialPaymentMethod,
     ...schedule
   } = c;
+  ensure(
+    (selectionMethod === 'payment_option_and_submit' &&
+      initialPaymentMethod === 'scheme') ||
+      (selectionMethod === 'apple_pay_recurring_proof' &&
+        initialPaymentMethod === 'applepay'),
+    'finite_billing_initial_method_conflict',
+  );
   ensure(
     digest(schedule) === scheduleSha256,
     'finite_billing_schedule_conflict',

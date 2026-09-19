@@ -62,6 +62,7 @@ function activation() {
       disclosure,
       disclosureSha256: createHash('sha256').update(disclosure).digest('hex'),
       selectionMethod: 'payment_option_and_submit' as const,
+      initialPaymentMethod: 'scheme' as const,
     },
     binding: {
       bindingId: randomUUID(),
@@ -89,6 +90,68 @@ describe('finite billing contracts', () => {
     ).toHaveLength(3);
     value.contract.obligations[2].amountCents = 89999;
     expect(() => validateFiniteBillingActivation(value)).toThrow();
+  });
+  it('accepts an exact custom invoice schedule and rejects fee, source, method, and digest drift', () => {
+    const value = activation();
+    const obligations = value.contract.obligations.slice(0, 2).map((item) => ({
+      ...item,
+      amountCents: 100,
+      baseAmountCents: 97,
+      feeAmountCents: 3,
+    }));
+    const schedule = {
+      schemaVersion: 1 as const,
+      contractId: value.contract.contractId,
+      billingPrincipalId: value.contract.billingPrincipalId,
+      productId: 'invoice-0713aac48f0eba63d80d7a71',
+      paymentOptionId: 'invoice-schedule:custom-test',
+      kind: 'custom_invoice_installments' as const,
+      cadence: 'custom' as const,
+      timezone: 'America/Chicago' as const,
+      count: 2,
+      totalCents: 200,
+      currency: 'USD',
+      acceptedAt: value.contract.acceptedAt,
+      obligations,
+      sourceInvoiceId: randomUUID(),
+    };
+    const custom = {
+      ...value,
+      contract: {
+        ...schedule,
+        scheduleSha256: digest(schedule),
+        disclosure: value.contract.disclosure,
+        disclosureSha256: value.contract.disclosureSha256,
+        selectionMethod: 'payment_option_and_submit' as const,
+        initialPaymentMethod: 'scheme' as const,
+      },
+      firstPayment: {
+        ...value.firstPayment,
+        amountCents: 100,
+      },
+    };
+    expect(validateFiniteBillingActivation(custom).contract.kind).toBe(
+      'custom_invoice_installments',
+    );
+
+    const badFee = structuredClone(custom);
+    badFee.contract.obligations[1].feeAmountCents = 4;
+    expect(() => validateFiniteBillingActivation(badFee)).toThrow(
+      'finite_billing_amount_mismatch',
+    );
+    const badSource = structuredClone(custom) as any;
+    badSource.contract.sourceInvoiceId = 'not-an-invoice-id';
+    expect(() => validateFiniteBillingActivation(badSource)).toThrow();
+    const badMethod = structuredClone(custom) as any;
+    badMethod.contract.initialPaymentMethod = 'applepay';
+    expect(() => validateFiniteBillingActivation(badMethod)).toThrow(
+      'finite_billing_initial_method_conflict',
+    );
+    const badDigest = structuredClone(custom);
+    badDigest.contract.sourceInvoiceId = randomUUID();
+    expect(() => validateFiniteBillingActivation(badDigest)).toThrow(
+      'finite_billing_schedule_conflict',
+    );
   });
   it('verifies exact bytes and rejects stale or changed signatures', () => {
     const value = activation();

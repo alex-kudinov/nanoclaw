@@ -63,6 +63,23 @@ refund projection after signed `REFUND success`; Student Roster, access,
 capacity and original payment rows remain unchanged. Once any refund row exists,
 the SQL rollback must refuse; host-code rollback preserves the evidence.
 
+Beginning with `NC-20260919-001`, the archive also binds migration 172 and its
+guarded rollback. Apply it only after a validated custom-format `business_v2`
+backup and exact migration-171 table/constraint/owner/grant readback. Migration
+172 widens only the existing finite-contract cadence CHECK to include `custom`;
+it must preserve every row, table, index, owner and grant and exact reapply must
+be a no-op. Rollback is permitted only while no custom-cadence row exists and
+must refuse visibly afterward. Activate the host release only after the schema
+readback; code rollback preserves custom financial evidence and the wider
+constraint.
+
+The Commerce producer must precede this consumer release. Active Commerce
+1.44.2 has been read back with both exact signed pairs already present:
+`payment_option_and_submit/scheme` for manual finite/custom schedules and
+`apple_pay_recurring_proof/applepay` for Apple Pay. Do not activate a Company
+OS build requiring those fields against an older producer; if that readback no
+longer holds, stop before migration or activation.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact
