@@ -498,8 +498,8 @@
 
 ## 2026-09-18 — NC-20260918-001 exact-root Polish submission attestation
 
-- State: reviewed source and isolated verification complete; immutable release
-  and live Polish canary pending.
+- State: exact release deployed and live Polish canary accepted; Heartbeat and
+  tracker writeback remain pending.
 - Change class: C5 because the existing privileged source-language assertion now
   accepts one additional language value.
 - Current production `610a5db9` no longer contained the previously reviewed
@@ -525,6 +525,24 @@
   independently confirmed the exact-root setter is wired through `src/index.ts`
   into `SlackChannel.postGraderFileMessage()`, whose test proves the callback runs
   before the grader-visible row is persisted.
+- Immutable release `ea3f6532ef76cecc0c2ee5716348b2028b85d790` has source tree
+  `8ee7b3aa0244fe26ea866a1f2bc1c9155297ea19`, artifact hash
+  `51f8a37877226f1fb32d79eb8a50f6c8e1af514a32bfe8801e0d687c4e39958c`,
+  1,404 files, and archive SHA-256
+  `dd394e89faa73320fe178dc8bcaf00e2866c1f3158ac47c651b7ebb342c4e08e`.
+  It independently verified locally and on `mini-claw.local`; activation retained
+  rollback plist `com.nanoclaw.plist.rollback-610a5db953d9-2026-09-19T01-11-55-201Z`.
+  Health proves the exact release/root, Node 22.23.2, one listener, connected
+  Gmail/Slack, and an empty queue before the canary.
+- Operational grader instructions match the release at SHA-256
+  `19365468bbb132c6ac8867df1751c870638a23ceac6613300bbda0d7626a8e34`,
+  with the prior copy preserved outside the release.
+- Live canary: the exact existing Michał Bloch artifact SHA-256
+  `7a31d56f44d9c8283e72c68c00cda69e51150b38a125614f68cb6162556bc383`
+  was staged once with `submission_language=pl` under root
+  `1789780363.493139` and returned explicit `PASS` with English feedback. The
+  prior unattested root remains historical evidence only. Lize Rech's separate
+  owner re-trigger root `1789773428.463499` also returned explicit `PASS`.
 
 ## 2026-09-14 — NC-20260914-002 exact-root Italian submission attestation
 

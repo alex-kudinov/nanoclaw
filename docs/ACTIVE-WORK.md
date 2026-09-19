@@ -332,7 +332,7 @@ prohibited and absent.
 
 2026-09-18T19:40Z — `NC-20260918-001` exact-root Polish submission
 attestation for the Foundation grader, owner Codex with fresh-context necessity
-review and bounded Claude review, `ready_for_deploy`, C5, isolated branch
+review and bounded Claude review, `deployed_unverified`, C5, isolated branch
 `codex/grader-polish-currentline-20260918` from exact current production release
 `610a5db953d959ddc74695195955d5c42f86f6fb`. Current live evidence: Michał
 Bloch's `facilitation-m6` root lacks trusted Polish-original context; the current
@@ -347,9 +347,12 @@ files / 165 tests, typecheck, continuity, runtime doctor, email replay, the
 809-host/45-runner email-critical gate, toolbox checks, and the bounded Italian
 and Polish Sonnet/high reviews are complete. Full root is 4,517 pass / 34 skip /
 four failures; the payment-method race passed immediately in isolation, leaving
-the exact three current-production Capacity, CNPC, and Trafft baselines. Next
-proof: immutable release/live health, then one new Polish-attested copy of the
-same verified file and an explicit grader verdict.
+the exact three current-production Capacity, CNPC, and Trafft baselines. Exact
+release `ea3f6532ef76cecc0c2ee5716348b2028b85d790` is live and healthy; the
+reviewed grader prompt is synchronized and the exact Polish canary root
+`1789780363.493139` returned `PASS`. Lize's re-trigger root
+`1789773428.463499` also returned `PASS`. Next proof: Heartbeat approval plus
+exact tracker readback for both students, followed by ordinary readiness gates.
 
 2026-09-14T22:31Z — `NC-20260914-002` trusted Italian submission language,
 owner Codex with bounded Claude reviewer, `ready_for_deploy`, C5, isolated branch
