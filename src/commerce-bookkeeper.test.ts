@@ -16,6 +16,17 @@ const recorder = require('../tools/contador/process-commerce-payment.cjs') as {
     current: string,
     cohort: { rosterValue: string } | null,
   ): string;
+  commerceEconomics(
+    amountCents: number,
+    economics: Record<string, unknown> | null,
+  ): {
+    feeBasis: string;
+    feeCents: number;
+    netCents: number;
+    feeDollars: string;
+    netDollars: string;
+  } | null;
+  sheetMoneyCents(value: unknown): number;
   refundPaymentLogStatus(refund: { remainingPaidCents: number }): string;
   finalRefundPaymentLogStatus(
     current: string,
@@ -25,6 +36,11 @@ const recorder = require('../tools/contador/process-commerce-payment.cjs') as {
     fact: Record<string, unknown>,
     paymentLog: { verified: boolean; row: number; recordedDate: string },
     roster: Array<{ tab: string; column: string; row: number }>,
+  ): string;
+  formatCommerceTestSummary(envelope: Record<string, unknown>): string;
+  formatCommerceFeeSummary(
+    envelope: Record<string, unknown>,
+    paymentLog: Record<string, unknown>,
   ): string;
   formatCommerceRefundSummary(
     envelope: Record<string, unknown>,
@@ -39,6 +55,9 @@ function payload() {
     schemaVersion: 1,
     deliveryId: '10000000-0000-4000-8000-000000000001',
     sentAt: '2026-09-12T22:00:00Z',
+    environment: 'live',
+    deliveryKind: 'payment',
+    economics: null as null | Record<string, unknown>,
     notification: {
       pspReference: 'WPFT7CXWRGM7NKZ3',
       merchantReference: 'TCA-ABC123',
@@ -95,6 +114,7 @@ function refundPayload() {
   };
   return {
     ...value,
+    deliveryKind: 'refund',
     notification,
     refund: {
       refundId: '30000000-0000-4000-8000-000000000003',
@@ -116,6 +136,59 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       'provider-native-signature',
     );
     expect(prepared.order.learner.email).toBe('learner@example.test');
+    expect(prepared.environment).toBe('live');
+    expect(prepared.deliveryKind).toBe('payment');
+  });
+
+  it('accepts exact signed fee economics and rejects scope or arithmetic drift', () => {
+    const fees = payload();
+    fees.deliveryKind = 'fee_reconciliation';
+    fees.economics = {
+      feeBasis: 'zentact_settled',
+      providerFeeCents: 741,
+      periFeeCents: 85,
+    };
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(fees));
+    expect(prepared.economics).toEqual(fees.economics);
+    expect(recorder.commerceEconomics(29900, fees.economics)).toMatchObject({
+      feeCents: 826,
+      netCents: 29074,
+      feeDollars: '8.26',
+      netDollars: '290.74',
+    });
+    expect(recorder.sheetMoneyCents('$1,299.00')).toBe(129900);
+    expect(recorder.sheetMoneyCents('8.2')).toBe(820);
+    expect(() => recorder.sheetMoneyCents('=SUM(A1:A2)')).toThrow(
+      /payment log money invalid/,
+    );
+
+    const testFee = structuredClone(fees);
+    testFee.environment = 'test';
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(testFee))).toThrow(
+      /delivery scope invalid/,
+    );
+    const overcharge = structuredClone(fees);
+    overcharge.economics = {
+      feeBasis: 'zentact_settled',
+      providerFeeCents: 29899,
+      periFeeCents: 2,
+    };
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(overcharge))).toThrow(
+      /economics invalid/,
+    );
+  });
+
+  it('requires a signed environment and delivery kind for every projection', () => {
+    const missingEnvironment = payload() as any;
+    delete missingEnvironment.environment;
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(missingEnvironment)),
+    ).toThrow(/environment invalid/);
+    const wrongKind = payload();
+    wrongKind.deliveryKind = 'refund';
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(wrongKind))).toThrow(
+      /delivery scope invalid/,
+    );
   });
 
   it('accepts a signed provider-neutral Practitioner product identity', () => {
@@ -306,6 +379,15 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(source).toContain(
       "studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0",
     );
+    expect(source.indexOf("if (envelope.environment === 'test')")).toBeLessThan(
+      source.indexOf("fail('bookkeeper configuration missing')"),
+    );
+    expect(source).toContain(
+      'await update(PAYMENTS_ID, `Payment Log!G${sheetRow}:H${sheetRow}`',
+    );
+    expect(source).toContain(
+      'const priorEconomics = (await get(PAYMENTS_ID, `Payment Log!G${sheetRow}:H${sheetRow}`))',
+    );
   });
 
   it('formats a rich mechanical receipt with provider and destination readback', () => {
@@ -362,6 +444,31 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       'Student Roster: not applicable — invoice payment',
     );
     expect(summary).not.toContain('Student Roster: recorded and verified');
+  });
+
+  it('formats explicit TEST exclusion and all-in fee reconciliation receipts', () => {
+    const testEnvelope = payload();
+    testEnvelope.environment = 'test';
+    expect(recorder.formatCommerceTestSummary(testEnvelope)).toContain(
+      'Official record: not written (Payment Log, Student Roster, PostgreSQL, Capacity)',
+    );
+    const feeEnvelope = payload();
+    feeEnvelope.deliveryKind = 'fee_reconciliation';
+    feeEnvelope.economics = {
+      feeBasis: 'zentact_settled',
+      providerFeeCents: 741,
+      periFeeCents: 85,
+    };
+    const summary = recorder.formatCommerceFeeSummary(feeEnvelope, {
+      row: 430,
+      economics: recorder.commerceEconomics(29900, feeEnvelope.economics),
+    });
+    expect(summary).toContain('Fee / net: $8.26 / $290.74');
+    expect(summary).toContain(
+      'Fee basis: Zentact settled processing cost + estimated Peri',
+    );
+    expect(summary).toContain('Student Roster: unchanged');
+    expect(summary).toContain('Database: unchanged');
   });
 
   it('projects refund status without a roster mutation and formats exact provider refs', () => {

@@ -83,6 +83,19 @@ active before Company OS activation because it begins signing
 `order.rosterPolicy`; the old receiver safely ignores that additive field,
 while the new receiver correctly rejects a missing policy.
 
+`NC-20260919-002` is a deliberate consumer-first exception to that general
+producer-first compatibility pattern. Stage both verified artifacts and require
+zero active/waiting NanoClaw work plus zero pending/processing Commerce
+Bookkeeper jobs. Activate the strict NanoClaw consumer, then immediately
+activate Commerce 1.44.12. In the bounded gap, an old-producer payload lacks
+the newly required signed environment and is rejected retryably. Reversing the
+order is unsafe: the old consumer ignores `deliveryKind`, can acknowledge a new
+fee-reconciliation job as an ordinary payment without filling G:H, and causes
+Commerce to terminalize that job. After both sides are active, verify a retained
+TEST delivery writes no official sink and create backfill jobs only for exact
+LIVE settled projections whose PSP still exists uniquely in Payment Log. No
+provider event may be replayed or manufactured for this release.
+
 NC-20260821-006 crossed the dark follow-up-evidence release boundary under
 exact release `8c4e3c2b8d78104421b6bf17cf21ff05359b4b3c`, source tree
 `5511342c361e8841ecef9cb41530424521b176b4`, 844 compiled files, artifact

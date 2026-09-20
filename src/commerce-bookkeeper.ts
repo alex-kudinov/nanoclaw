@@ -33,6 +33,13 @@ export interface CommerceBookkeeperEnvelope {
   schemaVersion: 1;
   deliveryId: string;
   sentAt: string;
+  environment: 'test' | 'live';
+  deliveryKind: 'payment' | 'refund' | 'fee_reconciliation';
+  economics: null | {
+    feeBasis: 'adyen_detailed' | 'zentact_settled';
+    providerFeeCents: number;
+    periFeeCents: number;
+  };
   notification: {
     pspReference: string;
     originalReference?: string;
@@ -88,6 +95,8 @@ export interface CommerceBookkeeperResult {
   paymentLogVerified: boolean;
   studentRosterVerified: boolean;
   postgresVerified: boolean;
+  officialRecordSuppressed: boolean;
+  feeReconciliationVerified: boolean;
   summary: string;
 }
 
@@ -116,6 +125,32 @@ function person(value: unknown, label: string) {
     firstName: text(p.firstName, `${label}.firstName`, 100),
     lastName: text(p.lastName, `${label}.lastName`, 100),
     email,
+  };
+}
+
+function economics(
+  value: unknown,
+  amountCents: number,
+): CommerceBookkeeperEnvelope['economics'] {
+  if (value === null || value === undefined) return null;
+  const input = object(value, 'economics');
+  const feeBasis = text(input.feeBasis, 'economics.feeBasis', 32);
+  const providerFeeCents = Number(input.providerFeeCents);
+  const periFeeCents = Number(input.periFeeCents);
+  if (
+    !['adyen_detailed', 'zentact_settled'].includes(feeBasis) ||
+    !Number.isSafeInteger(providerFeeCents) ||
+    providerFeeCents < 0 ||
+    !Number.isSafeInteger(periFeeCents) ||
+    periFeeCents < 0 ||
+    providerFeeCents + periFeeCents > amountCents
+  ) {
+    throw new CommerceBookkeeperRequestError('economics invalid', 422);
+  }
+  return {
+    feeBasis: feeBasis as 'adyen_detailed' | 'zentact_settled',
+    providerFeeCents,
+    periFeeCents,
   };
 }
 
@@ -245,6 +280,8 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   const productName = text(order.productName, 'order.productName', 200);
   const amountValue = Number(amount.value);
   const orderAmount = Number(order.amountCents);
+  const environment = text(raw.environment, 'environment', 8);
+  const deliveryKind = text(raw.deliveryKind, 'deliveryKind', 24);
   const orderMerchantReference = text(
     order.merchantReference,
     'order.merchantReference',
@@ -261,6 +298,13 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   ) {
     throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
   }
+  if (
+    !['test', 'live'].includes(environment) ||
+    !['payment', 'refund', 'fee_reconciliation'].includes(deliveryKind)
+  ) {
+    throw new CommerceBookkeeperRequestError('delivery scope invalid', 422);
+  }
+  const preparedEconomics = economics(raw.economics, orderAmount);
   let refund: CommerceBookkeeperEnvelope['refund'] = null;
   if (n.eventCode === 'REFUND') {
     const rawRefund = object(raw.refund, 'refund');
@@ -321,6 +365,15 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   ) {
     throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
   }
+  if (
+    (refund !== null && deliveryKind !== 'refund') ||
+    (refund === null && deliveryKind === 'refund') ||
+    (deliveryKind === 'fee_reconciliation' &&
+      (environment !== 'live' || preparedEconomics === null)) ||
+    (deliveryKind === 'refund' && preparedEconomics !== null)
+  ) {
+    throw new CommerceBookkeeperRequestError('delivery scope invalid', 422);
+  }
   const relationship = order.purchaseRelationship;
   if (relationship !== 'self' && relationship !== 'other') {
     throw new CommerceBookkeeperRequestError(
@@ -347,6 +400,9 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     schemaVersion: 1,
     deliveryId,
     sentAt,
+    environment: environment as 'test' | 'live',
+    deliveryKind: deliveryKind as 'payment' | 'refund' | 'fee_reconciliation',
+    economics: preparedEconomics,
     notification: {
       pspReference,
       ...(refund === null
@@ -433,11 +489,34 @@ export async function handleCommerceBookkeeper(
             'base64url',
           ).toString('utf8'),
         ) as CommerceBookkeeperResult;
+        const validSuppression =
+          envelope.environment === 'test' &&
+          result.officialRecordSuppressed === true &&
+          !result.paymentLogVerified &&
+          !result.studentRosterVerified &&
+          !result.postgresVerified &&
+          !result.feeReconciliationVerified;
+        const validFeeReconciliation =
+          envelope.environment === 'live' &&
+          envelope.deliveryKind === 'fee_reconciliation' &&
+          !result.officialRecordSuppressed &&
+          result.paymentLogVerified &&
+          !result.studentRosterVerified &&
+          !result.postgresVerified &&
+          result.feeReconciliationVerified;
+        const validOfficialProjection =
+          envelope.environment === 'live' &&
+          envelope.deliveryKind !== 'fee_reconciliation' &&
+          !result.officialRecordSuppressed &&
+          result.paymentLogVerified &&
+          result.studentRosterVerified &&
+          result.postgresVerified &&
+          !result.feeReconciliationVerified;
         if (
           result.deliveryId !== envelope.deliveryId ||
-          !result.paymentLogVerified ||
-          !result.studentRosterVerified ||
-          !result.postgresVerified
+          (!validSuppression &&
+            !validFeeReconciliation &&
+            !validOfficialProjection)
         ) {
           reject(new Error('commerce bookkeeper readback incomplete'));
           return;

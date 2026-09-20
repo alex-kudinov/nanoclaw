@@ -1009,10 +1009,13 @@ export class WebhookServer {
         });
         const result = await commerceBookkeeper.handle(envelope);
         let summary = result.summary;
-        const capacitySummary = await commitCommerceCapacity(
-          envelope,
-          commerceBookkeeper.recordCapacitySale,
-        );
+        const capacitySummary =
+          envelope.environment === 'live' && envelope.deliveryKind === 'payment'
+            ? await commitCommerceCapacity(
+                envelope,
+                commerceBookkeeper.recordCapacitySale,
+              )
+            : null;
         if (capacitySummary) summary = `${summary}\n${capacitySummary}`;
         const contadorGroups = Object.entries(
           this.deps.getRegisteredGroups(),
@@ -1028,7 +1031,11 @@ export class WebhookServer {
             deliveryId: result.deliveryId,
             providerPaymentId: result.providerPaymentId,
           },
-          'Adyen payment projected and posted to Bookkeeper',
+          result.officialRecordSuppressed
+            ? 'Adyen TEST delivery validated and excluded from official Bookkeeper records'
+            : result.feeReconciliationVerified
+              ? 'Adyen payment fees reconciled and posted to Bookkeeper'
+              : 'Adyen payment projected and posted to Bookkeeper',
         );
         res.writeHead(200, {
           'Content-Type': 'application/json',

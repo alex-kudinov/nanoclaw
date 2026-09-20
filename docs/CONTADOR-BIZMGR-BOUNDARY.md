@@ -92,6 +92,13 @@ treat the Payment Log as authoritative cash.
 | Processing error/exception | Work needing investigation | Source state and final accounting disposition |
 | Captured vendor-invoice fields | Candidate payable intake | Original invoice, payable state, QuickBooks entry, payment, and reconciliation |
 
+Commerce TEST transactions are never Payment Log or PostgreSQL enrichment.
+They cross the signed host validation boundary only far enough to produce an
+explicit non-ledger Contador receipt. LIVE Adyen fee/net enrichment uses
+Commerce-signed provider cost plus estimated Peri: detailed Adyen facts take
+precedence over the settled Zentact aggregate, never add to it, and Bizmgr must
+still verify the provider/accounting batch independently.
+
 Company OS may later create a follow-up case from an exact Bizmgr receivable or
 exception. In that arrangement, Bizmgr supplies the financial fact and case
 identity; Company OS governs pickup/authorization/receipt; Contador is not in

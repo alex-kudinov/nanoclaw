@@ -86,6 +86,34 @@ function cohortRosterValue(current, cohort) {
   return cohort && typeof cohort.rosterValue === 'string' ? cohort.rosterValue.trim() : '';
 }
 
+function commerceEconomics(amountCents, economics) {
+  if (!economics) return null;
+  const providerFeeCents = Number(economics.providerFeeCents);
+  const periFeeCents = Number(economics.periFeeCents);
+  const feeBasis = String(economics.feeBasis || '');
+  const feeCents = providerFeeCents + periFeeCents;
+  if (!['adyen_detailed', 'zentact_settled'].includes(feeBasis) || !Number.isSafeInteger(amountCents) || amountCents <= 0 ||
+      !Number.isSafeInteger(providerFeeCents) || providerFeeCents < 0 || !Number.isSafeInteger(periFeeCents) || periFeeCents < 0 || feeCents > amountCents) {
+    fail('payment economics invalid');
+  }
+  return {
+    feeBasis,
+    providerFeeCents,
+    periFeeCents,
+    feeCents,
+    netCents: amountCents - feeCents,
+    feeDollars: (feeCents / 100).toFixed(2),
+    netDollars: ((amountCents - feeCents) / 100).toFixed(2),
+  };
+}
+
+function sheetMoneyCents(value) {
+  const text = String(value ?? '').trim().replace(/^\$/, '').replace(/,/g, '');
+  if (!/^\d+(?:\.\d{1,2})?$/.test(text)) fail('payment log money invalid');
+  const [whole, fraction = ''] = text.split('.');
+  return Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+}
+
 async function readInput() {
   let raw = '';
   for await (const chunk of process.stdin) {
@@ -107,12 +135,17 @@ async function recordPaymentLog(fact) {
   await ensurePaymentProviderHeader();
   const ids = (await get(PAYMENTS_ID, 'Payment Log!J:J')).values || [];
   const index = ids.findIndex((row, i) => i > 0 && row[0] === fact.pspReference);
-  const row = [fact.transactionDate, fact.recordedDate, fact.learnerName, fact.learnerEmail, fact.productName, fact.amountDollars, '', '', fact.currency, fact.pspReference, 'paid'];
+  const row = [fact.transactionDate, fact.recordedDate, fact.learnerName, fact.learnerEmail, fact.productName, fact.amountDollars, fact.economics?.feeDollars || '', fact.economics?.netDollars || '', fact.currency, fact.pspReference, 'paid'];
   let sheetRow;
   if (index >= 0) {
     sheetRow = index + 1;
     const priorRecordedDate = String((await get(PAYMENTS_ID, `Payment Log!B${sheetRow}`)).values?.[0]?.[0] || '').trim();
     if (priorRecordedDate) row[1] = priorRecordedDate;
+    if (!fact.economics) {
+      const priorEconomics = (await get(PAYMENTS_ID, `Payment Log!G${sheetRow}:H${sheetRow}`)).values?.[0] || [];
+      row[6] = String(priorEconomics[0] || '').trim();
+      row[7] = String(priorEconomics[1] || '').trim();
+    }
     await update(PAYMENTS_ID, `Payment Log!A${sheetRow}:K${sheetRow}`, [row]);
   } else {
     const result = await append(PAYMENTS_ID, 'Payment Log!A:K', [row]);
@@ -126,6 +159,37 @@ async function recordPaymentLog(fact) {
   const provider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
   if (identity[0] !== fact.pspReference || identity[1] !== 'paid' || provider !== 'Adyen') fail('payment log readback mismatch');
   return { verified: true, row: sheetRow, recordedDate: row[1] };
+}
+
+async function recordPaymentFees(envelope) {
+  const economics = commerceEconomics(envelope.order.amountCents, envelope.economics);
+  if (!economics) fail('payment economics missing');
+  await ensurePaymentProviderHeader();
+  const ids = (await get(PAYMENTS_ID, 'Payment Log!J:J')).values || [];
+  const matches = ids
+    .map((row, index) => ({ id: String(row[0] || ''), index }))
+    .filter(entry => entry.index > 0 && entry.id === envelope.notification.pspReference);
+  if (matches.length !== 1) fail('payment log fee row unavailable');
+  const sheetRow = matches[0].index + 1;
+  const before = (await get(PAYMENTS_ID, `Payment Log!F${sheetRow}:K${sheetRow}`)).values?.[0] || [];
+  const provider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
+  const grossCents = sheetMoneyCents(before[0]);
+  const currency = String(before[3] || '');
+  const psp = String(before[4] || '');
+  const status = String(before[5] || '').toLowerCase();
+  if (grossCents !== envelope.order.amountCents || currency !== envelope.order.currency ||
+      psp !== envelope.notification.pspReference || !['paid','partially refunded','refunded'].includes(status) || provider !== 'Adyen') {
+    fail('payment log fee identity mismatch');
+  }
+  await update(PAYMENTS_ID, `Payment Log!G${sheetRow}:H${sheetRow}`, [[economics.feeDollars, economics.netDollars]]);
+  const after = (await get(PAYMENTS_ID, `Payment Log!F${sheetRow}:J${sheetRow}`)).values?.[0] || [];
+  const finalProvider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
+  if (sheetMoneyCents(after[0]) !== envelope.order.amountCents || sheetMoneyCents(after[1]) !== economics.feeCents ||
+      sheetMoneyCents(after[2]) !== economics.netCents || String(after[3] || '') !== envelope.order.currency ||
+      String(after[4] || '') !== envelope.notification.pspReference || finalProvider !== 'Adyen') {
+    fail('payment log fee readback mismatch');
+  }
+  return { verified: true, row: sheetRow, economics };
 }
 
 function refundPaymentLogStatus(refund) {
@@ -275,18 +339,44 @@ function recordPostgresRefund(envelope) {
 
 function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
   const roster = rosterDestinations.map(destination => `${destination.tab} → ${destination.column} (row ${destination.row})`).join('; ');
+  const fee = fact.economics
+    ? `Fee / net: $${fact.economics.feeDollars} / $${fact.economics.netDollars} (${fact.economics.feeBasis === 'adyen_detailed' ? 'Adyen detail' : 'Zentact settled'} + estimated Peri)`
+    : 'Fee: pending — awaiting Adyen settlement/fee evidence';
   return [
     `Payment received: ${fact.learnerName} — ${fact.productName} — $${fact.amountDollars} ${fact.currency}`,
     `Learner: ${fact.learnerName} <${fact.learnerEmail}>`,
     `Provider: Adyen · ${fact.pspReference}`,
     `Paid: ${fact.transactionDate} · Recorded: ${paymentLog.recordedDate}`,
-    'Fee: pending — awaiting Adyen settlement/fee evidence',
+    fee,
     `Payment Log: recorded and verified (row ${paymentLog.row}; provider Adyen)`,
     fact.rosterPolicy === 'none'
       ? 'Student Roster: not applicable — invoice payment'
       : `Student Roster: recorded and verified (${roster})`,
     ...(fact.cohort ? [`Cohort: ${fact.cohort.rosterValue}`] : []),
     'Database: recorded and verified',
+  ].join('\n');
+}
+
+function formatCommerceTestSummary(envelope) {
+  const providerId = envelope.refund ? envelope.refund.refundPspReference : envelope.notification.pspReference;
+  return [
+    `TEST ${envelope.refund ? 'refund' : 'payment'} validated — excluded from the official Bookkeeper ledger`,
+    `Provider: Adyen TEST · ${providerId}`,
+    `Reference: ${envelope.notification.merchantReference}`,
+    'Official record: not written (Payment Log, Student Roster, PostgreSQL, Capacity)',
+  ].join('\n');
+}
+
+function formatCommerceFeeSummary(envelope, paymentLog) {
+  const economics = paymentLog.economics;
+  return [
+    `Payment fees reconciled: ${envelope.order.productName} — $${(envelope.order.amountCents / 100).toFixed(2)} ${envelope.order.currency}`,
+    `Provider: Adyen · ${envelope.notification.pspReference}`,
+    `Fee / net: $${economics.feeDollars} / $${economics.netDollars}`,
+    `Fee basis: ${economics.feeBasis === 'adyen_detailed' ? 'Adyen detailed facts' : 'Zentact settled processing cost'} + estimated Peri`,
+    `Payment Log: fee and net recorded and verified (row ${paymentLog.row})`,
+    'Student Roster: unchanged',
+    'Database: unchanged',
   ].join('\n');
 }
 
@@ -305,8 +395,39 @@ function formatCommerceRefundSummary(envelope, paymentLog) {
 }
 
 async function main() {
-  if (!PAYMENTS_ID || !ROSTER_ID || !SA_PATH || !fs.existsSync(SA_PATH)) fail('bookkeeper configuration missing');
   const envelope = await readInput();
+  if (envelope.environment === 'test') {
+    const result = {
+      deliveryId: envelope.deliveryId,
+      provider: 'adyen',
+      providerPaymentId: envelope.refund ? envelope.refund.refundPspReference : envelope.notification.pspReference,
+      paymentLogVerified: false,
+      studentRosterVerified: false,
+      postgresVerified: false,
+      officialRecordSuppressed: true,
+      feeReconciliationVerified: false,
+      summary: formatCommerceTestSummary(envelope),
+    };
+    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
+    return;
+  }
+  if (!PAYMENTS_ID || !ROSTER_ID || !SA_PATH || !fs.existsSync(SA_PATH)) fail('bookkeeper configuration missing');
+  if (envelope.deliveryKind === 'fee_reconciliation') {
+    const paymentLog = await recordPaymentFees(envelope);
+    const result = {
+      deliveryId: envelope.deliveryId,
+      provider: 'adyen',
+      providerPaymentId: envelope.notification.pspReference,
+      paymentLogVerified: paymentLog.verified,
+      studentRosterVerified: false,
+      postgresVerified: false,
+      officialRecordSuppressed: false,
+      feeReconciliationVerified: true,
+      summary: formatCommerceFeeSummary(envelope, paymentLog),
+    };
+    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
+    return;
+  }
   if (envelope.refund) {
     const paymentLog = await recordRefundPaymentLog(envelope);
     const postgresVerified = recordPostgresRefund(envelope);
@@ -317,6 +438,8 @@ async function main() {
       paymentLogVerified: paymentLog.verified,
       studentRosterVerified: true,
       postgresVerified,
+      officialRecordSuppressed: false,
+      feeReconciliationVerified: false,
       summary: formatCommerceRefundSummary(envelope, paymentLog),
     };
     console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
@@ -332,16 +455,17 @@ async function main() {
     learnerName: `${learner.firstName} ${learner.lastName}`.trim(), learnerEmail: learner.email.toLowerCase(),
     productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
     cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
+    economics: commerceEconomics(envelope.order.amountCents, envelope.economics),
   };
   // Each destination is idempotent by provider payment ID. A retry repairs an
   // incomplete prior delivery and only succeeds after exact readback.
   const paymentLog = await recordPaymentLog(fact);
   const rosterDestinations = envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact);
   const postgresVerified = recordPostgres(envelope, fact);
-  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0, postgresVerified, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
+  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0, postgresVerified, officialRecordSuppressed: false, feeReconciliationVerified: false, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
   console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
 }
 
 if (require.main === module) main().catch(error => { console.error(`[EL CONTADOR] ${error.message}`); process.exit(1); });
 
-module.exports = { column, psqlVars, cohortRosterValue, refundPaymentLogStatus, finalRefundPaymentLogStatus, formatCommerceSummary, formatCommerceRefundSummary };
+module.exports = { column, psqlVars, cohortRosterValue, commerceEconomics, sheetMoneyCents, refundPaymentLogStatus, finalRefundPaymentLogStatus, formatCommerceSummary, formatCommerceTestSummary, formatCommerceFeeSummary, formatCommerceRefundSummary };

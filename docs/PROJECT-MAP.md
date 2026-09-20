@@ -1061,6 +1061,22 @@ an explicit Student Roster not-applicable receipt; it never infers from payer,
 email, title, billing profile, or product text and performs no roster call.
 Missing, unknown, or cohort-bearing `none` policy fails closed.
 
+`NC-20260919-002` adds the missing environment and fee-economics boundary to
+that same signed relay. Commerce is the environment authority: a signed TEST
+payment or refund completes signature/schema/identity validation and posts an
+explicit Contador test receipt, but returns before Payment Log, Student Roster,
+PostgreSQL or Capacity. LIVE payment/refund behavior remains unchanged.
+Commerce also retains fee authority: detailed Adyen transaction facts win when
+present; otherwise exact `SETTLED` Zentact `processingCost` is the provider
+amount, and the configured Peri estimate is added once. An exact-order
+settlement creates one replay-deduplicated job in the existing Commerce runner;
+the consumer locates exactly one Adyen Payment Log row by PSP, checks gross,
+currency, status and provider, changes only fee/net columns G:H, and reads back
+`gross - provider fee - estimated Peri = net`. Ordinary replay without fee
+evidence preserves existing G:H. No new schema, service, queue, worker,
+scheduler or provider call is introduced; these values remain operational
+diagnostics, not accounting truth.
+
 The existing finite-billing route also accepts the exact discriminated
 `custom_invoice_installments` contract: custom cadence, source invoice UUID,
 two-to-eight ordered obligations and exact base-plus-fee arithmetic. Schedule,

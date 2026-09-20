@@ -327,6 +327,9 @@ describe('WebhookServer', () => {
       schemaVersion: 1,
       deliveryId: '10000000-0000-4000-8000-000000000001',
       sentAt: new Date().toISOString(),
+      environment: 'live',
+      deliveryKind: 'payment',
+      economics: null,
       notification: {
         pspReference: 'PSP123',
         merchantReference: 'TCA-ABC',
@@ -390,6 +393,8 @@ describe('WebhookServer', () => {
       paymentLogVerified: true,
       studentRosterVerified: true,
       postgresVerified: true,
+      officialRecordSuppressed: false,
+      feeReconciliationVerified: false,
       summary: 'recorded',
     }));
     const recordCapacitySale = vi.fn(async () => ({
@@ -451,6 +456,105 @@ describe('WebhookServer', () => {
     );
   });
 
+  it('accepts an authenticated Adyen TEST receipt without any official projection or capacity write', async () => {
+    await server.stop();
+    const path = '/hook/tandem-commerce-bookkeeper-test';
+    const relaySecret = 'bookkeeper-relay-secret-that-is-long-enough';
+    const value = {
+      schemaVersion: 1,
+      deliveryId: '10000000-0000-4000-8000-000000000009',
+      sentAt: new Date().toISOString(),
+      environment: 'test',
+      deliveryKind: 'payment',
+      economics: null,
+      notification: {
+        pspReference: 'PSPTEST123',
+        merchantReference: 'TCA-TEST-ABC',
+        merchantAccountCode: 'TandemECOM',
+        eventCode: 'AUTHORISATION',
+        eventDate: new Date().toISOString(),
+        success: 'true',
+        amount: { value: 100, currency: 'USD' },
+        additionalData: { hmacSignature: 'native' },
+      },
+      order: {
+        orderId: '20000000-0000-4000-8000-000000000009',
+        merchantReference: 'TCA-TEST-ABC',
+        productId: 'invoice-test-payment',
+        productName: 'Test invoice',
+        amountCents: 100,
+        currency: 'USD',
+        purchaseRelationship: 'self',
+        rosterPolicy: 'none',
+        payer: {
+          firstName: 'Test',
+          lastName: 'Buyer',
+          email: 'buyer@example.test',
+        },
+        learner: {
+          firstName: 'Test',
+          lastName: 'Buyer',
+          email: 'buyer@example.test',
+        },
+        cohort: null,
+      },
+    };
+    const body = JSON.stringify(value);
+    const signature = crypto
+      .createHmac('sha256', relaySecret)
+      .update(
+        `tandem-commerce-bookkeeper-v1\n${crypto.createHash('sha256').update(body).digest('hex')}`,
+      )
+      .digest('hex');
+    const handle = vi.fn(async () => ({
+      deliveryId: value.deliveryId,
+      provider: 'adyen' as const,
+      providerPaymentId: 'PSPTEST123',
+      paymentLogVerified: false,
+      studentRosterVerified: false,
+      postgresVerified: false,
+      officialRecordSuppressed: true,
+      feeReconciliationVerified: false,
+      summary: 'TEST payment validated — excluded from official ledger',
+    }));
+    const recordCapacitySale = vi.fn();
+    deps = makeDeps({
+      commerceBookkeeper: {
+        enabled: true,
+        path,
+        relaySecret,
+        handle,
+        recordCapacitySale,
+      },
+      getRegisteredGroups: vi.fn(() => ({
+        'slack:CONTADOR': {
+          ...testGroup,
+          name: 'El Contador',
+          folder: 'contador',
+        },
+      })),
+    });
+    server = new WebhookServer(deps);
+    await server.start();
+    deps.port = server.getPort();
+    const response = await makeRequest(deps.port, {
+      path,
+      headers: {
+        'content-type': 'application/json',
+        'x-tandem-commerce-signature': signature,
+      },
+      body,
+    });
+    expect(response.status).toBe(200);
+    expect(handle).toHaveBeenCalledOnce();
+    expect(recordCapacitySale).not.toHaveBeenCalled();
+    expect(deps.sendMessage).toHaveBeenCalledWith(
+      'slack:CONTADOR',
+      'TEST payment validated — excluded from official ledger',
+      { fromGroup: 'contador' },
+    );
+  });
+
   it('keeps the Commerce delivery retryable when the visible Bookkeeper receipt cannot be posted', async () => {
     await server.stop();
     const path = '/hook/tandem-commerce-bookkeeper-test';
@@ -459,6 +563,9 @@ describe('WebhookServer', () => {
       schemaVersion: 1,
       deliveryId: '10000000-0000-4000-8000-000000000001',
       sentAt: new Date().toISOString(),
+      environment: 'live',
+      deliveryKind: 'payment',
+      economics: null,
       notification: {
         pspReference: 'PSP123',
         merchantReference: 'TCA-ABC',
@@ -504,6 +611,8 @@ describe('WebhookServer', () => {
       paymentLogVerified: true,
       studentRosterVerified: true,
       postgresVerified: true,
+      officialRecordSuppressed: false,
+      feeReconciliationVerified: false,
       summary: 'recorded',
     }));
     deps = makeDeps({

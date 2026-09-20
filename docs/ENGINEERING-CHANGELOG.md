@@ -1,5 +1,58 @@
 # NanoClaw engineering changelog
 
+## 2026-09-19 — NC-20260919-002 TEST exclusion and Adyen fee/net reconciliation
+
+- State: `validating`; implementation, focused verification, minimum-sufficient
+  review and bounded correctness review are complete. Full verification,
+  commit/push, staged release, deployment and live readback remain.
+- Change class: C4 because the existing signed Commerce path writes the
+  operational Payment Log and payment projections after provider-confirmed
+  payment.
+- Root cause: Commerce already owned exact `test|live` environment and retained
+  settled Zentact processing cost, but omitted both from the signed Bookkeeper
+  envelope. NanoClaw therefore treated seven observed TEST USD 1.00 payments as
+  official rows, while LIVE Adyen fee/net cells stayed blank.
+- Outcome: the signed envelope now requires environment and delivery kind.
+  TEST payment/refund deliveries finish signature/schema/identity and child
+  validation, post an explicit non-ledger receipt, and return before Sheets,
+  roster, PostgreSQL or Capacity. LIVE payment/refund behavior is preserved.
+  Exact LIVE Zentact `SETTLED`/`exact_order` cost creates one deduplicated job in
+  the existing Commerce runner. Commerce signs either detailed Adyen or settled
+  Zentact provider cost plus one estimated Peri component; NanoClaw updates only
+  the uniquely matched Adyen Payment Log G:H cells and reads back gross, fee,
+  net, currency, PSP and provider. Ordinary no-fee replay preserves G:H.
+- Topology: no new endpoint, table, migration, service, process, queue, worker,
+  scheduler, credential or provider call. Payment Log remains diagnostic;
+  Bizmgr/provider evidence remains accounting authority.
+- Files: `src/commerce-bookkeeper.ts`, `src/webhook-server.ts`, their focused
+  tests, `tools/contador/process-commerce-payment.cjs`, Project Map, Release
+  Integrity, Contador/Bizmgr boundary, Active Work and review artifacts; paired
+  Commerce producer source/tests/version live on the same-named Tandemweb
+  branch from `f7fc2d9fbb57`.
+- Verification: pinned Node 22.23.2 focused NanoClaw 78/78, typecheck, format,
+  build and continuity pass; full root is 4,528 pass / 34 skip / three exact
+  predecessor failures (Capacity disposable state, CNPC wrapper contract and
+  date-sensitive Trafft freshness). A direct TEST child canary with all Sheets
+  variables absent returned explicit suppression and zero verified official
+  sinks. All 36 Commerce PHP suites and full include/test PHP lint pass.
+  Read-only production census found nine exact LIVE settled projections and
+  seven recent TEST USD 1.00 official projections; no repair/backfill ran.
+- Independent review: minimum-sufficient Sonnet/high kept every existing-path
+  obligation and removed new infrastructure. Bounded correctness review found
+  no code defect. Codex rejected its initial producer-first recommendation
+  because the old consumer can acknowledge a fee job as an ordinary payment;
+  a fresh bounded follow-up returned `CONSUMER_FIRST`. The strict consumer's
+  temporary 422 is retryable, while producer-first can terminalize wrong work.
+  Necessity used three turns and about $0.2466; correctness used 19 turns and
+  about $1.2389 (recorded as oversized review orchestration debt); deployment
+  correction used seven turns and about $0.3858. The session-usage helper found
+  no persisted transcript, so runner totals are the available numeric record.
+- Deployment/recovery: stage both releases, drain NanoClaw and Commerce
+  Bookkeeper work, activate consumer then immediately Commerce 1.44.12. Code
+  rollback restores the prior host/plugin pair; preserve job/source/payment
+  evidence. Do not replay or manufacture a provider event. Existing TEST rows
+  were owner-cleaned and are not changed by this task.
+
 ## 2026-09-19 — NC-20260919-001 custom invoice installment projection
 
 - State: `validating`; implementation and focused local verification are
