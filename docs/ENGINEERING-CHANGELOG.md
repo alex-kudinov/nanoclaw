@@ -2,9 +2,9 @@
 
 ## 2026-09-19 — NC-20260919-002 TEST exclusion and Adyen fee/net reconciliation
 
-- State: `validating`; implementation, focused verification, minimum-sufficient
-  review and bounded correctness review are complete. Full verification,
-  commit/push, staged release, deployment and live readback remain.
+- State: `complete`; implementation, review, full verification, commits/pushes,
+  immutable release, deployment, TEST exclusion and seven-row LIVE fee/net
+  readback are complete.
 - Change class: C4 because the existing signed Commerce path writes the
   operational Payment Log and payment projections after provider-confirmed
   payment.
@@ -48,10 +48,37 @@
   correction used seven turns and about $0.3858. The session-usage helper found
   no persisted transcript, so runner totals are the available numeric record.
 - Deployment/recovery: stage both releases, drain NanoClaw and Commerce
-  Bookkeeper work, activate consumer then immediately Commerce 1.44.12. Code
-  rollback restores the prior host/plugin pair; preserve job/source/payment
-  evidence. Do not replay or manufacture a provider event. Existing TEST rows
-  were owner-cleaned and are not changed by this task.
+  Bookkeeper work, activate consumer then immediately Commerce. Exact NanoClaw
+  release `f2c326758e4eca1ae0881ba004565bd1fd97e6b1` is live: source tree
+  `6d94141128fe`, artifact `b6c0c05b5e3d` across 1,404 files, archive
+  `64aba037e474`. Commerce 1.44.13 from `90eaff946` is live; changed source
+  hashes match and archive SHA-256 is `31bc5864ddd0`. Rollback plist is
+  `/Users/xbohdpukc/Library/LaunchAgents/com.nanoclaw.plist.rollback-041fe20e9525-2026-09-20T01-46-21-742Z`;
+  plugin rollback is
+  `/home/tca/plugin-backups/tandem-commerce-pre-1.44.13-20260920T0155Z`
+  (with the earlier 1.44.11 backup also retained).
+- Live TEST proof: one retained exact TEST order traversed the active producer
+  and signed consumer and returned `accepted=true`. Its existing NanoClaw row
+  `last_seen_at`, total Adyen payment rows (34), Capacity events (67) and
+  reservations (5) remained unchanged; no Sheet configuration was needed by
+  the TEST child path. The successful HTTP response was issued only after the
+  internal Contador receipt posted.
+- Live fee proof: an intersection of exact LIVE `SETTLED`/`exact_order`
+  projections with unique existing Adyen Payment Log PSPs selected seven rows.
+  They now read back fee/net pairs `$7.14/$291.86`, `$8.93/$390.07`,
+  `$11.58/$287.42`, `$12.00/$287.00`, `$9.51/$289.49`, `$8.26/$290.74`
+  and `$6.42/$192.58`; gross/currency/PSP/status/provider stayed exact. All
+  seven jobs are `complete/fees_reconciled`, no pending/processing Commerce
+  job remains, and NanoClaw health reports exact release, Node 22.23.2,
+  connected Gmail/Slack, zero active/waiting work and healthy dependent stores.
+- Corrections during live proof: the guarded backfill initially used MySQL
+  `UUID()`, which is not UUIDv4 and was refused before any official write. The
+  seven pending job IDs and their failed-attempt references were transactionally
+  rebound to application UUIDv4 values without losing receipts. Six then
+  completed. The last historical ACC order carried a pre-canonical cohort
+  display value irrelevant to fee-only work; Commerce 1.44.13 omits cohort only
+  from fee envelopes, all 36 suites passed again, and the preserved job
+  completed on bounded retry. No provider event was replayed or manufactured.
 
 ## 2026-09-19 — NC-20260919-001 custom invoice installment projection
 

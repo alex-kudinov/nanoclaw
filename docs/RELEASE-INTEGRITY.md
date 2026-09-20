@@ -87,7 +87,7 @@ while the new receiver correctly rejects a missing policy.
 producer-first compatibility pattern. Stage both verified artifacts and require
 zero active/waiting NanoClaw work plus zero pending/processing Commerce
 Bookkeeper jobs. Activate the strict NanoClaw consumer, then immediately
-activate Commerce 1.44.12. In the bounded gap, an old-producer payload lacks
+activate Commerce 1.44.13. In the bounded gap, an old-producer payload lacks
 the newly required signed environment and is rejected retryably. Reversing the
 order is unsafe: the old consumer ignores `deliveryKind`, can acknowledge a new
 fee-reconciliation job as an ordinary payment without filling G:H, and causes

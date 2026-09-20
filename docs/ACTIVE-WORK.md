@@ -3,10 +3,10 @@
 2026-09-20T01:11Z — `NC-20260919-002` keep Commerce test charges out of the
 official Bookkeeper ledger and reconcile live Adyen gross/fee/net from signed
 Zentact evidence, owner Codex with fresh necessity and bounded Sonnet/high
-review, `validating`, C4, isolated NanoClaw branch
-`codex/bookkeeper-test-fees-20260919` from exact live release `041fe20e9525`
-plus a same-named Tandemweb branch from exact active Commerce lineage
-`f7fc2d9fbb57`. Current
+review, `complete`, C4, pushed NanoClaw branch
+`codex/bookkeeper-test-fees-20260919` at exact live release `f2c326758e4e`
+plus pushed same-named Tandemweb branch at live Commerce 1.44.13 commit
+`90eaff946`. Original
 observable result: the signed Commerce envelope omits its already-authoritative
 `environment` and already-retained Zentact settlement cost, so retained TEST
 jobs write official Payment Log/PostgreSQL rows and live Adyen rows leave fee
@@ -28,10 +28,14 @@ Commerce PHP suites pass. S1 kept the slice; bounded correctness review found
 no code defect. A
 load-bearing follow-up corrected deployment order to `CONSUMER_FIRST`: the old
 consumer would misread and permanently complete a new fee job, while the new
-consumer's strict 422 leaves any old-producer delivery retryable. Next:
-commit/push both branches, stage both artifacts, drain Bookkeeper work, activate
-consumer then immediately Commerce, and live-verify TEST exclusion plus guarded
-existing LIVE fee reconciliation.
+consumer's strict 422 leaves any old-producer delivery retryable. Exact release
+and plugin hashes match live. A retained signed TEST payment returned accepted
+with zero Payment Log/PostgreSQL/roster/Capacity writes; NanoClaw payment and
+Capacity counts/timestamps stayed unchanged. Seven exact LIVE settled rows now
+read back gross/fee/net, all fee jobs are `complete/fees_reconciled`, and both
+systems are healthy with empty queues. Rollback retains the prior Nano plist and
+Commerce 1.44.12/1.44.11 plugin backups. Next: none for this outcome; detailed
+monthly Adyen-report acquisition remains its separate existing work.
 
 2026-09-19T18:08Z — `NC-20260919-001` complete custom-invoice installment
 projection, owner Codex with bounded Sonnet/high review, `validating`, C4,
