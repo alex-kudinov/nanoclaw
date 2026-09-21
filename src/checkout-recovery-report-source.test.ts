@@ -22,6 +22,9 @@ describe('checkout recovery truthful timing/report contract', () => {
     expect(report).toContain("heartbeat: 'stripe_events_only'");
     expect(index).toContain('tandemCaptureTimeoutMinutes: 15');
     expect(index).toContain('tandemPaymentFailureDelayMinutes: 5');
+    expect(index).toMatch(
+      /const checkoutRecoveryTimer = setInterval\([\s\S]*?runCheckoutRecoveryShadowTick\(\),\s*60_000,/,
+    );
     expect(control).toContain('five-minute fast path');
   });
 

@@ -11,6 +11,8 @@
   server capture. `payment.created` moves the same case to the existing
   45-minute provider-active hold, and only signed paid/order truth emits
   `payment.succeeded`.
+- The existing timeout sweep now runs once per minute so a case due at minute
+  15 is projected promptly instead of waiting up to five additional minutes.
 - Added send-time suppression for a newer same-email, same-product attempt and
   service-oriented incomplete copy in English, Spanish, French, and Japanese.
 

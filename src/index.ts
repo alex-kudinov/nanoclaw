@@ -2801,7 +2801,7 @@ async function main(): Promise<void> {
     void runCheckoutRecoveryShadowTick();
     const checkoutRecoveryTimer = setInterval(
       () => void runCheckoutRecoveryShadowTick(),
-      5 * 60_000,
+      60_000,
     );
     checkoutRecoveryTimer.unref();
   }

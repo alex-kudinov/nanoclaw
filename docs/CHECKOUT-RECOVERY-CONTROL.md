@@ -157,7 +157,7 @@ immutable core fields. Rollback refuses after any case/evidence exists.
 
 ## Owner readback
 
-The five-minute host sweep selects due Tandem cases with row locks, records a
+The one-minute host sweep selects due Tandem cases with row locks, records a
 `checkout.shadow_timeout` event, determines consent eligibility, and returns a
 content-minimized projection. One fixed-window operator incident goes to the
 registered Inbox group after five quiet minutes and is acknowledged only after
