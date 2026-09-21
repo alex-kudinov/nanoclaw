@@ -335,6 +335,40 @@ describe.skipIf(!TEST_DATABASE_URL)(
       }
     });
 
+    it('claims touch one without waiting for the separate operator incident notification', async () => {
+      const captured = await record(website('checkout.captured'));
+      const sendConfig = {
+        mode: 'production' as const,
+        activatedAt: new Date('2026-08-24T17:00:00.000Z'),
+        pilotEmailSha256: null,
+        pilotTouch2DelayMinutes: null,
+        enchargeWriteKey: 'integration-test-write-key',
+      };
+      const client = await pool!.connect();
+      try {
+        await client.query('BEGIN');
+        await sweepCheckoutRecoveryShadowWithClient(client, {
+          now: new Date('2026-08-24T18:15:00.000Z'),
+          sendConfig,
+        });
+        const claimed = await claimDueCheckoutRecoverySendIntentsWithClient(
+          client,
+          sendConfig,
+          { now: new Date('2026-08-24T18:15:01.000Z') },
+        );
+        await client.query('COMMIT');
+        expect(claimed).toHaveLength(1);
+        expect(claimed[0]).toMatchObject({ caseId: captured.caseId, touch: 1 });
+      } finally {
+        client.release();
+      }
+      const row = await pool!.query(
+        `SELECT shadow_notified_at::text FROM business_v2.checkout_recovery_cases WHERE id = $1`,
+        [captured.caseId],
+      );
+      expect(row.rows[0].shadow_notified_at).toBeNull();
+    });
+
     it('holds an expired dispatch lease instead of replaying an ambiguous send', async () => {
       const captured = await record(website('checkout.captured'));
       await record(website('payment.created'));

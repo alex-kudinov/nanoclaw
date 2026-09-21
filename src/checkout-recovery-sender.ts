@@ -400,7 +400,6 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
         item.started_at,
       ],
     );
-    if (item.shadow_notified_at === null) continue;
     if (intent.touch === 2) {
       const touchOne = await client.query<{ status: string }>(
         `SELECT status

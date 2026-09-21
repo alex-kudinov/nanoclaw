@@ -13,6 +13,11 @@
   `payment.succeeded`.
 - The existing timeout sweep now runs once per minute so a case due at minute
   15 is projected promptly instead of waiting up to five additional minutes.
+- Controlled TEST exposed that customer touch one was also waiting for the
+  separate five-minute operator-Inbox incident. The customer claim now keeps
+  every consent/payment/purchase/newer-attempt/lease suppressor but no longer
+  waits for that internal Slack receipt; operator notification remains intact
+  and independent.
 - Added send-time suppression for a newer same-email, same-product attempt and
   service-oriented incomplete copy in English, Spanish, French, and Japanese.
 

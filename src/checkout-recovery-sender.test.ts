@@ -136,5 +136,6 @@ describe('checkout recovery Encharge handoff', () => {
     ]) {
       expect(source).toContain(guard);
     }
+    expect(source).not.toContain('item.shadow_notified_at === null');
   });
 });
