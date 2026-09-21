@@ -72,6 +72,11 @@
 - The Encharge flow is back on, all trigger/action steps are active, and the
   final source-specific release prevents older legacy rows from bypassing their
   operator-notification prerequisite or starving new Commerce work.
+- Guarded Encharge metadata readback caught that templates `479523`-`479530`
+  still used `hello@tandemcoach.co` as their sender even though the flow replied
+  to `info@tandemcoach.co`. All eight EN/ES/FR/JA touch templates now read back
+  `fromEmail=info@tandemcoach.co`; names, subjects, category, body, links, flow
+  bindings, and active status were preserved.
 
 ## 2026-09-19 — NC-20260919-002 TEST exclusion and Adyen fee/net reconciliation
 
