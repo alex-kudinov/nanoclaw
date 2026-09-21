@@ -1,5 +1,30 @@
 # NanoClaw active work
 
+2026-09-21T19:55Z — `NC-20260921-001` connect incomplete Tandem Commerce
+checkouts to the existing consent-aware recovery path and move touch one from
+45 to 15 minutes, owner Codex with fresh necessity and bounded Sonnet/high
+review, `in_progress`, C3, isolated NanoClaw branch
+`codex/incomplete-checkout-assistance-20260921` from exact live release
+`f2c326758e4e` plus same-named Tandemweb branch from active Commerce
+`f65efb5d5`. Current result: Commerce retains identity and reaches
+`awaiting_payment` but emits no recovery capture/success facts, so the existing
+NanoClaw/Encharge recovery system cannot schedule or suppress those cases. The
+live Lydia evidence has no provider request, response, PSP reference, event or
+order; one owner-directed help email was SMTP-accepted from
+`info@tandemcoach.co`, with inbox receipt unproved. Reuse only the existing
+Commerce jobs/cron, signed website recovery ingress, NanoClaw cases/intents,
+purchase/sibling/consent/reply suppression and Encharge flow. Add no table,
+queue, worker, scheduler, provider, direct Commerce mailer or historical
+backfill. Preserve checkout-reminder-v3 jurisdiction/opt-out rules, emit
+capture only after `payment_methods_loaded`, emit success only from signed paid
+truth, make touch one due 15 minutes from immutable capture, retain touch two
+at 24 hours, and use service-oriented incomplete copy without claiming a
+failure. S1 returned `KEEP` for all five obligations. Next: implement the
+bounded cross-repo walking skeleton, run focused/full and disposable database
+verification, complete Sonnet/high review, then stage Commerce and immutable
+NanoClaw releases for one controlled TEST proof before prospective Live
+activation.
+
 2026-09-20T01:11Z — `NC-20260919-002` keep Commerce test charges out of the
 official Bookkeeper ledger and reconcile live Adyen gross/fee/net from signed
 Zentact evidence, owner Codex with fresh necessity and bounded Sonnet/high
