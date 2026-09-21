@@ -1,30 +1,25 @@
 # NanoClaw active work
 
-2026-09-21T19:55Z — `NC-20260921-001` connect incomplete Tandem Commerce
+2026-09-21T22:05Z — `NC-20260921-001` connect incomplete Tandem Commerce
 checkouts to the existing consent-aware recovery path and move pre-provider
-capture touch one from 45 to 15 minutes, owner Codex with fresh necessity and bounded Sonnet/high
-review, `in_progress`, C3, isolated NanoClaw branch
-`codex/incomplete-checkout-assistance-20260921` from exact live release
-`f2c326758e4e` plus same-named Tandemweb branch from active Commerce
-`f65efb5d5`. Current result: Commerce retains identity and reaches
-`awaiting_payment` but emits no recovery capture/success facts, so the existing
-NanoClaw/Encharge recovery system cannot schedule or suppress those cases. The
-live Lydia evidence has no provider request, response, PSP reference, event or
-order; one owner-directed help email was SMTP-accepted from
-`info@tandemcoach.co`, with inbox receipt unproved. Reuse only the existing
-Commerce jobs/cron, signed website recovery ingress, NanoClaw cases/intents,
-purchase/sibling/consent/reply suppression and Encharge flow. Add no table,
-queue, worker, scheduler, provider, direct Commerce mailer or historical
-backfill. Preserve checkout-reminder-v3 jurisdiction/opt-out rules, emit
-capture only after `payment_methods_loaded`, emit success only from signed paid
-truth, make pre-provider touch one due 15 minutes from immutable capture,
-retain the 45-minute hold where provider activity may still complete and touch two
-at 24 hours, and use service-oriented incomplete copy without claiming a
-failure. S1 returned `KEEP` for all five obligations. Next: implement the
-bounded cross-repo walking skeleton, run focused/full and disposable database
-verification, complete Sonnet/high review, then stage Commerce and immutable
-NanoClaw releases for one controlled TEST proof before prospective Live
-activation.
+capture touch one from 45 to 15 minutes, owner Codex with fresh necessity and
+bounded Sonnet/high review, `complete_with_incident`, C3, isolated NanoClaw
+branch `codex/incomplete-checkout-assistance-20260921` from exact prior live
+release `f2c326758e4e` plus same-named Tandemweb branch from active Commerce
+`f65efb5d5`. Completed: Commerce 1.44.24 and immutable NanoClaw
+`110152b4312e5db6f0f965dc6ff102c09a5a5687` are live; the public overlay,
+signed TEST capture/projection/Encharge acceptance, health, source-specific
+legacy gate, and anti-starvation correction are read back. An intermediate
+seven-minute broad-gate release admitted 11 historical cases and Encharge
+accepted 21 events; its immediate actions make 21 historical email sends
+likely, although inbox delivery is unproved. It was contained and rolled back,
+the flow was temporarily disabled, and the final release confines the bypass
+to immutable `commerce-` events. Four diagnostic leases were requeued without
+dispatch. The next normal observation is the first natural prospective Live
+case; it is not a remaining release gate. Lydia's original incomplete had no
+provider request, response, PSP reference, event or order; the one
+owner-directed help email was SMTP-accepted from `info@tandemcoach.co`, with
+inbox receipt unproved.
 
 2026-09-20T01:11Z — `NC-20260919-002` keep Commerce test charges out of the
 official Bookkeeper ledger and reconcile live Adyen gross/fee/net from signed

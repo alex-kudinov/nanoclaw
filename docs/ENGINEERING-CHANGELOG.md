@@ -43,8 +43,35 @@
 
 ## Release state
 
-Implementation is locally verified in the isolated branch. Immutable release,
-controlled TEST sink proof, and prospective Live activation remain pending.
+- Commerce `1.44.24` is active with Live recovery enabled and the signed relay
+  URL/key configured. The public Foundations overlay readback shows the
+  reminder disclosure and `No reminders` control before payment.
+- Immutable NanoClaw release
+  `110152b4312e5db6f0f965dc6ff102c09a5a5687` is active under Node 22.23.2,
+  source tree `cc2fc14185b6ac7a9a3057c4570a4d115fb0c949`, artifact SHA-256
+  `222e4a850addfb56804eff2a86e604d51860eecd86536bedacbd2f5ef4e89e38`,
+  and matching release/code root. Gmail and Slack are connected. Rollback plist:
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-79db4f97080a-2026-09-21T21-56-24-134Z`.
+- Controlled TEST submission
+  `009fd063-296e-4a81-926f-1488a373bc85` reached immutable capture at
+  21:12:48Z, projected at 21:28:03.985Z, and Encharge accepted touch one at
+  21:56:41.845Z after the rollout corrections. This proves the corrected
+  producer, signed ingress, one-minute sweep, source-specific gate, starvation
+  guard, and provider handoff. The timing defect and rollout delay mean this is
+  not evidence of a 15-minute delivered email; the steady-state due boundary is
+  15 minutes and the next natural prospective case remains the delivery SLA
+  observation.
+- The seven-minute broad-gate mistake admitted 11 historical checkout cases
+  from Aug 29-Sep 10 and Encharge accepted 21 reminder events (11 touch-one and
+  10 touch-two). The active flow has an immediate email action for each matching
+  event, so 21 historical emails were likely submitted; exact inbox delivery is
+  not proved. Containment deactivated the flow, rolled back the broad release,
+  and then reactivated only after the Commerce-source-specific correction. Four
+  diagnostic leases were requeued without dispatch. No historical backfill was
+  intended or authorized.
+- The Encharge flow is back on, all trigger/action steps are active, and the
+  final source-specific release prevents older legacy rows from bypassing their
+  operator-notification prerequisite or starving new Commerce work.
 
 ## 2026-09-19 — NC-20260919-002 TEST exclusion and Adyen fee/net reconciliation
 
