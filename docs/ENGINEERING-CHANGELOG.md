@@ -1,5 +1,38 @@
 # NanoClaw engineering changelog
 
+# 2026-09-21 — NC-20260921-001 Commerce incomplete-checkout assistance
+
+## Scope
+
+- Connected consented Tandem Commerce public manual checkouts to the existing
+  checkout-recovery ingress and Encharge handoff without adding a table, queue,
+  worker, scheduler, provider, or Commerce-owned mailer.
+- Pre-provider `checkout.captured` becomes due 15 minutes after immutable
+  server capture. `payment.created` moves the same case to the existing
+  45-minute provider-active hold, and only signed paid/order truth emits
+  `payment.succeeded`.
+- Added send-time suppression for a newer same-email, same-product attempt and
+  service-oriented incomplete copy in English, Spanish, French, and Japanese.
+
+## Verification
+
+- Focused recovery tests: 16 passed. Disposable PostgreSQL: exact 15-minute
+  capture/45-minute payment-created projection and newer-attempt suppression
+  passed; the unrelated pre-existing ambiguous incident-column test still
+  fails in the full disposable file.
+- Full NanoClaw suite: 4,528 passed, 35 skipped, with the exact three existing
+  unrelated failures in Academy Capacity, CNPC prompt source, and Trafft shadow.
+- Pinned typecheck, formatting, build, documentation continuity, and capability
+  checks pass.
+- One bounded Sonnet/high correctness review returned `NO MATERIAL FINDINGS`.
+  The first oversized attempt was stopped without a response; the narrowed
+  successful round used four model calls and stayed below the 100k target.
+
+## Release state
+
+Implementation is locally verified in the isolated branch. Immutable release,
+controlled TEST sink proof, and prospective Live activation remain pending.
+
 ## 2026-09-19 — NC-20260919-002 TEST exclusion and Adyen fee/net reconciliation
 
 - State: `validating`; implementation, focused verification, minimum-sufficient

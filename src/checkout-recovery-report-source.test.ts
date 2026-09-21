@@ -13,14 +13,14 @@ const control = fs.readFileSync(
 
 describe('checkout recovery truthful timing/report contract', () => {
   it('separates Tandem capture timeout, failure fast path, and Heartbeat event-only coverage', () => {
-    expect(report).toContain(
-      "captured_or_payment_created: '45_minutes_after_server_capture'",
-    );
+    expect(report).toContain("captured: '15_minutes_after_server_capture'");
+    expect(report).toContain('payment_created_or_client_abandoned:');
+    expect(report).toContain("'45_minutes_after_observation'");
     expect(report).toContain(
       "payment_failed: '5_minutes_after_provider_failure'",
     );
     expect(report).toContain("heartbeat: 'stripe_events_only'");
-    expect(index).toContain('tandemCaptureTimeoutMinutes: 45');
+    expect(index).toContain('tandemCaptureTimeoutMinutes: 15');
     expect(index).toContain('tandemPaymentFailureDelayMinutes: 5');
     expect(control).toContain('five-minute fast path');
   });

@@ -2413,7 +2413,7 @@ async function main(): Promise<void> {
           sendMode: CHECKOUT_RECOVERY_SEND_MODE,
           prospectiveCutoff:
             CHECKOUT_RECOVERY_SEND_ACTIVATED_AT?.toISOString() ?? null,
-          tandemCaptureTimeoutMinutes: 45,
+          tandemCaptureTimeoutMinutes: 15,
           tandemPaymentFailureDelayMinutes: 5,
           heartbeatMode: 'stripe_events_only',
         },

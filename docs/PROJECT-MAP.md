@@ -9,6 +9,18 @@ Code and Codex without replacing Claude-owned sources.
 
 ## 1. How to use this map
 
+### Commerce incomplete-checkout assistance (NC-20260921-001)
+
+Tandem Commerce now projects consented public manual checkout capture,
+provider-started, and signed-success facts through the existing signed website
+recovery ingress. NanoClaw remains the timing, suppression, idempotency, copy,
+and Encharge authority: a pre-provider capture is eligible after 15 minutes;
+provider-started and client-abandoned states retain 45 minutes; exact signed
+failure retains five minutes; touch two remains 24 hours. Purchase, newer
+same-email/product attempts, missing permission/context, lease ambiguity,
+reply, and unsubscribe suppress at send time. This adds no new durable object,
+runtime, provider, payment operation, or customer-send path.
+
 ### Selective Sales consultation (NC-20260907-002)
 
 `groups/sales/CONSULTATIVE-DIALOGUE.md` extends the request-first workflow per
@@ -2741,7 +2753,7 @@ while keeping secrets and volatile runtime state excluded.
 | `docs/MINION-FRAMEWORK.md`                          | agent framework                                                                                                                           | concrete group prompts are role authority                                                                                                                                                                                                                                                                              |
 | `docs/WEBHOOK-RELIABILITY.md`                       | durable webhook design                                                                                                                    | verify tables and current reaper wiring                                                                                                                                                                                                                                                                                |
 | `docs/PROPOSAL-FOLLOWUP-DESIGN.md`                  | proposal cadence and approval                                                                                                             | verify current store/actions                                                                                                                                                                                                                                                                                           |
-| `docs/CHECKOUT-RECOVERY-CONTROL.md`                 | both-account abandoned-checkout shadow ownership, state, privacy, configuration, deployment, and rollback contract                        | shadow-only; no customer recovery send, historical outreach, Contador, Sales, student, or accounting authority                                                                                                                                                                                                         |
+| `docs/CHECKOUT-RECOVERY-CONTROL.md`                 | both-account checkout-recovery ownership, state, consent, timing, delivery, privacy, configuration, deployment, and rollback contract       | the existing prospective Encharge sender is the only customer handoff; NC-20260921-001 adds Commerce capture/payment-start/success facts and a 15-minute pre-provider window without historical outreach, Contador, Sales, student, or accounting authority                                                                 |
 | `docs/SALES-FOLLOWUP-OPERATING-MODEL.md`            | unified Sales/proposal/receivables ownership, eligibility, cadence, rejection, receipts, and rollout gates                                | NC-20260821-006 is live and read-only-proves eight internal receivable reviews; NC-20260821-007 locally adds the bounded, source-bound, non-posting Contador packet. Clean Mini packet proof, projection, presentation, decision consumption, pipeline mutation, drafting, approval, and customer action remain gated. |
 | `docs/SELF-HEALING-*.md`                            | healer phases/target behavior                                                                                                             | enabled state is environment-dependent                                                                                                                                                                                                                                                                                 |
 | `docs/gmail-pubsub-setup.md`                        | Gmail push setup                                                                                                                          | cloud/VPS state must be rechecked                                                                                                                                                                                                                                                                                      |

@@ -113,13 +113,20 @@ describe.skipIf(!TEST_DATABASE_URL)(
 
     it('binds website token and PaymentIntent to one consent-eligible case', async () => {
       const captured = await record(website('checkout.captured'));
+      const capturedDue = await pool!.query<{ shadow_due_at: string }>(
+        `SELECT shadow_due_at::text FROM business_v2.checkout_recovery_cases WHERE id = $1`,
+        [captured.caseId],
+      );
+      expect(new Date(capturedDue.rows[0].shadow_due_at).toISOString()).toBe(
+        '2026-08-24T18:15:00.000Z',
+      );
       const payment = await record(website('payment.created'));
       expect(payment.caseId).toBe(captured.caseId);
       expect(payment.state).toBe('payment_created');
       if (!pool) throw new Error('disposable pool unavailable');
       const rows = await pool.query(
         `SELECT state, version, contact_email::text, consent_state,
-              eligibility_state, shadow_due_at IS NOT NULL AS has_due
+              eligibility_state, shadow_due_at::text
          FROM business_v2.checkout_recovery_cases`,
       );
       expect(rows.rows).toEqual([
@@ -129,9 +136,12 @@ describe.skipIf(!TEST_DATABASE_URL)(
           contact_email: 'buyer@example.com',
           consent_state: 'granted',
           eligibility_state: 'eligible',
-          has_due: true,
+          shadow_due_at: expect.any(String),
         }),
       ]);
+      expect(new Date(rows.rows[0].shadow_due_at).toISOString()).toBe(
+        '2026-08-24T18:45:00.000Z',
+      );
       const aliases = await pool.query(
         `SELECT alias_kind FROM business_v2.checkout_recovery_aliases ORDER BY alias_kind`,
       );
@@ -520,6 +530,68 @@ describe.skipIf(!TEST_DATABASE_URL)(
         status: 'suppressed',
         last_error_code: 'sibling_purchase',
       });
+    });
+
+    it('suppresses an older due touch when the same person starts a newer product attempt', async () => {
+      const original = await record(website('checkout.captured'));
+      const sendConfig = {
+        mode: 'production' as const,
+        activatedAt: new Date('2026-08-24T17:00:00.000Z'),
+        pilotEmailSha256: null,
+        pilotTouch2DelayMinutes: null,
+        enchargeWriteKey: 'integration-test-write-key',
+      };
+      const setupClient = await pool!.connect();
+      try {
+        await setupClient.query('BEGIN');
+        await sweepCheckoutRecoveryShadowWithClient(setupClient, {
+          now: new Date('2026-08-24T18:15:00.000Z'),
+          sendConfig,
+        });
+        await setupClient.query(
+          `UPDATE business_v2.checkout_recovery_cases
+              SET shadow_notified_at = '2026-08-24T18:15:01.000Z'
+            WHERE id = $1`,
+          [original.caseId],
+        );
+        await setupClient.query('COMMIT');
+      } finally {
+        setupClient.release();
+      }
+
+      await record(
+        website(
+          'checkout.captured',
+          'N'.repeat(32),
+          'pi_newerattempt1234567',
+          '2026-08-24T18:16:00.000Z',
+        ),
+      );
+      const claimClient = await pool!.connect();
+      try {
+        await claimClient.query('BEGIN');
+        const claimed = await claimDueCheckoutRecoverySendIntentsWithClient(
+          claimClient,
+          sendConfig,
+          { now: new Date('2026-08-24T18:16:01.000Z') },
+        );
+        await claimClient.query('COMMIT');
+        expect(claimed).toEqual([]);
+      } finally {
+        claimClient.release();
+      }
+      const intent = await pool!.query(
+        `SELECT status, last_error_code
+           FROM business_v2.checkout_recovery_send_intents
+          WHERE case_id = $1 AND touch = 1`,
+        [original.caseId],
+      );
+      expect(intent.rows).toEqual([
+        {
+          status: 'suppressed',
+          last_error_code: 'sibling_newer_attempt',
+        },
+      ]);
     });
 
     it('serializes different render contexts for the same email digest', async () => {

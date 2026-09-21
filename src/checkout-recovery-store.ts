@@ -294,7 +294,10 @@ function shadowDueAt(
   if (event.event_type === 'payment.failed') {
     return new Date(observed + 5 * 60_000).toISOString();
   }
-  if (['captured', 'payment_created', 'client_abandoned'].includes(nextState)) {
+  if (nextState === 'captured') {
+    return new Date(observed + 15 * 60_000).toISOString();
+  }
+  if (['payment_created', 'client_abandoned'].includes(nextState)) {
     return new Date(observed + 45 * 60_000).toISOString();
   }
   return null;
@@ -1036,7 +1039,7 @@ export async function sweepCheckoutRecoveryShadowWithClient(
         evidenceSha256,
         current.state,
         JSON.stringify({
-          timeout_minutes: 45,
+          timeout_minutes: current.state === 'captured' ? 15 : 45,
           consent_state: current.consent_state,
           eligibility_state: eligibility,
         }),

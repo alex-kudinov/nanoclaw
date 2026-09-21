@@ -161,7 +161,7 @@ export interface HealthPayload {
     customerSends: boolean;
     sendMode?: 'off' | 'pilot' | 'production';
     prospectiveCutoff?: string | null;
-    tandemCaptureTimeoutMinutes: 45;
+    tandemCaptureTimeoutMinutes: 15;
     tandemPaymentFailureDelayMinutes: 5;
     heartbeatMode: 'stripe_events_only';
     health?: import('./checkout-recovery-store.js').CheckoutRecoveryHealth;

@@ -21,11 +21,11 @@ or Sales follow-up cases.
 
 | Stripe account | Start evidence                                             | Abandonment decision                                                                                                                          | Completion evidence                           |
 | -------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `tandem`       | signed Tandemweb server capture and PaymentIntent creation | host timeout 45 minutes after capture/payment creation; explicit payment failure uses a five-minute fast path; client abandon is context only | exact PaymentIntent/Checkout completion alias |
+| `tandem`       | signed Tandemweb or Commerce server capture and PaymentIntent creation | pre-provider capture timeout 15 minutes after server capture; provider-started/payment-created and client-abandoned cases retain 45 minutes; explicit payment failure uses a five-minute fast path | exact PaymentIntent/Checkout or Commerce paid completion alias |
 | `heartbeat`    | none from Tandemweb                                        | provider event only: PaymentIntent failure or Checkout Session expiry                                                                         | exact Checkout/PaymentIntent completion alias |
 
 Reports must keep those guarantees separate. “Both accounts represented” does
-not mean Heartbeat attempts receive a 45-minute signal.
+not mean Heartbeat attempts receive a host-timeout signal.
 
 ## Source contract
 
@@ -165,9 +165,11 @@ Slack accepts the post. Repeated PaymentIntents/provider events use one stable
 thread. Internal state labels are never operator copy. The canonical incident
 and cases, not Slack, own closure.
 
-Captured, payment-created, and client-abandoned cases become due after 45
-minutes. An exact `payment.failed` fact is a stronger signal and becomes due
-after five minutes. Health and aggregate reports expose both windows.
+Pre-provider captured cases become due after 15 minutes. Payment-created and
+client-abandoned cases retain the 45-minute window because provider activity
+may still complete. An exact `payment.failed` fact is a stronger signal and
+becomes due after five minutes. Health and aggregate reports expose all three
+windows. A newer same-email, same-product case suppresses an older reminder.
 
 `npm run checkout-recovery:report` emits aggregate account/state/consent/
 eligibility counts and explicitly labels Tandem timeout versus Heartbeat

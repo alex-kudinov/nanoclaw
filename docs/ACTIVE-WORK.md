@@ -1,8 +1,8 @@
 # NanoClaw active work
 
 2026-09-21T19:55Z — `NC-20260921-001` connect incomplete Tandem Commerce
-checkouts to the existing consent-aware recovery path and move touch one from
-45 to 15 minutes, owner Codex with fresh necessity and bounded Sonnet/high
+checkouts to the existing consent-aware recovery path and move pre-provider
+capture touch one from 45 to 15 minutes, owner Codex with fresh necessity and bounded Sonnet/high
 review, `in_progress`, C3, isolated NanoClaw branch
 `codex/incomplete-checkout-assistance-20260921` from exact live release
 `f2c326758e4e` plus same-named Tandemweb branch from active Commerce
@@ -17,7 +17,8 @@ purchase/sibling/consent/reply suppression and Encharge flow. Add no table,
 queue, worker, scheduler, provider, direct Commerce mailer or historical
 backfill. Preserve checkout-reminder-v3 jurisdiction/opt-out rules, emit
 capture only after `payment_methods_loaded`, emit success only from signed paid
-truth, make touch one due 15 minutes from immutable capture, retain touch two
+truth, make pre-provider touch one due 15 minutes from immutable capture,
+retain the 45-minute hold where provider activity may still complete and touch two
 at 24 hours, and use service-oriented incomplete copy without claiming a
 failure. S1 returned `KEEP` for all five obligations. Next: implement the
 bounded cross-repo walking skeleton, run focused/full and disposable database

@@ -125,6 +125,7 @@ describe('checkout recovery Encharge handoff', () => {
       "'pre_activation_case'",
       "'not_allowlisted'",
       "'sibling_purchase'",
+      "'sibling_newer_attempt'",
       "'touch_one_not_accepted'",
       "'lease_expired_dispatch_ambiguous'",
       "interval '10 minutes'",

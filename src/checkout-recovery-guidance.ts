@@ -27,7 +27,7 @@ const COPY: Record<CheckoutRecoveryLocale, LocaleCopy> = {
     ],
     incomplete: {
       title: 'Your checkout is still available',
-      body: 'You started checkout but it was not completed. You can return to the course page and start a fresh checkout. Reply to this email if you would like help.',
+      body: 'You started checkout but it was not completed. Did something get in the way, did checkout not work, or do you need more information before signing up? Reply to this email and we’ll help, or return to the course page when you’re ready.',
     },
     guidance: {
       verify_card_details: {
@@ -64,7 +64,7 @@ const COPY: Record<CheckoutRecoveryLocale, LocaleCopy> = {
     ],
     incomplete: {
       title: 'Tu proceso de inscripción sigue disponible',
-      body: 'Iniciaste el pago, pero no se completó. Puedes volver a la página del curso e iniciar un pago nuevo. Responde a este correo si necesitas ayuda.',
+      body: 'Iniciaste el proceso, pero no se completó. ¿Algo te impidió continuar, el pago no funcionó o necesitas más información antes de inscribirte? Responde a este correo y te ayudaremos, o vuelve a la página del curso cuando quieras.',
     },
     guidance: {
       verify_card_details: {
@@ -101,7 +101,7 @@ const COPY: Record<CheckoutRecoveryLocale, LocaleCopy> = {
     ],
     incomplete: {
       title: 'Votre inscription est toujours disponible',
-      body: 'Vous avez commencé le paiement, mais il n’a pas été finalisé. Revenez à la page du cours pour démarrer un nouveau paiement. Répondez à cet e-mail si vous souhaitez de l’aide.',
+      body: 'Vous avez commencé votre inscription, mais elle n’a pas été finalisée. Quelque chose vous a bloqué, le paiement n’a pas fonctionné ou vous souhaitez plus d’informations avant de vous inscrire ? Répondez à cet e-mail et nous vous aiderons, ou revenez à la page du cours quand vous le souhaitez.',
     },
     guidance: {
       verify_card_details: {
@@ -138,7 +138,7 @@ const COPY: Record<CheckoutRecoveryLocale, LocaleCopy> = {
     ],
     incomplete: {
       title: 'お申し込み手続きは引き続き可能です',
-      body: 'お支払い手続きが開始されましたが、完了していません。コースページに戻り、新しいお支払い手続きを開始してください。サポートが必要な場合は、このメールにご返信ください。',
+      body: 'お申し込み手続きが開始されましたが、完了していません。途中で問題が起きた場合、お支払いがうまくいかなかった場合、またはお申し込み前に詳しい情報が必要な場合は、このメールにご返信ください。お手伝いいたします。準備ができましたらコースページに戻ることもできます。',
     },
     guidance: {
       verify_card_details: {

@@ -384,6 +384,22 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
         item.started_at,
       ],
     );
+    const siblingNewerAttempt = await client.query(
+      `SELECT 1 FROM business_v2.checkout_recovery_cases
+          WHERE stripe_account = $1
+            AND email_sha256 = $2
+            AND product_slug = $3
+            AND id <> $4
+            AND started_at > $5::timestamptz
+          LIMIT 1`,
+      [
+        item.stripe_account,
+        item.email_sha256,
+        item.product_slug,
+        intent.case_id,
+        item.started_at,
+      ],
+    );
     if (item.shadow_notified_at === null) continue;
     if (intent.touch === 2) {
       const touchOne = await client.query<{ status: string }>(
@@ -419,7 +435,9 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
                 ? 'not_allowlisted'
                 : siblingPurchase.rowCount
                   ? 'sibling_purchase'
-                  : null;
+                  : siblingNewerAttempt.rowCount
+                    ? 'sibling_newer_attempt'
+                    : null;
     if (suppression) {
       await suppressIntent(client, intent, suppression, now);
       continue;

@@ -45,7 +45,9 @@ async function main(): Promise<void> {
           send_mode: CHECKOUT_RECOVERY_SEND_MODE,
           timeout_coverage: {
             tandem: {
-              captured_or_payment_created: '45_minutes_after_server_capture',
+              captured: '15_minutes_after_server_capture',
+              payment_created_or_client_abandoned:
+                '45_minutes_after_observation',
               payment_failed: '5_minutes_after_provider_failure',
             },
             heartbeat: 'stripe_events_only',
