@@ -348,6 +348,20 @@ describe.skipIf(!TEST_DATABASE_URL)(
     });
 
     it('claims touch one without waiting for the separate operator incident notification', async () => {
+      for (let index = 0; index < 12; index++) {
+        await record(
+          website(
+            'checkout.captured',
+            String(index).padStart(2, '0') + 'L'.repeat(30),
+            `pi_legacyblocker${String(index).padStart(8, '0')}`,
+            new Date(
+              Date.parse('2026-08-24T17:00:00.000Z') + index * 1000,
+            ).toISOString(),
+            `legacy-product-${index}`,
+            `Legacy Product ${index}`,
+          ),
+        );
+      }
       const captured = await record(
         website(
           'checkout.captured',
@@ -371,12 +385,13 @@ describe.skipIf(!TEST_DATABASE_URL)(
         await client.query('BEGIN');
         await sweepCheckoutRecoveryShadowWithClient(client, {
           now: new Date('2026-08-24T18:15:00.000Z'),
+          limit: 25,
           sendConfig,
         });
         const claimed = await claimDueCheckoutRecoverySendIntentsWithClient(
           client,
           sendConfig,
-          { now: new Date('2026-08-24T18:15:01.000Z') },
+          { limit: 10, now: new Date('2026-08-24T18:15:01.000Z') },
         );
         await client.query('COMMIT');
         expect(claimed).toHaveLength(1);

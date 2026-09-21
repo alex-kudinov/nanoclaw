@@ -21,6 +21,9 @@
   operator prerequisite only when an immutable website event carries the new
   `commerce-` source-key prefix; legacy Tandemweb/Stripe cases retain their old
   gate and every consent/payment/purchase/newer-attempt/lease suppressor.
+- The due query now applies that gate before its 10-row limit. This closes the
+  TEST-observed starvation path where older blocked legacy intents occupied the
+  batch forever and prevented a later Commerce intent from being claimed.
 - Added send-time suppression for a newer same-email, same-product attempt and
   service-oriented incomplete copy in English, Spanish, French, and Japanese.
 

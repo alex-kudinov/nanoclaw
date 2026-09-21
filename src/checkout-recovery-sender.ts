@@ -338,14 +338,27 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
     });
   }
   const due = await client.query<IntentRow>(
-    `SELECT id::text, intent_uuid::text, case_id::text, touch,
-              attempt_count, due_at::text
-         FROM business_v2.checkout_recovery_send_intents
-        WHERE status IN ('pending', 'failed')
-          AND due_at <= $1::timestamptz
-          AND next_attempt_at <= $1::timestamptz
-          AND attempt_count < 10
-        ORDER BY due_at, id
+    `SELECT intent.id::text, intent.intent_uuid::text, intent.case_id::text,
+              intent.touch, intent.attempt_count, intent.due_at::text
+         FROM business_v2.checkout_recovery_send_intents intent
+        WHERE intent.status IN ('pending', 'failed')
+          AND intent.due_at <= $1::timestamptz
+          AND intent.next_attempt_at <= $1::timestamptz
+          AND intent.attempt_count < 10
+          AND EXISTS (
+            SELECT 1 FROM business_v2.checkout_recovery_cases gate_case
+             WHERE gate_case.id=intent.case_id
+               AND (
+                 gate_case.shadow_notified_at IS NOT NULL
+                 OR EXISTS (
+                   SELECT 1 FROM business_v2.checkout_recovery_events gate_event
+                    WHERE gate_event.case_id=gate_case.id
+                      AND gate_event.source_system='tandemweb'
+                      AND gate_event.source_event_key LIKE 'commerce-%'
+                 )
+               )
+          )
+        ORDER BY intent.due_at, intent.id
         FOR UPDATE SKIP LOCKED
         LIMIT $2`,
     [now.toISOString(), limit],

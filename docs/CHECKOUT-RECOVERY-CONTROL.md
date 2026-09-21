@@ -171,6 +171,9 @@ the send worker independently rechecks consent, state, purchase, newer-attempt,
 routing, activation, cross-case and lease suppressors. Legacy Tandemweb/Stripe
 cases retain the operator-notification prerequisite, preventing a code release
 from turning older held cases into historical outreach.
+The due-intent query applies the same predicate before its bounded `LIMIT`, so
+older gated rows cannot repeatedly occupy the batch and starve a later Commerce
+touch.
 
 Pre-provider captured cases become due after 15 minutes. Payment-created and
 client-abandoned cases retain the 45-minute window because provider activity

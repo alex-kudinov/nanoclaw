@@ -140,5 +140,7 @@ describe('checkout recovery Encharge handoff', () => {
       'item.shadow_notified_at === null && !item.commerce_source',
     );
     expect(source).toContain("source_event.source_event_key LIKE 'commerce-%'");
+    expect(source).toContain("gate_event.source_event_key LIKE 'commerce-%'");
+    expect(source).toContain('gate_case.shadow_notified_at IS NOT NULL');
   });
 });
