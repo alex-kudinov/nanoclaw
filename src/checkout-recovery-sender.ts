@@ -67,6 +67,7 @@ interface CaseRow extends QueryResultRow {
   checkout_locale: 'en' | 'es' | 'ja' | 'fr' | null;
   return_url: string | null;
   customer_guidance_key: CheckoutFailureGuidanceKey | null;
+  commerce_source: boolean;
 }
 
 export interface CheckoutRecoveryClaimedIntent {
@@ -353,15 +354,21 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
   const claimedEmailDigests = new Set<string>();
   for (const intent of due.rows) {
     const locked = await client.query<CaseRow>(
-      `SELECT id::text, case_uuid::text, stripe_account, state,
+      `SELECT c.id::text, c.case_uuid::text, c.stripe_account, c.state,
                 started_at::text, created_at::text, program_slug, product_slug,
                 product_name, amount_cents::text, currency,
                 contact_email::text, email_sha256, consent_state,
                 consent_policy_version, eligibility_state, suppression_code,
                 shadow_notified_at::text, checkout_locale, return_url,
-                customer_guidance_key
-           FROM business_v2.checkout_recovery_cases
-          WHERE id = $1 FOR UPDATE`,
+                customer_guidance_key,
+                EXISTS (
+                  SELECT 1 FROM business_v2.checkout_recovery_events source_event
+                   WHERE source_event.case_id=c.id
+                     AND source_event.source_system='tandemweb'
+                     AND source_event.source_event_key LIKE 'commerce-%'
+                ) AS commerce_source
+           FROM business_v2.checkout_recovery_cases c
+          WHERE c.id = $1 FOR UPDATE`,
       [intent.case_id],
     );
     const item = locked.rows[0];
@@ -369,6 +376,7 @@ export async function claimDueCheckoutRecoverySendIntentsWithClient(
       await suppressIntent(client, intent, 'case_missing', now);
       continue;
     }
+    if (item.shadow_notified_at === null && !item.commerce_source) continue;
     const siblingPurchase = await client.query(
       `SELECT 1 FROM business_v2.checkout_recovery_cases
           WHERE stripe_account = $1

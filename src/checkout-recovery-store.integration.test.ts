@@ -60,14 +60,16 @@ function website(
   observedAt = '2026-08-24T18:00:00.000Z',
   productSlug = 'acc-full',
   productName = 'ACC Level 1 Full Program',
+  sourceEventKey: string | null = null,
 ) {
   return prepareWebsiteCheckoutRecoveryEnvelope(
     {
       schema_version: 1,
       source_event_key:
-        eventType === 'checkout.captured'
+        sourceEventKey ??
+        (eventType === 'checkout.captured'
           ? `tw:v1:${token}:captured`
-          : `tw:v1:${token}:payment_created:${paymentIntent}`,
+          : `tw:v1:${token}:payment_created:${paymentIntent}`),
       event_type: eventType,
       observed_at: observedAt,
       checkout_token: token,
@@ -112,7 +114,17 @@ describe.skipIf(!TEST_DATABASE_URL)(
     });
 
     it('binds website token and PaymentIntent to one consent-eligible case', async () => {
-      const captured = await record(website('checkout.captured'));
+      const captured = await record(
+        website(
+          'checkout.captured',
+          TOKEN,
+          'pi_abc1234567890',
+          '2026-08-24T18:00:00.000Z',
+          'acc-full',
+          'ACC Level 1 Full Program',
+          'commerce-test-captured-integration01',
+        ),
+      );
       const capturedDue = await pool!.query<{ shadow_due_at: string }>(
         `SELECT shadow_due_at::text FROM business_v2.checkout_recovery_cases WHERE id = $1`,
         [captured.caseId],
@@ -336,7 +348,17 @@ describe.skipIf(!TEST_DATABASE_URL)(
     });
 
     it('claims touch one without waiting for the separate operator incident notification', async () => {
-      const captured = await record(website('checkout.captured'));
+      const captured = await record(
+        website(
+          'checkout.captured',
+          TOKEN,
+          'pi_abc1234567890',
+          '2026-08-24T18:00:00.000Z',
+          'acc-full',
+          'ACC Level 1 Full Program',
+          'commerce-test-captured-no-operator01',
+        ),
+      );
       const sendConfig = {
         mode: 'production' as const,
         activatedAt: new Date('2026-08-24T17:00:00.000Z'),
@@ -367,6 +389,39 @@ describe.skipIf(!TEST_DATABASE_URL)(
         [captured.caseId],
       );
       expect(row.rows[0].shadow_notified_at).toBeNull();
+    });
+
+    it('retains the operator-notification gate for legacy Tandemweb cases', async () => {
+      const captured = await record(website('checkout.captured'));
+      const sendConfig = {
+        mode: 'production' as const,
+        activatedAt: new Date('2026-08-24T17:00:00.000Z'),
+        pilotEmailSha256: null,
+        pilotTouch2DelayMinutes: null,
+        enchargeWriteKey: 'integration-test-write-key',
+      };
+      const client = await pool!.connect();
+      try {
+        await client.query('BEGIN');
+        await sweepCheckoutRecoveryShadowWithClient(client, {
+          now: new Date('2026-08-24T18:15:00.000Z'),
+          sendConfig,
+        });
+        const claimed = await claimDueCheckoutRecoverySendIntentsWithClient(
+          client,
+          sendConfig,
+          { now: new Date('2026-08-24T18:15:01.000Z') },
+        );
+        await client.query('COMMIT');
+        expect(claimed).toEqual([]);
+      } finally {
+        client.release();
+      }
+      const row = await pool!.query(
+        `SELECT status FROM business_v2.checkout_recovery_send_intents WHERE case_id = $1 AND touch = 1`,
+        [captured.caseId],
+      );
+      expect(row.rows).toEqual([{ status: 'pending' }]);
     });
 
     it('holds an expired dispatch lease instead of replaying an ambiguous send', async () => {

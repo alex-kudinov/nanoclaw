@@ -165,11 +165,12 @@ Slack accepts the post. Repeated PaymentIntents/provider events use one stable
 thread. Internal state labels are never operator copy. The canonical incident
 and cases, not Slack, own closure.
 
-The customer touch is not gated on that separate five-minute operator window.
-Once the case is due, the send worker independently rechecks consent, state,
-purchase, newer-attempt, routing, activation, cross-case and lease suppressors.
-This keeps the first customer handoff within the requested timing window even
-when the internal incident has not yet been posted.
+Only the new Commerce source events (`source_event_key` beginning `commerce-`)
+bypass that separate five-minute operator window. Once a Commerce case is due,
+the send worker independently rechecks consent, state, purchase, newer-attempt,
+routing, activation, cross-case and lease suppressors. Legacy Tandemweb/Stripe
+cases retain the operator-notification prerequisite, preventing a code release
+from turning older held cases into historical outreach.
 
 Pre-provider captured cases become due after 15 minutes. Payment-created and
 client-abandoned cases retain the 45-minute window because provider activity

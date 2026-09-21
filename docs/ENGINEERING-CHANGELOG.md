@@ -14,10 +14,13 @@
 - The existing timeout sweep now runs once per minute so a case due at minute
   15 is projected promptly instead of waiting up to five additional minutes.
 - Controlled TEST exposed that customer touch one was also waiting for the
-  separate five-minute operator-Inbox incident. The customer claim now keeps
-  every consent/payment/purchase/newer-attempt/lease suppressor but no longer
-  waits for that internal Slack receipt; operator notification remains intact
-  and independent.
+  separate five-minute operator-Inbox incident. The first correction removed
+  that prerequisite globally and was rolled back after seven minutes when it
+  released 21 historical Aug 29-Sep 10 cases to Encharge. The flow was
+  deactivated for containment. The corrected implementation bypasses the
+  operator prerequisite only when an immutable website event carries the new
+  `commerce-` source-key prefix; legacy Tandemweb/Stripe cases retain their old
+  gate and every consent/payment/purchase/newer-attempt/lease suppressor.
 - Added send-time suppression for a newer same-email, same-product attempt and
   service-oriented incomplete copy in English, Spanish, French, and Japanese.
 
