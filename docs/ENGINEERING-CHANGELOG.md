@@ -65,10 +65,12 @@
   from Aug 29-Sep 10 and Encharge accepted 21 reminder events (11 touch-one and
   10 touch-two). The active flow has an immediate email action for each matching
   event, so 21 historical emails were likely submitted; exact inbox delivery is
-  not proved. Containment deactivated the flow, rolled back the broad release,
-  and then reactivated only after the Commerce-source-specific correction. Four
-  diagnostic leases were requeued without dispatch. No historical backfill was
-  intended or authorized.
+  not proved. Those incident-time templates still used
+  `hello@tandemcoach.co`; the sender correction below occurred afterward.
+  Containment deactivated the flow, rolled back the broad release, and then
+  reactivated only after the Commerce-source-specific correction. Four
+  diagnostic leases were requeued without dispatch. No historical backfill
+  was intended or authorized.
 - The Encharge flow is back on, all trigger/action steps are active, and the
   final source-specific release prevents older legacy rows from bypassing their
   operator-notification prerequisite or starving new Commerce work.
