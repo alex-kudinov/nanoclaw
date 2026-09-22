@@ -2,7 +2,7 @@
 
 2026-09-22T17:45Z — `NC-20260922-002` recover one paid ACTC Commerce
 transaction whose signed legacy cohort has an empty roster value and prevent
-future empty credential snapshots, owner Codex, `in_progress`, C4, continuing
+future empty credential snapshots, owner Codex, `complete`, C4, continuing
 the isolated `codex/mcs-bookkeeper-recovery-20260922` lineage after live release
 `9c526c028da3` plus Tandem Commerce 1.44.36. Payment, signed webhook, access,
 lifecycle, documents and receipt are complete; the new retry guard correctly
@@ -13,9 +13,14 @@ the frozen `rosterValue` is empty. Add only a bounded compatibility fallback
 for signed PCC/ACTC legacy snapshots to the already-signed `label — range`,
 make the Commerce producer normalize/reject empty future values, and replay the
 original jobs idempotently. No schema, route, queue, worker, scheduler, payment,
-refund, customer message, access change or inferred destination. Next: focused
-cross-system tests, consumer-first release, exact job replay and four-sink
-readback.
+refund, customer message, access change or inferred destination. Exact
+NanoClaw release `1a46f4ce94cf` and Tandem Commerce 1.44.37 commit `ab3e0f5c1`
+are live. The original Bookkeeper job completed on attempt 2 and its fee job on
+attempt 1; Payment Log has one USD 399 row with USD 14.07 fee/USD 384.93 net,
+ACTC roster has one M3 row with the signed October cohort, PostgreSQL matches
+the exact order/PSP, and Commerce reports no attention. Future PCC/ACTC contexts
+normalize and require the nonempty signed label/range value. No new payment,
+refund, customer message or access change occurred. Next: none.
 
 2026-09-22T15:05Z — `NC-20260922-001` recover one paid MCS Commerce
 installment and prevent permanent Bookkeeper contract failures from retrying

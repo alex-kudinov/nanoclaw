@@ -2,8 +2,8 @@
 
 # 2026-09-22 — NC-20260922-002 ACTC empty-roster compatibility recovery
 
-- State: `in_progress`; consumer/source correction is local and no replay has
-  occurred.
+- State: `complete`; consumer and producer corrections are deployed and the
+  exact transaction is recovered/read back.
 - Root cause: a paid ACTC Module 3 snapshot carries a valid signed credential
   cohort but an empty `rosterValue`; the receiver rejected it before every
   Bookkeeper sink. The new Commerce retry policy correctly stopped after one
@@ -15,8 +15,22 @@
   destination and writes remain fill-only/readback-gated.
 - Boundaries: no schema, route, queue, worker, scheduler, payment, refund,
   customer communication, enrollment/access change or provider event replay.
-- Next: focused/full verification, consumer-first immutable release, paired
-  Commerce producer correction, original-job replay and exact sink readback.
+- Verification: NanoClaw receiver/webhook suites pass 79/79 with pinned
+  typecheck/build/continuity; immutable release build passes 809 email-critical
+  and 45 runner tests. All 40 Commerce PHP suites and full plugin lint pass.
+- Deployment: consumer-first NanoClaw release
+  `1a46f4ce94cfe582aedc9e63bfb582865aa00bb3`, then Tandem Commerce 1.44.37
+  commit `ab3e0f5c1`, both live verified. The original receipt job completed on
+  attempt 2 and the dependency-gated fee job completed on attempt 1.
+- Readback: exactly one Payment Log PSP row at USD 399 gross, USD 14.07 fee,
+  USD 384.93 net, paid/Adyen; exactly one ACTC M3 roster row with
+  `ACTC Module 3 — Oct 6, 2026 - Oct 27, 2026`; one matching PostgreSQL
+  order/PSP/merchant/product/amount row; Commerce `needsAttention=false`.
+- Side effects excluded: no new payment, refund, customer message, access or
+  enrollment mutation, provider-event replay or frozen-snapshot rewrite.
+- Review: Claude was not used for this follow-up because the new retry guard
+  made the failure precise and the correction follows the already-signed
+  Commerce fallback contract with direct cross-system regression coverage.
 
 # 2026-09-22 — NC-20260922-001 MCS Commerce Bookkeeper recovery
 
