@@ -1097,6 +1097,16 @@ evidence preserves existing G:H. No new schema, service, queue, worker,
 scheduler or provider call is introduced; these values remain operational
 diagnostics, not accounting truth.
 
+Companion Tandem Commerce 1.44.36 makes that existing runner dependency-aware:
+fee reconciliation is claimable only after the same order/environment/provider
+payment projection completes; intentional no-notify `billing_only` orders retain
+fee evidence without creating a fee job. Definite authenticated 4xx contract
+rejection enters terminal operator attention immediately, while transport,
+throttling, conflict and 5xx failures retain exponential backoff capped at eight
+Bookkeeper attempts. Terminal evidence stays visible and is no longer claimed
+automatically. This changes no payment truth, job identity, provider operation or
+runtime topology.
+
 The existing finite-billing route also accepts the exact discriminated
 `custom_invoice_installments` contract: custom cadence, source invoice UUID,
 two-to-eight ordered obligations and exact base-plus-fee arithmetic. Schedule,

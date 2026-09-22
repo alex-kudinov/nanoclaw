@@ -4,9 +4,8 @@
 
 ## Recovery consumer
 
-- State: `ready_for_deploy`; the bounded NanoClaw consumer correction is
-  implemented and verified locally. Deployment and exact transaction recovery
-  remain pending.
+- State: `complete`; the bounded NanoClaw consumer correction, exact transaction
+  recovery and Commerce retry/dependency hardening are deployed and live-read.
 - Change class: C4 because the existing signed Commerce path writes Payment
   Log, Student Roster and PostgreSQL projections after provider-confirmed
   payment. This change cannot initiate a payment, refund or provider action.
@@ -29,7 +28,8 @@
   suite is 4,528 pass / 37 skip / four failures; the
   payment-method concurrency failure passes isolated, leaving the exact three
   predecessor Capacity, CNPC and date-stale Trafft failures recorded on the
-  live base. Build, continuity, immutable release and live readback remain.
+  live base. Immutable release build passed its 809 email-critical and 45
+  runner tests and produced verified final release `9c526c028da3`.
 - Independent review: bounded Sonnet/high S1 returned `KEEP` and required a
   distinct MCS branch rather than widening shared credential bounds; the
   implementation follows that finding. Codex independently corrected one
@@ -38,11 +38,36 @@
   `Mentor Coach Training (AAMC)` to `MCS / MCS Practicum` destination. The
   review used 17 turns and USD 0.5072; the session-usage helper found no
   persisted transcript, so runner totals are the available numeric record.
-- Recovery: deploy the consumer first, verify exact release/health, and allow
-  only the original two Commerce jobs to replay. Completion requires one exact
-  Payment Log PSP row, MCS roster cohort readback, one PostgreSQL projection and
-  exact fee/net reconciliation without a new payment, refund, email, enrollment
-  or access change.
+- Recovery: interim consumer `bd39becc8525` activated first and the original
+  two jobs completed on attempt 9. Readback found exactly one Payment Log PSP
+  row with USD 999 gross, USD 31.88 fee, USD 967.12 net, paid status and Adyen
+  provenance; exactly one MCS roster row with the signed Thursday cohort; one
+  matching PostgreSQL order/PSP/merchant/product/amount projection; and
+  Commerce `needsAttention=false`. No payment/provider event was replayed.
+- Preventive correction: cross-system inspection found later canonical MCS
+  cohorts have ten sessions while the recovered cohort has twelve. Final
+  NanoClaw release `9c526c028da3` admits only those two exact MCS variants while
+  preserving all credential bounds. Tandem Commerce 1.44.36 commit
+  `7331ca2d7` makes fee jobs depend on completed payment projection, stops
+  definite 4xx contract rejection immediately, caps other Bookkeeper retries
+  at eight, renders stopped attention truthfully, and excludes intentional
+  no-notify `billing_only` orders from fee-job creation. All 40 Commerce PHP
+  suites and full plugin lint pass; deployed hashes match source.
+- Independent review follow-up: bounded Sonnet/high found the `billing_only`
+  stranded-fee edge. It was fixed with an exact existing-notify gate and
+  regression. The review used 35 turns and approximately USD 1.4074, an
+  acknowledged orchestration-overhead defect; no third round was run.
+- Existing-loop reconciliation: one historical USD 1 Apple Pay canary fee job
+  with no primary Bookkeeper projection was completed as `fee_not_applicable`;
+  one historical USD 1 ACC fee job with a missing Payment Log row entered
+  `attention` with `retry_stopped` on attempt 39. Zero Bookkeeper job remains
+  pending or processing. This changed no payment, fee amount, roster, access,
+  enrollment, provider state or customer communication.
+- Deployment: NanoClaw health reports exact verified release
+  `9c526c028da32c36709c304794e49461c54a1837`, matching code root and connected
+  Gmail/Slack. Commerce 1.44.36 is active. Rollback artifacts are the retained
+  NanoClaw plist for `bd39becc8525` and Commerce backup
+  `/home/tca/plugin-backups/tandem-commerce-pre-1.44.36-20260922T165723Z.tar.gz`.
 
 # 2026-09-21 — NC-20260921-001 Commerce incomplete-checkout assistance
 

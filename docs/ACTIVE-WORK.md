@@ -3,7 +3,7 @@
 2026-09-22T15:05Z — `NC-20260922-001` recover one paid MCS Commerce
 installment and prevent permanent Bookkeeper contract failures from retrying
 indefinitely, owner Codex with fresh necessity and bounded Sonnet/high review,
-`ready_for_deploy`, C4, isolated branch
+`complete`, C4, isolated branch
 `codex/mcs-bookkeeper-recovery-20260922` from exact live release
 `110152b4312e5db6f0f965dc6ff102c09a5a5687`. Current observable result: the
 USD 999 first installment is signed-paid and customer fulfillment completed,
@@ -24,9 +24,17 @@ consumer correction accepts the calendar-authoritative ten- and twelve-session
 MCS variants and passes receiver/webhook 79/79, pinned typecheck, format,
 build, continuity and runtime doctor; full root is 4,528 pass / 37 skip with
 one payment-method concurrency flake passing isolated and the same three
-predecessor failures. Next: commit/push and activate the immutable consumer,
-recover and read back the exact transaction, then implement and release the
-bounded retry/dependency correction.
+predecessor failures. Exact NanoClaw release `9c526c028da3` and Tandem Commerce
+1.44.36 commit `7331ca2d7` are live. The original jobs completed on attempt 9;
+Payment Log, MCS roster cohort, PostgreSQL and USD 31.88 fee/USD 967.12 net all
+read back exactly once, and Commerce reports no attention. Permanent 4xx
+contract failures now stop immediately, transient Bookkeeper retries stop at
+eight, fee work waits for the completed payment projection, and no-notify
+`billing_only` orders create no impossible fee job. Two historical USD 1
+canary loops were reconciled to one explicit not-applicable completion and one
+operator-visible stopped attention; zero Bookkeeper job remains pending or
+processing. No new payment, refund, customer message, enrollment or access
+change occurred. Next: none.
 
 2026-09-21T19:55Z — `NC-20260921-001` connect incomplete Tandem Commerce
 checkouts to the existing consent-aware recovery path and move pre-provider
