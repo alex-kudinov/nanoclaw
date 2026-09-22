@@ -1,5 +1,22 @@
 # NanoClaw active work
 
+2026-09-22T17:45Z — `NC-20260922-002` recover one paid ACTC Commerce
+transaction whose signed legacy cohort has an empty roster value and prevent
+future empty credential snapshots, owner Codex, `in_progress`, C4, continuing
+the isolated `codex/mcs-bookkeeper-recovery-20260922` lineage after live release
+`9c526c028da3` plus Tandem Commerce 1.44.36. Payment, signed webhook, access,
+lifecycle, documents and receipt are complete; the new retry guard correctly
+stopped Bookkeeper after one definite rejection and kept the dependent fee job
+at zero attempts. The signed ACTC program/module/key/four-session schedule is
+valid, Product Map uniquely routes the exact product label to `ACTC / M3`, but
+the frozen `rosterValue` is empty. Add only a bounded compatibility fallback
+for signed PCC/ACTC legacy snapshots to the already-signed `label — range`,
+make the Commerce producer normalize/reject empty future values, and replay the
+original jobs idempotently. No schema, route, queue, worker, scheduler, payment,
+refund, customer message, access change or inferred destination. Next: focused
+cross-system tests, consumer-first release, exact job replay and four-sink
+readback.
+
 2026-09-22T15:05Z — `NC-20260922-001` recover one paid MCS Commerce
 installment and prevent permanent Bookkeeper contract failures from retrying
 indefinitely, owner Codex with fresh necessity and bounded Sonnet/high review,

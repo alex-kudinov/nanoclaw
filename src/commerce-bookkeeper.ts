@@ -167,7 +167,14 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
   const range = text(c.range, 'order.cohort.range', 120);
   const time = text(c.time, 'order.cohort.time', 120);
   const timezone = text(c.timezone, 'order.cohort.timezone', 40);
-  const rosterValue = text(c.rosterValue, 'order.cohort.rosterValue', 200);
+  const suppliedRosterValue =
+    typeof c.rosterValue === 'string' ? c.rosterValue.trim() : '';
+  const rosterValue =
+    suppliedRosterValue !== ''
+      ? text(suppliedRosterValue, 'order.cohort.rosterValue', 200)
+      : ['pcc', 'actc'].includes(program)
+        ? `${label} — ${range}`
+        : '';
   const credentialProgram = ['acc', 'pcc', 'actc'].includes(program);
   const mcsPracticum = program === 'mcs-practicum';
   const rosterValueValid =
@@ -201,6 +208,8 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
     sessions.some(
       (item) => !iso.test(item) || !Number.isFinite(Date.parse(item)),
     ) ||
+    rosterValue === '' ||
+    rosterValue.length > 200 ||
     !rosterValueValid
   ) {
     throw new CommerceBookkeeperRequestError('order.cohort invalid', 422);

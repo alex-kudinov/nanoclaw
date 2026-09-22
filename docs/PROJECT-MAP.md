@@ -1072,6 +1072,10 @@ twelve ISO sessions, and an exact `label — range` roster value. It does not lo
 existing ACC/PCC/ACTC module, key or four-session constraints. The deterministic
 recorder and Product Map remain unchanged; the signed cohort is written only to
 the existing MCS Practicum destination under the same fill-only/readback rule.
+Legacy signed PCC/ACTC snapshots with an empty roster value use only their
+already-signed `label — range` as a bounded compatibility value; ACC, MCS and
+unknown empty values still fail closed. Product Map remains destination
+authority and the recorder still preserves nonblank roster cells.
 
 `NC-20260919-001` keeps the same signed receiver and makes roster applicability
 explicit. Commerce signs `order.rosterPolicy=catalog` for existing catalog

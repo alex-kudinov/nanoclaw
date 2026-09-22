@@ -307,6 +307,22 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(() => prepareCommerceBookkeeperEnvelope(signed(malformed))).toThrow(
       /order.cohort invalid/,
     );
+
+    const legacyActc = structuredClone(credential);
+    legacyActc.order.productId = 'actc-module-3';
+    legacyActc.order.productName = 'ACTC Module 3: System Perception';
+    Object.assign(legacyActc.order.cohort as Record<string, unknown>, {
+      key: 'actc-m3-0123456789abcdef01234567',
+      program: 'actc',
+      module: 3,
+      label: 'ACTC Module 3',
+      range: 'Oct 6, 2026 - Oct 27, 2026',
+      rosterValue: '',
+    });
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(legacyActc)).order.cohort
+        ?.rosterValue,
+    ).toBe('ACTC Module 3 — Oct 6, 2026 - Oct 27, 2026');
   });
 
   it('accepts only the canonical MCS Practicum full-program cohort shape', () => {

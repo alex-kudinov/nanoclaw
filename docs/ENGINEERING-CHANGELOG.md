@@ -1,5 +1,23 @@
 # NanoClaw engineering changelog
 
+# 2026-09-22 — NC-20260922-002 ACTC empty-roster compatibility recovery
+
+- State: `in_progress`; consumer/source correction is local and no replay has
+  occurred.
+- Root cause: a paid ACTC Module 3 snapshot carries a valid signed credential
+  cohort but an empty `rosterValue`; the receiver rejected it before every
+  Bookkeeper sink. The new Commerce retry policy correctly stopped after one
+  definite rejection and did not run the dependent fee job.
+- Outcome: accept an empty roster value only for signed PCC/ACTC credential
+  shapes by deterministically using their signed `label — range`. ACC, MCS,
+  unknown programs, malformed keys/modules/schedules and nonexact nonempty
+  roster values remain rejected. Product Map still uniquely selects the roster
+  destination and writes remain fill-only/readback-gated.
+- Boundaries: no schema, route, queue, worker, scheduler, payment, refund,
+  customer communication, enrollment/access change or provider event replay.
+- Next: focused/full verification, consumer-first immutable release, paired
+  Commerce producer correction, original-job replay and exact sink readback.
+
 # 2026-09-22 — NC-20260922-001 MCS Commerce Bookkeeper recovery
 
 ## Recovery consumer
