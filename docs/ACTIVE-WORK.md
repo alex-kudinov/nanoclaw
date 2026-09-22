@@ -1,5 +1,32 @@
 # NanoClaw active work
 
+2026-09-22T15:05Z — `NC-20260922-001` recover one paid MCS Commerce
+installment and prevent permanent Bookkeeper contract failures from retrying
+indefinitely, owner Codex with fresh necessity and bounded Sonnet/high review,
+`ready_for_deploy`, C4, isolated branch
+`codex/mcs-bookkeeper-recovery-20260922` from exact live release
+`110152b4312e5db6f0f965dc6ff102c09a5a5687`. Current observable result: the
+USD 999 first installment is signed-paid and customer fulfillment completed,
+but the existing Commerce Bookkeeper receiver rejects the canonical
+`mcs-practicum` full-program cohort before any official Bookkeeper write; the
+fee-only job then has no uniquely matching Payment Log row. Commerce classifies
+every non-capacity receiver rejection as `bookkeeper_delivery_failed` and the
+existing job runner retries it forever. Preserve payment/order truth, the
+existing signed endpoint, jobs table, deterministic recorder, Product Map,
+fill-only roster behavior and idempotent PSP/order identities. Add no route,
+table, queue, worker, scheduler, provider call, payment, refund, access change,
+customer message or inferred cohort. First recover through the original jobs
+after consumer-first deployment and exact Payment Log/roster/PostgreSQL/fee
+readback; then make permanent receiver rejections terminal and gate fee work on
+the successful payment projection using the existing job state. S1 returned
+`KEEP` and required a distinct MCS shape rather than widened shared bounds. The
+consumer correction passes receiver/webhook 79/79, pinned typecheck, format,
+build, continuity and runtime doctor; full root is 4,528 pass / 37 skip with
+one payment-method concurrency flake passing isolated and the same three
+predecessor failures. Next: commit/push and activate the immutable consumer,
+recover and read back the exact transaction, then implement and release the
+bounded retry/dependency correction.
+
 2026-09-21T19:55Z — `NC-20260921-001` connect incomplete Tandem Commerce
 checkouts to the existing consent-aware recovery path and move pre-provider
 capture touch one from 45 to 15 minutes, owner Codex with fresh necessity and bounded Sonnet/high

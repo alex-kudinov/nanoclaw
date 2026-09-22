@@ -1,5 +1,48 @@
 # NanoClaw engineering changelog
 
+# 2026-09-22 — NC-20260922-001 MCS Commerce Bookkeeper recovery
+
+## Recovery consumer
+
+- State: `ready_for_deploy`; the bounded NanoClaw consumer correction is
+  implemented and verified locally. Deployment and exact transaction recovery
+  remain pending.
+- Change class: C4 because the existing signed Commerce path writes Payment
+  Log, Student Roster and PostgreSQL projections after provider-confirmed
+  payment. This change cannot initiate a payment, refund or provider action.
+- Root cause: Commerce emitted the canonical MCS Practicum full-program cohort
+  (`module=0`, twelve sessions and an `mcs-practicum-<24 hex>` key), while the
+  receiver shared only the ACC/PCC/ACTC module-1-to-4, four-session validator.
+  The signed paid order was therefore rejected before any Bookkeeper write and
+  its fee-only job had no Payment Log row to reconcile.
+- Outcome: the receiver now admits one separate strict MCS shape while leaving
+  every existing credential-program bound unchanged. The recorder, Product
+  Map, fill-only cohort write, exact readback and idempotent PSP/order identities
+  are unchanged.
+- Topology: no route, schema, table, queue, worker, scheduler, service,
+  credential, provider call or customer communication was added.
+- Files: `src/commerce-bookkeeper.ts`, its focused regression,
+  `docs/PROJECT-MAP.md`, `docs/ACTIVE-WORK.md` and the S1 review artifacts.
+- Verification: receiver/webhook focused suites pass 79/79; pinned typecheck,
+  formatting, build, documentation continuity and runtime doctor pass. Full
+  suite is 4,528 pass / 37 skip / four failures; the
+  payment-method concurrency failure passes isolated, leaving the exact three
+  predecessor Capacity, CNPC and date-stale Trafft failures recorded on the
+  live base. Build, continuity, immutable release and live readback remain.
+- Independent review: bounded Sonnet/high S1 returned `KEEP` and required a
+  distinct MCS branch rather than widening shared credential bounds; the
+  implementation follows that finding. Codex independently corrected one
+  reviewer description: the recorder's Product Map lookup is by exact signed
+  product label, not product ID; the live Product Map contains the exact
+  `Mentor Coach Training (AAMC)` to `MCS / MCS Practicum` destination. The
+  review used 17 turns and USD 0.5072; the session-usage helper found no
+  persisted transcript, so runner totals are the available numeric record.
+- Recovery: deploy the consumer first, verify exact release/health, and allow
+  only the original two Commerce jobs to replay. Completion requires one exact
+  Payment Log PSP row, MCS roster cohort readback, one PostgreSQL projection and
+  exact fee/net reconciliation without a new payment, refund, email, enrollment
+  or access change.
+
 # 2026-09-21 — NC-20260921-001 Commerce incomplete-checkout assistance
 
 ## Scope

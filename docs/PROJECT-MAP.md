@@ -1065,6 +1065,14 @@ existing `Cohort` cell only when blank, preserves an existing value, and require
 readback before success. Capacity-managed ACC and combined Level 2 are not admitted
 by this contract.
 
+`NC-20260922-001` adds the already-authoritative MCS Practicum cohort as a
+separate strict receiver shape: `program=mcs-practicum`, `module=0`,
+`enrollmentScope=full_program`, an `mcs-practicum-<24 hex>` key, exactly twelve
+ISO sessions, and an exact `label — range` roster value. It does not loosen the
+existing ACC/PCC/ACTC module, key or four-session constraints. The deterministic
+recorder and Product Map remain unchanged; the signed cohort is written only to
+the existing MCS Practicum destination under the same fill-only/readback rule.
+
 `NC-20260919-001` keeps the same signed receiver and makes roster applicability
 explicit. Commerce signs `order.rosterPolicy=catalog` for existing catalog
 purchases and `none` only for its server-owned invoice fulfillment modes. A

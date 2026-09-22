@@ -64,7 +64,7 @@ export interface CommerceBookkeeperEnvelope {
     purchaseRelationship: 'self' | 'other';
     cohort: null | {
       key: string;
-      program: 'acc' | 'pcc' | 'actc';
+      program: 'acc' | 'pcc' | 'actc' | 'mcs-practicum';
       module: number;
       enrollmentScope: 'module' | 'full_program';
       start: string;
@@ -157,7 +157,7 @@ function economics(
 function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
   if (value === null || value === undefined) return null;
   const c = object(value, 'order.cohort');
-  const program = text(c.program, 'order.cohort.program', 4);
+  const program = text(c.program, 'order.cohort.program', 20);
   const module = Number(c.module);
   const scope = text(c.enrollmentScope, 'order.cohort.enrollmentScope', 20);
   const key = text(c.key, 'order.cohort.key', 40);
@@ -168,6 +168,8 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
   const time = text(c.time, 'order.cohort.time', 120);
   const timezone = text(c.timezone, 'order.cohort.timezone', 40);
   const rosterValue = text(c.rosterValue, 'order.cohort.rosterValue', 200);
+  const credentialProgram = ['acc', 'pcc', 'actc'].includes(program);
+  const mcsPracticum = program === 'mcs-practicum';
   const rosterValueValid =
     program === 'acc'
       ? /^20\d{2}-(?:0[1-9]|1[0-2])$/.test(rosterValue)
@@ -179,19 +181,23 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
     : [];
   const iso = /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/;
   if (
-    !['acc', 'pcc', 'actc'].includes(program) ||
+    (!credentialProgram && !mcsPracticum) ||
     !Number.isInteger(module) ||
-    module < 1 ||
-    module > 4 ||
-    !['module', 'full_program'].includes(scope) ||
-    !new RegExp(`^${program}-m${module}-[a-f0-9]{24}$`).test(key) ||
+    (credentialProgram && (module < 1 || module > 4)) ||
+    (mcsPracticum && module !== 0) ||
+    (credentialProgram && !['module', 'full_program'].includes(scope)) ||
+    (mcsPracticum && scope !== 'full_program') ||
+    (credentialProgram &&
+      !new RegExp(`^${program}-m${module}-[a-f0-9]{24}$`).test(key)) ||
+    (mcsPracticum && !/^mcs-practicum-[a-f0-9]{24}$/.test(key)) ||
     !iso.test(start) ||
     !iso.test(end) ||
     !Number.isFinite(Date.parse(start)) ||
     !Number.isFinite(Date.parse(end)) ||
     Date.parse(end) <= Date.parse(start) ||
     timezone !== 'America/New_York' ||
-    sessions.length !== 4 ||
+    (credentialProgram && sessions.length !== 4) ||
+    (mcsPracticum && sessions.length !== 12) ||
     sessions.some(
       (item) => !iso.test(item) || !Number.isFinite(Date.parse(item)),
     ) ||
@@ -201,7 +207,7 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
   }
   return {
     key,
-    program: program as 'acc' | 'pcc' | 'actc',
+    program: program as 'acc' | 'pcc' | 'actc' | 'mcs-practicum',
     module,
     enrollmentScope: scope as 'module' | 'full_program',
     start,

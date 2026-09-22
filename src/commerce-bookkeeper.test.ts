@@ -309,6 +309,81 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     );
   });
 
+  it('accepts only the canonical MCS Practicum full-program cohort shape', () => {
+    const mcs = payload();
+    mcs.notification.amount.value = 99900;
+    mcs.order.productId = 'mcs-full';
+    mcs.order.productName = 'Mentor Coach Training (AAMC)';
+    mcs.order.amountCents = 99900;
+    mcs.order.cohort = {
+      key: 'mcs-practicum-0123456789abcdef01234567',
+      program: 'mcs-practicum',
+      module: 0,
+      enrollmentScope: 'full_program',
+      start: '2026-09-24T18:00:00-04:00',
+      end: '2026-12-17T18:00:00-05:00',
+      label: 'Thursdays',
+      range: 'September 24 – December 17, 2026',
+      time: '6:00 PM ET · US & Asia-Pacific',
+      timezone: 'America/New_York',
+      sessions: [
+        '2026-09-24T18:00:00-04:00',
+        '2026-10-01T18:00:00-04:00',
+        '2026-10-08T18:00:00-04:00',
+        '2026-10-15T18:00:00-04:00',
+        '2026-10-22T18:00:00-04:00',
+        '2026-10-29T18:00:00-04:00',
+        '2026-11-05T18:00:00-05:00',
+        '2026-11-12T18:00:00-05:00',
+        '2026-11-19T18:00:00-05:00',
+        '2026-12-03T18:00:00-05:00',
+        '2026-12-10T18:00:00-05:00',
+        '2026-12-17T18:00:00-05:00',
+      ],
+      rosterValue: 'Thursdays — September 24 – December 17, 2026',
+    };
+
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(mcs));
+    expect(prepared.order.cohort).toMatchObject({
+      program: 'mcs-practicum',
+      module: 0,
+      enrollmentScope: 'full_program',
+      rosterValue: 'Thursdays — September 24 – December 17, 2026',
+    });
+    expect(prepared.order.cohort?.sessions).toHaveLength(12);
+
+    const wrongModule = structuredClone(mcs);
+    (wrongModule.order.cohort as Record<string, unknown>).module = 1;
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(wrongModule)),
+    ).toThrow(/order.cohort invalid/);
+
+    const wrongKey = structuredClone(mcs);
+    (wrongKey.order.cohort as Record<string, unknown>).key =
+      'mcs-practicum-m123456789abcdef01234567';
+    expect(() => prepareCommerceBookkeeperEnvelope(signed(wrongKey))).toThrow(
+      /order.cohort invalid/,
+    );
+
+    const shortSchedule = structuredClone(mcs);
+    (
+      (shortSchedule.order.cohort as Record<string, unknown>)
+        .sessions as string[]
+    ).pop();
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(shortSchedule)),
+    ).toThrow(/order.cohort invalid/);
+
+    const widenedCredential = structuredClone(mcs);
+    Object.assign(widenedCredential.order.cohort as Record<string, unknown>, {
+      key: 'pcc-m0-0123456789abcdef01234567',
+      program: 'pcc',
+    });
+    expect(() =>
+      prepareCommerceBookkeeperEnvelope(signed(widenedCredential)),
+    ).toThrow(/order.cohort invalid/);
+  });
+
   it('rejects tampering, stale deliveries, and order/payment mismatches', () => {
     const badSignature = signed();
     badSignature.signatureHeader = '0'.repeat(64);
