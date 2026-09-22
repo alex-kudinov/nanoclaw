@@ -20,7 +20,8 @@ after consumer-first deployment and exact Payment Log/roster/PostgreSQL/fee
 readback; then make permanent receiver rejections terminal and gate fee work on
 the successful payment projection using the existing job state. S1 returned
 `KEEP` and required a distinct MCS shape rather than widened shared bounds. The
-consumer correction passes receiver/webhook 79/79, pinned typecheck, format,
+consumer correction accepts the calendar-authoritative ten- and twelve-session
+MCS variants and passes receiver/webhook 79/79, pinned typecheck, format,
 build, continuity and runtime doctor; full root is 4,528 pass / 37 skip with
 one payment-method concurrency flake passing isolated and the same three
 predecessor failures. Next: commit/push and activate the immutable consumer,

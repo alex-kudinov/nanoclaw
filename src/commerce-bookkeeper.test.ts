@@ -352,6 +352,30 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     });
     expect(prepared.order.cohort?.sessions).toHaveLength(12);
 
+    const tenSessionCohort = structuredClone(mcs);
+    Object.assign(tenSessionCohort.order.cohort as Record<string, unknown>, {
+      start: '2027-01-07T18:00:00-05:00',
+      end: '2027-03-11T18:00:00-05:00',
+      range: 'Jan 7, 2027 - Mar 11, 2027',
+      sessions: [
+        '2027-01-07T18:00:00-05:00',
+        '2027-01-14T18:00:00-05:00',
+        '2027-01-21T18:00:00-05:00',
+        '2027-01-28T18:00:00-05:00',
+        '2027-02-04T18:00:00-05:00',
+        '2027-02-11T18:00:00-05:00',
+        '2027-02-18T18:00:00-05:00',
+        '2027-02-25T18:00:00-05:00',
+        '2027-03-04T18:00:00-05:00',
+        '2027-03-11T18:00:00-05:00',
+      ],
+      rosterValue: 'Thursdays — Jan 7, 2027 - Mar 11, 2027',
+    });
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(tenSessionCohort)).order.cohort
+        ?.sessions,
+    ).toHaveLength(10);
+
     const wrongModule = structuredClone(mcs);
     (wrongModule.order.cohort as Record<string, unknown>).module = 1;
     expect(() =>
@@ -365,11 +389,9 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       /order.cohort invalid/,
     );
 
-    const shortSchedule = structuredClone(mcs);
-    (
-      (shortSchedule.order.cohort as Record<string, unknown>)
-        .sessions as string[]
-    ).pop();
+    const shortSchedule = structuredClone(tenSessionCohort);
+    const shortCohort = shortSchedule.order.cohort as Record<string, unknown>;
+    shortCohort.sessions = (shortCohort.sessions as string[]).slice(0, 4);
     expect(() =>
       prepareCommerceBookkeeperEnvelope(signed(shortSchedule)),
     ).toThrow(/order.cohort invalid/);

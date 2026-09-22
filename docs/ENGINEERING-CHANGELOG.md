@@ -15,7 +15,8 @@
   receiver shared only the ACC/PCC/ACTC module-1-to-4, four-session validator.
   The signed paid order was therefore rejected before any Bookkeeper write and
   its fee-only job had no Payment Log row to reconcile.
-- Outcome: the receiver now admits one separate strict MCS shape while leaving
+- Outcome: the receiver now admits one separate strict MCS shape with the
+  calendar-authoritative ten-or-twelve-session variants while leaving
   every existing credential-program bound unchanged. The recorder, Product
   Map, fill-only cohort write, exact readback and idempotent PSP/order identities
   are unchanged.

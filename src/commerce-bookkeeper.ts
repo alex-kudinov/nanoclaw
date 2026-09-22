@@ -197,7 +197,7 @@ function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
     Date.parse(end) <= Date.parse(start) ||
     timezone !== 'America/New_York' ||
     (credentialProgram && sessions.length !== 4) ||
-    (mcsPracticum && sessions.length !== 12) ||
+    (mcsPracticum && ![10, 12].includes(sessions.length)) ||
     sessions.some(
       (item) => !iso.test(item) || !Number.isFinite(Date.parse(item)),
     ) ||

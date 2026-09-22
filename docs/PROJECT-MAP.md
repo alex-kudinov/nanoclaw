@@ -1067,8 +1067,8 @@ by this contract.
 
 `NC-20260922-001` adds the already-authoritative MCS Practicum cohort as a
 separate strict receiver shape: `program=mcs-practicum`, `module=0`,
-`enrollmentScope=full_program`, an `mcs-practicum-<24 hex>` key, exactly twelve
-ISO sessions, and an exact `label — range` roster value. It does not loosen the
+`enrollmentScope=full_program`, an `mcs-practicum-<24 hex>` key, exactly ten or
+twelve ISO sessions, and an exact `label — range` roster value. It does not loosen the
 existing ACC/PCC/ACTC module, key or four-session constraints. The deterministic
 recorder and Product Map remain unchanged; the signed cohort is written only to
 the existing MCS Practicum destination under the same fill-only/readback rule.
