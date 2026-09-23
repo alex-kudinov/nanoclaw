@@ -2,9 +2,9 @@
 
 # 2026-09-22 — NC-20260922-003 preserve contact intent through Inbox, Sales and Chief
 
-- State: `ready_for_deploy`; source, prompts, focused/full verification and
-  bounded independent review are complete. No production workflow, runtime or
-  customer state has changed yet.
+- State: `complete`; source, prompts, focused/full verification, bounded
+  independent review, guarded n8n update, immutable release and non-customer
+  live proof are complete.
 - Root cause: the live form and WordPress payload already contained explicit
   service intent, buyer type, organization, preferred next step, derived
   business line/journey engine and separate marketing consent. The existing
@@ -45,10 +45,33 @@
   authority or approval issue was found. Runner usage: 11 turns, USD 0.6677,
   20,280 output tokens including 17,408 thinking tokens; the standalone usage
   helper found no persisted transcript at the worktree-derived project path.
-- Deployment/rollback: pending. The n8n mutation must use the guarded exact-node
-  patch with protected backup/readback. NanoClaw must use an immutable release
-  from this branch. Final proof is one sanitized non-customer contact canary
-  reaching Inbox/Sales with the structured fields and no approved/send action.
+- Deployment: active n8n workflow `1` was patched through the guarded exact-node
+  tool. It changed only `Sanitize & Extract.parameters.jsCode`, restored
+  `active=true`, restarted healthy and read back reviewed SHA `5d0fda43…` with
+  eight unchanged nodes/topology/settings/credential bindings. Protected
+  backup: `~/.local/share/n8n-toolbox-backups/20260923T030811Z-1-node-patch`.
+  After a natural zero-work drain, NanoClaw release
+  `4ce0360c3c76d37fde4e7febd5849f8631ac7d0c` activated from verified archive
+  SHA `bc6712e1d1c9e434e9cfe83ec10c41a095ab6cb7bbc08b2cec6edc350f27066f`.
+  Health proves exact commit/source tree/code root, Node 22.23.2, connected
+  Gmail/Slack, zero active/waiting work and zero Slack output backlog.
+- Operational prompts: Inbox, Sales, Sales main companion, Sales workflows and
+  Chief match the reviewed release byte-for-byte on the Mini. The watched
+  contact webhook prompt contains every structured field and restores the
+  previously deployed bounded `Entry-Page`, which the operational file had
+  also regressed out of.
+- Live proof: synthetic, non-customer webhook inbox row `7135` was accepted on
+  the exact live release and read back `handled` by Inbox with
+  `executive-coaching`, `organization`, `Routing Canary LLC`, `proposal`,
+  `executive_coaching`, `consultative_b2b`, `marketing_consent=false`, and the
+  bounded canary entry page intact. Inbox emitted one explicit vendor/unrelated
+  rejection. Exact readback found zero Party and zero pipeline rows for the
+  synthetic address; no Sales/Mailman approval or customer send occurred.
+- Rollback: host rollback plist is
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-1a46f4ce94cf-2026-09-23T03-26-27-998Z`;
+  restore the protected n8n backup and the prior tracked operational prompts
+  together, then verify the prior release/channel/queue state. No schema or
+  customer/business record requires rollback.
 
 # 2026-09-22 — NC-20260922-002 ACTC empty-roster compatibility recovery
 

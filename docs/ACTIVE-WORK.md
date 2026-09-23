@@ -2,7 +2,7 @@
 
 2026-09-22T22:10Z — `NC-20260922-003` preserve the contact form's explicit
 intent, buyer, organization, next-step and consent context through n8n to
-Inbox, Sales and any Chief escalation, owner Codex, `ready_for_deploy`, C2,
+Inbox, Sales and any Chief escalation, owner Codex, `complete`, C2,
 isolated branch `codex/contact-intent-routing-20260922` from current deployed
 lineage closeout `e14820932709` (live release `1a46f4ce94cf`). Current
 observable result: the live form and WordPress contact record/payload contain
@@ -24,10 +24,15 @@ regressions now close both hops. Email-critical 809/809 and independent runner
 45/45 pass. The guarded n8n dry run changes only the
 existing `Sanitize & Extract` node while preserving credentials, topology and
 settings. Current topology matches the accepted obligation delta: no new
-state, entry point, runtime or dependency. Next: commit/push, apply the guarded
-exact-node n8n patch, activate the immutable NanoClaw release, then prove one
-sanitized non-customer canary reaches Inbox/Sales with the structured fields
-and no email action.
+state, entry point, runtime or dependency. Exact release
+`4ce0360c3c76d37fde4e7febd5849f8631ac7d0c` is now live after a natural
+zero-work drain; health proves the exact verified code root, connected
+Gmail/Slack and empty queues. Active n8n workflow 1 carries reviewed sanitizer
+SHA `5d0fda43…` with protected backup/readback. Synthetic webhook inbox row 7135
+contains every structured field exactly, was handled by Inbox and rejected as
+unrelated vendor outreach, and created zero Party/pipeline rows and no customer
+send. Implementation and live verification are complete; natural qualified
+customer-response quality remains an outcome observation, not a release gate.
 
 2026-09-22T17:45Z — `NC-20260922-002` recover one paid ACTC Commerce
 transaction whose signed legacy cohort has an empty roster value and prevent

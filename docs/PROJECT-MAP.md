@@ -1546,7 +1546,11 @@ current-message context, the free-text message controls when more specific,
 host routing metadata cannot create customer-facing facts, and marketing
 consent cannot become purchase intent, reply permission, route selection,
 approval or email authority. `Entry-Page` retains its prior reduced and
-non-authoritative boundary.
+non-authoritative boundary. Exact release `4ce0360c` and active n8n workflow 1
+are live; a synthetic non-customer inquiry read back every structured field at
+the durable Inbox boundary, produced an unrelated-vendor rejection, and
+created no Party, pipeline or send state. Qualified customer-response quality
+remains natural outcome evidence rather than inferred release proof.
 
 The host autonomy ledger recognizes canonical standalone Sales headings using
 an anchored, emphasis-tolerant, case-insensitive grammar. The historical
