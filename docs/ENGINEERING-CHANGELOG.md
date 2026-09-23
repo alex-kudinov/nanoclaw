@@ -28,7 +28,8 @@
   WordPress persistence, n8n dedupe, webhook archive/dispatch, Inbox
   qualification, Sales approval and Mailman execution remain unchanged.
 - Verification: pinned Node 22.23.2; focused mapper/handoff contracts 15/15;
-  typecheck and build pass. Full root is 4,533 pass / 37 skip with the three
+  typecheck, build, runtime doctor, email replay 13/13, email-critical 809/809
+  and independent runner 45/45 pass. Full root is 4,533 pass / 37 skip with the three
   exact predecessor Capacity/CNPC/date-stale Trafft failures and one disposable
   PostgreSQL concurrency timeout that passes isolated. The previously
   path-sensitive catalog/publication suites pass 21/21 after restoring their
