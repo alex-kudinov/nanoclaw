@@ -1535,6 +1535,19 @@ commit `bdf8fd9b3`, active n8n workflow `1`, and immutable NanoClaw release
 channels, listener, and empty queues are live-verified. A genuine contact
 submission remains the outcome gate; no synthetic lead was created for proof.
 
+`NC-20260922-003` extends the same existing contact path with the explicit
+structured fields already captured and normalized by WordPress:
+`Service-Intent`, `Buyer-Type`, optional `Organization`,
+`Preferred-Next-Step`, derived `Business-Line`/`Journey-Engine`, and separate
+`Marketing-Consent`. The tracked n8n allowlist, Inbox packet and exact
+Inbox/Sales/Chief handoff templates preserve them without adding a route,
+schema, worker, CRM coupling or send authority. Customer selections are
+current-message context, the free-text message controls when more specific,
+host routing metadata cannot create customer-facing facts, and marketing
+consent cannot become purchase intent, reply permission, route selection,
+approval or email authority. `Entry-Page` retains its prior reduced and
+non-authoritative boundary.
+
 The host autonomy ledger recognizes canonical standalone Sales headings using
 an anchored, emphasis-tolerant, case-insensitive grammar. The historical
 `REVISED DRAFT FOLLOW-UP:` label remains recognition-only. The structural eval

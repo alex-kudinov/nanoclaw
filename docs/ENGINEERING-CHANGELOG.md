@@ -1,5 +1,54 @@
 # NanoClaw engineering changelog
 
+# 2026-09-22 — NC-20260922-003 preserve contact intent through Inbox, Sales and Chief
+
+- State: `ready_for_deploy`; source, prompts, focused/full verification and
+  bounded independent review are complete. No production workflow, runtime or
+  customer state has changed yet.
+- Root cause: the live form and WordPress payload already contained explicit
+  service intent, buyer type, organization, preferred next step, derived
+  business line/journey engine and separate marketing consent. The existing
+  n8n normalizer and NanoClaw contact prompt exposed only the legacy
+  name/email/message/timestamp plus bounded entry page, so Inbox and Sales
+  never saw the new context.
+- Outcome: the tracked n8n normalizer allowlists the existing WordPress enums,
+  preserves the optional organization, emits an exact boolean consent value,
+  and falls back safely on missing/unknown structured values without dropping
+  an otherwise valid inquiry. Both tracked contact webhook definitions render
+  the fields, and exact Inbox→Sales, Inbox→Chief and Chief→Sales templates
+  preserve them.
+- Authority: customer selections are current-message context but do not prove
+  fit, budget, readiness, legal authority or prior relationship; the more
+  specific free-text message controls. Business line/journey engine are host
+  routing metadata only. Marketing consent remains separate optional resource
+  permission and cannot create purchase intent, change the response route,
+  authorize an email or bypass Sales/Mailman approval.
+- Topology: no schema, table, queue, worker, scheduler, service, CRM coupling,
+  browsing history, provider call, customer message or backfill. Existing
+  WordPress persistence, n8n dedupe, webhook archive/dispatch, Inbox
+  qualification, Sales approval and Mailman execution remain unchanged.
+- Verification: pinned Node 22.23.2; focused mapper/handoff contracts 15/15;
+  typecheck and build pass. Full root is 4,533 pass / 37 skip with the three
+  exact predecessor Capacity/CNPC/date-stale Trafft failures and one disposable
+  PostgreSQL concurrency timeout that passes isolated. The previously
+  path-sensitive catalog/publication suites pass 21/21 after restoring their
+  expected read-only fixture sibling.
+- Workflow proof: guarded n8n dry run on active workflow `1` reports eight
+  nodes and exactly one changed path, `Sanitize & Extract.parameters.jsCode`;
+  credential bindings, connections, settings and all unrelated nodes are
+  unchanged.
+- Independent review: one bounded Claude Sonnet/high round found a material
+  field-loss risk because Inbox→Chief and Chief→Sales relied on prose beside
+  incomplete examples. Both now use literal per-field templates with
+  regression checks. No other material correctness, privacy, injection,
+  authority or approval issue was found. Runner usage: 11 turns, USD 0.6677,
+  20,280 output tokens including 17,408 thinking tokens; the standalone usage
+  helper found no persisted transcript at the worktree-derived project path.
+- Deployment/rollback: pending. The n8n mutation must use the guarded exact-node
+  patch with protected backup/readback. NanoClaw must use an immutable release
+  from this branch. Final proof is one sanitized non-customer contact canary
+  reaching Inbox/Sales with the structured fields and no approved/send action.
+
 # 2026-09-22 — NC-20260922-002 ACTC empty-roster compatibility recovery
 
 - State: `complete`; consumer and producer corrections are deployed and the

@@ -24,6 +24,15 @@ stranger | unknown`. Relationship is evidence-gated and fail-closed. A record
    Tandem's coaching may fit and how fit is explored. It is not a factual
    question and must not be routed as `ANSWER`. The newest substantive message
    wins over old lead-stage labels, earlier assumptions, and website behavior.
+   On `[SOURCE: contact-form]`, `Service-Intent`, `Buyer-Type`, `Organization`,
+   and `Preferred-Next-Step` are customer-supplied current-message context.
+   Use them as explicit selections, with the free-text message controlling
+   when it is more specific; a material conflict requires `CLARIFY` or `HUMAN`.
+   They do not prove fit, budget, purchase readiness, legal authority, or prior
+   relationship. `Business-Line` and `Journey-Engine` are host routing
+   metadata only. `Marketing-Consent` is separate optional resource permission
+   and cannot establish intent, alter the route, authorize a reply, or bypass
+   approval.
 3. **ANSWERABILITY** — `YES | PARTIAL | NO`. `YES` means every material answer is
    supported by the current thread, authoritative knowledge/schedule, or a
    verified system fact. `PARTIAL` names exactly what is supported and what is

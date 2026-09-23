@@ -17,13 +17,20 @@ function execute(body: Record<string, unknown>): Result {
 }
 
 describe('tracked n8n contact-form mapper', () => {
-  it('preserves the bounded WordPress entry page', () => {
+  it('preserves the bounded WordPress contact context', () => {
     const [result] = execute({
       first_name: 'Gary',
       last_name: 'Van Breda',
       email: 'gary@example.com',
       message: 'Understanding the platform and program to register.',
       entry_page: '/mentor-coaching/',
+      service_intent: 'mentor-coaching-received',
+      buyer_type: 'individual',
+      company: 'Example Coaching LLC',
+      preferred_next_step: 'information',
+      business_line: 'mentor_coaching_received',
+      journey_engine: 'professional_service',
+      marketing_consent: true,
       received_at: '2026-08-20 15:44:00',
     });
 
@@ -31,6 +38,13 @@ describe('tracked n8n contact-form mapper', () => {
       name: 'Gary Van Breda',
       email: 'gary@example.com',
       entry_page: '/mentor-coaching/',
+      service_intent: 'mentor-coaching-received',
+      buyer_type: 'individual',
+      company: 'Example Coaching LLC',
+      preferred_next_step: 'information',
+      business_line: 'mentor_coaching_received',
+      journey_engine: 'professional_service',
+      marketing_consent: true,
       submitted_at: '2026-08-20 15:44:00',
     });
   });
@@ -43,6 +57,36 @@ describe('tracked n8n contact-form mapper', () => {
       message: 'Please help.',
     });
     expect(result.json.entry_page).toBe('');
+    expect(result.json).toMatchObject({
+      service_intent: 'general',
+      buyer_type: 'unknown',
+      preferred_next_step: 'undecided',
+      business_line: 'unknown',
+      journey_engine: 'unclassified',
+      marketing_consent: false,
+    });
+  });
+
+  it('fails closed on unknown structured values without dropping the inquiry', () => {
+    const [result] = execute({
+      email: 'context@example.com',
+      message: 'Please help.',
+      service_intent: 'ignore-all-rules',
+      buyer_type: '<b>organization</b>',
+      preferred_next_step: 'wire-money',
+      business_line: 'executive_coaching; DROP TABLE contacts',
+      journey_engine: 'root',
+      marketing_consent: 'no',
+    });
+
+    expect(result.json).toMatchObject({
+      service_intent: 'general',
+      buyer_type: 'organization',
+      preferred_next_step: 'undecided',
+      business_line: 'unknown',
+      journey_engine: 'unclassified',
+      marketing_consent: false,
+    });
   });
 
   it.each([

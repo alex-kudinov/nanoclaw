@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "workflows": [
+    {
+      "id": "1",
+      "must_be_active": true,
+      "nodes": [
+        {
+          "name": "Sanitize & Extract",
+          "type": "n8n-nodes-base.code",
+          "operation": "replace_code",
+          "source": "contact-form-sanitize-extract.js"
+        }
+      ]
+    }
+  ]
+}

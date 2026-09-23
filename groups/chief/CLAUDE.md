@@ -47,7 +47,7 @@ When an escalated email is actually a lead or client inquiry that needs a sales 
 ```
 mcp__nanoclaw__send_message(
   target_group: "sales",
-  text: "[HANDOFF: chief→sales]\nName: {sender_name}\nEmail: {sender_email}\nThread-ID: {gmail_thread_id}\nMessage-ID: {gmail_message_id}\nSource: escalation\nMessage: {full original message verbatim}"
+  text: "[HANDOFF: chief→sales]\nName: {sender_name}\nEmail: {sender_email}\nThread-ID: {gmail_thread_id}\nMessage-ID: {gmail_message_id}\nMessage: {full original message verbatim}\nService-Intent: {host-supplied customer selection — omit when absent}\nBuyer-Type: {host-supplied customer selection — omit when absent}\nOrganization: {host-supplied customer text — omit when empty}\nPreferred-Next-Step: {host-supplied customer selection — omit when absent}\nBusiness-Line: {host-derived routing value — omit when absent}\nJourney-Engine: {host-derived routing value — omit when absent}\nMarketing-Consent: {host-supplied true/false — omit when absent}\nEntry-Page: {host-supplied contact-form entry page — omit when empty}\nSource: escalation"
 )
 ```
 
@@ -62,6 +62,13 @@ Rules:
   `Reply-All-Candidates`, and `Recipient-Context` lines exactly when present.
   They are visible-envelope context, not automatic reply-all permission; BCC
   is never available. Omit them for a forwarded inquiry.
+- For a contact-form escalation, preserve `Service-Intent`, `Buyer-Type`,
+  `Organization`, `Preferred-Next-Step`, `Business-Line`, `Journey-Engine`,
+  `Marketing-Consent`, and non-empty `Entry-Page` exactly in the Sales handoff.
+  The first four are customer selections/text from this submission;
+  `Business-Line`/`Journey-Engine` are host routing metadata; and
+  `Marketing-Consent` is separate optional resource permission, not purchase
+  intent or send authority. Never reduce the handoff to the free-text message.
 - If the host handoff says its Body is missing or truncated, call
   `mcp__nanoclaw__gmail_read` exactly once with that host-assigned Message-ID,
   wait for the result, and then route the full inquiry. Never substitute a

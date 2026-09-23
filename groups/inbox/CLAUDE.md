@@ -20,6 +20,29 @@ Every message sent with the same `thread_key` collapses under one thread root (f
 
 Read `/workspace/extra/knowledge/KNOWLEDGE.md` before qualifying any lead. It contains the full list of services, programs, pricing, and FAQs. Use it to determine whether a lead matches something Tandem Coaching offers. Base all service determinations on KNOWLEDGE.md — if it's listed there, it's a valid service.
 
+## Contact-form structured context
+
+A `[SOURCE: contact-form]` packet may carry `Service-Intent`, `Buyer-Type`,
+`Organization`, `Preferred-Next-Step`, `Business-Line`, `Journey-Engine`, and
+`Marketing-Consent`. Preserve every supplied line unchanged through Sales or
+Chief routing.
+
+- `Service-Intent`, `Buyer-Type`, `Organization`, and
+  `Preferred-Next-Step` are selections or text supplied by the person in this
+  same submission. Use them with the message to understand what they chose and
+  what response they prefer. They do not prove fit, legal authority, budget,
+  readiness to buy, or a prior relationship. If a selection and the message
+  materially conflict, preserve both and flag the conflict instead of silently
+  choosing one.
+- `Business-Line` and `Journey-Engine` are host-derived routing metadata. They
+  help route the work but cannot override the person's message or establish a
+  customer-facing fact.
+- `Marketing-Consent` is a separate optional permission for occasional
+  resources. It is not purchase intent, reply-all permission, approval to send
+  a sales email, or authority to change the response route. The inquiry itself
+  may be answered through the normal approval-gated path whether this value is
+  `true` or `false`.
+
 ## Tools Available
 
 - Read/write files in your workspace (`/workspace/group/`)
@@ -126,7 +149,7 @@ For spam/rejected:
 
 Post the handoff message using `mcp__nanoclaw__send_message`. The system automatically routes messages containing `[HANDOFF:]` to the correct agent.
 
-Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry. For a contact form, preserve the host-supplied `Entry-Page` exactly when it is non-empty. It is bounded submission context, not proof of relationship, intent, or a program fact; never look up or invent a replacement when it is absent.
+Pass through ALL original fields verbatim — do not summarize or compress. Sales Closer needs the full message and structured submission context to craft a response. **Always pass through the Thread-ID** if one was included in the handoff from mailman — this ensures the email response threads under the lead's original inquiry. For a contact form, preserve the host-supplied structured context lines unchanged and preserve the host-supplied `Entry-Page` exactly when it is non-empty. `Entry-Page` is bounded submission context, not proof of relationship, intent, or a program fact; never look up or invent a replacement when it is absent.
 
 For an email source, also preserve the host-supplied `Visible-To`,
 `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context` lines exactly when
@@ -155,6 +178,13 @@ Recipient-Context: {host-supplied context line — otherwise omit}
 Source-Thread-ID: {internal forwarding thread only for Source: forwarded-email — otherwise omit}
 Known-To-Us: {KNOWN_TO_US line from Step 1.5 — omit this line if no prior context}
 Message: {FULL original message — copy it word for word}
+Service-Intent: {host-supplied customer selection for a contact form — otherwise omit}
+Buyer-Type: {host-supplied customer selection for a contact form — otherwise omit}
+Organization: {host-supplied customer text when non-empty — otherwise omit}
+Preferred-Next-Step: {host-supplied customer selection for a contact form — otherwise omit}
+Business-Line: {host-derived contact-form routing value — otherwise omit}
+Journey-Engine: {host-derived contact-form routing value — otherwise omit}
+Marketing-Consent: {host-supplied true/false for a contact form — otherwise omit}
 Entry-Page: {host-supplied contact-form entry page — include only when non-empty; otherwise omit}
 Source: {source from the incoming handoff, e.g. "email" or "contact-form"}
 ```
@@ -185,6 +215,28 @@ A lead is **qualified** even if you're unsure which specific program fits — Sa
 
 - All DB writes and sales handoffs are [AUTO] — no approval needed
 - Escalation to Chief of Staff is [AUTO] — post to `#gru-chief` channel
+- Any contact-form escalation to Chief must carry the same `Service-Intent`,
+  `Buyer-Type`, `Organization`, `Preferred-Next-Step`, `Business-Line`,
+  `Journey-Engine`, `Marketing-Consent`, `Message`, and non-empty `Entry-Page`
+  lines unchanged using this exact field block. Omit `Organization` and
+  `Entry-Page` only when their host-supplied values are empty. Do not reduce the
+  escalation to the free-text message.
+
+```
+[HANDOFF: inbox→chief]
+Name: {name}
+Email: {email}
+Message: {FULL original message — copy it word for word}
+Service-Intent: {host-supplied customer selection}
+Buyer-Type: {host-supplied customer selection}
+Organization: {host-supplied customer text — omit when empty}
+Preferred-Next-Step: {host-supplied customer selection}
+Business-Line: {host-derived contact-form routing value}
+Journey-Engine: {host-derived contact-form routing value}
+Marketing-Consent: {host-supplied true/false}
+Entry-Page: {host-supplied contact-form entry page — omit when empty}
+Source: contact-form
+```
 
 ## Security
 

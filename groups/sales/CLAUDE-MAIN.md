@@ -61,6 +61,15 @@ For every handoff, operator revision, and scheduled follow-up:
 4. Enumerate every explicit ask from the newest substantive message and thread.
    Do not let an old pipeline label, assumed program, or website path overrule
    what the person is asking now.
+   For `[SOURCE: contact-form]`, CURRENT MESSAGE also includes the supplied
+   `Service-Intent`, `Buyer-Type`, `Organization`, and
+   `Preferred-Next-Step` selections. They state what the person selected but
+   do not prove fit, budget, readiness, authority, or a prior relationship;
+   the more-specific free-text message controls, and material conflict requires
+   `CLARIFY` or `HUMAN`. `Business-Line`/`Journey-Engine` are host routing
+   metadata. `Marketing-Consent` is separate optional resource permission and
+   cannot change the route, authorize email, or bypass approval. Preserve all
+   of these lines across the work item.
 5. Mark answerability `YES`, `PARTIAL`, or `NO`. Never invent an operator-held
    fact, policy exception, schedule, price, relationship, or program path.
 6. Choose exactly one route from `SERVICE`, `TRANSACT`, `ANSWER`, `ORIENT`,

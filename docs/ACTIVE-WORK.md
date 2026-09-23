@@ -1,5 +1,33 @@
 # NanoClaw active work
 
+2026-09-22T22:10Z — `NC-20260922-003` preserve the contact form's explicit
+intent, buyer, organization, next-step and consent context through n8n to
+Inbox, Sales and any Chief escalation, owner Codex, `in_progress`, C2,
+isolated branch `codex/contact-intent-routing-20260922` from current deployed
+lineage closeout `e14820932709` (live release `1a46f4ce94cf`). Current
+observable result: the live form and WordPress contact record/payload contain
+the new structured fields, but live n8n workflow 1's existing normalizer and
+NanoClaw's contact prompt expose only the legacy name/email/message/timestamp
+plus bounded entry page. Extend only those existing allowlists and the
+Inbox/Sales/Chief handoff interpretation; preserve contact persistence, n8n
+dedupe, webhook archive/dispatch, approval-gated Sales/Mailman delivery and
+the entry-page privacy boundary. Marketing consent remains separate from the
+inquiry and must not become purchase intent or send authority. Add no schema,
+queue, worker, scheduler, CRM coupling, browsing history, customer send or
+provider mutation. Fresh minimum-sufficient review returned `KEEP` and rejected
+a new validator subsystem. Implementation and bounded review are complete:
+focused mapper/handoff contracts pass 15/15, typecheck/build pass, and the full
+suite is 4,533 pass / 37 skip with three exact predecessor failures plus one
+concurrency timeout that passes isolated. Sonnet/high found that Chief and
+Inbox escalation prose lacked literal templates; exact templates and
+regressions now close both hops. The guarded n8n dry run changes only the
+existing `Sanitize & Extract` node while preserving credentials, topology and
+settings. Current topology matches the accepted obligation delta: no new
+state, entry point, runtime or dependency. Next: commit/push, apply the guarded
+exact-node n8n patch, activate the immutable NanoClaw release, then prove one
+sanitized non-customer canary reaches Inbox/Sales with the structured fields
+and no email action.
+
 2026-09-22T17:45Z — `NC-20260922-002` recover one paid ACTC Commerce
 transaction whose signed legacy cohort has an empty roster value and prevent
 future empty credential snapshots, owner Codex, `complete`, C4, continuing

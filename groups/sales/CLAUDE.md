@@ -147,6 +147,21 @@ for the host's Gmail-confirmed receipt in this same thread.
 
 ## Processing Protocol
 
+For `[SOURCE: contact-form]`, the handoff may include structured submission
+context. Treat `Service-Intent`, `Buyer-Type`, `Organization`, and
+`Preferred-Next-Step` as explicit selections or text from the same customer
+submission. They are current-message evidence about what the person chose and
+how they prefer to proceed, but they do not prove fit, budget, purchase
+readiness, legal authority, or a prior relationship. The message remains the
+more specific expression of the request; if it materially conflicts with a
+selection, preserve the conflict and use `CLARIFY` or `HUMAN` rather than
+silently choosing. `Business-Line` and `Journey-Engine` are host-derived
+routing metadata only. `Marketing-Consent` is separate optional permission for
+occasional resources and must never change the response route, create purchase
+intent, authorize a customer email, or alter the approval boundary. Preserve
+these lines across every draft, revision, approval, and Chief handoff just as
+you preserve the message and `Entry-Page`.
+
 Apply `CONSULTATIVE-DIALOGUE.md` selectively on every customer turn. Answer
 specific questions immediately; explore advice that depends on unstated goals;
 do both for mixed inquiries. Reassess each reply, never label the person
@@ -156,7 +171,7 @@ permanently. Read the playbook before an exploratory or mixed response.
 2. If the Operator-answer fast path applies, skip all reads/lookups and go
    directly to the Client Support Review card. Otherwise read
    `/workspace/extra/knowledge/KNOWLEDGE.md`.
-3. Run the deterministic Request-First Decision Procedure in `WORKFLOWS.md`. Use this exact precedence: **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**. Do not select a program, quote a price, add a cohort, or propose a next step until the first four decisions justify it. Broad browsing-path evidence remains quarantined from customer-facing drafting. The only exception is a host-supplied contact-form `Entry-Page`, which may resolve one explicit page-relative reference under the narrow boundary in `WORKFLOWS.md`; it supplies no fact or commercial authority.
+3. Run the deterministic Request-First Decision Procedure in `WORKFLOWS.md`. Use this exact precedence: **RELATIONSHIP → CURRENT MESSAGE → ANSWERABILITY → ROUTE/BUDGET → PATH NON-BINDING**. For a contact form, CURRENT MESSAGE includes the structured customer selections under the boundary above, with the free-text message controlling when it is more specific. Do not select a program, quote a price, add a cohort, or propose a next step until the first four decisions justify it. Broad browsing-path evidence remains quarantined from customer-facing drafting. The only exception is a host-supplied contact-form `Entry-Page`, which may resolve one explicit page-relative reference under the narrow boundary in `WORKFLOWS.md`; it supplies no fact or commercial authority.
 4. Draft and audit the response using Request-First Draft Review (see `WORKFLOWS.md`). **Hard rule on program assumptions:** if the current message and thread do not establish a program and no valid `Entry-Page` resolves an explicit page-relative reference, do not silently assume one or use browsing behavior to infer one. Ask one focused clarifying question when that can safely resolve the request; otherwise abstain and request human input. Never quote ACC pricing/cohorts/timezone for a "what time are classes?" message that did not establish ACC. Alex caught this exact failure on the Marius case (2026-04-27).
    **Hard rule on narrative coaching inquiries:** a person describing their role,
    challenges, and belief that they need coaching is asking for orientation, not

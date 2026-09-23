@@ -51,6 +51,11 @@ const entryDate = getField(
 );
 const company = getField(data, 'company', 'organization', 'Company');
 const entryPage = getField(data, 'entry_page');
+const serviceIntent = getField(data, 'service_intent');
+const buyerType = getField(data, 'buyer_type');
+const preferredNextStep = getField(data, 'preferred_next_step');
+const businessLine = getField(data, 'business_line');
+const journeyEngine = getField(data, 'journey_engine');
 
 function stripHtml(str) {
   return str.replace(/<[^>]*>/g, '').trim();
@@ -78,11 +83,80 @@ function normalizeEntryPage(str) {
   return '';
 }
 
+function normalizeEnum(str, allowed, fallback) {
+  const clean = stripHtml(str).toLowerCase();
+  return allowed.includes(clean) ? clean : fallback;
+}
+
+function normalizeBoolean(value) {
+  return (
+    value === true || value === 1 || /^(1|true|yes|on)$/i.test(String(value))
+  );
+}
+
 const name = stripHtml(`${firstName} ${lastName}`.trim());
 const cleanEmail = validateEmail(stripHtml(email).toLowerCase());
 const cleanMessage = truncate(stripHtml(message), 2000);
 const cleanCompany = stripHtml(company);
 const cleanEntryPage = normalizeEntryPage(entryPage);
+const cleanServiceIntent = normalizeEnum(
+  serviceIntent,
+  [
+    'acc-training',
+    'pcc-training',
+    'actc-training',
+    'mentor-coach-training',
+    'coaching-supervisor-training',
+    'continuing-education',
+    'mentor-coaching',
+    'mentor-coaching-received',
+    'coaching-supervision',
+    'coaching-supervision-received',
+    'executive-coaching',
+    'leadership-development',
+    'organizational-coaching',
+    'team-coaching',
+    'custom-coaching-engagement',
+    'general',
+  ],
+  'general',
+);
+const cleanBuyerType = normalizeEnum(
+  buyerType,
+  ['individual', 'organization', 'sponsor', 'unknown'],
+  'unknown',
+);
+const cleanPreferredNextStep = normalizeEnum(
+  preferredNextStep,
+  ['email', 'consultation', 'proposal', 'information', 'undecided'],
+  'undecided',
+);
+const cleanBusinessLine = normalizeEnum(
+  businessLine,
+  [
+    'acc_training',
+    'pcc_training',
+    'actc_training',
+    'mentor_coach_training',
+    'supervisor_training',
+    'continuing_education',
+    'mentor_coaching_received',
+    'coaching_supervision_received',
+    'executive_coaching',
+    'leadership_development',
+    'organizational_coaching',
+    'team_coaching',
+    'custom_coaching_engagement',
+    'unknown',
+  ],
+  'unknown',
+);
+const cleanJourneyEngine = normalizeEnum(
+  journeyEngine,
+  ['academy', 'professional_service', 'consultative_b2b', 'unclassified'],
+  'unclassified',
+);
+const cleanMarketingConsent = normalizeBoolean(data.marketing_consent);
 
 // Drop invalid submissions - returning [] stops the workflow.
 if (!cleanEmail || !cleanMessage) {
@@ -98,6 +172,12 @@ return [
       company: truncate(cleanCompany, 200),
       message: cleanMessage,
       entry_page: cleanEntryPage,
+      service_intent: cleanServiceIntent,
+      buyer_type: cleanBuyerType,
+      preferred_next_step: cleanPreferredNextStep,
+      business_line: cleanBusinessLine,
+      journey_engine: cleanJourneyEngine,
+      marketing_consent: cleanMarketingConsent,
       submitted_at: entryDate || new Date().toISOString(),
     },
   },
