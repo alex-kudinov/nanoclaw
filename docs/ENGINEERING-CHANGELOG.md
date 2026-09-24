@@ -2,7 +2,14 @@
 
 # 2026-09-24 — NC-20260924-001 Commerce Bookkeeper accept-and-flag
 
-- State: `in_progress`; local implementation and tests complete, not released.
+- State: `deployed`; release `d034f80b` active since 2026-09-24T17:39:32Z
+  (archive `495ca8d4…0ebc62`, artifact `9b0c6474…4f2614a`, rollback plist
+  `com.nanoclaw.plist.rollback-4ce0360c3c76-2026-09-24T17-39-32-000Z`); owner
+  resolution of the first held exceptions pending.
+- Live recovery: Supervision order `TCA-939DBACF9A7B` booked on re-delivery
+  (Payment Log row 523, PostgreSQL verified, fees USD 33.38) with the roster held
+  on two owner questions; the ACC USD 1.00 fee job that failed 39 times booked
+  on attempt 40 by re-adding its missing Payment Log row (524) with fees.
 - Root cause: `order.cohort invalid` (422) for the first paid Supervision
   installment; the receiver admitted only `acc`, `pcc`, `actc` and
   `mcs-practicum`. Each new product line's first sale has been the test since
