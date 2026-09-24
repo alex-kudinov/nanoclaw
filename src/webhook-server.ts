@@ -1049,7 +1049,20 @@ export class WebhookServer {
           error instanceof CommerceBookkeeperRequestError
             ? error.statusCode
             : 503;
-        logger.warn({ status }, 'Commerce Bookkeeper delivery rejected');
+        // Name the reason (NC-20260924-001) without logging raw sheet/psql text.
+        const reason =
+          error instanceof Error
+            ? error.message
+                .replace(/^commerce bookkeeper failed: (\[EL CONTADOR\] )?/, '')
+                .split(':')[0]
+                .trim()
+            : '';
+        const code =
+          error instanceof CommerceBookkeeperRequestError ||
+          /^[a-z][a-z _-]{2,80}$/.test(reason)
+            ? reason
+            : 'projection_failed';
+        logger.warn({ status, code }, 'Commerce Bookkeeper delivery rejected');
         res.writeHead(status, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({

@@ -5,11 +5,13 @@ const crypto = require('crypto');
 const fs = require('fs');
 const https = require('https');
 const { execFileSync } = require('child_process');
+const ledger = require('./lib/commerce-ledger.cjs');
 
 const HTTP_TIMEOUT_MS = 20000;
 const PAYMENTS_ID = process.env.SHEETS_PAYMENTS_ID;
 const ROSTER_ID = process.env.SHEETS_ROSTER_ID;
-const SA_PATH = process.env.SHEETS_SA_JSON;
+// The host passes an explicit path; Contador's container mounts the same key here.
+const SA_PATH = process.env.SHEETS_SA_JSON || '/workspace/extra/service-accounts/sheets-service-account.json';
 const PAYMENT_PROVIDER_HEADER = 'Payment Provider';
 let accessToken = null;
 
@@ -30,6 +32,9 @@ function request(options, body = '') {
     req.end();
   });
 }
+// Replaceable only by tests; production always uses https + psql.
+let transport = request;
+let psqlRunner = (args, input) => execFileSync('psql', args, { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 
 async function token() {
   if (accessToken) return accessToken;
@@ -45,17 +50,24 @@ async function token() {
   return accessToken;
 }
 
-async function sheets(sheetId, method, path, body = null) {
+async function spreadsheet(sheetId, method, suffix, body = null) {
   const encoded = body === null ? '' : JSON.stringify(body);
-  return request({ hostname: 'sheets.googleapis.com', path: `/v4/spreadsheets/${sheetId}/${path}`, method, headers: { Authorization: `Bearer ${await token()}`, 'Content-Type': 'application/json', ...(encoded ? { 'Content-Length': Buffer.byteLength(encoded) } : {}) } }, encoded);
+  return transport({ hostname: 'sheets.googleapis.com', path: `/v4/spreadsheets/${sheetId}${suffix}`, method, headers: { Authorization: `Bearer ${await token()}`, 'Content-Type': 'application/json', ...(encoded ? { 'Content-Length': Buffer.byteLength(encoded) } : {}) } }, encoded);
 }
+const sheets = (sheetId, method, path, body = null) => spreadsheet(sheetId, method, `/${path}`, body);
 const get = (id, range) => sheets(id, 'GET', `values/${encodeURIComponent(range)}`);
 const update = (id, range, values) => sheets(id, 'PUT', `values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, { values });
 const append = (id, range, values) => sheets(id, 'POST', `values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, { values });
+const updateRaw = (id, range, values) => sheets(id, 'PUT', `values/${encodeURIComponent(range)}?valueInputOption=RAW`, { values });
+const appendRaw = (id, range, values) => sheets(id, 'POST', `values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, { values });
+const client = {
+  get, updateRaw, appendRaw,
+  tabTitles: async id => ((await spreadsheet(id, 'GET', '?fields=sheets.properties.title')).sheets || []).map(item => item.properties?.title),
+  addTabs: (id, titles) => spreadsheet(id, 'POST', ':batchUpdate', { requests: titles.map(title => ({ addSheet: { properties: { title } } })) }),
+};
 
 async function extendPaymentLogFilter(sheetRow) {
-  const auth = await token();
-  const meta = await request({ hostname: 'sheets.googleapis.com', path: `/v4/spreadsheets/${PAYMENTS_ID}?fields=sheets.properties,sheets.basicFilter`, method: 'GET', headers: { Authorization: `Bearer ${auth}` } });
+  const meta = await spreadsheet(PAYMENTS_ID, 'GET', '?fields=sheets.properties,sheets.basicFilter');
   const tab = meta.sheets?.find(item => item.properties?.title === 'Payment Log');
   if (!tab?.properties?.sheetId) fail('payment log sheet metadata missing');
   const current = tab.basicFilter?.range || {};
@@ -66,8 +78,7 @@ async function extendPaymentLogFilter(sheetRow) {
     endRowIndex: Math.max(Number(current.endRowIndex || 0), sheetRow),
     endColumnIndex: 16,
   };
-  const body = JSON.stringify({ requests: [{ setBasicFilter: { filter: { ...(tab.basicFilter || {}), range } } }] });
-  await request({ hostname: 'sheets.googleapis.com', path: `/v4/spreadsheets/${PAYMENTS_ID}:batchUpdate`, method: 'POST', headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, body);
+  await spreadsheet(PAYMENTS_ID, 'POST', ':batchUpdate', { requests: [{ setBasicFilter: { filter: { ...(tab.basicFilter || {}), range } } }] });
 }
 
 function column(index) {
@@ -78,6 +89,10 @@ function column(index) {
 
 function psqlVars(values) {
   return Object.entries(values).flatMap(([key, value]) => ['-v', `${key}=${value ?? ''}`]);
+}
+
+function runPsql(values, sql) {
+  return psqlRunner([...psqlVars(values), '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'], sql);
 }
 
 function cohortRosterValue(current, cohort) {
@@ -121,6 +136,22 @@ async function readInput() {
     if (raw.length > 64 * 1024) fail('input too large');
   }
   return JSON.parse(raw);
+}
+
+/** Payment Log / roster facts from a verified delivery (payment or fee reconciliation). */
+function buildFact(envelope) {
+  const event = new Date(envelope.notification.eventDate);
+  if (!Number.isFinite(event.getTime())) fail('event date invalid');
+  const format = date => `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  const learner = envelope.order.learner || {};
+  return {
+    pspReference: envelope.notification.pspReference,
+    transactionDate: format(event), recordedDate: format(new Date()),
+    learnerName: `${learner.firstName || ''} ${learner.lastName || ''}`.trim(), learnerEmail: String(learner.email || '').toLowerCase(),
+    productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
+    cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
+    economics: commerceEconomics(envelope.order.amountCents, envelope.economics),
+  };
 }
 
 async function ensurePaymentProviderHeader() {
@@ -169,17 +200,23 @@ async function recordPaymentFees(envelope) {
   const matches = ids
     .map((row, index) => ({ id: String(row[0] || ''), index }))
     .filter(entry => entry.index > 0 && entry.id === envelope.notification.pspReference);
+  if (matches.length === 0) {
+    // Fees arrived first: the signed fee delivery carries the verified payment, so book it with fees.
+    const written = await recordPaymentLog(buildFact(envelope));
+    return { verified: true, row: written.row, economics };
+  }
   if (matches.length !== 1) fail('payment log fee row unavailable');
   const sheetRow = matches[0].index + 1;
   const before = (await get(PAYMENTS_ID, `Payment Log!F${sheetRow}:K${sheetRow}`)).values?.[0] || [];
   const provider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
-  const grossCents = sheetMoneyCents(before[0]);
+  const grossText = String(before[0] ?? '').trim().replace(/^\$/, '').replace(/,/g, '');
+  const grossCents = /^\d+(?:\.\d{1,2})?$/.test(grossText) ? sheetMoneyCents(grossText) : -1;
   const currency = String(before[3] || '');
   const psp = String(before[4] || '');
   const status = String(before[5] || '').toLowerCase();
   if (grossCents !== envelope.order.amountCents || currency !== envelope.order.currency ||
       psp !== envelope.notification.pspReference || !['paid','partially refunded','refunded'].includes(status) || provider !== 'Adyen') {
-    fail('payment log fee identity mismatch');
+    throw new ledger.LedgerHold('fees', 'fee_payment_row_mismatch', envelope.notification.pspReference);
   }
   await update(PAYMENTS_ID, `Payment Log!G${sheetRow}:H${sheetRow}`, [[economics.feeDollars, economics.netDollars]]);
   const after = (await get(PAYMENTS_ID, `Payment Log!F${sheetRow}:J${sheetRow}`)).values?.[0] || [];
@@ -210,6 +247,7 @@ async function recordRefundPaymentLog(envelope) {
   const matches = ids
     .map((row, index) => ({ id: String(row[0] || ''), index }))
     .filter(entry => entry.index > 0 && entry.id === refund.paymentPspReference);
+  if (matches.length === 0) throw new ledger.LedgerHold('payment_log', 'refund_payment_row_missing', refund.paymentPspReference);
   if (matches.length !== 1) fail('original payment log row unavailable');
   const sheetRow = matches[0].index + 1;
   const currentStatus = String((await get(PAYMENTS_ID, `Payment Log!K${sheetRow}`)).values?.[0]?.[0] || '').trim();
@@ -221,19 +259,28 @@ async function recordRefundPaymentLog(envelope) {
   return { verified: true, row: sheetRow, status };
 }
 
+/**
+ * Product Map is the roster rule store. A product with no row, a missing tab or
+ * a missing column is a LedgerHold for the owner, never a guessed placement.
+ * A Product Map tab of "(none)" means the product has no roster.
+ */
 async function recordRoster(fact) {
   const productRows = ((await get(ROSTER_ID, 'Product Map!A:C')).values || [])
-    .filter(row => String(row[0] || '').trim() === fact.productName && row[1] && row[2]);
-  if (!productRows.length) fail('product mapping missing');
+    .filter(row => String(row[0] || '').trim() === fact.productName && row[1] && (row[2] || row[1] === ledger.NO_ROSTER));
+  if (!productRows.length) throw new ledger.LedgerHold('roster', 'roster_product_unmapped', fact.productName);
+  const mappings = productRows.filter(row => String(row[1]) !== ledger.NO_ROSTER);
+  if (!mappings.length) return { destinations: [], notApplicable: true };
+  const tabs = await client.tabTitles(ROSTER_ID);
   const destinations = [];
-  for (const mapping of productRows) {
+  for (const mapping of mappings) {
     const tab = String(mapping[1]);
     const target = String(mapping[2]);
+    if (!tabs.includes(tab)) throw new ledger.LedgerHold('roster', 'roster_tab_missing', tab);
     const headers = (await get(ROSTER_ID, `'${tab}'!1:1`)).values?.[0] || [];
     const targetIndex = headers.findIndex(value => value === target);
-    if (targetIndex < 0) fail(`roster target missing: ${tab}/${target}`);
+    if (targetIndex < 0) throw new ledger.LedgerHold('roster', 'roster_column_missing', `${tab}/${target}`);
     const cohortIndex = headers.findIndex(value => value === 'Cohort');
-    if (fact.cohort && cohortIndex < 0) fail(`roster cohort target missing: ${tab}/Cohort`);
+    if (fact.cohort && cohortIndex < 0) throw new ledger.LedgerHold('roster', 'roster_cohort_column_missing', tab);
     const emails = (await get(ROSTER_ID, `'${tab}'!A:A`)).values || [];
     const found = emails.findIndex((row, i) => i > 0 && String(row[0] || '').toLowerCase() === fact.learnerEmail);
     let sheetRow;
@@ -269,7 +316,31 @@ async function recordRoster(fact) {
     }
     destinations.push({ tab, column: target, row: sheetRow, cohort: cohortValue });
   }
-  return destinations;
+  return { destinations, notApplicable: false };
+}
+
+/** Places the roster unless the receiver or Product Map needs an owner decision first. */
+async function placeRoster(fact, issues, exceptions) {
+  if (fact.rosterPolicy === 'none') return { destinations: [], notApplicable: true };
+  const held = issues.filter(issue => issue.target === 'roster');
+  if (held.length) {
+    exceptions.push(...held.map(({ code, value }) => ({ target: 'roster', code, value })));
+    return { destinations: [], notApplicable: false };
+  }
+  try {
+    return await recordRoster(fact);
+  } catch (error) {
+    if (!(error instanceof ledger.LedgerHold)) throw error;
+    exceptions.push({ target: error.target, code: error.code, value: error.value });
+    return { destinations: [], notApplicable: false };
+  }
+}
+
+function rosterReplay(fact) {
+  return {
+    learnerName: fact.learnerName, learnerEmail: fact.learnerEmail, transactionDate: fact.transactionDate,
+    productName: fact.productName, cohort: fact.cohort ? { rosterValue: fact.cohort.rosterValue } : null,
+  };
 }
 
 function recordPostgres(envelope, fact) {
@@ -290,7 +361,7 @@ function recordPostgres(envelope, fact) {
       AND business_v2.contador_adyen_payments.amount_cents=EXCLUDED.amount_cents
       AND business_v2.contador_adyen_payments.currency=EXCLUDED.currency;
     SELECT delivery_id::text,psp_reference FROM business_v2.contador_adyen_payments WHERE psp_reference=:'psp';`;
-  const output = execFileSync('psql', [...psqlVars(values), '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'], { input: sql, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  const output = runPsql(values, sql);
   return output.split('\n').some(line => line.trim() === `${envelope.deliveryId}|${fact.pspReference}`);
 }
 
@@ -333,15 +404,23 @@ function recordPostgresRefund(envelope) {
       AND business_v2.contador_adyen_refunds.remaining_paid_cents=EXCLUDED.remaining_paid_cents
       AND business_v2.contador_adyen_refunds.currency=EXCLUDED.currency;
     SELECT delivery_id::text,refund_psp_reference FROM business_v2.contador_adyen_refunds WHERE refund_psp_reference=:'refundpsp';`;
-  const output = execFileSync('psql', [...psqlVars(values), '-v', 'ON_ERROR_STOP=1', '-qAt', '-f', '-'], { input: sql, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  const output = runPsql(values, sql);
   return output.split('\n').some(line => line.trim() === `${envelope.deliveryId}|${refund.refundPspReference}`);
 }
 
-function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
-  const roster = rosterDestinations.map(destination => `${destination.tab} → ${destination.column} (row ${destination.row})`).join('; ');
+function formatCommerceSummary(fact, paymentLog, roster, exceptions = [], deliveryId = '') {
+  const placement = Array.isArray(roster) ? { destinations: roster, notApplicable: false } : roster;
+  const destinations = placement.destinations.map(destination => `${destination.tab} → ${destination.column} (row ${destination.row})`).join('; ');
   const fee = fact.economics
     ? `Fee / net: $${fact.economics.feeDollars} / $${fact.economics.netDollars} (${fact.economics.feeBasis === 'adyen_detailed' ? 'Adyen detail' : 'Zentact settled'} + estimated Peri)`
     : 'Fee: pending — awaiting Adyen settlement/fee evidence';
+  const rosterLine = fact.rosterPolicy === 'none'
+    ? 'Student Roster: not applicable — invoice payment'
+    : placement.notApplicable
+      ? 'Student Roster: not applicable — Product Map says no roster'
+      : exceptions.some(item => item.target === 'roster')
+        ? 'Student Roster: held — needs your decision below'
+        : `Student Roster: recorded and verified (${destinations})`;
   return [
     `Payment received: ${fact.learnerName} — ${fact.productName} — $${fact.amountDollars} ${fact.currency}`,
     `Learner: ${fact.learnerName} <${fact.learnerEmail}>`,
@@ -349,11 +428,10 @@ function formatCommerceSummary(fact, paymentLog, rosterDestinations) {
     `Paid: ${fact.transactionDate} · Recorded: ${paymentLog.recordedDate}`,
     fee,
     `Payment Log: recorded and verified (row ${paymentLog.row}; provider Adyen)`,
-    fact.rosterPolicy === 'none'
-      ? 'Student Roster: not applicable — invoice payment'
-      : `Student Roster: recorded and verified (${roster})`,
+    rosterLine,
     ...(fact.cohort ? [`Cohort: ${fact.cohort.rosterValue}`] : []),
-    'Database: recorded and verified',
+    exceptions.some(item => item.target === 'postgres') ? 'Database: held — needs review below' : 'Database: recorded and verified',
+    ...ledger.formatExceptionBlock(exceptions, deliveryId),
   ].join('\n');
 }
 
@@ -364,6 +442,7 @@ function formatCommerceTestSummary(envelope) {
     `Provider: Adyen TEST · ${providerId}`,
     `Reference: ${envelope.notification.merchantReference}`,
     'Official record: not written (Payment Log, Student Roster, PostgreSQL, Capacity)',
+    ...(Array.isArray(envelope.issues) ? envelope.issues : []).map(issue => `Would flag: ${ledger.describeException(issue)}`),
   ].join('\n');
 }
 
@@ -380,7 +459,16 @@ function formatCommerceFeeSummary(envelope, paymentLog) {
   ].join('\n');
 }
 
-function formatCommerceRefundSummary(envelope, paymentLog) {
+function formatCommerceFeeHeldSummary(envelope, exceptions) {
+  return [
+    `Payment fees held: ${envelope.order.productName} — $${(envelope.order.amountCents / 100).toFixed(2)} ${envelope.order.currency}`,
+    `Provider: Adyen · ${envelope.notification.pspReference}`,
+    'Payment Log: fee and net not written',
+    ...ledger.formatExceptionBlock(exceptions, envelope.deliveryId),
+  ].join('\n');
+}
+
+function formatCommerceRefundSummary(envelope, paymentLog, exceptions = []) {
   const refund = envelope.refund;
   if (!refund) fail('refund evidence missing');
   return [
@@ -388,16 +476,75 @@ function formatCommerceRefundSummary(envelope, paymentLog) {
     `Provider: Adyen · refund ${refund.refundPspReference} · payment ${refund.paymentPspReference}`,
     `Reference: ${refund.requestReference}`,
     `Cumulative refunded: $${(refund.cumulativeRefundedCents / 100).toFixed(2)} · Remaining paid: $${(refund.remainingPaidCents / 100).toFixed(2)}`,
-    `Payment Log: status ${paymentLog.status} and verified (row ${paymentLog.row}; provider Adyen)`,
+    paymentLog ? `Payment Log: status ${paymentLog.status} and verified (row ${paymentLog.row}; provider Adyen)` : 'Payment Log: held — needs review below',
     'Student Roster: unchanged by refund policy',
-    'Database: refund recorded and verified',
+    exceptions.some(item => item.target === 'postgres') ? 'Database: held — needs review below' : 'Database: refund recorded and verified',
+    ...ledger.formatExceptionBlock(exceptions, envelope.deliveryId),
   ].join('\n');
 }
 
-async function main() {
-  const envelope = await readInput();
+function holdOrThrow(error, exceptions) {
+  if (!(error instanceof ledger.LedgerHold)) throw error;
+  exceptions.push({ target: error.target, code: error.code, value: error.value });
+}
+
+function baseResult(envelope, providerPaymentId) {
+  return { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId, officialRecordSuppressed: false };
+}
+
+async function projectFees(envelope) {
+  const exceptions = [];
+  let paymentLog = null;
+  try { paymentLog = await recordPaymentFees(envelope); } catch (error) { holdOrThrow(error, exceptions); }
+  const replay = { fees: { pspReference: envelope.notification.pspReference, amountCents: envelope.order.amountCents, currency: envelope.order.currency, economics: envelope.economics } };
+  const exceptionsRecorded = await ledger.recordExceptions(client, PAYMENTS_ID, envelope, exceptions, replay);
+  return {
+    ...baseResult(envelope, envelope.notification.pspReference),
+    paymentLogVerified: Boolean(paymentLog), studentRosterVerified: false, postgresVerified: false,
+    feeReconciliationVerified: Boolean(paymentLog), exceptions, exceptionsRecorded,
+    summary: paymentLog ? formatCommerceFeeSummary(envelope, paymentLog) : formatCommerceFeeHeldSummary(envelope, exceptions),
+  };
+}
+
+async function projectRefund(envelope) {
+  const exceptions = [];
+  let paymentLog = null;
+  try { paymentLog = await recordRefundPaymentLog(envelope); } catch (error) { holdOrThrow(error, exceptions); }
+  const postgresVerified = recordPostgresRefund(envelope);
+  if (!postgresVerified) exceptions.push({ target: 'postgres', code: 'refund_database_unmatched', value: envelope.refund.paymentPspReference });
+  const exceptionsRecorded = await ledger.recordExceptions(client, PAYMENTS_ID, envelope, exceptions);
+  return {
+    ...baseResult(envelope, envelope.refund.refundPspReference),
+    paymentLogVerified: Boolean(paymentLog), studentRosterVerified: true, postgresVerified,
+    feeReconciliationVerified: false, exceptions, exceptionsRecorded,
+    summary: formatCommerceRefundSummary(envelope, paymentLog, exceptions),
+  };
+}
+
+// Write order (NC-20260924-001): Payment Log → roster attempt → PostgreSQL → exception rows.
+// A held roster never skips PostgreSQL; the receiver posts Slack only after this returns.
+async function projectPayment(envelope) {
+  const issues = Array.isArray(envelope.issues) ? envelope.issues : [];
+  const fact = buildFact(envelope);
+  const exceptions = [];
+  const paymentLog = await recordPaymentLog(fact);
+  const roster = await placeRoster(fact, issues, exceptions);
+  const postgresVerified = recordPostgres(envelope, fact);
+  if (!postgresVerified) exceptions.push({ target: 'postgres', code: 'database_conflict', value: fact.pspReference });
+  exceptions.push(...await ledger.unacceptedReviewIssues(client, PAYMENTS_ID, issues));
+  const exceptionsRecorded = await ledger.recordExceptions(client, PAYMENTS_ID, envelope, exceptions, { roster: rosterReplay(fact) });
+  return {
+    ...baseResult(envelope, fact.pspReference),
+    paymentLogVerified: paymentLog.verified,
+    studentRosterVerified: roster.notApplicable || roster.destinations.length > 0,
+    postgresVerified, feeReconciliationVerified: false, exceptions, exceptionsRecorded,
+    summary: formatCommerceSummary(fact, paymentLog, roster, exceptions, envelope.deliveryId),
+  };
+}
+
+async function project(envelope) {
   if (envelope.environment === 'test') {
-    const result = {
+    return {
       deliveryId: envelope.deliveryId,
       provider: 'adyen',
       providerPaymentId: envelope.refund ? envelope.refund.refundPspReference : envelope.notification.pspReference,
@@ -408,64 +555,27 @@ async function main() {
       feeReconciliationVerified: false,
       summary: formatCommerceTestSummary(envelope),
     };
-    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
-    return;
   }
-  if (!PAYMENTS_ID || !ROSTER_ID || !SA_PATH || !fs.existsSync(SA_PATH)) fail('bookkeeper configuration missing');
-  if (envelope.deliveryKind === 'fee_reconciliation') {
-    const paymentLog = await recordPaymentFees(envelope);
-    const result = {
-      deliveryId: envelope.deliveryId,
-      provider: 'adyen',
-      providerPaymentId: envelope.notification.pspReference,
-      paymentLogVerified: paymentLog.verified,
-      studentRosterVerified: false,
-      postgresVerified: false,
-      officialRecordSuppressed: false,
-      feeReconciliationVerified: true,
-      summary: formatCommerceFeeSummary(envelope, paymentLog),
-    };
-    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
-    return;
-  }
-  if (envelope.refund) {
-    const paymentLog = await recordRefundPaymentLog(envelope);
-    const postgresVerified = recordPostgresRefund(envelope);
-    const result = {
-      deliveryId: envelope.deliveryId,
-      provider: 'adyen',
-      providerPaymentId: envelope.refund.refundPspReference,
-      paymentLogVerified: paymentLog.verified,
-      studentRosterVerified: true,
-      postgresVerified,
-      officialRecordSuppressed: false,
-      feeReconciliationVerified: false,
-      summary: formatCommerceRefundSummary(envelope, paymentLog),
-    };
-    console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
-    return;
-  }
-  const event = new Date(envelope.notification.eventDate);
-  if (!Number.isFinite(event.getTime())) fail('event date invalid');
-  const format = date => `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-  const learner = envelope.order.learner;
-  const fact = {
-    pspReference: envelope.notification.pspReference,
-    transactionDate: format(event), recordedDate: format(new Date()),
-    learnerName: `${learner.firstName} ${learner.lastName}`.trim(), learnerEmail: learner.email.toLowerCase(),
-    productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
-    cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
-    economics: commerceEconomics(envelope.order.amountCents, envelope.economics),
-  };
-  // Each destination is idempotent by provider payment ID. A retry repairs an
-  // incomplete prior delivery and only succeeds after exact readback.
-  const paymentLog = await recordPaymentLog(fact);
-  const rosterDestinations = envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact);
-  const postgresVerified = recordPostgres(envelope, fact);
-  const result = { deliveryId: envelope.deliveryId, provider: 'adyen', providerPaymentId: fact.pspReference, paymentLogVerified: paymentLog.verified, studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0, postgresVerified, officialRecordSuppressed: false, feeReconciliationVerified: false, summary: formatCommerceSummary(fact, paymentLog, rosterDestinations) };
+  if (!PAYMENTS_ID || !ROSTER_ID || !SA_PATH || (!accessToken && !fs.existsSync(SA_PATH))) fail('bookkeeper configuration missing');
+  if (envelope.deliveryKind === 'fee_reconciliation') return projectFees(envelope);
+  if (envelope.refund) return projectRefund(envelope);
+  return projectPayment(envelope);
+}
+
+async function main() {
+  const result = await project(await readInput());
   console.log(`__COMMERCE_BOOKKEEPER__${Buffer.from(JSON.stringify(result)).toString('base64url')}`);
 }
 
 if (require.main === module) main().catch(error => { console.error(`[EL CONTADOR] ${error.message}`); process.exit(1); });
 
-module.exports = { column, psqlVars, cohortRosterValue, commerceEconomics, sheetMoneyCents, refundPaymentLogStatus, finalRefundPaymentLogStatus, formatCommerceSummary, formatCommerceTestSummary, formatCommerceFeeSummary, formatCommerceRefundSummary };
+module.exports = {
+  column, psqlVars, cohortRosterValue, commerceEconomics, sheetMoneyCents, refundPaymentLogStatus, finalRefundPaymentLogStatus,
+  formatCommerceSummary, formatCommerceTestSummary, formatCommerceFeeSummary, formatCommerceRefundSummary,
+  client, buildFact, recordRoster, recordPaymentFees, project, PAYMENTS_ID, ROSTER_ID,
+  setTestDoubles({ transport: nextTransport, psql, token: nextToken } = {}) {
+    if (nextTransport) transport = nextTransport;
+    if (psql) psqlRunner = psql;
+    if (nextToken) accessToken = nextToken;
+  },
+};

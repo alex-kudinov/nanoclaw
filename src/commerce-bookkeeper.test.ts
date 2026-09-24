@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  acceptedProjection,
   CommerceBookkeeperRequestError,
   prepareCommerceBookkeeperEnvelope,
 } from './commerce-bookkeeper.js';
@@ -209,11 +210,16 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(prepared.order.rosterPolicy).toBe('none');
     expect(prepared.order.cohort).toBeNull();
 
+    // NC-20260924-001: unknown or contradictory policy holds the roster, never the payment.
     const missing = structuredClone(invoice) as any;
     delete missing.order.rosterPolicy;
-    expect(() => prepareCommerceBookkeeperEnvelope(signed(missing))).toThrow(
-      /rosterPolicy invalid/,
-    );
+    const missingPrepared = prepareCommerceBookkeeperEnvelope(signed(missing));
+    expect(missingPrepared.order.rosterPolicy).toBe('catalog');
+    expect(missingPrepared.issues).toContainEqual({
+      target: 'roster',
+      code: 'roster_policy_new',
+      value: '(missing)',
+    });
     const contradictory = structuredClone(invoice);
     contradictory.order.cohort = {
       key: 'pcc-m1-0123456789abcdef01234567',
@@ -234,9 +240,13 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
       ],
       rosterValue: 'PCC Module 1 — Oct 7, 2026 - Oct 28, 2026',
     };
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(contradictory)),
-    ).toThrow(/rosterPolicy invalid/);
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(contradictory)).issues,
+    ).toContainEqual({
+      target: 'roster',
+      code: 'roster_policy_cohort_conflict',
+      value: 'pcc',
+    });
   });
 
   it('accepts an exact signed refund and rejects cross-payment or cumulative mismatch', () => {
@@ -295,18 +305,30 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(
       prepareCommerceBookkeeperEnvelope(signed(acc)).order.cohort?.program,
     ).toBe('acc');
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(credential)).issues,
+    ).toEqual([]);
+    // A substituted roster value is never written: roster placement is held.
     const accDisplayValue = structuredClone(acc);
     (accDisplayValue.order.cohort as Record<string, unknown>).rosterValue =
       'ACC Module 1 — Oct 7, 2026 - Oct 28, 2026';
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(accDisplayValue)),
-    ).toThrow(/order.cohort invalid/);
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(accDisplayValue)).issues,
+    ).toContainEqual({
+      target: 'roster',
+      code: 'cohort_roster_value_unexpected',
+      value: 'acc: ACC Module 1 — Oct 7, 2026 - Oct 28, 2026',
+    });
     const malformed = structuredClone(credential);
     (malformed.order.cohort as Record<string, unknown>).rosterValue =
       'browser supplied replacement';
-    expect(() => prepareCommerceBookkeeperEnvelope(signed(malformed))).toThrow(
-      /order.cohort invalid/,
-    );
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(malformed)).issues,
+    ).toContainEqual({
+      target: 'roster',
+      code: 'cohort_roster_value_unexpected',
+      value: 'pcc: browser supplied replacement',
+    });
 
     const legacyActc = structuredClone(credential);
     legacyActc.order.productId = 'actc-module-3';
@@ -392,34 +414,106 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
         ?.sessions,
     ).toHaveLength(10);
 
+    expect(prepareCommerceBookkeeperEnvelope(signed(mcs)).issues).toEqual([]);
+    // Known-program shape drift is booked and flagged for review, not rejected.
+    const shapeFlag = { target: 'review', code: 'cohort_shape_unexpected' };
     const wrongModule = structuredClone(mcs);
     (wrongModule.order.cohort as Record<string, unknown>).module = 1;
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(wrongModule)),
-    ).toThrow(/order.cohort invalid/);
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(wrongModule)).issues,
+    ).toContainEqual({
+      ...shapeFlag,
+      value: 'mcs-practicum',
+    });
 
     const wrongKey = structuredClone(mcs);
     (wrongKey.order.cohort as Record<string, unknown>).key =
       'mcs-practicum-m123456789abcdef01234567';
-    expect(() => prepareCommerceBookkeeperEnvelope(signed(wrongKey))).toThrow(
-      /order.cohort invalid/,
-    );
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(wrongKey)).issues,
+    ).toContainEqual({
+      ...shapeFlag,
+      value: 'mcs-practicum',
+    });
 
     const shortSchedule = structuredClone(tenSessionCohort);
     const shortCohort = shortSchedule.order.cohort as Record<string, unknown>;
     shortCohort.sessions = (shortCohort.sessions as string[]).slice(0, 4);
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(shortSchedule)),
-    ).toThrow(/order.cohort invalid/);
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(shortSchedule)).issues,
+    ).toContainEqual({
+      ...shapeFlag,
+      value: 'mcs-practicum',
+    });
 
     const widenedCredential = structuredClone(mcs);
     Object.assign(widenedCredential.order.cohort as Record<string, unknown>, {
       key: 'pcc-m0-0123456789abcdef01234567',
       program: 'pcc',
     });
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(widenedCredential)),
-    ).toThrow(/order.cohort invalid/);
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(widenedCredential)).issues,
+    ).toContainEqual({ ...shapeFlag, value: 'pcc' });
+  });
+
+  it('books a new cohort program such as Supervision and flags it once for review', () => {
+    const supervision = payload();
+    supervision.notification.amount.value = 99900;
+    supervision.order.productId = 'supervision-inaugural';
+    supervision.order.productName =
+      'Coaching Supervision Mastery - Inaugural Cohort';
+    supervision.order.amountCents = 99900;
+    const sessions = Array.from({ length: 16 }, (_, week) =>
+      new Date(Date.parse('2026-10-07T14:00:00Z') + week * 7 * 864e5)
+        .toISOString()
+        .replace('.000Z', 'Z'),
+    );
+    supervision.order.cohort = {
+      key: 'supervision-0123456789abcdef01234567',
+      program: 'supervision',
+      module: 0,
+      enrollmentScope: 'full_program',
+      start: sessions[0],
+      end: sessions[15],
+      label: 'Wednesdays',
+      range: 'October 7, 2026 – January 20, 2027',
+      time: '9:00 AM CT',
+      timezone: 'America/New_York',
+      sessions,
+      rosterValue: 'Wednesdays — October 7, 2026 – January 20, 2027',
+    };
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(supervision));
+    expect(prepared.order.cohort?.rosterValue).toBe(
+      'Wednesdays — October 7, 2026 – January 20, 2027',
+    );
+    expect(prepared.issues).toEqual([
+      { target: 'review', code: 'cohort_program_new', value: 'supervision' },
+    ]);
+  });
+
+  it('books unexpected content with named issues instead of rejecting it', () => {
+    const odd = payload() as any;
+    odd.order.productId = 'Practitioner AI';
+    odd.order.productName = 'Line\none';
+    odd.order.purchaseRelationship = 'gift';
+    odd.notification.eventDate = 'yesterday';
+    odd.order.learner.email = 'not-an-email';
+    odd.notification.amount.currency = 'EUR';
+    odd.order.currency = 'EUR';
+    const prepared = prepareCommerceBookkeeperEnvelope(signed(odd));
+    expect(prepared.order.productName).toBe('Line one');
+    expect(prepared.notification.eventDate).toBe(odd.sentAt);
+    expect(prepared.order.currency).toBe('EUR');
+    expect(
+      prepared.issues.map((issue) => `${issue.target}:${issue.code}`),
+    ).toEqual([
+      'review:product_id_unexpected',
+      'review:product_name_adjusted',
+      'review:currency_new',
+      'review:purchase_relationship_new',
+      'review:event_date_unreadable',
+      'roster:learner_email_invalid',
+    ]);
   });
 
   it('rejects tampering, stale deliveries, and order/payment mismatches', () => {
@@ -438,11 +532,131 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(() => prepareCommerceBookkeeperEnvelope(signed(mismatch))).toThrow(
       /payment identity mismatch/,
     );
-    const invalidProduct = payload();
-    invalidProduct.order.productId = 'Practitioner AI';
-    expect(() =>
-      prepareCommerceBookkeeperEnvelope(signed(invalidProduct)),
-    ).toThrow(/payment identity mismatch/);
+    // Every security and payment-identity class stays fail-closed (NC-20260924-001).
+    const hard: Array<[string, (value: any) => void, RegExp]> = [
+      [
+        'unsuccessful',
+        (v) => (v.notification.success = 'false'),
+        /payment identity mismatch/,
+      ],
+      [
+        'zero amount',
+        (v) => {
+          v.notification.amount.value = 0;
+          v.order.amountCents = 0;
+        },
+        /payment identity mismatch/,
+      ],
+      [
+        'currency split',
+        (v) => (v.order.currency = 'EUR'),
+        /payment identity mismatch/,
+      ],
+      [
+        'currency shape',
+        (v) => {
+          v.notification.amount.currency = 'usd';
+          v.order.currency = 'usd';
+        },
+        /payment identity mismatch/,
+      ],
+      [
+        'merchant reference',
+        (v) => (v.order.merchantReference = 'TCA-OTHER'),
+        /payment identity mismatch/,
+      ],
+      [
+        'event code',
+        (v) => (v.notification.eventCode = 'CAPTURE'),
+        /payment identity mismatch/,
+      ],
+      ['schema version', (v) => (v.schemaVersion = 2), /schemaVersion invalid/],
+      [
+        'delivery id',
+        (v) => (v.deliveryId = 'not-a-uuid'),
+        /deliveryId invalid/,
+      ],
+      [
+        'environment',
+        (v) => (v.environment = 'staging'),
+        /delivery scope invalid/,
+      ],
+      [
+        'economics arithmetic',
+        (v) =>
+          (v.economics = {
+            feeBasis: 'adyen_detailed',
+            providerFeeCents: 29901,
+            periFeeCents: 0,
+          }),
+        /economics invalid/,
+      ],
+      ['order id', (v) => delete v.order.orderId, /order.orderId invalid/],
+      [
+        'psp reference',
+        (v) => delete v.notification.pspReference,
+        /notification.pspReference invalid/,
+      ],
+    ];
+    for (const [label, mutate, error] of hard) {
+      const value = payload() as any;
+      mutate(value);
+      expect(
+        () => prepareCommerceBookkeeperEnvelope(signed(value)),
+        label,
+      ).toThrow(error);
+    }
+  });
+
+  it('accepts a projection only when every unverified sink has a recorded exception', () => {
+    const envelope = prepareCommerceBookkeeperEnvelope(signed());
+    const base = {
+      deliveryId: envelope.deliveryId,
+      provider: 'adyen' as const,
+      providerPaymentId: 'WPFT7CXWRGM7NKZ3',
+      paymentLogVerified: true,
+      studentRosterVerified: true,
+      postgresVerified: true,
+      officialRecordSuppressed: false,
+      feeReconciliationVerified: false,
+      summary: 'ok',
+    };
+    expect(acceptedProjection(envelope, base)).toBe(true);
+    const held = {
+      target: 'roster' as const,
+      code: 'roster_product_unmapped',
+      value: 'X',
+    };
+    expect(
+      acceptedProjection(envelope, { ...base, studentRosterVerified: false }),
+    ).toBe(false);
+    expect(
+      acceptedProjection(envelope, {
+        ...base,
+        studentRosterVerified: false,
+        exceptions: [held],
+      }),
+    ).toBe(false);
+    expect(
+      acceptedProjection(envelope, {
+        ...base,
+        studentRosterVerified: false,
+        exceptions: [held],
+        exceptionsRecorded: true,
+      }),
+    ).toBe(true);
+    // Money must always reach the Payment Log for a payment delivery.
+    expect(
+      acceptedProjection(envelope, {
+        ...base,
+        paymentLogVerified: false,
+        exceptions: [{ target: 'payment_log', code: 'x', value: 'y' }],
+        exceptionsRecorded: true,
+      }),
+    ).toBe(false);
+    expect(acceptedProjection(envelope, { ...base, deliveryId: 'other' })).toBe(
+      false,
+    );
   });
 
   it('keeps spreadsheet and SQL coordinates data-only', () => {
@@ -487,10 +701,10 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     expect(source).toContain("fail('student roster cohort readback mismatch')");
     expect(source).not.toContain("Payment Log!J1', [['Provider Payment ID']]");
     expect(source).toContain(
-      "envelope.order.rosterPolicy === 'none' ? [] : await recordRoster(fact)",
+      "if (fact.rosterPolicy === 'none') return { destinations: [], notApplicable: true }",
     );
     expect(source).toContain(
-      "studentRosterVerified: envelope.order.rosterPolicy === 'none' || rosterDestinations.length > 0",
+      'studentRosterVerified: roster.notApplicable || roster.destinations.length > 0',
     );
     expect(source.indexOf("if (envelope.environment === 'test')")).toBeLessThan(
       source.indexOf("fail('bookkeeper configuration missing')"),

@@ -1,5 +1,41 @@
 # NanoClaw engineering changelog
 
+# 2026-09-24 — NC-20260924-001 Commerce Bookkeeper accept-and-flag
+
+- State: `in_progress`; local implementation and tests complete, not released.
+- Root cause: `order.cohort invalid` (422) for the first paid Supervision
+  installment; the receiver admitted only `acc`, `pcc`, `actc` and
+  `mcs-practicum`. Each new product line's first sale has been the test since
+  2026-09-15. The route logged only the HTTP status.
+- Outcome: still hard — body size, HMAC, JSON, schemaVersion, deliveryId, sentAt
+  window, environment, deliveryKind, success, positive amount, one ISO currency
+  on notification and order, merchant reference, event code, refund identity,
+  economics arithmetic, delivery scope, orderId, merchantAccountCode. Now
+  recorded issues — product ID/name shape, non-USD currency, relationship,
+  unreadable event date (falls back to sentAt), roster policy, cohort shape and
+  program, payer/learner email and names, missing additionalData. Any program
+  is accepted; the roster value must be ACC's month or the cohort's own
+  `label — range`, otherwise roster placement is held.
+- Recorder: Payment Log → roster attempt → PostgreSQL → exception rows
+  (readback) → Slack. Product Map misses, missing tabs/columns and held cohorts
+  become `roster` exceptions; a PostgreSQL identity conflict becomes `postgres`;
+  a changed Payment Log row blocks only fees. Exceptions are keyed by PSP
+  reference, target, code and value, so re-enqueued deliveries never duplicate.
+  The receiver accepts a result only when each unverified sink has a recorded
+  exception; a Live payment must still reach the Payment Log.
+- Learning: `resolve-commerce-exception.cjs` (`list`, `map`, `no-roster`,
+  `retry`, `accept [--remember]`) validates the roster tab/header before saving
+  a Product Map rule, places every open sale of that product, and refuses to
+  remember person or money codes.
+- Verification: `src/commerce-bookkeeper.test.ts` 18/18,
+  `tools/contador/commerce-exceptions.test.ts` 5/5, `src/webhook-server.test.ts`
+  64/64; typecheck, docs continuity and capability matrix clean; full suite
+  from the worktree root shows the same 23 pre-existing failing files as
+  deployed `4ce0360c` on this workstation (Node 22.23.3), plus two files that
+  pass in isolation.
+- Boundaries: no schema, route, queue, worker, scheduler, outbound host,
+  capability, payment, refund, customer communication or ACC capacity change.
+
 # 2026-09-22 — NC-20260922-003 preserve contact intent through Inbox, Sales and Chief
 
 - State: `ready_for_deploy`; source, prompts, focused/full verification and

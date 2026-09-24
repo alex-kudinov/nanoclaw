@@ -1,5 +1,25 @@
 # NanoClaw active work
 
+2026-09-24T17:30Z — `NC-20260924-001` Commerce Bookkeeper accepts every
+authenticated delivery and flags unexpected content to Slack for owner
+resolution, owner Claude (Peri dual-driver pilot, work item
+`work:commerce-bookkeeper-accept-and-flag`), `in_progress`, C3, isolated branch
+`claude/bookkeeper-accept-and-flag-20260924` from deployed `4ce0360c`. Trigger:
+paid Live Supervision order `TCA-939DBACF9A7B` was rejected 422
+(`order.cohort invalid`) because the receiver hard-codes cohort programs; the
+same first-sale rejection recurred for AI for Coaches, ACC, MCS practicum and
+ACTC. Security and payment identity stay fail-closed; content becomes named
+issues. Payment Log and PostgreSQL are always written; roster placement the
+host cannot make is held as an open row in the private payments spreadsheet's
+`Bookkeeper Exceptions` tab and posted as "Needs your decision". Contador
+applies the owner's answer with `tools/contador/resolve-commerce-exception.cjs`,
+which stores it as a Product Map row or a `Bookkeeper Rules` row. Fees that
+arrive before their payment row book the row with fees. No schema, route,
+queue, worker, scheduler, outbound host, payment, refund or customer message.
+Next: consumer release after zero-work drain, copy the reviewed resolve tool,
+recorder and ledger plus `groups/contador` instructions into the operational
+checkout, replay Commerce job `8677f5df-ffe4-4eaf-9d28-ce3dc859ba5a`.
+
 2026-09-22T22:10Z — `NC-20260922-003` preserve the contact form's explicit
 intent, buyer, organization, next-step and consent context through n8n to
 Inbox, Sales and any Chief escalation, owner Codex, `ready_for_deploy`, C2,

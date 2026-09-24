@@ -35,6 +35,7 @@ groups/*/*
 !groups/*/EMAIL-RESPONSE-GUIDELINES.md
 !groups/chief/SUPPORT-REPLY.md
 !groups/mailman/OUTBOUND-EMAIL.md
+!groups/contador/COMMERCE-EXCEPTIONS.md
 !groups/*/SCHEMA.md
 
 # Knowledge directory — track structure and source files, not agent copies or large generated files

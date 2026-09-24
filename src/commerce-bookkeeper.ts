@@ -29,12 +29,31 @@ export class CommerceBookkeeperRequestError extends Error {
   }
 }
 
+/**
+ * Content the receiver did not expect inside an authenticated delivery
+ * (NC-20260924-001). Security and payment identity failures still throw;
+ * everything else is accepted and recorded as an issue. `roster` issues hold
+ * roster placement for owner resolution; `review` issues only flag.
+ */
+export interface CommerceBookkeeperIssue {
+  target: 'roster' | 'review';
+  code: string;
+  value: string;
+}
+
+export interface CommerceBookkeeperException {
+  target: 'roster' | 'postgres' | 'fees' | 'payment_log' | 'review';
+  code: string;
+  value: string;
+}
+
 export interface CommerceBookkeeperEnvelope {
   schemaVersion: 1;
   deliveryId: string;
   sentAt: string;
   environment: 'test' | 'live';
   deliveryKind: 'payment' | 'refund' | 'fee_reconciliation';
+  issues: CommerceBookkeeperIssue[];
   economics: null | {
     feeBasis: 'adyen_detailed' | 'zentact_settled';
     providerFeeCents: number;
@@ -48,7 +67,7 @@ export interface CommerceBookkeeperEnvelope {
     eventCode: 'AUTHORISATION' | 'REFUND';
     eventDate: string;
     success: 'true';
-    amount: { value: number; currency: 'USD' };
+    amount: { value: number; currency: string };
     additionalData: Record<string, unknown>;
   };
   order: {
@@ -57,22 +76,22 @@ export interface CommerceBookkeeperEnvelope {
     productId: string;
     productName: string;
     amountCents: number;
-    currency: 'USD';
+    currency: string;
     rosterPolicy: 'catalog' | 'none';
     payer: { firstName: string; lastName: string; email: string };
     learner: { firstName: string; lastName: string; email: string };
-    purchaseRelationship: 'self' | 'other';
+    purchaseRelationship: string;
     cohort: null | {
       key: string;
-      program: 'acc' | 'pcc' | 'actc' | 'mcs-practicum';
-      module: number;
-      enrollmentScope: 'module' | 'full_program';
+      program: string;
+      module: number | null;
+      enrollmentScope: string;
       start: string;
       end: string;
       label: string;
       range: string;
       time: string;
-      timezone: 'America/New_York';
+      timezone: string;
       sessions: string[];
       rosterValue: string;
     };
@@ -97,6 +116,8 @@ export interface CommerceBookkeeperResult {
   postgresVerified: boolean;
   officialRecordSuppressed: boolean;
   feeReconciliationVerified: boolean;
+  exceptions?: CommerceBookkeeperException[];
+  exceptionsRecorded?: boolean;
   summary: string;
 }
 
@@ -115,17 +136,48 @@ function text(value: unknown, label: string, max = 254): string {
   return result;
 }
 
-function person(value: unknown, label: string) {
-  const p = object(value, label);
-  const email = text(p.email, `${label}.email`).toLowerCase();
+type Issues = CommerceBookkeeperIssue[];
+
+const KNOWN_COHORT_PROGRAMS = new Set(['acc', 'pcc', 'actc', 'mcs-practicum']);
+const ISO_INSTANT =
+  /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/;
+
+/** Data-only text: control characters become spaces, then bounded. */
+function softText(value: unknown, max: number): string {
+  return typeof value === 'string'
+    ? value
+        .replace(/[\x00-\x1f\x7f]/g, ' ')
+        .trim()
+        .slice(0, max)
+    : '';
+}
+
+function softRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function person(value: unknown, label: 'payer' | 'learner', issues: Issues) {
+  const p = softRecord(value) ?? {};
+  const email = softText(p.email, 254).toLowerCase();
+  const firstName = softText(p.firstName, 100);
+  const lastName = softText(p.lastName, 100);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new CommerceBookkeeperRequestError(`${label}.email invalid`, 422);
+    issues.push({
+      target: label === 'learner' ? 'roster' : 'review',
+      code: `${label}_email_invalid`,
+      value: email || '(missing)',
+    });
   }
-  return {
-    firstName: text(p.firstName, `${label}.firstName`, 100),
-    lastName: text(p.lastName, `${label}.lastName`, 100),
-    email,
-  };
+  if (!firstName && !lastName) {
+    issues.push({
+      target: 'review',
+      code: `${label}_name_missing`,
+      value: email,
+    });
+  }
+  return { firstName, lastName, email };
 }
 
 function economics(
@@ -154,80 +206,122 @@ function economics(
   };
 }
 
-function cohort(value: unknown): CommerceBookkeeperEnvelope['order']['cohort'] {
+/**
+ * Any program is accepted. Only the roster value is written downstream, so a
+ * cohort whose roster value cannot be derived, or an ACC cohort whose value is
+ * not the canonical month, holds roster placement for the owner instead of
+ * rejecting the paid delivery. A program not seen before is flagged for review.
+ */
+function cohort(
+  value: unknown,
+  issues: Issues,
+): CommerceBookkeeperEnvelope['order']['cohort'] {
   if (value === null || value === undefined) return null;
-  const c = object(value, 'order.cohort');
-  const program = text(c.program, 'order.cohort.program', 20);
-  const module = Number(c.module);
-  const scope = text(c.enrollmentScope, 'order.cohort.enrollmentScope', 20);
-  const key = text(c.key, 'order.cohort.key', 40);
-  const start = text(c.start, 'order.cohort.start', 40);
-  const end = text(c.end, 'order.cohort.end', 40);
-  const label = text(c.label, 'order.cohort.label', 80);
-  const range = text(c.range, 'order.cohort.range', 120);
-  const time = text(c.time, 'order.cohort.time', 120);
-  const timezone = text(c.timezone, 'order.cohort.timezone', 40);
-  const suppliedRosterValue =
-    typeof c.rosterValue === 'string' ? c.rosterValue.trim() : '';
-  const rosterValue =
-    suppliedRosterValue !== ''
-      ? text(suppliedRosterValue, 'order.cohort.rosterValue', 200)
-      : ['pcc', 'actc'].includes(program)
-        ? `${label} — ${range}`
-        : '';
-  const credentialProgram = ['acc', 'pcc', 'actc'].includes(program);
-  const mcsPracticum = program === 'mcs-practicum';
-  const rosterValueValid =
-    program === 'acc'
-      ? /^20\d{2}-(?:0[1-9]|1[0-2])$/.test(rosterValue)
-      : rosterValue === `${label} — ${range}`;
-  const sessions = Array.isArray(c.sessions)
-    ? c.sessions.map((item, index) =>
-        text(item, `order.cohort.sessions.${index}`, 40),
-      )
-    : [];
-  const iso = /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/;
-  if (
-    (!credentialProgram && !mcsPracticum) ||
-    !Number.isInteger(module) ||
-    (credentialProgram && (module < 1 || module > 4)) ||
-    (mcsPracticum && module !== 0) ||
-    (credentialProgram && !['module', 'full_program'].includes(scope)) ||
-    (mcsPracticum && scope !== 'full_program') ||
-    (credentialProgram &&
-      !new RegExp(`^${program}-m${module}-[a-f0-9]{24}$`).test(key)) ||
-    (mcsPracticum && !/^mcs-practicum-[a-f0-9]{24}$/.test(key)) ||
-    !iso.test(start) ||
-    !iso.test(end) ||
-    !Number.isFinite(Date.parse(start)) ||
-    !Number.isFinite(Date.parse(end)) ||
-    Date.parse(end) <= Date.parse(start) ||
-    timezone !== 'America/New_York' ||
-    (credentialProgram && sessions.length !== 4) ||
-    (mcsPracticum && ![10, 12].includes(sessions.length)) ||
-    sessions.some(
-      (item) => !iso.test(item) || !Number.isFinite(Date.parse(item)),
-    ) ||
-    rosterValue === '' ||
-    rosterValue.length > 200 ||
-    !rosterValueValid
-  ) {
-    throw new CommerceBookkeeperRequestError('order.cohort invalid', 422);
+  const c = softRecord(value);
+  if (!c) {
+    issues.push({
+      target: 'roster',
+      code: 'cohort_unreadable',
+      value: typeof value,
+    });
+    return null;
   }
-  return {
-    key,
-    program: program as 'acc' | 'pcc' | 'actc' | 'mcs-practicum',
-    module,
-    enrollmentScope: scope as 'module' | 'full_program',
-    start,
-    end,
+  const program = softText(c.program, 40);
+  const label = softText(c.label, 80);
+  const range = softText(c.range, 120);
+  const moduleNumber = Number(c.module);
+  const prepared = {
+    key: softText(c.key, 60),
+    program,
+    module:
+      c.module === null ||
+      c.module === undefined ||
+      !Number.isInteger(moduleNumber)
+        ? null
+        : moduleNumber,
+    enrollmentScope: softText(c.enrollmentScope, 20),
+    start: softText(c.start, 40),
+    end: softText(c.end, 40),
     label,
     range,
-    time,
-    timezone: 'America/New_York',
-    sessions,
-    rosterValue,
+    time: softText(c.time, 120),
+    timezone: softText(c.timezone, 40),
+    sessions: Array.isArray(c.sessions)
+      ? c.sessions.map((item) => softText(item, 40))
+      : [],
+    rosterValue:
+      softText(c.rosterValue, 200) ||
+      (label && range ? `${label} — ${range}` : ''),
   };
+  // The roster value is the only cohort field written downstream: ACC uses its
+  // canonical month, every other program its own signed "label — range".
+  const canonicalRosterValue =
+    program === 'acc'
+      ? /^20\d{2}-(?:0[1-9]|1[0-2])$/.test(prepared.rosterValue)
+      : prepared.rosterValue === `${label} — ${range}`;
+  if (!program || !prepared.rosterValue) {
+    issues.push({
+      target: 'roster',
+      code: 'cohort_unreadable',
+      value: program || '(no program)',
+    });
+  } else if (!canonicalRosterValue) {
+    issues.push({
+      target: 'roster',
+      code: 'cohort_roster_value_unexpected',
+      value: `${program}: ${prepared.rosterValue}`,
+    });
+  }
+  if (program && !KNOWN_COHORT_PROGRAMS.has(program)) {
+    issues.push({
+      target: 'review',
+      code: 'cohort_program_new',
+      value: program,
+    });
+  } else if (program && knownShapeUnexpected(prepared)) {
+    issues.push({
+      target: 'review',
+      code: 'cohort_shape_unexpected',
+      value: program,
+    });
+  }
+  if (
+    [prepared.start, prepared.end, ...prepared.sessions].some(
+      (item) => !ISO_INSTANT.test(item),
+    ) ||
+    Date.parse(prepared.end) <= Date.parse(prepared.start)
+  ) {
+    issues.push({
+      target: 'review',
+      code: 'cohort_schedule_unexpected',
+      value: program || '(no program)',
+    });
+  }
+  return prepared;
+}
+
+/** The pre-2026-09-24 shape rules for known programs, now a review flag instead of a rejection. */
+function knownShapeUnexpected(
+  c: NonNullable<CommerceBookkeeperEnvelope['order']['cohort']>,
+): boolean {
+  const credential = ['acc', 'pcc', 'actc'].includes(c.program);
+  const module = c.module ?? -1;
+  if (c.timezone !== 'America/New_York') return true;
+  if (credential) {
+    return (
+      module < 1 ||
+      module > 4 ||
+      !['module', 'full_program'].includes(c.enrollmentScope) ||
+      !new RegExp(`^${c.program}-m${module}-[a-f0-9]{24}$`).test(c.key) ||
+      c.sessions.length !== 4
+    );
+  }
+  return (
+    module !== 0 ||
+    c.enrollmentScope !== 'full_program' ||
+    !/^mcs-practicum-[a-f0-9]{24}$/.test(c.key) ||
+    ![10, 12].includes(c.sessions.length)
+  );
 }
 
 export function prepareCommerceBookkeeperEnvelope(input: {
@@ -291,8 +385,25 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     64,
   );
   const pspReference = text(n.pspReference, 'notification.pspReference', 100);
-  const productId = text(order.productId, 'order.productId', 100);
-  const productName = text(order.productName, 'order.productName', 200);
+  const issues: Issues = [];
+  const rawProductId = softText(order.productId, 100);
+  const productId = rawProductId || 'unknown-product';
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/.test(rawProductId)) {
+    issues.push({
+      target: 'review',
+      code: 'product_id_unexpected',
+      value: rawProductId || '(missing)',
+    });
+  }
+  const productName = softText(order.productName, 200) || productId;
+  if (productName !== order.productName) {
+    issues.push({
+      target: 'review',
+      code: 'product_name_adjusted',
+      value: productName,
+    });
+  }
+  const currency = typeof amount.currency === 'string' ? amount.currency : '';
   const amountValue = Number(amount.value);
   const orderAmount = Number(order.amountCents);
   const environment = text(raw.environment, 'environment', 8);
@@ -302,16 +413,18 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     'order.merchantReference',
     64,
   );
+  // Payment identity stays fail-closed: success, amount and one currency.
   if (
     n.success !== 'true' ||
     !Number.isSafeInteger(amountValue) ||
     amountValue <= 0 ||
-    amount.currency !== 'USD' ||
-    order.currency !== 'USD' ||
-    !/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/.test(productId) ||
-    /[\x00-\x1f\x7f]/.test(productName)
+    !/^[A-Z]{3}$/.test(currency) ||
+    order.currency !== currency
   ) {
     throw new CommerceBookkeeperRequestError('payment identity mismatch', 422);
+  }
+  if (currency !== 'USD') {
+    issues.push({ target: 'review', code: 'currency_new', value: currency });
   }
   if (
     !['test', 'live'].includes(environment) ||
@@ -389,34 +502,58 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   ) {
     throw new CommerceBookkeeperRequestError('delivery scope invalid', 422);
   }
-  const relationship = order.purchaseRelationship;
+  const relationship = softText(order.purchaseRelationship, 40);
   if (relationship !== 'self' && relationship !== 'other') {
-    throw new CommerceBookkeeperRequestError(
-      'purchaseRelationship invalid',
-      422,
-    );
+    issues.push({
+      target: 'review',
+      code: 'purchase_relationship_new',
+      value: relationship || '(missing)',
+    });
   }
-  const eventDate = text(n.eventDate, 'notification.eventDate', 40);
+  let eventDate = softText(n.eventDate, 40);
   if (!Number.isFinite(Date.parse(eventDate))) {
-    throw new CommerceBookkeeperRequestError(
-      'notification.eventDate invalid',
-      422,
-    );
+    issues.push({
+      target: 'review',
+      code: 'event_date_unreadable',
+      value: eventDate || '(missing)',
+    });
+    eventDate = sentAt;
   }
-  const rosterPolicy = order.rosterPolicy;
-  if (rosterPolicy !== 'catalog' && rosterPolicy !== 'none') {
-    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
+  let rosterPolicy: 'catalog' | 'none' =
+    order.rosterPolicy === 'none' ? 'none' : 'catalog';
+  if (order.rosterPolicy !== 'catalog' && order.rosterPolicy !== 'none') {
+    issues.push({
+      target: 'roster',
+      code: 'roster_policy_new',
+      value: softText(order.rosterPolicy, 40) || '(missing)',
+    });
   }
-  const preparedCohort = cohort(order.cohort);
+  const preparedCohort = cohort(order.cohort, issues);
   if (rosterPolicy === 'none' && preparedCohort !== null) {
-    throw new CommerceBookkeeperRequestError('rosterPolicy invalid', 422);
+    issues.push({
+      target: 'roster',
+      code: 'roster_policy_cohort_conflict',
+      value: preparedCohort.program,
+    });
+    rosterPolicy = 'catalog';
   }
+  const additionalData = softRecord(n.additionalData);
+  if (!additionalData) {
+    issues.push({
+      target: 'review',
+      code: 'additional_data_missing',
+      value: typeof n.additionalData,
+    });
+  }
+  const payer = person(order.payer, 'payer', issues);
+  const learner = person(order.learner, 'learner', issues);
   return {
     schemaVersion: 1,
     deliveryId,
     sentAt,
     environment: environment as 'test' | 'live',
     deliveryKind: deliveryKind as 'payment' | 'refund' | 'fee_reconciliation',
+    issues,
     economics: preparedEconomics,
     notification: {
       pspReference,
@@ -434,8 +571,8 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       eventCode: refund === null ? 'AUTHORISATION' : 'REFUND',
       eventDate,
       success: 'true',
-      amount: { value: amountValue, currency: 'USD' },
-      additionalData: object(n.additionalData, 'notification.additionalData'),
+      amount: { value: amountValue, currency },
+      additionalData: additionalData ?? {},
     },
     order: {
       orderId: text(order.orderId, 'order.orderId', 36),
@@ -443,10 +580,10 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       productId,
       productName,
       amountCents: orderAmount,
-      currency: 'USD',
+      currency,
       rosterPolicy,
-      payer: person(order.payer, 'order.payer'),
-      learner: person(order.learner, 'order.learner'),
+      payer,
+      learner,
       purchaseRelationship: relationship,
       cohort: preparedCohort,
     },
@@ -504,35 +641,7 @@ export async function handleCommerceBookkeeper(
             'base64url',
           ).toString('utf8'),
         ) as CommerceBookkeeperResult;
-        const validSuppression =
-          envelope.environment === 'test' &&
-          result.officialRecordSuppressed === true &&
-          !result.paymentLogVerified &&
-          !result.studentRosterVerified &&
-          !result.postgresVerified &&
-          !result.feeReconciliationVerified;
-        const validFeeReconciliation =
-          envelope.environment === 'live' &&
-          envelope.deliveryKind === 'fee_reconciliation' &&
-          !result.officialRecordSuppressed &&
-          result.paymentLogVerified &&
-          !result.studentRosterVerified &&
-          !result.postgresVerified &&
-          result.feeReconciliationVerified;
-        const validOfficialProjection =
-          envelope.environment === 'live' &&
-          envelope.deliveryKind !== 'fee_reconciliation' &&
-          !result.officialRecordSuppressed &&
-          result.paymentLogVerified &&
-          result.studentRosterVerified &&
-          result.postgresVerified &&
-          !result.feeReconciliationVerified;
-        if (
-          result.deliveryId !== envelope.deliveryId ||
-          (!validSuppression &&
-            !validFeeReconciliation &&
-            !validOfficialProjection)
-        ) {
+        if (!acceptedProjection(envelope, result)) {
           reject(new Error('commerce bookkeeper readback incomplete'));
           return;
         }
@@ -543,4 +652,50 @@ export async function handleCommerceBookkeeper(
     });
     child.stdin.end(JSON.stringify(envelope));
   });
+}
+
+/**
+ * Every sink is either verified by readback or covered by a durably recorded,
+ * named exception. A Live payment must always reach the Payment Log.
+ */
+export function acceptedProjection(
+  envelope: CommerceBookkeeperEnvelope,
+  result: CommerceBookkeeperResult,
+): boolean {
+  const exceptions = Array.isArray(result.exceptions) ? result.exceptions : [];
+  const excepted = (target: CommerceBookkeeperException['target']) =>
+    exceptions.some(
+      (item) =>
+        item?.target === target &&
+        typeof item.code === 'string' &&
+        item.code !== '',
+    );
+  if (result.deliveryId !== envelope.deliveryId) return false;
+  if (exceptions.length > 0 && result.exceptionsRecorded !== true) return false;
+  const live =
+    envelope.environment === 'live' && !result.officialRecordSuppressed;
+  const validSuppression =
+    envelope.environment === 'test' &&
+    result.officialRecordSuppressed === true &&
+    !result.paymentLogVerified &&
+    !result.studentRosterVerified &&
+    !result.postgresVerified &&
+    !result.feeReconciliationVerified &&
+    exceptions.length === 0;
+  const validFeeReconciliation =
+    live &&
+    envelope.deliveryKind === 'fee_reconciliation' &&
+    !result.studentRosterVerified &&
+    !result.postgresVerified &&
+    ((result.paymentLogVerified && result.feeReconciliationVerified) ||
+      excepted('fees'));
+  const validOfficialProjection =
+    live &&
+    envelope.deliveryKind !== 'fee_reconciliation' &&
+    !result.feeReconciliationVerified &&
+    (result.paymentLogVerified ||
+      (envelope.deliveryKind === 'refund' && excepted('payment_log'))) &&
+    (result.studentRosterVerified || excepted('roster')) &&
+    (result.postgresVerified || excepted('postgres'));
+  return validSuppression || validFeeReconciliation || validOfficialProjection;
 }
