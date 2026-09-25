@@ -22,6 +22,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from zoneinfo import ZoneInfo
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from attempt_memo import attempt_key, read_key, write_key  # noqa: E402
+
 try:
     import yaml
     HAS_YAML = True
@@ -49,6 +52,8 @@ HINTS_PATH = "meta/speaker-hints.json"
 
 HAIKU = "claude-haiku-4-5-20251001"
 SONNET = "claude-sonnet-4-6"
+# Evidence prefixes written when no AI answer was obtained (retry next run).
+AI_UNAVAILABLE = ("AI call failed", "No AI available")
 
 # Regex for transcript lines
 UTTERANCE_RE = re.compile(
@@ -589,7 +594,7 @@ def _parse_ai_resolution(
 def update_transcript(
     path: Path, resolution: dict,
     calendar_event: dict | None, match_confidence: str,
-    vault_root: Path,
+    vault_root: Path, memo_key: str | None = None,
 ) -> None:
     """Update a transcript note with resolved speakers and calendar cross-ref."""
     text = path.read_text(encoding="utf-8")
@@ -604,6 +609,8 @@ def update_transcript(
     text = _add_or_update_frontmatter(
         text, path, resolution, calendar_event, match_confidence, vault_root,
     )
+    if memo_key:
+        text = write_key(text, memo_key)
 
     path.write_text(text, encoding="utf-8")
 
@@ -755,6 +762,19 @@ def process_transcript(
 
     attendees = event["attendees"] if event else []
 
+    # The AI already saw exactly these inputs and left the rest unresolved on
+    # purpose; asking again costs a call and cannot change the answer.
+    n_utt = len(transcript["utterances"])
+    if use_ai and attendees and read_key(transcript["raw_text"]) == attempt_key(
+            transcript["anonymous_speakers"], attendees, n_utt):
+        print("    Unchanged since the last AI attempt; skipped")
+        if lock:
+            with lock:
+                report["skipped_unchanged"] += 1
+        else:
+            report["skipped_unchanged"] += 1
+        return
+
     # Resolve speakers
     if use_ai and attendees:
         resolution = resolve_speakers_ai(transcript, attendees, overrides, hints, lookup)
@@ -790,9 +810,18 @@ def process_transcript(
         "resolution": {s: r for s, r in resolution.items()},
     })
 
-    # Update transcript
+    # Update transcript. The memo key covers the speakers still anonymous after
+    # this write, which is what the next run will see; a failed AI call records
+    # nothing, so it is retried.
     if not dry_run:
-        update_transcript(path, resolution, event, confidence, vault_root)
+        memo_key = None
+        if use_ai and attendees and not any(
+                str(r.get("evidence", "")).startswith(AI_UNAVAILABLE) for r in resolution.values()):
+            still_anon = {s for s in transcript["anonymous_speakers"]
+                          if not (resolution.get(s, {}).get("name")
+                                  and resolution[s]["confidence"] >= 0.60)}
+            memo_key = attempt_key(still_anon, attendees, n_utt)
+        update_transcript(path, resolution, event, confidence, vault_root, memo_key)
         print(f"    Updated: {path.name}")
 
 
@@ -815,6 +844,7 @@ def print_report(report: dict) -> None:
     print(f"\n=== Speaker Resolution Report ===")
     print(f"Transcripts scanned: {report['scanned']}")
     print(f"Already resolved:    {report['already_resolved']}")
+    print(f"Skipped unchanged:   {report.get('skipped_unchanged', 0)}")
     print(f"Processed:           {report['processed']}")
     print(f"Speakers total:      {report['speakers_total']}")
     print(f"Speakers resolved:   {report['speakers_resolved']}")
@@ -860,6 +890,7 @@ def main() -> None:
     report = {
         "scanned": 0, "already_resolved": 0, "processed": 0,
         "speakers_total": 0, "speakers_resolved": 0, "details": [],
+        "skipped_unchanged": 0,
     }
 
     if args.dry_run:
