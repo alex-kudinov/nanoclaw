@@ -44,7 +44,7 @@ MSG_HEADER_RE = re.compile(
     re.DOTALL,
 )
 
-AI_MODEL = "claude-haiku-4-5-20251001"
+AI_MODEL = "haiku"
 MAX_MESSAGES_FOR_AI = 200  # Limit messages sent to AI to control token cost
 
 

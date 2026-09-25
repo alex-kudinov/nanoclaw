@@ -45,7 +45,7 @@ except ImportError:
 # ── Constants ────────────────────────────────────────────────────────────────
 
 CST = ZoneInfo("America/Chicago")
-AI_MODEL = "claude-haiku-4-5-20251001"
+AI_MODEL = "haiku"
 DEST_MAP = {
     "solera": "Solera/Emails",
     "tandem": "Tandem/Emails",

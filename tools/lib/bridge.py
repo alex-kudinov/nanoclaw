@@ -12,6 +12,7 @@ Usage:
 
 import json
 import os
+import sys
 import urllib.request
 
 _BRIDGE_URL = os.environ.get(
@@ -48,6 +49,11 @@ def _auto_meta() -> dict:
         val = os.environ.get(env_key)
         if val:
             meta[meta_key] = val
+    # Untagged calls made the bridge ledger unreadable (100% untagged, 2026-09-24):
+    # default the caller to the running script.
+    script = os.path.basename(sys.argv[0]) if sys.argv else ""
+    if "caller" not in meta and script not in ("", "-c"):
+        meta["caller"] = script
     return meta
 
 

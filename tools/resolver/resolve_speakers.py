@@ -50,8 +50,8 @@ TRANSCRIPTS_DIR = "Transcripts"
 OVERRIDES_PATH = "meta/speaker-overrides.json"
 HINTS_PATH = "meta/speaker-hints.json"
 
-HAIKU = "claude-haiku-4-5-20251001"
-SONNET = "claude-sonnet-4-6"
+HAIKU = "haiku"
+SONNET = "sonnet"
 # Evidence prefixes written when no AI answer was obtained (retry next run).
 AI_UNAVAILABLE = ("AI call failed", "No AI available")
 

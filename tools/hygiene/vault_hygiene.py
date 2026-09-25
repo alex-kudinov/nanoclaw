@@ -51,8 +51,8 @@ VALID_TYPES = {
 }
 VALID_LEVELS = {"c-suite", "svp", "vp", "director", "manager", "ic"}
 
-AI_MODEL = "claude-sonnet-4-6"
-AI_FALLBACK = "claude-haiku-4-5-20251001"
+AI_MODEL = "sonnet"
+AI_FALLBACK = "haiku"
 MAX_AI_CALLS = 20
 
 # Checks that can be targeted via --checks
