@@ -1,0 +1,212 @@
+diff --git a/src/gmail-ipc-handlers.test.ts b/src/gmail-ipc-handlers.test.ts
+index 73827913..fb7bf775 100644
+--- a/src/gmail-ipc-handlers.test.ts
++++ b/src/gmail-ipc-handlers.test.ts
+@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+ // Mutable config value — tests can change this per-test
+ let testRecipient = '';
++let replyTarget = 'sender@external.com';
+ let visibleReplyAllCandidates: string[] = [];
+ const businessState = vi.hoisted(() => ({
+   partyByEmailId: 42 as number | null,
+@@ -79,15 +80,15 @@ vi.mock('./gmail-api.js', () => ({
+       }) => Promise<{ body: string }>;
+     }) => {
+       await opts.prepareSend?.({
+-        to: 'sender@external.com',
++        to: replyTarget,
+         cc: opts.cc,
+         visibleReplyAllCandidates,
+       });
+       return {
+         messageId: 'reply-msg-456',
+         threadId: 'thread-abc',
+-        to: testRecipient || 'sender@external.com',
+-        originalTo: 'sender@external.com',
++        to: testRecipient || replyTarget,
++        originalTo: replyTarget,
+         subject: 'Re: ACC inquiry',
+       };
+     },
+@@ -153,6 +154,7 @@ function makePayload(
+ beforeEach(() => {
+   vi.clearAllMocks();
+   testRecipient = '';
++  replyTarget = 'sender@external.com';
+   visibleReplyAllCandidates = [];
+   businessState.partyByEmailId = 42;
+   businessState.partyByThreadId = 42;
+@@ -922,6 +924,81 @@ describe('recipient guard (tina@example.com incident)', () => {
+     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+   });
+
++  it('sends an exact action-approved Gmail reply when the correspondent has no Party, without inventing Party tracking', async () => {
++    businessState.partyByEmailId = null;
++    businessState.partyByThreadId = null;
++    businessState.emails = new Set();
++    const onSendConfirmed = vi.fn();
++
++    await handleGmailReply(
++      makePayload({
++        type: 'gmail_reply',
++        threadId: 'thread-abc',
++        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
++        approvedRecipient: 'sender@external.com',
++      }),
++      undefined,
++      onSendConfirmed,
++    );
++
++    expect(replyToThread).toHaveBeenCalledTimes(1);
++    expect(onSendConfirmed).toHaveBeenCalledWith(
++      expect.objectContaining({ recipient: 'sender@external.com' }),
++    );
++    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
++    expect(storeMessageDirect).toHaveBeenCalledTimes(1);
++  });
++
++  it('does not use the no-Party reply exception without the exact action and recipient', async () => {
++    businessState.partyByEmailId = null;
++    businessState.partyByThreadId = null;
++    businessState.emails = new Set();
++    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
++
++    await handleGmailReply(
++      makePayload({
++        type: 'gmail_reply',
++        threadId: 'thread-abc',
++        approvedRecipient: 'sender@external.com',
++      }),
++      postToChief,
++    );
++    expect(postToChief.mock.calls[0][0]).toContain('no host-resolved party');
++
++    vi.clearAllMocks();
++    await handleGmailReply(
++      makePayload({
++        type: 'gmail_reply',
++        threadId: 'thread-abc',
++        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
++        approvedRecipient: 'different@external.com',
++      }),
++      postToChief,
++    );
++    expect(postToChief.mock.calls[0][0]).toContain('does not match approved recipient');
++    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
++  });
++
++  it('still blocks a reserved Gmail-derived recipient when no Party exists', async () => {
++    businessState.partyByEmailId = null;
++    businessState.partyByThreadId = null;
++    businessState.emails = new Set();
++    replyTarget = 'contact@example.com';
++    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
++
++    await handleGmailReply(
++      makePayload({
++        type: 'gmail_reply',
++        threadId: 'thread-abc',
++        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
++        approvedRecipient: 'contact@example.com',
++      }),
++      postToChief,
++    );
++    expect(postToChief.mock.calls[0][0]).toContain('reserved/placeholder domain');
++    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
++  });
++
+   it('does not extend the Gmail-thread alias exception to a standalone send', async () => {
+     businessState.partyByEmailId = null;
+     businessState.partyByThreadId = 11274;
+diff --git a/src/gmail-ipc-handlers.ts b/src/gmail-ipc-handlers.ts
+index aecf1cd9..db1b428a 100644
+--- a/src/gmail-ipc-handlers.ts
++++ b/src/gmail-ipc-handlers.ts
+@@ -185,7 +185,8 @@ async function getPartyEmails(partyId: number): Promise<Set<string>> {
+ }
+
+ interface VerifiedPartyContext {
+-  partyId: number;
++  /** Null only for an exact approved reply to Gmail's own thread participant. */
++  partyId: number | null;
+   emails: Set<string>;
+ }
+
+@@ -227,9 +228,22 @@ async function verifyPartyRecipient(
+   }
+   const partyId = resolvedPartyId ?? claimed;
+   if (!partyId) {
++    const normalizedTo = normalizeRecipient(to);
++    const addressCheck = checkRecipient(to, new Set([normalizedTo]));
++    if (opts.allowApprovedThreadParticipantAlias && addressCheck.ok) {
++      // The host has already replaced the request with an Action-ID-bound
++      // Gmail thread and exact approved recipient. This address came from
++      // Gmail's metadata for that thread, not from the agent or a CRM guess.
++      return {
++        ok: true,
++        context: { partyId: null, emails: new Set([normalizedTo]) },
++      };
++    }
+     return {
+       ok: false,
+-      reason: `recipient ${normalizeRecipient(to)} has no host-resolved party`,
++      reason: addressCheck.ok
++        ? `recipient ${normalizedTo} has no host-resolved party`
++        : addressCheck.reason,
+     };
+   }
+   const emails = await getPartyEmails(partyId);
+@@ -489,7 +503,7 @@ export async function handleGmailReply(
+         verifiedReplyParty = verification.context;
+
+         let body = data.body!;
+-        if (data.html) {
++        if (data.html && verification.context.partyId !== null) {
+           const trackingId = crypto.randomUUID();
+           try {
+             insertTrackingPixel(
+@@ -553,14 +567,21 @@ export async function handleGmailReply(
+   // Log the outbound interaction atomically so the sales follow-up cron
+   // sees an up-to-date last_interaction_at. Must not depend on mailman's
+   // LLM re-running psql — that round-trip silently drops rows.
+-  await logOutboundEmailInteraction({
+-    partyId: verifiedReplyParty!.partyId,
+-    emailType: data.emailType || 'reply',
+-    subject: result.subject || data.subject || '',
+-    threadId: result.threadId,
+-    messageId: result.messageId,
+-    ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
+-  });
++  if (verifiedReplyParty?.partyId != null) {
++    await logOutboundEmailInteraction({
++      partyId: verifiedReplyParty.partyId,
++      emailType: data.emailType || 'reply',
++      subject: result.subject || data.subject || '',
++      threadId: result.threadId,
++      messageId: result.messageId,
++      ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
++    });
++  } else {
++    logger.warn(
++      { actionId: data.actionId, messageId: result.messageId },
++      'Approved Gmail-thread reply has no Party; skipped Party-only tracking and interaction',
++    );
++  }
+
+   logger.info(
+     {
+@@ -695,7 +716,12 @@ export async function handleGmailSend(
+         approvedCc: data.actionId ? data.approvedCc : undefined,
+       })
+     : verification;
+-  if (!verification.ok || !verification.context || !ccCheck.ok) {
++  if (
++    !verification.ok ||
++    !verification.context ||
++    verification.context.partyId === null ||
++    !ccCheck.ok
++  ) {
+     const reason = verification.reason || ccCheck.reason;
+     logger.error(
+       {

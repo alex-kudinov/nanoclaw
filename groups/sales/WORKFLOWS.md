@@ -298,8 +298,12 @@ Subject: {exact reply subject}
 Waiting for approval. Reply "Approved" to send, or reply with changes.
 ```
 
-Copy that envelope literally. `DRAFT RESPONSE:` and both standalone `---`
-lines are required; triple-backtick code fences are never a substitute.
+Copy that envelope literally as the preferred form. The host also accepts one
+plain triple-backtick block whose first nonblank line is `Subject:` and whose
+remaining lines are the exact email body. Do not add a language tag or a second
+code block. This narrow compatibility form keeps the same approval and content
+checks; it is not approval to send. The `Route: SERVICE`, `Email:`, and
+`Thread-ID:` header lines remain mandatory.
 `Category` is the issue slug (for an access problem, `account-access`), never
 `SERVICE`; `Route: SERVICE` is its own line. After a private
 `[approval_card REJECTED]` callback, correct and repost the full card without
@@ -396,6 +400,10 @@ subject/body fail the guard, the card is quarantined, a mechanical rejection
 appears in the lead's work thread, and `[approval_card REJECTED]` returns to this
 same session. Correct and repost the full card immediately. Never treat a
 rejected draft as posted, approved, or sent, and never emit a success recap.
+Read the exact rejection field: a `[SALES REVIEW]` needs `Lead #N` on its first
+line, while a `[CLIENT SUPPORT REVIEW]` needs one standalone `Route: SERVICE`.
+A separate `Lead #:` line does not satisfy the Sales header. The host returns
+the missing draft field instead of a combined Email/Subject/body guess.
 
 A numeric commercial term supplied by a human in this lead's exact Slack work
 thread is authoritative for that term in this thread. Use the exact value when

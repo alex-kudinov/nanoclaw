@@ -1690,6 +1690,66 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260925-001 — Restore the regular approved Gmail reply path
+
+- Date: 2026-09-25T15:40Z
+- Owner/client: Codex, with fresh minimum-sufficient review and bounded Claude
+  Sonnet/high recipient-boundary review
+- State: validating; isolated branch `codex/regular-email-path-20260925` from
+  exact live release `d034f80b144b196b9ad6f7766ad3ae68b01cd5ad`
+- Change class: C5 because this changes the final customer-email recipient
+  authorization boundary; no schema, queue, worker, scheduler, provider
+  dependency, second send path, or automatic customer send was added
+- Trigger: a naturally approved support reply reached a host-issued Action-ID
+  but `gmail_reply` was blocked because its Gmail-derived correspondent had no
+  CRM Party. The live action ledger says `blocked/recipient_guard` with no Gmail
+  receipt. A second invoice-confirmation thread never minted an Action-ID:
+  quarantined cards show missing first-line Lead/Route fields and one otherwise
+  valid support card with a plain triple-backtick email draft. Rejection
+  feedback named a combined Email/Subject/body problem despite an exact Email
+  line, causing repeated guesses.
+- Change: the existing Gmail reply boundary now accepts a no-Party recipient
+  only when a claimed host action supplies the exact approved recipient and
+  thread and Gmail derives that same external address; reserved domains and
+  standalone sends remain blocked. No Party/alias is inferred. Party-only
+  tracking and interaction logging are skipped for that case, while the
+  durable Action-ID/Gmail receipt path remains. The approval parser accepts
+  exactly one plain triple-backtick block with `Subject:` first as a bounded
+  alternative to the canonical heading/`---` form, keeps recipient headers
+  outside that block, and reports the exact missing field. Sales and Mailman
+  procedures and the security/project maps reflect the boundary.
+- Verification: a private, content-minimized exact-byte replay of the
+  quarantined support card parses one approved recipient and its original
+  Gmail thread; subject/body pass content and fact guards without sending.
+  Focused affected-file tests pass 256/256. Pinned Node 22.23.2 typecheck and
+  host build pass. The serial email-critical gate passes 816/816 host tests
+  and 45/45 independent runner tests; the historical non-sending email replay
+  passes 13/13. The full repository suite passes 4,313, fails 111, skips 165;
+  the exact running-release baseline fails the same 111 test names and passes
+  4,306. Inherited failures include sandbox-denied disposable PostgreSQL
+  sockets and missing cross-repository fixture paths. No changed test fails.
+- Independent review: fresh necessity review returned `KEEP` with the
+  action-bound Gmail participant as the smallest safe authority. A broad Claude
+  Sonnet/high pass was interrupted after 15 model calls without an artifact
+  (114,748 cache-create, 1,079,331 cache-read, 9,461 output tokens; max
+  context 114,750). Its narrowed replacement returned `PASS`, no material
+  finding, after 4 calls (35,482 cache-create, 117,994 cache-read, 6,652
+  output tokens; max context 45,562). Codex independently checked the upstream
+  action rehydration and one-time claim that the narrow review treated as
+  supplied evidence.
+- Operations: the Studio's `mini-claw` SSH alias had a stale Tailscale IP;
+  its HostName was changed to the verified MagicDNS name and read back by an
+  ordinary `ssh mini-claw` call. The prior SSH configuration was backed up in
+  private `~/.ssh` storage. No service restart, deployment, Gmail send, Slack
+  post, provider write, or production database write has occurred in this task.
+- Next: continuity check, commit and push this exact branch, build and verify
+  the immutable release, activate only after a safe queue drain, read back
+  release identity/channels/action states, and observe a Gmail-confirmed
+  natural approved reply before claiming customer outcome.
+- Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
+  `groups/sales/{CLAUDE,WORKFLOWS}.md`, `groups/mailman/CLAUDE.md`, and bounded
+  review artifacts under `docs/reports/NC-20260925-001-*`.
+
 ### 2026-09-11 final isolated TEST acceptance
 
 - Deployed the reviewed English MCS card stack only to the preserved isolated

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  approvalCardFormatIssue,
   approvalCardSemanticIssue,
   buildApprovedHandoff,
   isApprovalCard,
@@ -91,6 +92,79 @@ The Tandem Coaching Team
 Updated draft ready. Reply "Approved" to send, or reply with more changes.`;
 
 describe('buildApprovedHandoff', () => {
+  it('accepts the observed plain code-fenced support draft without including card context in the email', () => {
+    const card = [
+      '[CLIENT SUPPORT REVIEW]',
+      'Route: SERVICE',
+      'Category: payment-issue',
+      'Email: reader@external.com',
+      'Thread-ID: thread-support',
+      '',
+      'THEIR ASK: Confirm that both invoices were sent.',
+      '',
+      '```',
+      'Subject: Re: Invoice status',
+      '',
+      'Hi Reader,',
+      '',
+      'Both invoices have been sent.',
+      '',
+      'Best,',
+      'The Tandem Coaching Team',
+      '```',
+    ].join('\n');
+    expect(approvalCardSemanticIssue(card)).toBeUndefined();
+    expect(approvalCardFormatIssue(card)).toBeUndefined();
+    expect(buildApprovedHandoff(card)).toMatchObject({
+      recipient: 'reader@external.com',
+      gmailThreadId: 'thread-support',
+      subject: 'Re: Invoice status',
+      body: 'Hi Reader,\n\nBoth invoices have been sent.\n\nBest,\nThe Tandem Coaching Team',
+    });
+    expect(buildApprovedHandoff(card)?.body).not.toContain('THEIR ASK');
+  });
+
+  it('keeps a body Cc line out of the approved recipient headers', () => {
+    const card = [
+      '[CLIENT SUPPORT REVIEW]',
+      'Route: SERVICE',
+      'Email: reader@external.com',
+      '```',
+      'Subject: Re: Help',
+      '',
+      'Cc: this is quoted customer text, not an approved recipient',
+      'We will respond to your question.',
+      '```',
+    ].join('\n');
+    expect(parseApprovalCardRecipientHeaders(card)).toEqual({
+      recipient: 'reader@external.com',
+    });
+    expect(buildApprovedHandoff(card)?.body).toContain('Cc: this is quoted');
+  });
+
+  it('rejects ambiguous or incomplete plain code-fenced drafts with a specific reason', () => {
+    const prefix =
+      '[CLIENT SUPPORT REVIEW]\nRoute: SERVICE\nEmail: reader@external.com\n';
+    expect(
+      approvalCardFormatIssue(
+        prefix + '```\nSubject: Re: Help\nBody without closing fence',
+      ),
+    ).toContain('one plain triple-backtick block');
+    expect(
+      approvalCardFormatIssue(
+        prefix + '```\nPreface\nSubject: Re: Help\nBody\n```',
+      ),
+    ).toContain('must begin with its Subject: line');
+    expect(
+      approvalCardFormatIssue(
+        prefix + '```\nSubject: Re: Help\nSubject: Duplicate\nBody\n```',
+      ),
+    ).toContain('exactly one Subject: line');
+    expect(
+      approvalCardFormatIssue(prefix + '```\nSubject: Re: Help\n```'),
+    ).toContain('nonempty Subject: and body');
+  });
+
   it('parses the approval fixture extracted from the tracked Chief template', () => {
     const procedure = fs.readFileSync(
       new URL('../groups/chief/SUPPORT-REPLY.md', import.meta.url),

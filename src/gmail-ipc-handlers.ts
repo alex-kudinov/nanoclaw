@@ -185,7 +185,8 @@ async function getPartyEmails(partyId: number): Promise<Set<string>> {
 }
 
 interface VerifiedPartyContext {
-  partyId: number;
+  /** Null only for an exact approved reply to Gmail's own thread participant. */
+  partyId: number | null;
   emails: Set<string>;
 }
 
@@ -227,9 +228,22 @@ async function verifyPartyRecipient(
   }
   const partyId = resolvedPartyId ?? claimed;
   if (!partyId) {
+    const normalizedTo = normalizeRecipient(to);
+    const addressCheck = checkRecipient(to, new Set([normalizedTo]));
+    if (opts.allowApprovedThreadParticipantAlias && addressCheck.ok) {
+      // The host has already replaced the request with an Action-ID-bound
+      // Gmail thread and exact approved recipient. This address came from
+      // Gmail's metadata for that thread, not from the agent or a CRM guess.
+      return {
+        ok: true,
+        context: { partyId: null, emails: new Set([normalizedTo]) },
+      };
+    }
     return {
       ok: false,
-      reason: `recipient ${normalizeRecipient(to)} has no host-resolved party`,
+      reason: addressCheck.ok
+        ? `recipient ${normalizedTo} has no host-resolved party`
+        : addressCheck.reason,
     };
   }
   const emails = await getPartyEmails(partyId);
@@ -489,7 +503,7 @@ export async function handleGmailReply(
         verifiedReplyParty = verification.context;
 
         let body = data.body!;
-        if (data.html) {
+        if (data.html && verification.context.partyId !== null) {
           const trackingId = crypto.randomUUID();
           try {
             insertTrackingPixel(
@@ -553,14 +567,23 @@ export async function handleGmailReply(
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  await logOutboundEmailInteraction({
-    partyId: verifiedReplyParty!.partyId,
-    emailType: data.emailType || 'reply',
-    subject: result.subject || data.subject || '',
-    threadId: result.threadId,
-    messageId: result.messageId,
-    ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
-  });
+  if (verifiedReplyParty?.partyId != null) {
+    await logOutboundEmailInteraction({
+      partyId: verifiedReplyParty.partyId,
+      emailType: data.emailType || 'reply',
+      subject: result.subject || data.subject || '',
+      threadId: result.threadId,
+      messageId: result.messageId,
+      ...(data.pipelineEntryId
+        ? { pipelineEntryId: data.pipelineEntryId }
+        : {}),
+    });
+  } else {
+    logger.warn(
+      { actionId: data.actionId, messageId: result.messageId },
+      'Approved Gmail-thread reply has no Party; skipped Party-only tracking and interaction',
+    );
+  }
 
   logger.info(
     {
@@ -695,7 +718,12 @@ export async function handleGmailSend(
         approvedCc: data.actionId ? data.approvedCc : undefined,
       })
     : verification;
-  if (!verification.ok || !verification.context || !ccCheck.ok) {
+  if (
+    !verification.ok ||
+    !verification.context ||
+    verification.context.partyId === null ||
+    !ccCheck.ok
+  ) {
     const reason = verification.reason || ccCheck.reason;
     logger.error(
       {

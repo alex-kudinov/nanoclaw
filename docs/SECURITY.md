@@ -388,7 +388,7 @@ Resource rules:
 Gmail IPC outbound email is C3. At that final host boundary:
 
 - the intended To address is normalized;
-- the host resolves the Party by email/thread;
+- the host resolves the Party by email/thread when one exists;
 - the legacy caller-supplied `leadId` field is only a canonical Party-ID hint;
   a host-resolved Party from the recipient/thread is authoritative, and a
   pipeline Entry ID accidentally supplied there cannot override or block it;
@@ -400,7 +400,12 @@ Gmail IPC outbound email is C3. At that final host boundary:
 - global `GMAIL_TEST_RECIPIENT` routing is refused before an action-bound
   customer send is claimed; use the dedicated host-only internal transport
   canary instead;
-- missing Party context or a database lookup failure blocks the send;
+- missing Party context blocks standalone sends and unapproved replies. One
+  exception permits an exact Action-ID-bound `gmail_reply` to the same external
+  participant Gmail derives from its durably approved thread, when that address
+  exactly matches the approved card and passes address/reserved-domain checks;
+  it creates no Party or alias and skips Party-only tracking and interaction
+  logging while retaining the durable Gmail action receipt;
 - reserved/placeholder domains and malformed addresses always block;
 - reply targets are derived from Gmail thread headers and validated before raw
   message construction;
@@ -446,7 +451,8 @@ Gmail IPC outbound email is C3. At that final host boundary:
 - an approved Gmail reply may use a newly observed sender alias that is not yet
   in `party_emails` only when Gmail resolves that exact address as the
   participant of the durably approved thread, the approval card names the same
-  address, the thread resolves to the Party, and a host Action-ID is present.
+  address, and a host Action-ID is present. A matching Party is used when one
+  exists; its absence does not require inventing a CRM identity.
   This reply-scoped proof does not create a CRM alias and cannot authorize a
   standalone send, model-supplied recipient, reserved domain, or other thread;
 - deterministic guard failures and uncertain delivery errors remain durable

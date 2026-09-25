@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mutable config value — tests can change this per-test
 let testRecipient = '';
+let replyTarget = 'sender@external.com';
 let visibleReplyAllCandidates: string[] = [];
 const businessState = vi.hoisted(() => ({
   partyByEmailId: 42 as number | null,
@@ -79,15 +80,15 @@ vi.mock('./gmail-api.js', () => ({
       }) => Promise<{ body: string }>;
     }) => {
       await opts.prepareSend?.({
-        to: 'sender@external.com',
+        to: replyTarget,
         cc: opts.cc,
         visibleReplyAllCandidates,
       });
       return {
         messageId: 'reply-msg-456',
         threadId: 'thread-abc',
-        to: testRecipient || 'sender@external.com',
-        originalTo: 'sender@external.com',
+        to: testRecipient || replyTarget,
+        originalTo: replyTarget,
         subject: 'Re: ACC inquiry',
       };
     },
@@ -124,7 +125,7 @@ import {
   readEmailWithAttachments,
   replyToThread,
 } from './gmail-api.js';
-import { storeMessageDirect } from './db.js';
+import { insertTrackingPixel, storeMessageDirect } from './db.js';
 import { logOutboundEmailInteraction } from './email-interaction-log.js';
 import {
   handleGmailReply,
@@ -153,6 +154,7 @@ function makePayload(
 beforeEach(() => {
   vi.clearAllMocks();
   testRecipient = '';
+  replyTarget = 'sender@external.com';
   visibleReplyAllCandidates = [];
   businessState.partyByEmailId = 42;
   businessState.partyByThreadId = 42;
@@ -918,6 +920,108 @@ describe('recipient guard (tina@example.com incident)', () => {
         actionId: undefined,
         approvedRecipient: undefined,
       }),
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+
+  it('sends an exact action-approved Gmail reply when the correspondent has no Party, without inventing Party tracking', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    businessState.emails = new Set();
+    const onSendConfirmed = vi.fn();
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'sender@external.com',
+      }),
+      undefined,
+      onSendConfirmed,
+    );
+
+    expect(replyToThread).toHaveBeenCalledTimes(1);
+    expect(onSendConfirmed).toHaveBeenCalledWith(
+      expect.objectContaining({ recipient: 'sender@external.com' }),
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(insertTrackingPixel).not.toHaveBeenCalled();
+    expect(storeMessageDirect).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks an unapproved CC even when the no-Party primary reply is exact', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    businessState.emails = new Set();
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'sender@external.com',
+        cc: 'unapproved@external.com',
+      }),
+      postToChief,
+    );
+
+    expect(postToChief.mock.calls[0][0]).toContain('CC rejected');
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+    expect(insertTrackingPixel).not.toHaveBeenCalled();
+  });
+
+  it('does not use the no-Party reply exception without the exact action and recipient', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    businessState.emails = new Set();
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        approvedRecipient: 'sender@external.com',
+      }),
+      postToChief,
+    );
+    expect(postToChief.mock.calls[0][0]).toContain('no host-resolved party');
+
+    vi.clearAllMocks();
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'different@external.com',
+      }),
+      postToChief,
+    );
+    expect(postToChief.mock.calls[0][0]).toContain(
+      'does not match approved recipient',
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+
+  it('still blocks a reserved Gmail-derived recipient when no Party exists', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    businessState.emails = new Set();
+    replyTarget = 'contact@example.com';
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailReply(
+      makePayload({
+        type: 'gmail_reply',
+        threadId: 'thread-abc',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'contact@example.com',
+      }),
+      postToChief,
+    );
+    expect(postToChief.mock.calls[0][0]).toContain(
+      'reserved/placeholder domain',
     );
     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
   });

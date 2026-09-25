@@ -15,6 +15,7 @@ import {
   isExternalWriteDeniedError,
 } from '../action-safety.js';
 import {
+  approvalCardFormatIssue,
   approvalCardSemanticIssue,
   approvalCardRejectedText,
   buildApprovedHandoff,
@@ -1094,6 +1095,9 @@ export class SlackChannel implements Channel {
       const overlongApprovalCard =
         isApprovalCard(text) && isSlackMessageOverLimit(text, fromGroup);
       const semanticApprovalIssue = approvalCardSemanticIssue(text);
+      const formatApprovalIssue = isApprovalCard(text)
+        ? approvalCardFormatIssue(text)
+        : undefined;
       const factApprovalIssue =
         fromGroup === 'sales' && isApprovalCard(text)
           ? this.opts.salesFactConsistencyIssue
@@ -1128,21 +1132,28 @@ export class SlackChannel implements Channel {
                 : 'The authoring group',
               `This draft was not posted for approval because ${semanticApprovalIssue}`,
             )
-          : factApprovalIssue
+          : formatApprovalIssue
             ? approvalCardRejectedText(
                 fromGroup
                   ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
                   : 'The authoring group',
-                `This draft was not posted for approval because its factual claims conflict with current authority: ${factApprovalIssue}.`,
+                `This draft was not posted for approval because ${formatApprovalIssue}`,
               )
-            : blockedApprovalCard
+            : factApprovalIssue
               ? approvalCardRejectedText(
                   fromGroup
                     ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
                     : 'The authoring group',
-                  `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+                  `This draft was not posted for approval because its factual claims conflict with current authority: ${factApprovalIssue}.`,
                 )
-              : text;
+              : blockedApprovalCard
+                ? approvalCardRejectedText(
+                    fromGroup
+                      ? fromGroup.charAt(0).toUpperCase() + fromGroup.slice(1)
+                      : 'The authoring group',
+                    `This draft was not posted for approval because its exact subject/body fail the host content guard: ${approvalContentCheck!.violations.join('; ')}.`,
+                  )
+                : text;
       const displayText = prefix + outboundText;
 
       const baseOpts: {

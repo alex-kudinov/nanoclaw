@@ -1,5 +1,44 @@
 # NanoClaw active work
 
+2026-09-25T15:15Z — `NC-20260925-001` restore the normal approved Sales
+email path for existing Gmail conversations, owner Codex, `validating`, C5,
+isolated `codex/regular-email-path-20260925` from exact live release
+`d034f80b144b196b9ad6f7766ad3ae68b01cd5ad`. A naturally approved support
+reply reached the host Action-ID boundary but was blocked before Gmail because
+the recipient has no host-resolved Party; another invoice-confirmation thread
+repeatedly failed approval-card validation and never reached that boundary.
+Preserve exact operator-visible To/Cc/subject/body, Gmail thread identity,
+one-time Action-ID execution, content guard, and Gmail-confirmed receipts.
+Read-only live action ledger confirms the first Action-ID is `blocked` with
+`recipient_guard`, no Gmail receipt, and `gmail_reply` was the attempted tool;
+the second thread has no Action-ID. Quarantined second-thread cards show a
+plain triple-backtick draft with a valid exact subject/body, plus separate
+failed cards with missing route or first-line Lead number. A private,
+content-minimized exact-byte replay now parses the observed support card and
+passes content and fact guards. Fresh-context minimum-sufficient review returned
+`KEEP`: use the existing action/thread/Gmail recipient proof rather than
+creating a CRM Party merely to send. Target the existing validator and final
+recipient check only; add no schema,
+worker, scheduler, second send path, new external dependency, or automatic
+customer send. First falsifiable proof: non-sending replays of both incidents
+show an exact approved Gmail-thread participant can proceed without a CRM Party
+and a correctly formed status reply is approvable, while fabricated recipients,
+changed card bytes, wrong threads, and duplicate execution remain blocked.
+Focused affected checks pass 256/256; the serial email-critical gate passes 816/816
+host plus 45/45 independent runner tests, and pinned-Node typecheck/build pass.
+The full root suite passes 4,313 with 111 failures and 165 skips; the exact
+running-release baseline has the same 111 failing test names (4,306 passes).
+Those inherited failures include sandbox-denied disposable PostgreSQL sockets
+and a missing cross-repository fixture path. The bounded Sonnet/high review
+returned `PASS` with no material finding; the continuity gate passes. Final
+diff inspection matches the accepted obligation delta: only existing host
+parser/guard, prompts, tests, and authority documents changed, with no new
+state, entry point, worker, or dependency. Next:
+clean-commit immutable build,
+then one safe activation and live health/natural receipt verification. No
+customer email has been sent by this task.
+The dirty primary checkout is untouched.
+
 2026-09-24T17:30Z — `NC-20260924-001` Commerce Bookkeeper accepts every
 authenticated delivery and flags unexpected content to Slack for owner
 resolution, owner Claude (Peri dual-driver pilot, work item

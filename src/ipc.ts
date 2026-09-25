@@ -100,6 +100,7 @@ import { isValidGroupFolder } from './group-folder.js';
 import { logger } from './logger.js';
 import { RegisteredGroup, SendMessageFn, WebhookDefinition } from './types.js';
 import {
+  approvalCardFormatIssue,
   approvalCardSemanticIssue,
   approvalCardRejectedText,
   buildApprovedHandoff,
@@ -659,10 +660,14 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     }
                     const approvedHandoff = buildApprovedHandoff(data.text);
                     if (!approvedHandoff) {
+                      const formatIssue =
+                        approvalCardFormatIssue(data.text) ??
+                        'The exact Email, fenced Subject, or body could not be parsed.';
                       const rejectionReturned = writeRejectedApprovalCardInput(
                         sourceGroup,
                         data.source_container,
                         deps.deliverSourceInput,
+                        formatIssue,
                       );
                       const recipient = parseApprovalCardRecipient(data.text);
                       if (sourceGroup !== 'sales' || !rejectionReturned) {
@@ -670,7 +675,7 @@ export function startIpcWatcher(deps: IpcDeps): void {
                           sourceEntry[0],
                           approvalCardRejectedText(
                             sourceEntry[1].name,
-                            'This draft was not posted for approval because it is missing one exact Email, fenced Subject, or body.',
+                            `This draft was not posted for approval because ${formatIssue}`,
                           ),
                           {
                             fromGroup: sourceGroup,

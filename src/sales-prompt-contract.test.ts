@@ -160,7 +160,10 @@ describe('Sales request-first prompt contract', () => {
       "do not launch `agent-browser`, open the customer's link, test a passwordless URL, or run a browser/network check.",
     );
     expect(normalizedContract).toContain(
-      '`DRAFT RESPONSE:` and both standalone `---` lines are required; triple-backtick code fences are never a substitute.',
+      'Copy that envelope literally as the preferred form.',
+    );
+    expect(normalizedContract).toContain(
+      'The host also accepts one plain triple-backtick block whose first nonblank line is `Subject:`',
     );
     expect(normalizedContract).toContain(
       '`Category` is the issue slug (for an access problem, `account-access`), never `SERVICE`',

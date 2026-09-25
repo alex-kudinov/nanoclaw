@@ -2075,6 +2075,11 @@ the recipient must still belong to that Party's known email set. If the host
 cannot resolve a Party, a valid hint is usable only after the same membership
 check. This preserves the fabricated-recipient guard while preventing Entry
 IDs such as `985` from blocking an exact approved action for Party `11152`.
+For a `gmail_reply` only, the exact action-bound approved recipient can instead
+match Gmail's external participant on the action's durable thread when no
+Party exists. Standalone sends still require Party context. This exception
+creates no Party/alias, skips Party-only tracking and interaction logging, and
+keeps the one-time Gmail receipt in the action ledger.
 
 For an exact approved action, Mailman's Gmail payload is now execution intent,
 not content authority. The host reloads the approved Slack card by its durable
@@ -2104,6 +2109,10 @@ describes its result as pending host validation rather than `Message sent`.
 Malformed, content-invalid, or overlong cards are quarantined, rejected visibly
 in the host-derived Slack work thread, and returned through the exact
 originating container work unit with an instruction to correct and repost. A
+single plain triple-backtick block beginning with `Subject:` is accepted as a
+bounded draft alternative to the canonical `DRAFT RESPONSE:` plus `---` form;
+the same recipient, route, content, and approval checks apply. Rejections name
+the missing field so repeated agent guesses do not appear as validator drift. A
 card successfully persisted to Slack returns `[approval_card ACCEPTED]` through
 the same exact-container path; scheduled batches count only those accepted
 artifacts before emitting their completion receipt.

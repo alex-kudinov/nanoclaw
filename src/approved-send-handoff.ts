@@ -43,6 +43,7 @@ const FOLLOW_UP_LINE = /^\s*Follow-Up\s*:\s*true\s*$/im;
  */
 const DRAFT_HEADING = /^\s*DRAFT (?:RESPONSE(?: TO LEAD)?|FOLLOW-UP):\s*$/im;
 const FENCE = /^\s*---\s*$/;
+const PLAIN_CODE_FENCE = /^\s*```\s*$/;
 const SUBJECT_LINE = /^\s*Subject\s*:\s*(.+?)\s*$/im;
 
 /** Keep the pre-approval gate and approval watchdog on one marker surface. */
@@ -62,7 +63,10 @@ export function approvalCardSemanticIssue(text: string): string | undefined {
 
   const lines = text.split(/\r?\n/);
   const boundary = lines.findIndex(
-    (line) => DRAFT_HEADING.test(line) || FENCE.test(line),
+    (line) =>
+      DRAFT_HEADING.test(line) ||
+      FENCE.test(line) ||
+      PLAIN_CODE_FENCE.test(line),
   );
   const header = lines.slice(0, boundary === -1 ? lines.length : boundary);
   const routes = header
@@ -75,7 +79,7 @@ export function approvalCardSemanticIssue(text: string): string | undefined {
       return 'Route: SERVICE must use [CLIENT SUPPORT REVIEW], never [SALES REVIEW].';
     }
     if (!LEAD_LINE.test(header.join('\n'))) {
-      return 'A [SALES REVIEW] requires one numeric Lead #; support work must use [CLIENT SUPPORT REVIEW].';
+      return 'A [SALES REVIEW] requires one numeric Lead # on the same first line (for example, [SALES REVIEW] Lead #514); a separate Lead #: line does not count. Support work must use [CLIENT SUPPORT REVIEW].';
     }
   }
 
@@ -125,7 +129,10 @@ export function parseApprovalCardRecipientHeaders(
 ): ApprovedRecipientHeaders | undefined {
   const lines = text.split(/\r?\n/);
   const boundary = lines.findIndex(
-    (line) => DRAFT_HEADING.test(line) || FENCE.test(line),
+    (line) =>
+      DRAFT_HEADING.test(line) ||
+      FENCE.test(line) ||
+      PLAIN_CODE_FENCE.test(line),
   );
   const header = lines.slice(0, boundary === -1 ? lines.length : boundary);
   if (header.some((line) => BCC_LINE.test(line))) return undefined;
@@ -151,6 +158,97 @@ export function parseApprovalCardRecipientHeaders(
 /** Parse only the exact, labelled primary recipient from an approval card. */
 export function parseApprovalCardRecipient(text: string): string | undefined {
   return parseApprovalCardRecipientHeaders(text)?.recipient;
+}
+
+interface ParsedApprovedDraft {
+  subject: string;
+  body: string;
+  headerEndIdx: number;
+}
+
+function parseApprovedDraft(text: string): {
+  draft?: ParsedApprovedDraft;
+  issue?: string;
+} {
+  const lines = text.split(/\r?\n/);
+  const headingIdx = lines.findIndex((line) => DRAFT_HEADING.test(line));
+  let openIdx: number;
+  let closeIdx: number;
+  let headerEndIdx: number;
+  if (headingIdx !== -1) {
+    openIdx = lines.findIndex(
+      (line, index) => index > headingIdx && FENCE.test(line),
+    );
+    closeIdx = lines.findIndex(
+      (line, index) => index > openIdx && FENCE.test(line),
+    );
+    headerEndIdx = headingIdx;
+    if (openIdx === -1 || closeIdx === -1) {
+      return {
+        issue:
+          'The draft needs standalone --- opening and closing lines after its DRAFT RESPONSE heading.',
+      };
+    }
+  } else {
+    // Agents sometimes use one plain Markdown code block for the exact email
+    // draft. Accept only the unambiguous two-fence form, with Subject first;
+    // the operator still approves these exact bytes before any send.
+    const fences = lines.flatMap((line, index) =>
+      PLAIN_CODE_FENCE.test(line) ? [index] : [],
+    );
+    if (fences.length !== 2) {
+      return {
+        issue:
+          'The email draft needs DRAFT RESPONSE: with standalone --- fences, or one plain triple-backtick block beginning with Subject:.',
+      };
+    }
+    [openIdx, closeIdx] = fences;
+    headerEndIdx = openIdx;
+  }
+
+  const block = lines.slice(openIdx + 1, closeIdx);
+  const subjectIndexes = block.flatMap((line, index) =>
+    SUBJECT_LINE.test(line) ? [index] : [],
+  );
+  if (
+    subjectIndexes.length === 0 ||
+    (headingIdx === -1 && subjectIndexes.length !== 1)
+  ) {
+    return {
+      issue: 'The fenced email draft requires exactly one Subject: line.',
+    };
+  }
+  const subjectIdx = subjectIndexes[0];
+  if (
+    headingIdx === -1 &&
+    block.slice(0, subjectIdx).some((line) => line.trim() !== '')
+  ) {
+    return {
+      issue:
+        'A plain triple-backtick email draft must begin with its Subject: line.',
+    };
+  }
+  const subject = block[subjectIdx].match(SUBJECT_LINE)?.[1]?.trim();
+  const body = block
+    .slice(subjectIdx + 1)
+    .join('\n')
+    .replace(/^\n+/, '')
+    .replace(/\s+$/, '');
+  if (!subject || !body) {
+    return {
+      issue: 'The fenced email draft needs a nonempty Subject: and body.',
+    };
+  }
+  return { draft: { subject, body, headerEndIdx } };
+}
+
+/** Give the author the failing field instead of a misleading combined error. */
+export function approvalCardFormatIssue(text: string): string | undefined {
+  if (!isApprovalCard(text)) return undefined;
+  if (!parseApprovalCardRecipientHeaders(text)) {
+    return 'The card needs exactly one bare Email: or To: recipient before the draft; duplicate recipients, display names, and Bcc are not allowed.';
+  }
+  return parseApprovedDraft(text).issue;
 }
 
 export interface ApprovedHandoff {
@@ -234,34 +332,9 @@ export function buildApprovedHandoff(
   if (!recipientHeaders) return null;
   const { recipient, cc } = recipientHeaders;
 
-  const lines = cardText.split('\n');
-  const headingIdx = lines.findIndex((line) => DRAFT_HEADING.test(line));
-  if (headingIdx === -1) return null;
-
-  // The draft is fenced by `---` on its own line, opening and closing.
-  const openIdx = lines.findIndex(
-    (line, i) => i > headingIdx && FENCE.test(line),
-  );
-  if (openIdx === -1) return null;
-  const closeIdx = lines.findIndex(
-    (line, i) => i > openIdx && FENCE.test(line),
-  );
-  if (closeIdx === -1) return null;
-
-  const block = lines.slice(openIdx + 1, closeIdx);
-  const subjectIdx = block.findIndex((line) => SUBJECT_LINE.test(line));
-  if (subjectIdx === -1) return null;
-  const subject = block[subjectIdx].match(SUBJECT_LINE)![1].trim();
-  if (!subject) return null;
-
-  // Everything after the Subject line (and its blank separator) is the body,
-  // byte-for-byte as approved.
-  const body = block
-    .slice(subjectIdx + 1)
-    .join('\n')
-    .replace(/^\n+/, '')
-    .replace(/\s+$/, '');
-  if (!body) return null;
+  const parsedDraft = parseApprovedDraft(cardText).draft;
+  if (!parsedDraft) return null;
+  const { subject, body, headerEndIdx } = parsedDraft;
 
   // Sales cards name their pipeline entry as `Lead #N`. Support cards do not:
   // the approval/action/Gmail receipt is their durable lifecycle, and creating
@@ -275,7 +348,7 @@ export function buildApprovedHandoff(
   const sourceGroup = /^[a-z0-9_-]+$/i.test(opts.sourceGroup ?? '')
     ? opts.sourceGroup!.toLowerCase()
     : 'sales';
-  const header = lines.slice(0, headingIdx).join('\n');
+  const header = cardText.split(/\r?\n/).slice(0, headerEndIdx).join('\n');
   const emailType = /^\s*\[FOLLOW-UP\s+#\d+\]/.test(cardMarker)
     ? 'follow-up'
     : 'initial';
