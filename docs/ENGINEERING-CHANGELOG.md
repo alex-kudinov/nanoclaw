@@ -1804,6 +1804,14 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `blocked/recipient_guard` without Gmail receipt, and the revised invoice
   card has no Action-ID until owner approval. No customer email was sent by
   this task. Next proof is a fresh normal approved action with Gmail receipt.
+- Read-only backlog audit: 17 historical actions are terminally `blocked`; ten
+  have `recipient_guard`, and all ten are Sales actions bound to Gmail threads.
+  Recent host log events classify seven `no host-resolved party` blocks, one
+  CC rejection, one approved-recipient mismatch, and two other recipient
+  reasons. The log-event counts are not asserted as a one-to-one join to the
+  ten ledger rows. This release addresses the dominant no-Party reply case;
+  mismatched recipients and unapproved CC remain blocked. No bulk reset,
+  replay, or customer send was performed.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
   `groups/sales/{CLAUDE,WORKFLOWS}.md`, `groups/mailman/CLAUDE.md`, and bounded
   review artifacts under `docs/reports/NC-20260925-001-*`.

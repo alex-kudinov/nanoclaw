@@ -62,7 +62,12 @@ the one restart; the new daemon reports a verified code root, connected
 Gmail/Slack, one listener, and both workers adopted. Operational prompt hashes
 still match. The revised invoice card is pending exact owner approval; the
 original blocked action is unchanged and no Gmail receipt exists for either
-incident. Next: after approval, verify one normal Action-ID, Mailman execution,
+incident. A read-only backlog count shows 17 terminal blocked actions, ten
+with `recipient_guard` and all ten Sales/thread-bound. Recent log entries
+classify seven no-Party blocks, one CC rejection, one recipient mismatch, and
+two other recipient reasons; the categories are log events, not an exact
+one-to-one join to those ten actions. No bulk replay was attempted. Next:
+after approval, verify one normal Action-ID, Mailman execution,
 and Gmail receipt without duplicate delivery. No customer email has been sent
 by this task.
 The dirty primary checkout is untouched.
