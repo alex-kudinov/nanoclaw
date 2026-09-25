@@ -54,9 +54,17 @@ recap. A narrow host-acknowledgment correction now distinguishes the two
 contexts without changing approval/send authority. Focused IPC checks pass
 31/31, email-critical 817/817 plus runner 45/45, and the full suite has the
 same 111 failing tests as the live-base comparison (4,314 passes). Next:
-commit, build, and deploy that copy-only correction after a safe drain, then
-complete the fresh approval/Gmail receipt proof. No customer email has been
-sent by this task.
+the correction is deployed as exact release
+`729979b24bfc332074d3023f069bc00291354089` (archive SHA-256
+`da79d437786506fc38ea1fea52e58901ef22337204e5ad19814c15e8a23cdcf3`).
+The two active Sales message workers had valid sidecars and were adopted across
+the one restart; the new daemon reports a verified code root, connected
+Gmail/Slack, one listener, and both workers adopted. Operational prompt hashes
+still match. The revised invoice card is pending exact owner approval; the
+original blocked action is unchanged and no Gmail receipt exists for either
+incident. Next: after approval, verify one normal Action-ID, Mailman execution,
+and Gmail receipt without duplicate delivery. No customer email has been sent
+by this task.
 The dirty primary checkout is untouched.
 
 2026-09-24T17:30Z — `NC-20260924-001` Commerce Bookkeeper accepts every

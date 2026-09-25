@@ -1782,8 +1782,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   single-thread run stops quietly for approval. Focused IPC 31/31,
   email-critical 817/817 host plus 45/45 runner, pinned-Node typecheck, and
   full-suite comparison (4,314 pass, the same 111 failures as the live base)
-  passed. This follow-up is local and not yet in the active release. No
-  customer email or new Action-ID has been observed in the invoice thread.
+  passed. No customer email or new Action-ID was observed in the invoice thread.
+- Second deployment addendum (2026-09-25T16:27Z): copy-only correction commit
+  `729979b24bfc332074d3023f069bc00291354089` was pushed and built from a
+  clean pinned-Node worktree; source tree
+  `a238ee42ccbf4b16b9123fad0f834d6dfcdff522`, artifact hash
+  `3f5dcc758117ef9bfc39bbe0518923e848eb8dfed89ec12f880ca41c294a9558`
+  (1,404 files), archive SHA-256
+  `da79d437786506fc38ea1fea52e58901ef22337204e5ad19814c15e8a23cdcf3`.
+  Local fresh-extraction and Mini extraction verified the release. The Mini
+  dry run found only the same three service pointer changes. Before apply,
+  two Sales message workers were active with live sidecars and capability
+  fingerprints, prompts were byte-identical, and no email action was
+  executable. The rollback-capable activator applied the release once; its
+  rollback plist is
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-f79cdfde5eb3-2026-09-25T16-24-10-650Z`.
+  Live health reports PID 67462, release mode/verified, the exact new commit
+  and code root, Gmail/Slack connected, one listener, and both workers
+  adopted. All three operational prompts still byte-match. The compiled
+  acknowledgment text is present. The original action remains
+  `blocked/recipient_guard` without Gmail receipt, and the revised invoice
+  card has no Action-ID until owner approval. No customer email was sent by
+  this task. Next proof is a fresh normal approved action with Gmail receipt.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
   `groups/sales/{CLAUDE,WORKFLOWS}.md`, `groups/mailman/CLAUDE.md`, and bounded
   review artifacts under `docs/reports/NC-20260925-001-*`.
