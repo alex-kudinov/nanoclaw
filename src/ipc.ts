@@ -375,7 +375,7 @@ function writeAcceptedApprovalCardInput(
   const artifact = leadId ? `Lead #${leadId} exact card` : 'The exact card';
   const text =
     `[approval_card ACCEPTED] ${artifact} was posted for human approval. ` +
-    'Count it as a visible artifact; do not send it to Mailman or claim the email was sent. Continue the batch and emit the final receipt after every selected artifact is accepted.';
+    'Count it as a visible artifact; do not send it to Mailman or claim the email was sent. A scheduled batch follows its own remaining-items and final-receipt rule. For a single-thread request, stop without a recap and wait for approval or changes.';
   if (
     sourceContainer &&
     deliverSourceInput?.(sourceGroup, sourceContainer, text)

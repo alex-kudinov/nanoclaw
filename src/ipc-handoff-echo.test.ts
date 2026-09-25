@@ -467,7 +467,40 @@ describe('IPC handoff routing', () => {
       'sales',
       'nanoclaw-sales-followup-472',
       expect.stringMatching(
-        /\[approval_card ACCEPTED\] Lead #472 exact card.*posted for human approval.*final receipt/i,
+        /\[approval_card ACCEPTED\] Lead #472 exact card.*posted for human approval.*scheduled batch.*final-receipt rule/i,
+      ),
+    );
+  });
+
+  it('tells a single-thread support run to stop quietly after its card is accepted', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '0';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.deliverSourceInput = vi.fn(() => true);
+    const card =
+      '[CLIENT SUPPORT REVIEW]\nRoute: SERVICE\nEmail: reader@external.co\n' +
+      'Thread-ID: thread-support\n\nDRAFT RESPONSE:\n---\n' +
+      'Subject: Re: Invoice status\n\nBoth invoices have been sent.\n---';
+    writeHandoffFile(
+      'sales',
+      card,
+      'thread-support-slack',
+      'lead:reader@external.co',
+      'nanoclaw-sales-support-single',
+    );
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      card,
+      expect.objectContaining({ fromGroup: 'sales' }),
+    );
+    expect(deps.deliverSourceInput).toHaveBeenCalledWith(
+      'sales',
+      'nanoclaw-sales-support-single',
+      expect.stringMatching(
+        /\[approval_card ACCEPTED\].*single-thread request, stop without a recap and wait for approval/i,
       ),
     );
   });

@@ -45,7 +45,18 @@ The earlier no-Party action remains terminally blocked with no Gmail receipt;
 the invoice thread still has no action. They require fresh ordinary approval
 cycles, not a hidden replay. Next: obtain a Gmail-confirmed natural approved
 reply through the released path before marking the customer outcome validated.
-No customer email has been sent by this task.
+Two internal replies in the existing invoice work thread requested a fresh
+review card and then the operator's exact short wording. Sales posted an
+approvable revised card with the original recipient/thread; it awaits the
+required approval. Its first accepted-card callback carried a scheduled-batch
+instruction into a single-thread run, causing an unnecessary `[BLOCKED]`
+recap. A narrow host-acknowledgment correction now distinguishes the two
+contexts without changing approval/send authority. Focused IPC checks pass
+31/31, email-critical 817/817 plus runner 45/45, and the full suite has the
+same 111 failing tests as the live-base comparison (4,314 passes). Next:
+commit, build, and deploy that copy-only correction after a safe drain, then
+complete the fresh approval/Gmail receipt proof. No customer email has been
+sent by this task.
 The dirty primary checkout is untouched.
 
 2026-09-24T17:30Z — `NC-20260924-001` Commerce Bookkeeper accepts every

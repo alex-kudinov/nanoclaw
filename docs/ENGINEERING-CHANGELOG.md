@@ -1770,6 +1770,20 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   Mailman, and Gmail-confirmed receipt path before marking business outcome
   validated. The old blocked action and rejected cards need fresh approval
   cycles; do not manually reset or resend their terminal state.
+- Live follow-up addendum (2026-09-25T16:15Z): two internal replies in the
+  original invoice work thread asked Sales to post a fresh card and then use
+  the operator's exact short wording. Sales posted a new support card and an
+  approvable revision with the correct recipient/thread; the revised card
+  awaits the ordinary owner approval. The first card's accepted callback
+  unconditionally instructed the single-thread agent to continue a batch and
+  emit a final receipt; the agent treated that as anomalous and posted an
+  unnecessary `[BLOCKED]` recap. A copy-only host correction now says a
+  scheduled batch follows its own remaining-items/receipt rule while a
+  single-thread run stops quietly for approval. Focused IPC 31/31,
+  email-critical 817/817 host plus 45/45 runner, pinned-Node typecheck, and
+  full-suite comparison (4,314 pass, the same 111 failures as the live base)
+  passed. This follow-up is local and not yet in the active release. No
+  customer email or new Action-ID has been observed in the invoice thread.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
   `groups/sales/{CLAUDE,WORKFLOWS}.md`, `groups/mailman/CLAUDE.md`, and bounded
   review artifacts under `docs/reports/NC-20260925-001-*`.
