@@ -1695,8 +1695,9 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-25T15:40Z
 - Owner/client: Codex, with fresh minimum-sufficient review and bounded Claude
   Sonnet/high recipient-boundary review
-- State: validating; isolated branch `codex/regular-email-path-20260925` from
-  exact live release `d034f80b144b196b9ad6f7766ad3ae68b01cd5ad`
+- State: deployed_unverified; isolated branch
+  `codex/regular-email-path-20260925` from prior live release
+  `d034f80b144b196b9ad6f7766ad3ae68b01cd5ad`
 - Change class: C5 because this changes the final customer-email recipient
   authorization boundary; no schema, queue, worker, scheduler, provider
   dependency, second send path, or automatic customer send was added
@@ -1737,15 +1738,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   output tokens; max context 45,562). Codex independently checked the upstream
   action rehydration and one-time claim that the narrow review treated as
   supplied evidence.
-- Operations: the Studio's `mini-claw` SSH alias had a stale Tailscale IP;
+- Operations before activation: the Studio's `mini-claw` SSH alias had a stale Tailscale IP;
   its HostName was changed to the verified MagicDNS name and read back by an
   ordinary `ssh mini-claw` call. The prior SSH configuration was backed up in
-  private `~/.ssh` storage. No service restart, deployment, Gmail send, Slack
-  post, provider write, or production database write has occurred in this task.
-- Next: continuity check, commit and push this exact branch, build and verify
-  the immutable release, activate only after a safe queue drain, read back
-  release identity/channels/action states, and observe a Gmail-confirmed
-  natural approved reply before claiming customer outcome.
+  private `~/.ssh` storage. Before release there had been no service restart,
+  Gmail send, Slack post, provider write, or production database write.
+- Deployment addendum (2026-09-25T16:07Z): exact commit
+  `f79cdfde5eb3190053615984e3d4d57b6116b2df` was pushed. The pinned-Node
+  clean-commit build passed the email-critical gate again, produced source tree
+  `abafe6c6b93d5cd0fd0a0d691ca2f59c05f9fed2`, artifact hash
+  `7948679322dc7fbbe747ea0ee94eac54b2a9e5eba446bf7ce0148d08764131e4`
+  (1,404 files), and archive SHA-256
+  `b6c8210a64a78b565871491680c1e71cf3359be78bd98eb7315241499dc5a033`.
+  The archive hash matched on the Mini and the extracted release verified under
+  Node 22.23.2. The activation dry run named only the expected three service
+  pointer changes. One Procurement message worker finished naturally; the
+  final preflight had zero active/queued work and no executable email actions.
+  The project's rollback-capable activator applied the release once; its
+  rollback plist is
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-d034f80b144b-2026-09-25T16-05-14-736Z`.
+  The prior service plist and three operational prompts are also backed up
+  privately under `~/.local/share/nanoclaw-release-backups/NC-20260925-001/`.
+  Live health reports release mode/verified, exact new commit and code root,
+  Gmail/Slack connected, one listener, no active queue, and the three prompt
+  files byte-matching the release. A compiled non-sending canary accepted both
+  draft forms with identical fields and held a malformed support card. The
+  old blocked action remains `blocked/recipient_guard` without a Gmail receipt;
+  the other thread still has no Action-ID. Neither was silently replayed and no
+  customer email was sent by this task.
+- Next: observe a fresh approved support reply take the ordinary host action,
+  Mailman, and Gmail-confirmed receipt path before marking business outcome
+  validated. The old blocked action and rejected cards need fresh approval
+  cycles; do not manually reset or resend their terminal state.
 - Documentation: `docs/ACTIVE-WORK.md`, `docs/PROJECT-MAP.md`, `docs/SECURITY.md`,
   `groups/sales/{CLAUDE,WORKFLOWS}.md`, `groups/mailman/CLAUDE.md`, and bounded
   review artifacts under `docs/reports/NC-20260925-001-*`.

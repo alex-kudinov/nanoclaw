@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-25T15:15Z — `NC-20260925-001` restore the normal approved Sales
-email path for existing Gmail conversations, owner Codex, `validating`, C5,
+email path for existing Gmail conversations, owner Codex, `deployed_unverified`, C5,
 isolated `codex/regular-email-path-20260925` from exact live release
 `d034f80b144b196b9ad6f7766ad3ae68b01cd5ad`. A naturally approved support
 reply reached the host Action-ID boundary but was blocked before Gmail because
@@ -33,10 +33,19 @@ and a missing cross-repository fixture path. The bounded Sonnet/high review
 returned `PASS` with no material finding; the continuity gate passes. Final
 diff inspection matches the accepted obligation delta: only existing host
 parser/guard, prompts, tests, and authority documents changed, with no new
-state, entry point, worker, or dependency. Next:
-clean-commit immutable build,
-then one safe activation and live health/natural receipt verification. No
-customer email has been sent by this task.
+state, entry point, worker, or dependency. Commit
+`f79cdfde5eb3190053615984e3d4d57b6116b2df` is pushed and its archive
+SHA-256 is `b6c8210a64a78b565871491680c1e71cf3359be78bd98eb7315241499dc5a033`.
+The exact immutable release is active on the Mini after a natural zero-work
+drain. Health reports the intended verified code root, Gmail/Slack connected,
+one listener, and an empty queue; all three operational prompt files match
+the release. A compiled synthetic parser canary accepts canonical and plain
+code-fenced drafts with identical approved fields and holds a malformed card.
+The earlier no-Party action remains terminally blocked with no Gmail receipt;
+the invoice thread still has no action. They require fresh ordinary approval
+cycles, not a hidden replay. Next: obtain a Gmail-confirmed natural approved
+reply through the released path before marking the customer outcome validated.
+No customer email has been sent by this task.
 The dirty primary checkout is untouched.
 
 2026-09-24T17:30Z — `NC-20260924-001` Commerce Bookkeeper accepts every
