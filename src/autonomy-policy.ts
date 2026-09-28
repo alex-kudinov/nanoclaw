@@ -194,12 +194,23 @@ export function computeVetoExpiry(
 }
 
 /** Promotion check — pure. */
+/**
+ * L2 hold-and-send is off unless AUTONOMY_L2_ENABLED=true (NC-20260927-001).
+ * Its injected "Auto-approved" message never armed an email action, so an L2
+ * draft could not actually send. The ledger keeps counting streaks; enabling
+ * L2 now arms the draft through the host approval path (see autonomy-hold).
+ */
+export function l2Enabled(): boolean {
+  return process.env.AUTONOMY_L2_ENABLED === 'true';
+}
+
 export function shouldPromote(
   level: number,
   streak: number,
   category: string,
 ): boolean {
   return (
+    l2Enabled() &&
     level === AUTONOMY_LEVELS.L1 &&
     streak >= PROMOTE_STREAK &&
     !GUARDED_CATEGORIES.has(category)

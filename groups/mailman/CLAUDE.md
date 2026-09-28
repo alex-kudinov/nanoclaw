@@ -47,6 +47,11 @@ A new email arrived via the Gmail channel. Follow the Inbound Email Processing s
 
 The message starts with `[HANDOFF: sales→mailman]`. Follow the Outbound Email Sending steps below.
 
+The host now sends an approved Sales card itself about 30 seconds after
+approval, so this handoff is only a fallback from an older Sales session. It
+is still safe: when the host already sent that Action-ID, the Gmail tool
+returns the existing receipt and nothing goes out twice.
+
 ### 2b. Approved Reply from Chief
 
 The message starts with `[HANDOFF: chief→mailman]` and contains `[APPROVED-REPLY]`. This is human-approved reply content that chief is passing through (Alex or Cherie explicitly provided the text). Parse the Thread-ID, To, and Subject fields, then send the reply body using `gmail_reply`. The host posts a mechanical `[EMAIL SENT]` confirmation to chief automatically — do not post your own.

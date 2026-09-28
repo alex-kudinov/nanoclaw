@@ -2,7 +2,6 @@ import { buildApprovedHandoff } from './approved-send-handoff.js';
 import type { EmailSendActionRow } from './db.js';
 import { hashApprovedEmailContent } from './email-action.js';
 import type { GmailIpcPayload } from './gmail-ipc-handlers.js';
-import { salesFactConsistencyIssue } from './sales-fact-consistency.js';
 
 export type ApprovedEmailExecutionResult =
   | {
@@ -32,9 +31,6 @@ export function buildHostApprovedEmailExecution(
   action: EmailSendActionRow,
   cardText: string,
   request: GmailIpcPayload,
-  opts: {
-    factConsistencyIssue?: (cardText: string) => string | undefined;
-  } = {},
 ): ApprovedEmailExecutionResult {
   if (!action.actionId) {
     return {
@@ -61,19 +57,10 @@ export function buildHostApprovedEmailExecution(
       reason: 'the exact approved Slack card cannot be parsed',
     };
   }
-  const factIssue =
-    action.groupFolder === 'sales'
-      ? opts.factConsistencyIssue
-        ? opts.factConsistencyIssue(cardText)
-        : salesFactConsistencyIssue(cardText)
-      : undefined;
-  if (factIssue) {
-    return {
-      ok: false,
-      code: 'approved_card_fact_inconsistent',
-      reason: `the exact approved Slack card conflicts with current program authority: ${factIssue}`,
-    };
-  }
+  // Schedule/fact consistency is shown to the approver as a card warning when
+  // the card is posted. It no longer blocks the approved bytes here: a stale
+  // SCHEDULE.md must not silently kill an email a human approved
+  // (NC-20260927-001).
   const approvedContentSha256 = hashApprovedEmailContent(
     approved.subject,
     approved.body,

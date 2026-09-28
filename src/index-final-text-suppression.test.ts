@@ -24,7 +24,10 @@ import {
   isSalesNoActionResult,
   noticeSalesRunWithNoOutput,
   routeAdoptedOutput,
+  isSalesWorkItemInput,
+  salesRunEndNotice,
   SALES_MISSING_OUTPUT_NOTICE,
+  SALES_NO_ACTION_NOTICE,
   shouldSuppressFinalText,
 } from './index.js';
 import type { Channel, RegisteredGroup } from './types.js';
@@ -201,6 +204,96 @@ describe('Sales missing-output notice', () => {
       SALES_MISSING_OUTPUT_NOTICE,
       { fromGroup: 'sales', threadTs: 'thr-quiet' },
     );
+  });
+
+  describe('salesRunEndNotice (NC-20260927-001, Chisato Nomoto thread)', () => {
+    const base = {
+      folder: 'sales',
+      threadTs: '1790564704.564469',
+      runStartedAt: '2026-09-28T03:05:00.000Z',
+      failed: false,
+      noActionObserved: false,
+      acknowledged: true,
+      triggeredByWorkItem: true,
+    };
+
+    it('owes the no-reply notice when an acknowledged run ends in NO_ACTION', () => {
+      expect(salesRunEndNotice({ ...base, noActionObserved: true })).toBe(
+        SALES_NO_ACTION_NOTICE,
+      );
+    });
+
+    it('stays quiet on NO_ACTION after an approval or an operator hold', () => {
+      expect(
+        salesRunEndNotice({
+          ...base,
+          noActionObserved: true,
+          triggeredByWorkItem: false,
+        }),
+      ).toBeUndefined();
+      expect(
+        isSalesWorkItemInput({
+          content: '✅ Approved by Alex.',
+          is_bot_message: false,
+        } as never),
+      ).toBe(false);
+      expect(
+        isSalesWorkItemInput({
+          content: 'wait',
+          is_bot_message: false,
+        } as never),
+      ).toBe(false);
+      expect(
+        isSalesWorkItemInput({
+          content: '[HANDOFF: mailman→sales] [SOURCE: email-support] …',
+          is_bot_message: true,
+          from_group: 'mailman',
+        } as never),
+      ).toBe(true);
+    });
+
+    it('keeps the missing-output notice for a clean run with no NO_ACTION', () => {
+      expect(salesRunEndNotice(base)).toBe(SALES_MISSING_OUTPUT_NOTICE);
+    });
+
+    it('posts nothing for error runs, NO_ACTION without an ack, or other groups', () => {
+      expect(salesRunEndNotice({ ...base, failed: true })).toBeUndefined();
+      expect(
+        salesRunEndNotice({ ...base, failed: true, noActionObserved: true }),
+      ).toBeUndefined();
+      expect(
+        salesRunEndNotice({
+          ...base,
+          noActionObserved: true,
+          acknowledged: false,
+        }),
+      ).toBeUndefined();
+      expect(salesRunEndNotice({ ...base, folder: 'grader' })).toBeUndefined();
+    });
+
+    it('posts the NO_ACTION notice exactly once and not as a [PROCESSING] line', async () => {
+      const sendMessage = vi.fn(async () => {});
+      const channel = { sendMessage } as unknown as Channel;
+      await noticeSalesRunWithNoOutput(
+        'slack:SALES',
+        base.threadTs,
+        base.runStartedAt,
+        channel,
+        {
+          latestResponse: () => undefined,
+          wait: async () => {},
+          polls: 1,
+          notice: SALES_NO_ACTION_NOTICE,
+        },
+      );
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'slack:SALES',
+        SALES_NO_ACTION_NOTICE,
+        { fromGroup: 'sales', threadTs: base.threadTs },
+      );
+      expect(SALES_NO_ACTION_NOTICE.startsWith('[PROCESSING]')).toBe(false);
+    });
   });
 
   it('stays quiet when a real Sales tool post appears during the drain', async () => {

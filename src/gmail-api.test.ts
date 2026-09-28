@@ -35,6 +35,7 @@ import {
   buildRawMessage,
   encodeHeaderValue,
   extractThreadQuery,
+  findSentCopy,
   findThreadForReply,
   foldHeaderValue,
   getThread,
@@ -279,7 +280,10 @@ describe('buildRawMessage', () => {
     expect(decoded).not.toMatch(/^Bcc:/m);
   });
 
-  it('strips tandemcoach.co addresses from Cc when body contains a tracking pixel', () => {
+  it('never removes a visible Cc, even when the body contains a tracking pixel', () => {
+    // Approved CCs were silently dropped here before NC-20260927-001. The
+    // handlers now leave the pixel out when a tandemcoach.co address is
+    // copied; this builder only suppresses our own Bcc self-copy.
     const raw = buildRawMessage({
       to: 'lead@example.com',
       subject: 'Hello',
@@ -288,12 +292,9 @@ describe('buildRawMessage', () => {
       html: true,
     });
     const decoded = decodeRaw(raw);
-    expect(decoded).toMatch(/^Cc: partner@external\.com$/m);
-    // Inspect only the Cc header line, not the body (which legitimately
-    // contains a t.tandemcoach.co tracking URL).
-    const ccLine = decoded.split('\r\n').find((l) => l.startsWith('Cc:')) || '';
-    expect(ccLine).not.toMatch(/info@tandemcoach\.co/i);
-    expect(ccLine).not.toMatch(/alex@tandemcoach\.co/i);
+    expect(decoded).toMatch(
+      /^Cc: partner@external\.com, info@tandemcoach\.co, alex@tandemcoach\.co$/m,
+    );
     expect(decoded).not.toMatch(/^Bcc:/m);
   });
 
@@ -860,5 +861,97 @@ describe('searchEmails thread: routing', () => {
     expect(messagesList).toHaveBeenCalledWith(
       expect.objectContaining({ q: 'from:carl@acme.com' }),
     );
+  });
+});
+
+describe('findSentCopy (owner force-send duplicate check)', () => {
+  const since = '2026-09-28T10:00:00.000Z';
+  const sinceMs = Date.parse(since);
+
+  function client(
+    messages: Array<{ id: string; subject: string; internalDate: number }>,
+  ) {
+    const list = vi.fn().mockResolvedValue({
+      data: {
+        messages: messages.map((m) => ({ id: m.id, threadId: 't-' + m.id })),
+      },
+    });
+    const get = vi.fn(async ({ id }: { id: string }) => {
+      const m = messages.find((x) => x.id === id)!;
+      return {
+        data: {
+          threadId: 't-' + id,
+          internalDate: String(m.internalDate),
+          payload: { headers: [{ name: 'Subject', value: m.subject }] },
+        },
+      };
+    });
+    return {
+      list,
+      getClient: () =>
+        ({ users: { messages: { list, get } } }) as unknown as gmail_v1.Gmail,
+    };
+  }
+
+  it('finds a sent message to the recipient with the same base subject', async () => {
+    const c = client([
+      { id: 'other', subject: 'Invoice', internalDate: sinceMs + 5_000 },
+      {
+        id: 'match',
+        subject: 'Re: ICF Level 2',
+        internalDate: sinceMs + 9_000,
+      },
+    ]);
+    const found = await findSentCopy(
+      {
+        to: 'Dana <dana@example.com>',
+        subject: 'ICF Level 2',
+        sinceIso: since,
+      },
+      { getClient: c.getClient },
+    );
+    expect(found).toEqual({ messageId: 'match', threadId: 't-match' });
+    expect(c.list.mock.calls[0][0].q).toMatch(
+      /^in:sent to:dana@example\.com after:\d+$/,
+    );
+  });
+
+  it('ignores a same-subject message sent well before the approval', async () => {
+    const c = client([
+      { id: 'old', subject: 'ICF Level 2', internalDate: sinceMs - 3_600_000 },
+    ]);
+    expect(
+      await findSentCopy(
+        { to: 'dana@example.com', subject: 'ICF Level 2', sinceIso: since },
+        { getClient: c.getClient },
+      ),
+    ).toBeUndefined();
+  });
+
+  it('refuses to answer "not sent" without a recipient, subject and start time', async () => {
+    const c = client([]);
+    for (const opts of [
+      { to: '', subject: 'ICF Level 2', sinceIso: since },
+      { to: 'dana@example.com', subject: 'Re: ', sinceIso: since },
+      { to: 'dana@example.com', subject: 'ICF Level 2', sinceIso: 'nope' },
+    ]) {
+      await expect(
+        findSentCopy(opts, { getClient: c.getClient }),
+      ).rejects.toThrow('required');
+    }
+    expect(c.list).not.toHaveBeenCalled();
+  });
+
+  it('lets a Gmail read failure propagate so the caller refuses', async () => {
+    const list = vi.fn().mockRejectedValue(new Error('invalid_grant'));
+    await expect(
+      findSentCopy(
+        { to: 'dana@example.com', subject: 'ICF Level 2', sinceIso: since },
+        {
+          getClient: () =>
+            ({ users: { messages: { list } } }) as unknown as gmail_v1.Gmail,
+        },
+      ),
+    ).rejects.toThrow('invalid_grant');
   });
 });

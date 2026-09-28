@@ -616,6 +616,16 @@ function createSchema(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_email_send_events_action
       ON email_send_events (action_id, sequence);
   `);
+
+  // NC-20260927-001: an owner force-send records who reopened the action and
+  // why, next to the stage it re-entered. Additive columns only.
+  for (const column of ['actor TEXT', 'detail TEXT']) {
+    try {
+      database.exec(`ALTER TABLE email_send_events ADD COLUMN ${column}`);
+    } catch {
+      /* column already exists */
+    }
+  }
 }
 
 export function initDatabase(): void {
@@ -1223,6 +1233,37 @@ export function getLatestInboundByThread(
        ORDER BY timestamp DESC LIMIT 1`,
     )
     .get(threadTs) as NewMessage | undefined;
+}
+
+/** Recent host/bot-authored messages inside one Slack thread, newest first. */
+export function listRecentBotMessagesInThread(
+  chatJid: string,
+  threadTs: string,
+  limit = 20,
+): NewMessage[] {
+  return db
+    .prepare(
+      `SELECT id, chat_jid, sender, sender_name, content, timestamp,
+              is_from_me, is_bot_message, from_group, thread_ts
+         FROM messages
+        WHERE chat_jid = ?
+          AND COALESCE(is_bot_message, 0) = 1
+          AND (thread_ts = ? OR id = ?)
+        ORDER BY timestamp DESC, rowid DESC
+        LIMIT ?`,
+    )
+    .all(chatJid, threadTs, threadTs, limit) as NewMessage[];
+}
+
+/** True when an approval already armed an email action for this card. */
+export function hasEmailActionForDraft(draftTs: string): boolean {
+  return Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM pending_sends WHERE draft_ts = ? AND action_id IS NOT NULL`,
+      )
+      .get(draftTs),
+  );
 }
 
 /** Latest host/bot-authored message inside one Slack work-item thread. */
@@ -1989,12 +2030,19 @@ function appendEmailSendEvent(
   actionId: string,
   stage: EmailActionState,
   occurredAt: string,
-  opts: { code?: string; messageId?: string; threadId?: string } = {},
+  opts: {
+    code?: string;
+    messageId?: string;
+    threadId?: string;
+    actor?: string;
+    detail?: string;
+  } = {},
 ): void {
   db.prepare(
     `INSERT INTO email_send_events
-       (action_id, stage, occurred_at, code, gmail_message_id, gmail_thread_id)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+       (action_id, stage, occurred_at, code, gmail_message_id, gmail_thread_id,
+        actor, detail)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     actionId,
     stage,
@@ -2002,6 +2050,8 @@ function appendEmailSendEvent(
     opts.code ?? null,
     opts.messageId ?? null,
     opts.threadId ?? null,
+    opts.actor ?? null,
+    opts.detail ?? null,
   );
 }
 
@@ -2380,6 +2430,19 @@ export type EmailActionExecutionClaim =
   | { status: 'held'; action?: EmailSendActionRow; reason: string };
 
 /** Claim the final Gmail boundary exactly once. */
+/**
+ * Hold codes written by `holdEmailAction`: the external-write safety control
+ * or global test routing refused the send before Gmail. Only an owner
+ * `force send:` releases them.
+ */
+export function isOwnerHoldCode(code: string | undefined): boolean {
+  return Boolean(
+    code &&
+    (code.startsWith('action_safety_') ||
+      code === 'global_test_routing_active'),
+  );
+}
+
 export function claimEmailActionExecution(
   actionId: string,
   approvedContentSha256: string,
@@ -2401,6 +2464,19 @@ export function claimEmailActionExecution(
     }
     if (current.state === 'blocked') {
       return { status: 'held', action: current, reason: 'action is blocked' };
+    }
+    if (
+      current.state === 'attention_required' &&
+      isOwnerHoldCode(current.lastErrorCode)
+    ) {
+      // A safety or test-routing hold is released only by an owner force
+      // send, which reopens the action first (NC-20260927-001). A late
+      // Mailman request must not send it once the control is lifted.
+      return {
+        status: 'held',
+        action: current,
+        reason: 'action is held for an owner decision',
+      };
     }
     if (current.approvedContentSha256 !== approvedContentSha256) {
       return {
@@ -2503,6 +2579,212 @@ export function failEmailAction(
   return fail();
 }
 
+/** States from which an owner force-send may reopen an action. */
+const FORCE_REOPENABLE_STATES = [
+  'blocked',
+  'attention_required',
+  'uncertain',
+] as const;
+/** States the host may still execute without reopening anything. */
+const PRE_EXECUTION_STATES = [
+  'approved',
+  'handoff_routed',
+  'mailman_started',
+  'attention_required',
+] as const;
+
+/**
+ * Record an owner force-send and make the action executable again. The caller
+ * must already have ruled out a prior Gmail delivery for an `uncertain` row.
+ * Returns the reopened action, or undefined when it is confirmed, executing,
+ * or unknown.
+ */
+export function reopenEmailActionForOwnerForce(
+  actionId: string,
+  actor: string,
+  reason: string,
+  occurredAt: string,
+): EmailSendActionRow | undefined {
+  const reopen = db.transaction(() => {
+    const current = getPendingSendByActionId(actionId);
+    if (!current) return undefined;
+    const reopenable = (FORCE_REOPENABLE_STATES as readonly string[]).includes(
+      current.state,
+    );
+    const executable = (PRE_EXECUTION_STATES as readonly string[]).includes(
+      current.state,
+    );
+    if (!reopenable && !executable) return undefined;
+    if (reopenable) {
+      db.prepare(
+        `UPDATE pending_sends
+            SET state = 'approved', last_error_code = NULL, alerted_at = NULL,
+                last_event_at = ?
+          WHERE action_id = ? AND state IN ('blocked', 'attention_required', 'uncertain')`,
+      ).run(occurredAt, actionId);
+    }
+    appendEmailSendEvent(actionId, 'approved', occurredAt, {
+      code: 'owner_force',
+      actor,
+      detail: reason,
+    });
+    return getPendingSendByActionId(actionId);
+  });
+  return reopen();
+}
+
+/**
+ * Approved actions the host should now execute itself: still pre-Gmail, past
+ * the cancel window, and not so old that a restart would surprise anyone.
+ */
+export function listHostExecutableActions(
+  cutoffIso: string,
+  notBeforeIso: string,
+): EmailSendActionRow[] {
+  const rows = db
+    .prepare(
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends
+        WHERE action_id IS NOT NULL
+          AND recipient IS NOT NULL
+          AND state IN ('approved', 'handoff_routed', 'mailman_started')
+          AND approved_at <= ?
+          AND approved_at >= ?
+        ORDER BY approved_at, rowid`,
+    )
+    .all(cutoffIso, notBeforeIso) as EmailSendDbRow[];
+  return rows.map(mapEmailSendAction);
+}
+
+/** Every action approved inside one Slack work thread, newest first. */
+export function listThreadEmailActions(
+  chatJid: string,
+  threadTs: string,
+): EmailSendActionRow[] {
+  const rows = db
+    .prepare(
+      `SELECT ${EMAIL_ACTION_SELECT} FROM pending_sends
+        WHERE chat_jid = ? AND thread_ts = ? AND action_id IS NOT NULL
+        ORDER BY approved_at DESC, rowid DESC`,
+    )
+    .all(chatJid, threadTs) as EmailSendDbRow[];
+  return rows.map(mapEmailSendAction);
+}
+
+/**
+ * Stop approved actions that have not reached Gmail. Scope is one Slack thread
+ * (an operator's "stop") or one group's recent approvals (an agent cancel).
+ * Returns the cancelled Action-IDs.
+ */
+export function cancelPendingEmailActions(
+  scope:
+    | { chatJid: string; threadTs: string }
+    | { groupFolder: string; approvedSince: string },
+  actor: string,
+  occurredAt: string,
+): string[] {
+  const cancel = db.transaction(() => {
+    const where =
+      'chatJid' in scope
+        ? 'chat_jid = ? AND thread_ts = ?'
+        : 'group_folder = ? AND approved_at >= ?';
+    const params =
+      'chatJid' in scope
+        ? [scope.chatJid, scope.threadTs]
+        : [scope.groupFolder, scope.approvedSince];
+    const rows = db
+      .prepare(
+        `SELECT action_id FROM pending_sends
+          WHERE ${where}
+            AND action_id IS NOT NULL
+            AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')`,
+      )
+      .all(...params) as Array<{ action_id: string }>;
+    const cancelled: string[] = [];
+    for (const row of rows) {
+      const result = db
+        .prepare(
+          `UPDATE pending_sends
+              SET state = 'blocked', last_error_code = 'operator_cancelled',
+                  last_event_at = ?
+            WHERE action_id = ?
+              AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')`,
+        )
+        .run(occurredAt, row.action_id);
+      if (result.changes === 0) continue;
+      appendEmailSendEvent(row.action_id, 'blocked', occurredAt, {
+        code: 'operator_cancelled',
+        actor,
+      });
+      cancelled.push(row.action_id);
+    }
+    return cancelled;
+  });
+  return cancel();
+}
+
+/**
+ * Close an uncertain action from Gmail's own Sent evidence. Used before an
+ * owner force-send, so a message Gmail accepted is recorded, not resent.
+ */
+export function reconcileUncertainEmailActionAsSent(
+  actionId: string,
+  messageId: string,
+  gmailThreadId: string,
+  occurredAt: string,
+  actor: string,
+): number {
+  const reconcile = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'confirmed', gmail_message_id = ?,
+                gmail_result_thread_id = ?, completed_at = ?, last_event_at = ?,
+                last_error_code = NULL
+          WHERE action_id = ? AND state = 'uncertain'`,
+      )
+      .run(messageId, gmailThreadId, occurredAt, occurredAt, actionId);
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, 'confirmed', occurredAt, {
+        code: 'reconciled_from_gmail_sent',
+        messageId,
+        threadId: gmailThreadId,
+        actor,
+      });
+    }
+    return result.changes;
+  });
+  return reconcile();
+}
+
+/**
+ * Put an action on hold without making it terminal: the safety brake or test
+ * routing refused it before any Gmail call. The owner can force it later.
+ */
+export function holdEmailAction(
+  actionId: string,
+  code: string,
+  occurredAt: string,
+): number {
+  const hold = db.transaction(() => {
+    const result = db
+      .prepare(
+        `UPDATE pending_sends
+            SET state = 'attention_required', last_error_code = ?,
+                alerted_at = COALESCE(alerted_at, ?), last_event_at = ?
+          WHERE action_id = ?
+            AND state IN ('approved', 'handoff_routed', 'mailman_started', 'attention_required')`,
+      )
+      .run(code, occurredAt, occurredAt, actionId);
+    if (result.changes > 0) {
+      appendEmailSendEvent(actionId, 'attention_required', occurredAt, {
+        code,
+      });
+    }
+    return result.changes;
+  });
+  return hold();
+}
+
 export function listEmailSendEvents(actionId: string): Array<{
   sequence: number;
   stage: EmailActionState;
@@ -2510,11 +2792,13 @@ export function listEmailSendEvents(actionId: string): Array<{
   code?: string;
   gmailMessageId?: string;
   gmailThreadId?: string;
+  actor?: string;
+  detail?: string;
 }> {
   const rows = db
     .prepare(
       `SELECT sequence, stage, occurred_at, code, gmail_message_id,
-              gmail_thread_id FROM email_send_events
+              gmail_thread_id, actor, detail FROM email_send_events
        WHERE action_id = ? ORDER BY sequence`,
     )
     .all(actionId) as Array<{
@@ -2524,6 +2808,8 @@ export function listEmailSendEvents(actionId: string): Array<{
     code: string | null;
     gmail_message_id: string | null;
     gmail_thread_id: string | null;
+    actor: string | null;
+    detail: string | null;
   }>;
   return rows.map((row) => ({
     sequence: row.sequence,
@@ -2532,6 +2818,8 @@ export function listEmailSendEvents(actionId: string): Array<{
     code: row.code ?? undefined,
     gmailMessageId: row.gmail_message_id ?? undefined,
     gmailThreadId: row.gmail_thread_id ?? undefined,
+    ...(row.actor ? { actor: row.actor } : {}),
+    ...(row.detail ? { detail: row.detail } : {}),
   }));
 }
 

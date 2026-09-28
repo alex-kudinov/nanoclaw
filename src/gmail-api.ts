@@ -77,21 +77,6 @@ function hasTrackingPixel(body: string): boolean {
   return body.includes(`https://${TRACKING_DOMAIN}/t/`);
 }
 
-/**
- * Filter tandemcoach.co addresses out of a comma-separated address list.
- * Returns the cleaned string, or undefined if nothing remains.
- */
-function stripTandemAddresses(
-  addrList: string | undefined,
-): string | undefined {
-  if (!addrList) return undefined;
-  const kept = addrList
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !/tandemcoach\.co/i.test(s));
-  return kept.length > 0 ? kept.join(', ') : undefined;
-}
-
 function normalizeAddress(value: string): string {
   return (value.match(/<([^>]+)>/)?.[1] ?? value).trim().toLowerCase();
 }
@@ -240,21 +225,23 @@ export function buildRawMessage(opts: {
     content: Buffer;
   }[];
 }): string {
-  // When the body carries an open-tracking pixel, never CC or BCC any
-  // tandemcoach.co address — the user inevitably opens the self-copy in
-  // their info@ inbox, which fires the tracker and pollutes lead signals.
+  // When the body carries an open-tracking pixel, never add our own
+  // tandemcoach.co BCC — the self-copy fires the tracker and pollutes lead
+  // signals. Visible CCs are recipients a human chose, so they are never
+  // removed here; the Gmail handlers leave the pixel out instead when a
+  // tandemcoach.co address is copied (NC-20260927-001).
   const trackingPresent = hasTrackingPixel(opts.body);
-  const ccHeader = trackingPresent ? stripTandemAddresses(opts.cc) : opts.cc;
+  const ccHeader = opts.cc;
   const bccHeader =
     trackingPresent && GMAIL_BCC && /tandemcoach\.co/i.test(GMAIL_BCC)
       ? undefined
       : addressListContains(ccHeader, GMAIL_BCC)
         ? undefined
         : GMAIL_BCC;
-  if (trackingPresent && (opts.cc !== ccHeader || bccHeader !== GMAIL_BCC)) {
+  if (trackingPresent && bccHeader !== GMAIL_BCC) {
     logger.debug(
-      { originalCc: opts.cc, strippedCc: ccHeader, bccDropped: !bccHeader },
-      'Tracking pixel detected — suppressed tandemcoach.co BCC/CC',
+      { bccDropped: !bccHeader },
+      'Tracking pixel detected — suppressed tandemcoach.co BCC',
     );
   }
 
@@ -739,6 +726,60 @@ export async function findThreadForReply(opts: {
     logger.warn({ to: addr, err }, 'findThreadForReply lookup failed');
     return null;
   }
+}
+
+/**
+ * Find a message this mailbox already sent to `to` with the same base subject
+ * since `sinceIso`. An owner force-send checks this before reopening an action
+ * whose earlier Gmail attempt is uncertain, so a message Gmail did accept is
+ * never sent twice (NC-20260927-001). Throws when Gmail cannot be read; the
+ * caller must then refuse rather than guess.
+ */
+export async function findSentCopy(
+  opts: { to: string; subject: string; sinceIso: string },
+  deps?: { getClient?: () => gmail_v1.Gmail },
+): Promise<{ messageId: string; threadId: string } | undefined> {
+  const addr = bareAddress(opts.to);
+  const wanted = baseSubject(opts.subject).toLowerCase();
+  const since = Date.parse(opts.sinceIso);
+  if (!addr || !wanted || Number.isNaN(since)) {
+    // Without these the search proves nothing; "not found" would license a
+    // resend of an email Gmail may already have accepted.
+    throw new Error(
+      'findSentCopy: recipient, subject and start time are required',
+    );
+  }
+  const gmail = deps?.getClient ? deps.getClient() : getGmailClient();
+  // Gmail's after: is day-granular in some clients; subtract a day of slack
+  // and let the exact subject comparison below do the narrowing.
+  const after = Math.floor(since / 1000) - 24 * 60 * 60;
+  const res = await gmail.users.messages.list({
+    userId: 'me',
+    q: `in:sent to:${addr} after:${after}`,
+    maxResults: 25,
+  });
+  for (const ref of res.data.messages ?? []) {
+    if (!ref.id) continue;
+    const msg = await gmail.users.messages.get({
+      userId: 'me',
+      id: ref.id,
+      format: 'metadata',
+      metadataHeaders: ['Subject'],
+    });
+    const subject =
+      msg.data.payload?.headers?.find(
+        (h) => h.name?.toLowerCase() === 'subject',
+      )?.value ?? '';
+    const sentAt = Number(msg.data.internalDate ?? '0');
+    if (sentAt && sentAt < since - 60_000) continue;
+    if (baseSubject(subject).toLowerCase() === wanted) {
+      return {
+        messageId: ref.id,
+        threadId: msg.data.threadId ?? ref.threadId ?? '',
+      };
+    }
+  }
+  return undefined;
 }
 
 /** Read a single email by message ID. Returns formatted content. */

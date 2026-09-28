@@ -1026,7 +1026,10 @@ describe('recipient guard (tina@example.com incident)', () => {
     expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
   });
 
-  it('does not extend the Gmail-thread alias exception to a standalone send', async () => {
+  it('sends an approved standalone email without borrowing the Gmail thread Party', async () => {
+    // The approved card is the recipient authority (NC-20260927-001). A Party
+    // found only through the Gmail thread does not own this recipient, so the
+    // send must not be tracked or logged against it.
     businessState.partyByEmailId = null;
     businessState.partyByThreadId = 11274;
     businessState.emails = new Set(['tolney@velera.com']);
@@ -1037,6 +1040,73 @@ describe('recipient guard (tina@example.com incident)', () => {
         threadId: '19ff239122ff27cc',
         actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
         approvedRecipient: 'sender@external.com',
+      }),
+    );
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'sender@external.com' }),
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+
+  it('sends an approved card to a recipient with no Party yet, untracked', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = null;
+    businessState.emails = new Set();
+
+    await handleGmailSend(
+      makePayload({
+        to: 'new.person@external.com',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'new.person@external.com',
+      }),
+    );
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'new.person@external.com' }),
+    );
+    expect(logOutboundEmailInteraction).not.toHaveBeenCalled();
+  });
+
+  it('never sends an approved card addressed to one of our own mailboxes', async () => {
+    const postToChief = vi.fn(async (_text: string, _tt?: string) => {});
+
+    await handleGmailSend(
+      makePayload({
+        to: 'info@tandemcoach.co',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'info@tandemcoach.co',
+      }),
+      postToChief,
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(postToChief.mock.calls[0][0]).toContain(
+      'recipient info@tandemcoach.co is one of our own mailboxes',
+    );
+  });
+
+  it('treats a plus-addressed copy of our mailbox as our own mailbox', async () => {
+    await handleGmailSend(
+      makePayload({
+        to: 'info+leads@tandemcoach.co',
+        actionId: '82c0f1d2-f124-4e3d-b06d-a4e6774f82cd',
+        approvedRecipient: 'info+leads@tandemcoach.co',
+      }),
+    );
+
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('still blocks an unapproved standalone send to a non-Party recipient', async () => {
+    businessState.partyByEmailId = null;
+    businessState.partyByThreadId = 11274;
+    businessState.emails = new Set(['tolney@velera.com']);
+
+    await handleGmailSend(
+      makePayload({
+        to: 'sender@external.com',
+        threadId: '19ff239122ff27cc',
       }),
     );
 

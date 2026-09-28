@@ -32,6 +32,8 @@ vi.mock('../logger.js', () => ({
 vi.mock('../db.js', () => ({
   getMessageById: vi.fn(() => undefined),
   getLatestBotMessageInThread: vi.fn(() => undefined),
+  listRecentBotMessagesInThread: vi.fn(() => []),
+  hasEmailActionForDraft: vi.fn(() => false),
   getHumanMessagesInThread: vi.fn(() => []),
   updateChatName: vi.fn(),
   resolveThreadAnchor: vi.fn(() => undefined),
@@ -120,6 +122,8 @@ import { SlackChannel, SlackChannelOpts } from './slack.js';
 import {
   getMessageById,
   getLatestBotMessageInThread,
+  hasEmailActionForDraft,
+  listRecentBotMessagesInThread,
   getHumanMessagesInThread,
   updateChatName,
   resolveThreadAnchor,
@@ -206,6 +210,8 @@ describe('SlackChannel', () => {
     vi.clearAllMocks();
     vi.mocked(getMessageById).mockReturnValue(undefined);
     vi.mocked(getLatestBotMessageInThread).mockReturnValue(undefined);
+    vi.mocked(listRecentBotMessagesInThread).mockReturnValue([]);
+    vi.mocked(hasEmailActionForDraft).mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -390,22 +396,26 @@ describe('SlackChannel', () => {
       );
     });
 
+    const draft = (id: string, content: string) => ({
+      id,
+      chat_jid: 'slack:C0123456789',
+      sender: 'U_BOT_123',
+      sender_name: 'Jonesy',
+      content,
+      timestamp: '2024-01-01T00:00:00.000Z',
+      is_from_me: true,
+      is_bot_message: true,
+      from_group: 'sales',
+      thread_ts: 'thread-root',
+    });
+
     it('offers an exact typed approval to listeners using the latest thread draft', async () => {
       const opts = createTestOpts();
       const channel = new SlackChannel(opts);
       await channel.connect();
-      vi.mocked(getLatestBotMessageInThread).mockReturnValue({
-        id: 'draft-ts',
-        chat_jid: 'slack:C0123456789',
-        sender: 'U_BOT_123',
-        sender_name: 'Jonesy',
-        content: '[SALES REVIEW] draft',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        is_from_me: true,
-        is_bot_message: true,
-        from_group: 'sales',
-        thread_ts: 'thread-root',
-      });
+      vi.mocked(listRecentBotMessagesInThread).mockReturnValue([
+        draft('draft-ts', '[SALES REVIEW] draft'),
+      ]);
       const listener = vi.fn(async () => false);
       channel.registerApprovalListener(listener);
 
@@ -413,7 +423,7 @@ describe('SlackChannel', () => {
         createMessageEvent({ text: 'Approved', threadTs: 'thread-root' }),
       );
 
-      expect(getLatestBotMessageInThread).toHaveBeenCalledWith(
+      expect(listRecentBotMessagesInThread).toHaveBeenCalledWith(
         'slack:C0123456789',
         'thread-root',
       );
@@ -430,6 +440,138 @@ describe('SlackChannel', () => {
           thread_ts: 'thread-root',
         }),
       );
+    });
+
+    it('binds a typed "send it" to the unapproved card even when a host notice follows it (NC-20260927-001)', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      vi.mocked(listRecentBotMessagesInThread).mockReturnValue([
+        draft('notice-ts', '⚠️ something the host said'),
+        draft('card-ts', '[SALES REVIEW] Lead #1 draft'),
+      ]);
+      const listener = vi.fn(async () => false);
+      channel.registerApprovalListener(listener);
+
+      await triggerMessageEvent(
+        createMessageEvent({ text: 'send it', threadTs: 'thread-root' }),
+      );
+
+      expect(listener).toHaveBeenCalledWith(
+        'card-ts',
+        'Alice Smith',
+        expect.objectContaining({ source: 'text' }),
+      );
+    });
+
+    it('does not skip back to a card the operator replied to after it was posted', async () => {
+      // Card v1, then "shorten the second paragraph", then an agent question:
+      // a bare "send" must not arm v1, the version under revision.
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      vi.mocked(listRecentBotMessagesInThread).mockReturnValue([
+        {
+          ...draft('question-ts', 'Which price should I keep?'),
+          timestamp: '2024-01-01T00:02:00.000Z',
+        },
+        draft('card-ts', '[SALES REVIEW] Lead #1 draft'),
+      ]);
+      vi.mocked(hasEmailActionForDraft).mockReturnValue(false);
+      vi.mocked(getHumanMessagesInThread).mockReturnValue([
+        {
+          id: 'feedback-ts',
+          content: 'shorten the second paragraph',
+          timestamp: '2024-01-01T00:01:00.000Z',
+          sender: 'U_USER_456',
+          sender_name: 'Alice Smith',
+        },
+      ]);
+      const listener = vi.fn(async () => false);
+      channel.registerApprovalListener(listener);
+
+      await triggerMessageEvent(
+        createMessageEvent({ text: 'send', threadTs: 'thread-root' }),
+      );
+
+      expect(listener).toHaveBeenCalledWith(
+        'question-ts',
+        'Alice Smith',
+        expect.anything(),
+      );
+      expect(listener).not.toHaveBeenCalledWith(
+        'card-ts',
+        expect.anything(),
+        expect.anything(),
+      );
+      vi.mocked(getHumanMessagesInThread).mockReturnValue([]);
+    });
+
+    it('keeps the latest bot message when the older card was already approved', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      vi.mocked(listRecentBotMessagesInThread).mockReturnValue([
+        draft('host-draft-ts', 'Proposal follow-up draft'),
+        draft('card-ts', '[SALES REVIEW] Lead #1 draft'),
+      ]);
+      vi.mocked(hasEmailActionForDraft).mockReturnValue(true);
+      const listener = vi.fn(async () => false);
+      channel.registerApprovalListener(listener);
+
+      await triggerMessageEvent(
+        createMessageEvent({ text: 'Approved', threadTs: 'thread-root' }),
+      );
+
+      expect(listener).toHaveBeenCalledWith(
+        'host-draft-ts',
+        'Alice Smith',
+        expect.anything(),
+      );
+    });
+
+    it('hands `force send: <reason>` to the host listener and does not wake the agent', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      const forceListener = vi.fn(async () => true);
+      channel.registerForceSendListener(forceListener);
+
+      await triggerMessageEvent(
+        createMessageEvent({
+          text: 'force send: customer is waiting on this answer',
+          threadTs: 'thread-root',
+        }),
+      );
+
+      expect(forceListener).toHaveBeenCalledWith({
+        jid: 'slack:C0123456789',
+        threadTs: 'thread-root',
+        actorUid: 'U_USER_456',
+        actorName: 'Alice Smith',
+        reason: 'customer is waiting on this answer',
+      });
+      expect(opts.onMessage).not.toHaveBeenCalled();
+    });
+
+    it('offers a whole-message stop to cancel observers and still delivers it to the agent', async () => {
+      const opts = createTestOpts();
+      const channel = new SlackChannel(opts);
+      await channel.connect();
+      const cancelObserver = vi.fn(async () => {});
+      channel.registerCancelObserver(cancelObserver);
+
+      await triggerMessageEvent(
+        createMessageEvent({ text: 'Stop!', threadTs: 'thread-root' }),
+      );
+
+      expect(cancelObserver).toHaveBeenCalledWith({
+        jid: 'slack:C0123456789',
+        threadTs: 'thread-root',
+        actorUid: 'U_USER_456',
+        actorName: 'Alice Smith',
+      });
+      expect(opts.onMessage).toHaveBeenCalled();
     });
 
     it('only emits metadata for unregistered channels', async () => {

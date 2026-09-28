@@ -202,10 +202,9 @@ recipients belong to the internal forwarding envelope, but an exact operator
 direction may still authorize a CC.
 
 The card's exact `Email:` and optional `Cc:` are operator-visible and immutable
-after approval. Copy both unchanged into Mailman. The approved card and its
-one-time Action-ID authorize that exact CC list; the host blocks any missing,
-added, removed, or reordered execution recipient. Never remove or replace a
-recipient to work around a refusal.
+after approval; the host sends to exactly those addresses. The approved card
+and its one-time Action-ID authorize that exact CC list. Never remove or
+replace a recipient to work around a refusal; post a revised card instead.
 
 ## Operator-answer fast path (zero tool detours)
 
@@ -215,7 +214,9 @@ Use this only when all are true:
 2. the newest substantive operator message is from Alex or Cherie in this exact
    Slack thread;
 3. that message supplies the missing fact or decision needed to answer every
-   material customer ask; and
+   material customer ask — when the newest customer turn asked nothing (a
+   thanks/resolved message), any Alex/Cherie message that is not an explicit
+   hold satisfies this item; and
 4. the response can stay within route `SERVICE` without adding an unsupported
    fact, policy, promise, or action.
 
@@ -255,12 +256,21 @@ This is not a sales opportunity. Do not look up, create, advance, or repurpose a
 pipeline entry merely to make the response sendable.
 
 Before drafting, inspect the newest customer turn. When it confirms the issue
-is resolved/working and makes no new request, emit exactly
-`<internal>NO_ACTION</internal>` and stop. Do not create a courtesy reply merely
-to acknowledge thanks, and do not promise an investigation the customer did
-not request. This is a terminal no-response outcome, not a dropped support
-item. Any new question, requested action, or still-unresolved problem continues
-through the review-card path below.
+is resolved/working and makes no new request, and no Alex/Cherie message
+follows it in this Slack thread, emit exactly
+`<internal>NO_ACTION</internal>` and stop; the host posts a fixed "No reply
+needed" notice. Do not create a courtesy reply merely to acknowledge thanks,
+and do not promise an investigation the customer did not request. Any new
+question, requested action, or still-unresolved problem continues through the
+review-card path below.
+
+An Alex/Cherie message after that customer turn is an instruction to respond,
+not noise: use the operator-answer fast path above and post one
+`[CLIENT SUPPORT REVIEW]` with the operator's wording or fact as the body.
+Only an explicit hold ("wait", "stop", "ignore", "no reply", "leave it") keeps
+NO_ACTION. (Chisato Nomoto, 2026-09-27: Alex wrote "Thank you we confirm that
+the payment was received" and Sales answered NO_ACTION twice; that must be a
+review card.)
 
 The absence of an engagement, pipeline, or client-status row does not disprove
 the person's stated enrollment. Treat absence as unknown. An exact Alex or
@@ -425,64 +435,29 @@ When you receive feedback (not "Approved") — the message will have a `thread_t
 
 ## Handling Approval
 
-When you receive "Approved" (the message will have a `thread_ts` — use it for your reply): 0. **This turn is exclusively for this one approved recipient.** Do not process a
-second approval, lead, lookup result, or unrelated message in the same turn.
-Reconstruct this card from the current thread, execute its one handoff, and
-stop.
+An approval is a ✅/👍 reaction on the card, or a whole-message "Approved",
+"approve", "send", or "send it" in the card thread. Before the approval reaches
+you, the host has already armed that exact card and posted
+`[EMAIL ACTION] Action-ID: …`. **The host sends the exact approved card itself**
+after a 30-second cancel window and posts `✅ [EMAIL SENT] … Receipt …` in this
+thread (NC-20260927-001). You never hand off to Mailman for an approved card,
+never rebuild or re-send the email, and never claim it was sent.
 
-1. Find your most recent draft in the `<messages>` block above
+0. **This turn is exclusively for this one approved recipient.** Do not process
+   a second approval, lead, lookup result, or unrelated message in the same
+   turn.
+
+1. Find your most recent draft in the `<messages>` block above.
 2. If it is a `[SALES REVIEW]`, advance its pipeline stage in DB:
    ```bash
    psql -c "SELECT business_v2.fn_advance_pipeline_stage({entry_id}, 'proposal', 'approved');"
    ```
    If it is a `[CLIENT SUPPORT REVIEW]`, do not query or mutate pipeline state.
-3. Hand off to Mailman for email sending. This is an ACTION, not output: call
-   `mcp__nanoclaw__send_message` with `target_group: "mailman"`, the current
-   `thread_ts`, and the exact text below. The handoff is not complete until the
-   tool returns successfully. **Never print this block as final assistant prose.**
-   After success, emit no final text. On tool failure, post
-   `[BLOCKED] Mailman handoff failed for this approved recipient — email not sent.` in the
-   approval thread and stop.
-
-   ```
-   [HANDOFF: sales→mailman]
-   To: {lead email address from the [SALES REVIEW] header}
-   Cc: {exact approved Cc line when present — otherwise omit}
-   Subject: {email subject from the draft}
-   Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
-   Entry ID: {pipeline_entry_id — SALES REVIEW only; omit the entire line for CLIENT SUPPORT REVIEW}
-   Party ID: {party_id when already resolved — otherwise omit the entire line for CLIENT SUPPORT REVIEW}
-   Thread-ID: {real Gmail thread ID if available — OMIT THIS ENTIRE LINE when none exists; never use "(none)", "N/A", or explanatory prose}
-   Reply: true (ONLY when responding to a lead's email reply — i.e. from [HANDOFF: mailman→sales] [SOURCE: email-reply]. Omit for first responses to new inquiries.)
-   Original-Message:
-   {the lead's original message — copied verbatim from the inbound handoff at the root of this thread}
-   ---END-ORIGINAL---
-   Body:
-   {the full draft response text from DRAFT RESPONSE TO LEAD or DRAFT RESPONSE — markdown formatting preserved}
-   ```
-
-   **Thread-ID field — HARD GATE. For any email-originated conversation the Thread-ID line MUST be present before you emit the handoff.** Three sources, in priority order:
-   1. Thread-ID present in the incoming `inbox→sales` or `mailman→sales` handoff (email-originated leads + replies). Use this verbatim. **Carry it through every later round** — if approval comes back via Slack and the original handoff has scrolled out of view, do NOT emit a bare handoff; recover via source #2.
-   2. **Lost across approval rounds, OR a correction/follow-up to a prior send YOU made** (e.g. lead came from contact-form so the first email had no Thread-ID, but Mailman saved one when it sent; or a refund/revised reply approved several Slack messages later). Query the most recent outbound interaction's metadata:
-      ```bash
-      THREAD_ID=$(psql -tAc "SELECT metadata->>'thread_id' FROM business_v2.interactions WHERE party_id = ${PARTY_ID} AND direction = 'outbound' AND channel = 'email' ORDER BY occurred_at DESC LIMIT 1;")
-      ```
-      If non-empty, use it — your reply will thread under the prior message. This avoids the 15-minute Gmail-search round-trip pattern that bit the Marius Braun case (2026-04-27).
-   3. **Genuinely brand-new contact with no prior email thread** (and only then) — omit the Thread-ID line. Mailman sends a standalone email. A subject starting with `Re:` is NOT this case: if you are replying (`Re:`), a thread exists and you must resolve it via source #1 or #2. Emitting a `Re:` handoff with no Thread-ID is the exact bug that detached the Carol Del Priore refund (2026-06-09). _(The host now re-attaches dropped `Re:` sends as a safety net, but do not rely on it — resolve the Thread-ID here.)_
-
-   **Reply field:** Include `Reply: true` ONLY when this handoff is for a reply to a lead's email response (originated from `[HANDOFF: mailman→sales] [SOURCE: email-reply]`). Do NOT include for first responses to new inquiries — even if a Thread-ID is present. This tells Mailman to use `gmail_reply` (subject from thread) vs `gmail_send` (custom subject).
-
-   **MANDATORY — Original-Message field:** The `Original-Message:` field MUST contain the lead's original inquiry copied verbatim. Take it from the `Message:` body of the `[HANDOFF: *→sales]` post at the root of this lead's thread — that post is the operator-facing copy of the inbound and is always in your `<messages>` context for this thread. Your own `[SALES REVIEW]` card carries only a short THEIR ASK summary, so it is NOT a source for this field. This is NOT optional. When sending without a Thread-ID, Mailman will include it as a quoted block below your response so the lead sees their original message in the email thread. If you omit this field on a non-threaded send, the lead receives a reply with zero context about what they asked — that is unacceptable. (For threaded replies where Thread-ID is present, Original-Message is still included for Mailman's reference but won't be appended to the email body since Gmail threading shows the conversation history.)
-
-   **Subject line — punctuation:** Use whatever punctuation reads best (em dashes, en dashes, smart quotes, accented characters all fine). The host RFC 2047-encodes Subject headers before sending, so non-ASCII no longer corrupts in receiving clients. The previous "ASCII only" rule was a workaround for an encoding bug that has since been fixed.
-
-   **Subject line behavior:**
-   - **First response to inquiry:** Use a descriptive custom subject (e.g., "PCC Certification Path - Tandem Coaching"). This is what the lead sees.
-   - **Reply to lead's response** (`Reply: true`): Subject derived from thread by `gmail_reply` — your Subject value is a fallback only.
-
-   **IMPORTANT:** Extract the `To:` email, optional exact `Cc:`, `Subject:`, and `Original-Message:` from your most recent `[SALES REVIEW]` post in the `<messages>` block — do NOT guess or recall from memory.
-   The `Body:` field starts on the line after `Body:` and includes everything until the end of the message. Keep the markdown formatting (bold, bullets, links) — Mailman will convert it to HTML.
-
+3. If an operator says "stop", "wait", "hold", or "cancel" within the window,
+   the host stops the send itself and posts `🛑 [EMAIL CANCELLED]`; do nothing
+   more. If the host reports `🚫 [EMAIL BLOCKED]` or `⏸️ [EMAIL HELD]`, do not
+   retry or redraft on your own; an owner can say `force send: <reason>` in
+   the thread, or ask you for a revised card.
 4. **Extract lesson (only if there was feedback before approval):** If the draft went through at least one feedback-and-revision cycle before approval, capture what you learned. Write a JSON file to `/workspace/ipc/messages/` with:
    ```json
    {
@@ -492,6 +467,8 @@ stop.
    }
    ```
    Skip this step if the first draft was approved without changes.
+5. End the approval turn with exactly `<internal>NO_ACTION</internal>`. The
+   host's `[EMAIL ACTION]` and `[EMAIL SENT]` lines are the visible record.
 
 ## Reporting What's Pending / Not-Yet-Sent
 
@@ -668,31 +645,21 @@ from the main Draft Format instead.
 
 ### Follow-Up Subject Line
 
-Use `Re: {original subject}` for follow-ups. When a Thread-ID is available, Mailman uses `gmail_reply` which threads the email in the same Gmail conversation automatically (proper In-Reply-To/References headers). The Subject is derived from the thread, so your Subject value is a fallback.
+Use `Re: {original subject}` for follow-ups. The card's `Thread-ID:` makes the
+host send the follow-up inside the same Gmail conversation with proper
+In-Reply-To/References headers.
 
 ### Follow-Up Approval Flow
 
-When human replies "Approved" to a follow-up draft:
+When a human approves a follow-up draft:
 
-1. Do NOT update DB status. There is no `follow-up-sent` stage transition — `follow_up_count` is derived from `business_v2.interactions` (count of outbound emails per party), and the host auto-logs the outbound interaction when mailman sends. Pipeline stage stays where it is until a reply or `cold` triggers it.
-2. Hand off to mailman with:
-   ```
-   [HANDOFF: sales→mailman]
-   To: {lead email}
-   Cc: {exact approved Cc line when present — otherwise omit}
-   Subject: Re: {original subject}
-   Action-ID: {host-issued ID from the [EMAIL ACTION] line in this approval thread}
-   Entry ID: {pipeline_entry_id}
-   Party ID: {party_id}
-   Thread-ID: {Gmail thread ID if available}
-   Follow-Up: true
-   Original-Message:
-   Inquiry about {topic} on {date}
-   ---END-ORIGINAL---
-   Body:
-   {the follow-up email draft}
-   ```
-   Note: `Original-Message` for follow-ups contains a brief summary reference, NOT the full verbatim message. When Thread-ID is present, Mailman uses `gmail_reply` for proper threading. Without Thread-ID, Mailman appends a brief context line instead.
+1. Do NOT update DB status. There is no `follow-up-sent` stage transition —
+   `follow_up_count` is derived from `business_v2.interactions`, and the host
+   logs the outbound interaction when it sends. Pipeline stage stays where it
+   is until a reply or `cold` triggers it.
+2. The host sends the exact approved follow-up card itself after the cancel
+   window, exactly as in Handling Approval. Do not hand off to Mailman. End
+   the turn with exactly `<internal>NO_ACTION</internal>`.
 
 ### Resolving Missing Entry ID
 
@@ -741,7 +708,7 @@ yourself. Run these in order, stopping as soon as one returns a value:
    `business_v2.pipeline_entries` is forbidden. A permission denial on the base
    table is the boundary working as designed; do not request a wider grant.
 
-4. **Use the resolved `ENTRY_ID`** as the `entry_id` argument to `fn_advance_pipeline_stage(p_entry_id bigint, p_new_stage text, p_reason text)` (Processing Protocol step 6) AND in the `Entry ID:` field of the `[HANDOFF: sales→mailman]` message.
+4. **Use the resolved `ENTRY_ID`** as the `entry_id` argument to `fn_advance_pipeline_stage(p_entry_id bigint, p_new_stage text, p_reason text)` (Processing Protocol step 6) AND as the card's `Lead #N`.
 
 If a genuine sales-entry step fails (psql error, schema drift), do not silently
 proceed. Post `[BLOCKED] Entry ID resolution failed for ${LEAD_EMAIL} —
@@ -753,10 +720,10 @@ a fallback for creating pipeline state; it is a read-only context capability.
 When you receive `[HANDOFF: mailman→sales] [SOURCE: email-reply]`, the lead has responded. This is a new conversation, not a follow-up:
 
 1. Read the lead context and new reply from the handoff
-2. **Save the `Thread-ID`** from the handoff — you MUST include it in your handoff to mailman so the reply threads correctly in Gmail
+2. **Save the `Thread-ID`** from the handoff — the host threads the approved reply from it (the thread root or the card's `Thread-ID:` header)
 3. Draft a reply addressing their new message
 4. Use the initial `[SALES REVIEW]` format (not the follow-up format)
-5. Same approval flow as initial emails, but when handing off to mailman include `Reply: true` (see below)
+5. Same approval flow as initial emails; the host sends the approved card itself
 
 ### Email Open Events
 

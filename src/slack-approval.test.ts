@@ -5,6 +5,7 @@ import {
   isThumbsDownReaction,
   isApprovalOnlyText,
   isExplicitApprovalText,
+  isCancelInstructionText,
   buildApprovalContent,
   resolveApprovalThreadTs,
 } from './slack-approval.js';
@@ -63,6 +64,51 @@ describe('isApprovalOnlyText', () => {
     expect(isExplicitApprovalText('✅')).toBe(true);
     expect(isExplicitApprovalText('Approved with these edits')).toBe(false);
     expect(isExplicitApprovalText('Please send it')).toBe(false);
+  });
+
+  it('accepts the approval words the Sales prompt documents (NC-20260927-001)', () => {
+    for (const text of [
+      'send',
+      'Send it',
+      'send it.',
+      'yes, send it',
+      'OK send it!',
+      'okay send it',
+      'approve',
+    ]) {
+      expect(isExplicitApprovalText(text)).toBe(true);
+    }
+    for (const text of [
+      'send it tomorrow',
+      'send it to Maria instead',
+      'yes',
+    ]) {
+      expect(isExplicitApprovalText(text)).toBe(false);
+    }
+  });
+});
+
+describe('isCancelInstructionText', () => {
+  it('matches only a whole-message stop instruction', () => {
+    for (const text of [
+      'stop',
+      'Cancel!',
+      'wait',
+      'hold on',
+      "don't send",
+      'don\u2019t send it',
+      'Do not send it.',
+    ]) {
+      expect(isCancelInstructionText(text)).toBe(true);
+    }
+    for (const text of [
+      'wait, change the date first',
+      'stop using that subject line',
+      'hold the discount for next week',
+      '',
+    ]) {
+      expect(isCancelInstructionText(text)).toBe(false);
+    }
   });
 });
 

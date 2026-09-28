@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 
 import {
   _initTestDatabase,
@@ -47,6 +47,12 @@ beforeEach(() => {
   storeChatMetadata(JID, '2026-07-01T00:00:00.000Z', '#gru-sales');
   // Skip first-run watermark seeding; scan from a fixed past instant.
   setRouterState('autonomy_wm_sales', '2026-07-01T00:00:00.000Z');
+  // Promotion is exercised with L2 enabled; it is off by default.
+  vi.stubEnv('AUTONOMY_L2_ENABLED', 'true');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('autonomy ledger', () => {

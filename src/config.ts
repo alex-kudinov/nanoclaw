@@ -128,6 +128,14 @@ export const TIMEZONE =
 export const SLACK_ONLY =
   (process.env.SLACK_ONLY || envConfig.SLACK_ONLY) === 'true';
 
+// Slack user IDs allowed to type `force send: <reason>` on an approved email
+// (NC-20260927-001). Empty means nobody can force-send.
+const emailForceSendEnv = readEnvFile(['EMAIL_FORCE_SEND_SLACK_USERS']);
+export const EMAIL_FORCE_SEND_SLACK_USERS =
+  process.env.EMAIL_FORCE_SEND_SLACK_USERS ||
+  emailForceSendEnv.EMAIL_FORCE_SEND_SLACK_USERS ||
+  '';
+
 // Heartbeat — periodic Slack status message for watchdog diagnostics
 const heartbeatEnv = readEnvFile(['HEARTBEAT_JID', 'HEARTBEAT_INTERVAL_MS']);
 export const HEARTBEAT_JID =

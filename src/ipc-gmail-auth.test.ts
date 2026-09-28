@@ -15,6 +15,7 @@ const testState = vi.hoisted(() => {
     claim: vi.fn((..._args: unknown[]): unknown => undefined),
     confirm: vi.fn((..._args: unknown[]) => undefined),
     fail: vi.fn((..._args: unknown[]) => undefined),
+    hold: vi.fn((..._args: unknown[]) => 1),
     findAction: vi.fn((..._args: unknown[]) => ({ ambiguous: false })),
     getAction: vi.fn((..._args: unknown[]): unknown => undefined),
     getMessage: vi.fn((..._args: unknown[]): unknown => undefined),
@@ -39,6 +40,8 @@ vi.mock('./db.js', () => ({
   clearPendingSendsByRecipient: vi.fn(() => 0),
   confirmEmailAction: (...args: unknown[]) => testState.confirm(...args),
   failEmailAction: (...args: unknown[]) => testState.fail(...args),
+  holdEmailAction: (...args: unknown[]) => testState.hold(...args),
+  cancelPendingEmailActions: vi.fn(() => []),
   findPendingSendAction: (...args: unknown[]) => testState.findAction(...args),
   getMessageById: (...args: unknown[]) => testState.getMessage(...args),
   listEmailActionIdsBySourceMessage: vi.fn(() => []),
@@ -397,7 +400,13 @@ describe('Gmail IPC watcher authorization', () => {
     await vi.advanceTimersByTimeAsync(1100);
     expect(fs.existsSync(testRoutedRequest)).toBe(false);
     expect(testState.dispatch).toHaveBeenCalledTimes(2);
-    expect(testState.fail).toHaveBeenCalledWith(
+    // A hold, not a kill: the approval survives (NC-20260927-001).
+    expect(testState.hold).toHaveBeenCalledWith(
+      actionId,
+      'global_test_routing_active',
+      expect.any(String),
+    );
+    expect(testState.fail).not.toHaveBeenCalledWith(
       actionId,
       'blocked',
       'global_test_routing_active',
@@ -420,9 +429,8 @@ describe('Gmail IPC watcher authorization', () => {
       expect(testState.dispatch).toHaveBeenCalledTimes(
         dispatchCountBeforeBrake,
       );
-      expect(testState.fail).toHaveBeenCalledWith(
+      expect(testState.hold).toHaveBeenCalledWith(
         actionId,
-        'blocked',
         'action_safety_global_safe_mode',
         expect.any(String),
       );

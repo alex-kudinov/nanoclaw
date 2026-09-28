@@ -3,10 +3,13 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readGroupPrompt } from './group-prompt.js';
+
 const readSalesFile = (name: string): string =>
   readFileSync(resolve(process.cwd(), 'groups', 'sales', name), 'utf8');
 
-const role = readSalesFile('CLAUDE.md');
+// CLAUDE.md with its @imports inlined, exactly as the Sales run loads it.
+const role = readGroupPrompt(resolve(process.cwd(), 'groups', 'sales'));
 const mainContext = readSalesFile('CLAUDE-MAIN.md');
 const workflows = readSalesFile('WORKFLOWS.md');
 const guidelines = readSalesFile('EMAIL-RESPONSE-GUIDELINES.md');
@@ -95,10 +98,10 @@ describe('Sales request-first prompt contract', () => {
     expect(role).toContain(
       'For a Client Support Review, skip this step entirely',
     );
-    expect(workflows).toContain(
-      'Party ID: {party_id when already resolved — otherwise omit the entire line for CLIENT SUPPORT REVIEW}',
-    );
+    // The host sends the approved card itself (NC-20260927-001); there is no
+    // Mailman handoff template carrying Party/Entry lines any more.
     expect(role).toContain('Client Support Review with no Party ID');
+    expect(role).toContain('the host sends to the\n  exact approved Email');
     expect(workflows).toContain(
       'SELECT pipeline_entry_id FROM business_v2.v_active_pipeline',
     );
@@ -264,7 +267,7 @@ describe('Sales request-first prompt contract', () => {
       'BCC is intentionally unavailable and must never be requested, inferred, or placed on a card.',
     );
     expect(normalizedContractLower).toContain('or exceed ten cc recipients');
-    expect(role).toContain('carry it across EVERY round');
+    expect(role).toContain('carry it across every\n   round');
     expect(role).toContain(
       '`Visible-To`, `Visible-Cc`, `Reply-All-Candidates`, and `Recipient-Context`',
     );

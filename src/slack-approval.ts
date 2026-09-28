@@ -54,14 +54,56 @@ export function isApprovalOnlyText(text: string): boolean {
 }
 
 /**
+ * Whole-message phrases an operator actually types to approve a draft. The
+ * Sales prompt already listed "send it"; the host only accepted "Approved",
+ * so "send it" produced a revision instead of a send (NC-20260927-001).
+ * Bare "yes"/"ok" stay feedback: they also answer ordinary questions.
+ */
+const APPROVAL_PHRASES = new Set([
+  'approved',
+  'approve',
+  'send',
+  'send it',
+  'yes send it',
+  'ok send it',
+  'okay send it',
+]);
+
+function normalizePhrase(text: string): string {
+  return (text || '')
+    .toLowerCase()
+    .replace(/[.!,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Host-action approval must be an unambiguous whole message. Free-form text is
- * left to the agent as feedback; only a bare check mark or exactly "Approved"
- * (with optional terminal punctuation) enters the host approval listeners.
+ * left to the agent as feedback; only a bare check mark or one of the exact
+ * approval phrases enters the host approval listeners.
  */
 export function isExplicitApprovalText(text: string): boolean {
   return (
-    isApprovalOnlyText(text) || /^\s*approved\s*[.!]?\s*$/i.test(text || '')
+    isApprovalOnlyText(text) || APPROVAL_PHRASES.has(normalizePhrase(text))
   );
+}
+
+/** Whole-message instructions that stop an approved email before Gmail. */
+const CANCEL_PHRASES = new Set([
+  'stop',
+  'cancel',
+  'wait',
+  'hold',
+  'hold on',
+  'hold it',
+  "don't send",
+  "don't send it",
+  'do not send',
+  'do not send it',
+]);
+
+export function isCancelInstructionText(text: string): boolean {
+  return CANCEL_PHRASES.has(normalizePhrase(text.replace(/[’]/g, "'")));
 }
 
 /**

@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readGroupPrompt } from './group-prompt.js';
+
 function contactPrompt(file: string): string {
   const definitions = JSON.parse(
     readFileSync(resolve(process.cwd(), file), 'utf8'),
@@ -93,10 +95,7 @@ describe('contact-form entry-page propagation contract', () => {
   });
 
   it('keeps contact intent and consent authority bounded downstream', () => {
-    const sales = readFileSync(
-      resolve(process.cwd(), 'groups', 'sales', 'CLAUDE.md'),
-      'utf8',
-    );
+    const sales = readGroupPrompt(resolve(process.cwd(), 'groups', 'sales'));
     const workflows = readFileSync(
       resolve(process.cwd(), 'groups', 'sales', 'WORKFLOWS.md'),
       'utf8',

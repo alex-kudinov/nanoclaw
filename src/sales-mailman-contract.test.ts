@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
+import { readGroupPrompt } from './group-prompt.js';
+
 const root = process.cwd();
-const salesPrompt = fs.readFileSync(
-  path.join(root, 'groups', 'sales', 'CLAUDE.md'),
-  'utf8',
-);
+const salesPrompt = readGroupPrompt(path.join(root, 'groups', 'sales'));
 const workflow = fs.readFileSync(
   path.join(root, 'groups', 'sales', 'WORKFLOWS.md'),
   'utf8',
@@ -36,24 +35,26 @@ const normalizedMailmanPrompt = mailmanPrompt.replace(/\s+/g, ' ');
 const normalizedMailmanProcedure = mailmanProcedure.replace(/\s+/g, ' ');
 
 describe('Sales to Mailman approval contract', () => {
-  it('requires one recipient and a successful typed handoff', () => {
+  it('keeps one recipient per approval turn and leaves the send to the host (NC-20260927-001)', () => {
     expect(salesPrompt).toContain('One approval turn = one recipient');
-    expect(salesPrompt).toContain('target_group: "mailman"');
-    expect(salesPrompt).toContain('is a delivery failure');
-    expect(workflow).toContain(
-      'This turn is exclusively for this one approved',
+    expect(salesPrompt).toContain('**sends that card itself**');
+    expect(salesPrompt).toContain(
+      'Do not emit a\n`[HANDOFF: sales→mailman]` for an approved card',
     );
     expect(workflow).toContain(
-      'Never print this block as final assistant prose',
+      'This turn is exclusively for this one approved recipient',
     );
+    expect(workflow).toContain(
+      '**The host sends the exact approved card itself**',
+    );
+    expect(workflow).not.toContain('Hand off to Mailman for email sending');
   });
 
   it('forbids fake Thread-ID placeholders', () => {
     expect(salesPrompt).toContain(
       'include the line only when a real Gmail thread ID',
     );
-    expect(workflow).toContain('OMIT THIS ENTIRE LINE when none exists');
-    expect(workflow).toContain('never use "(none)"');
+    expect(salesPrompt).toContain('Never put `(none)`, `N/A`');
   });
 
   it('preserves host-supplied recipient context across inbox routing', () => {

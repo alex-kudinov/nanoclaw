@@ -294,6 +294,59 @@ function hasApprovedConfiguredMailboxCc(data: GmailIpcPayload): boolean {
     .some((recipient) => configured.has(recipient));
 }
 
+/**
+ * The open pixel must not ride along to our own staff: their copy would fire
+ * it and fake a customer open. The old answer stripped those CCs out of the
+ * message after a human had approved them (NC-20260927-001). Drop the pixel
+ * instead and keep every approved recipient.
+ */
+function shouldIncludeOpenPixel(data: GmailIpcPayload): boolean {
+  if (hasApprovedConfiguredMailboxCc(data)) return false;
+  return !splitRecipients(data.cc).some((recipient) =>
+    /tandemcoach\.co/i.test(recipient),
+  );
+}
+
+/**
+ * A host-approved action carries the exact Email the human approved on the
+ * card. That approval is the recipient authority; the CRM Party is optional
+ * context for tracking and interaction logging (NC-20260927-001).
+ */
+function isApprovedRecipientSend(data: GmailIpcPayload): boolean {
+  return Boolean(
+    data.actionId &&
+    data.approvedRecipient &&
+    data.to &&
+    normalizeRecipient(data.to) === normalizeRecipient(data.approvedRecipient),
+  );
+}
+
+/** `info+tag@tandemcoach.co` still lands in the `info@` mailbox. */
+function withoutPlusTag(address: string): string {
+  return address.replace(/^([^@+]+)\+[^@]*@/, '$1@');
+}
+
+async function verifyApprovedRecipient(
+  data: GmailIpcPayload,
+): Promise<RecipientVerification> {
+  const to = normalizeRecipient(data.to!);
+  const shape = checkRecipient(to, new Set([to]));
+  if (!shape.ok) return shape;
+  if (configuredMailboxRecipients().has(withoutPlusTag(to))) {
+    return {
+      ok: false,
+      reason: `recipient ${to} is one of our own mailboxes`,
+    };
+  }
+  const party = await verifyPartyRecipient(
+    data.to!,
+    data.leadId,
+    data.threadId,
+  );
+  if (party.ok && party.context) return party;
+  return { ok: true, context: { partyId: null, emails: new Set([to]) } };
+}
+
 function verifyAdditionalRecipients(
   value: string | undefined,
   context: VerifiedPartyContext,
@@ -413,11 +466,11 @@ export async function handleGmailReply(
 
   // Content guard (P2): discount offers, non-whitelisted links, unfilled
   // placeholders. Runs on the agent's raw composition, before conversion.
-  const replyContentCheck = checkContent(
-    data.subject || '',
-    data.body,
-    contentGuardContext,
-  );
+  // A host-approved action is exempt: the human saw these exact bytes with
+  // the same checks shown as warnings on the card (NC-20260927-001).
+  const replyContentCheck = data.actionId
+    ? { ok: true, violations: [] as string[] }
+    : checkContent(data.subject || '', data.body, contentGuardContext);
   if (!replyContentCheck.ok) {
     logger.error(
       { threadId: data.threadId, violations: replyContentCheck.violations },
@@ -512,7 +565,7 @@ export async function handleGmailReply(
               data.emailType || 'reply',
             );
             body += buildEmailFooter(trackingId, data.emailType || 'reply', {
-              includeOpenPixel: !hasApprovedConfiguredMailboxCc(data),
+              includeOpenPixel: shouldIncludeOpenPixel(data),
             });
           } catch (err) {
             logger.warn(
@@ -708,11 +761,12 @@ export async function handleGmailSend(
   // The host resolves and verifies the party whether or not the agent supplies
   // leadId. Omitting that model-controlled field can no longer bypass the
   // allowlist. CC recipients are held to the same final-boundary policy.
-  const verification = await verifyPartyRecipient(
-    data.to,
-    data.leadId,
-    data.threadId,
-  );
+  // A host-approved action sends to the exact approved Email instead; the
+  // Party then only drives tracking and interaction logging.
+  const approvedRecipientSend = isApprovedRecipientSend(data);
+  const verification = approvedRecipientSend
+    ? await verifyApprovedRecipient(data)
+    : await verifyPartyRecipient(data.to, data.leadId, data.threadId);
   const ccCheck = verification.context
     ? verifyAdditionalRecipients(data.cc, verification.context, {
         approvedCc: data.actionId ? data.approvedCc : undefined,
@@ -721,7 +775,7 @@ export async function handleGmailSend(
   if (
     !verification.ok ||
     !verification.context ||
-    verification.context.partyId === null ||
+    (verification.context.partyId === null && !approvedRecipientSend) ||
     !ccCheck.ok
   ) {
     const reason = verification.reason || ccCheck.reason;
@@ -745,11 +799,10 @@ export async function handleGmailSend(
 
   // Content guard (P2): discount offers, non-whitelisted links, unfilled
   // placeholders. Runs on the agent's raw composition, before conversion.
-  const contentCheck = checkContent(
-    data.subject,
-    data.body,
-    contentGuardContext,
-  );
+  // A host-approved action is exempt; see handleGmailReply.
+  const contentCheck = data.actionId
+    ? { ok: true, violations: [] as string[] }
+    : checkContent(data.subject, data.body, contentGuardContext);
   if (!contentCheck.ok) {
     logger.error(
       {
@@ -800,17 +853,14 @@ export async function handleGmailSend(
   }
 
   // Inject tracking pixel + unsubscribe footer for HTML emails with lead context
+  const partyId = verification.context.partyId;
   let bodyForSend = data.body;
-  if (data.html) {
+  if (data.html && partyId !== null) {
     const trackingId = crypto.randomUUID();
     try {
-      insertTrackingPixel(
-        trackingId,
-        verification.context.partyId,
-        data.emailType || 'initial',
-      );
+      insertTrackingPixel(trackingId, partyId, data.emailType || 'initial');
       bodyForSend += buildEmailFooter(trackingId, data.emailType || 'initial', {
-        includeOpenPixel: !hasApprovedConfiguredMailboxCc(data),
+        includeOpenPixel: shouldIncludeOpenPixel(data),
       });
     } catch (err) {
       logger.warn(
@@ -852,14 +902,23 @@ export async function handleGmailSend(
   // Log the outbound interaction atomically so the sales follow-up cron
   // sees an up-to-date last_interaction_at. Must not depend on mailman's
   // LLM re-running psql — that round-trip silently drops rows.
-  await logOutboundEmailInteraction({
-    partyId: verification.context.partyId,
-    emailType: data.emailType || 'initial',
-    subject: data.subject,
-    threadId: result.threadId,
-    messageId: result.messageId,
-    ...(data.pipelineEntryId ? { pipelineEntryId: data.pipelineEntryId } : {}),
-  });
+  if (partyId !== null) {
+    await logOutboundEmailInteraction({
+      partyId,
+      emailType: data.emailType || 'initial',
+      subject: data.subject,
+      threadId: result.threadId,
+      messageId: result.messageId,
+      ...(data.pipelineEntryId
+        ? { pipelineEntryId: data.pipelineEntryId }
+        : {}),
+    });
+  } else {
+    logger.warn(
+      { actionId: data.actionId, messageId: result.messageId },
+      'Approved send has no Party; skipped Party-only tracking and interaction',
+    );
+  }
 
   logger.info(
     {

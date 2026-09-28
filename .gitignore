@@ -31,6 +31,9 @@ groups/*/*
 !groups/booking/EXECUTION-STEPS.md
 !groups/*/WORKFLOWS.md
 !groups/sales/CONSULTATIVE-DIALOGUE.md
+!groups/sales/OPERATOR-TURNS.md
+!groups/sales/PROCESSING-PROTOCOL.md
+!groups/sales/EDGE-CASES-AND-TOOLS.md
 !groups/*/VOICE-AND-TONE.md
 !groups/*/EMAIL-RESPONSE-GUIDELINES.md
 !groups/chief/SUPPORT-REPLY.md

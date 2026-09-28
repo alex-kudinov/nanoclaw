@@ -33,6 +33,7 @@ import {
   PROPOSAL_FOLLOWUP_MAX_PER_RUN,
   RECOVERY_LOOKBACK_MS,
   RECOVERY_RESERVED_SLOTS,
+  EMAIL_FORCE_SEND_SLACK_USERS,
   ENCHARGE_WRITE_KEY,
   SLACK_ONLY,
   STUDENT_LIFECYCLE_ENABLED,
@@ -110,6 +111,14 @@ import {
   markPendingSendMailmanStarted,
   markEmailActionHandoff,
   markEmailActionMailmanStarted,
+  cancelPendingEmailActions,
+  getPendingSendByActionId,
+  holdEmailAction,
+  listHostExecutableActions,
+  listRecentBotMessagesInThread,
+  listThreadEmailActions,
+  reconcileUncertainEmailActionAsSent,
+  reopenEmailActionForOwnerForce,
   recordPendingSend,
   recordThreadAnchor,
   getMessagesSince,
@@ -219,18 +228,30 @@ import {
 import { startHeartbeat } from './heartbeat.js';
 import { CompanyTimeTriggerObserver } from './company-time-trigger.js';
 import { handleVetoReaction, startAutonomySweep } from './autonomy-hold.js';
+import { isApprovalMessage } from './autonomy-policy.js';
 import {
   extractApprovedGmailThreadId,
   extractApprovedGmailMessageId,
   observeMailmanStart,
   observeApprovalCard,
   sweepPendingSends,
-  rescueUnhandedSends,
   sweepStalledMailmanHandoffs,
   MAILMAN_START_WATCHDOG_TICK_MS,
   SEND_WATCHDOG_TICK_MS,
+  type PendingSend,
   type SendWatchdogStore,
 } from './send-watchdog.js';
+import {
+  armedActionText,
+  cancelOutcomeText,
+  executeApprovedEmailAction,
+  HOST_EMAIL_SEND_TICK_MS,
+  runHostEmailSendSweep,
+  type HostEmailSweepDeps,
+} from './host-email-executor.js';
+import { forceSendActors, handleForceSend } from './email-force-send.js';
+import { findSentCopy } from './gmail-api.js';
+import { isApprovalCard } from './approved-send-handoff.js';
 import { resolveHumanAuthorizedDiscountTerms } from './human-commercial-term-authorization.js';
 import { runNameReaper } from './contador-name-reaper.js';
 import { startGmailClassificationReaperLoop } from './gmail-classification-reaper.js';
@@ -241,10 +262,7 @@ import type { ChaosReconcilerDeps } from './chaos-reconciler.js';
 import { query, withAgentContext } from './business-db.js';
 import { handleFollowupDrop, handleTypedDrop } from './followup-drop.js';
 import { makeFollowupDropDeps } from './followup-drop-deps.js';
-import {
-  makeLeadEmailResolver,
-  resolveEntryIdByEmail,
-} from './lead-email-resolver.js';
+import { makeLeadEmailResolver } from './lead-email-resolver.js';
 import { handleProcurementDecisionMessage } from './procurement-review.js';
 import { procurementPolicyDiagnostic } from './procurement-policy.js';
 import { runProcurementReconciler } from './procurement-reconciler.js';
@@ -336,7 +354,6 @@ import {
   SendMessageOpts,
 } from './types.js';
 import { isValidGroupFolder } from './group-folder.js';
-import { writeHostMessage } from './ipc-writer.js';
 import { logger } from './logger.js';
 import { readEnvFile } from './env.js';
 import {
@@ -357,7 +374,10 @@ import {
   createCompanyWorkOutcomeReviewDeps,
   resolveCompanyWorkOutcomeReviewConfig,
 } from './company-work-outcome-review.js';
-import { getActionSafetyStatus } from './action-safety.js';
+import {
+  assertExternalWriteAllowed,
+  getActionSafetyStatus,
+} from './action-safety.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -508,8 +528,55 @@ const SALES_OUTPUT_DRAIN_POLLS = 5;
 export const SALES_MISSING_OUTPUT_NOTICE =
   '[BLOCKED] Sales produced no review card or operator response. Nothing was approved or sent. Please retry this thread.';
 
+/**
+ * Posted when Sales deliberately answers NO_ACTION to an acknowledged work
+ * item (NC-20260927-001, Chisato Nomoto thread 2026-09-27). Without it the
+ * thread ended on "[PROCESSING] Generating response…" and looked stuck.
+ * Fixed host text; no model bytes ride along.
+ */
+export const SALES_NO_ACTION_NOTICE =
+  "No reply needed — Sales decided the customer's latest message needs no response, so nothing was drafted or sent. To send one anyway, reply in this thread with what to say (for example: reply: confirm the payment was received).";
+
 export function isSalesNoActionResult(raw: string): boolean {
   return /^\s*<internal>NO_ACTION<\/internal>\s*$/.test(raw);
+}
+
+/**
+ * Which fixed notice, if any, a finished Sales run owes its thread. Error runs
+ * are retried and post nothing. A deliberate NO_ACTION on an acknowledged work
+ * item gets the no-reply notice, so the thread never ends on "[PROCESSING]"
+ * and the operator knows replying will produce a draft (NC-20260927-001).
+ * The caller still drains first and stays quiet if Sales posted anything.
+ */
+export function salesRunEndNotice(run: {
+  folder: string;
+  threadTs?: string;
+  runStartedAt?: string;
+  failed: boolean;
+  noActionObserved: boolean;
+  acknowledged: boolean;
+  /**
+   * The newest input was a routed customer work item (a handoff or other
+   * host/bot message), not an operator's Slack message or an approval. Only
+   * then does NO_ACTION mean "the customer's message needs no reply".
+   */
+  triggeredByWorkItem: boolean;
+}): string | undefined {
+  if (run.folder !== 'sales' || !run.threadTs || !run.runStartedAt) {
+    return undefined;
+  }
+  if (run.failed) return undefined;
+  if (!run.noActionObserved) return SALES_MISSING_OUTPUT_NOTICE;
+  return run.acknowledged && run.triggeredByWorkItem
+    ? SALES_NO_ACTION_NOTICE
+    : undefined;
+}
+
+/** True when a Sales input is a routed work item rather than a human turn. */
+export function isSalesWorkItemInput(message: NewMessage | undefined): boolean {
+  if (!message) return false;
+  if (isApprovalMessage(message.content ?? '')) return false;
+  return Boolean(message.is_bot_message || message.from_group);
 }
 
 /**
@@ -527,8 +594,11 @@ export async function noticeSalesRunWithNoOutput(
     latestResponse?: typeof getLatestGroupResponse;
     wait?: (ms: number) => Promise<void>;
     polls?: number;
+    /** SALES_NO_ACTION_NOTICE for a deliberate NO_ACTION run. */
+    notice?: string;
   } = {},
 ): Promise<boolean> {
+  const notice = deps.notice ?? SALES_MISSING_OUTPUT_NOTICE;
   const latestResponse = deps.latestResponse ?? getLatestGroupResponse;
   const wait =
     deps.wait ??
@@ -541,12 +611,12 @@ export async function noticeSalesRunWithNoOutput(
   }
   const latest = latestResponse(chatJid, 'sales', threadTs);
   if (latest && latest >= runStartedAt) return false;
-  await channel.sendMessage(chatJid, SALES_MISSING_OUTPUT_NOTICE, {
+  await channel.sendMessage(chatJid, notice, {
     fromGroup: 'sales',
     threadTs,
   });
   logger.warn(
-    { chatJid, threadTs },
+    { chatJid, threadTs, noAction: notice === SALES_NO_ACTION_NOTICE },
     'Sales run produced no operator-visible output; fixed notice posted',
   );
   return true;
@@ -1250,19 +1320,24 @@ async function processGroupMessages(
     );
   }
 
-  if (
-    group.folder === 'sales' &&
-    threadTs &&
-    salesRunStartedAt &&
-    output !== 'error' &&
-    !hadError &&
-    !salesNoActionObserved
-  ) {
+  const salesNotice = salesRunEndNotice({
+    folder: group.folder,
+    threadTs,
+    runStartedAt: salesRunStartedAt,
+    failed: output === 'error' || hadError,
+    noActionObserved: salesNoActionObserved,
+    acknowledged: Boolean(group.containerConfig?.processingMessage),
+    triggeredByWorkItem: isSalesWorkItemInput(
+      missedMessages[missedMessages.length - 1],
+    ),
+  });
+  if (salesNotice && threadTs && salesRunStartedAt) {
     void noticeSalesRunWithNoOutput(
       chatJid,
       threadTs,
       salesRunStartedAt,
       channel,
+      { notice: salesNotice },
     ).catch((err) =>
       logger.error(
         { err, group: group.folder, threadTs },
@@ -3142,6 +3217,8 @@ async function main(): Promise<void> {
       (c): c is SlackChannel => c instanceof SlackChannel,
     );
     if (slackForAutonomy) {
+      // Bound below once the approval arming function exists.
+      let armForAutonomy: ((ts: string) => Promise<unknown>) | undefined;
       const autonomyDeps = {
         sendMessage: (
           jid: string,
@@ -3150,6 +3227,9 @@ async function main(): Promise<void> {
         ) => slackForAutonomy.sendMessage(jid, text, opts),
         injectMessage: (msg: NewMessage) => storeMessage(msg),
         registeredGroups: () => registeredGroups,
+        approveDraft: async (draftId: string): Promise<void> => {
+          await armForAutonomy?.(draftId);
+        },
       };
       slackForAutonomy.registerRejectListener((ts, reactor) =>
         handleVetoReaction(autonomyDeps, ts, reactor),
@@ -3159,92 +3239,225 @@ async function main(): Promise<void> {
       // Approved-send watchdog. Valid cards remain observations so the agent
       // receives the approval. A malformed marked card is claimed after the
       // host rejects it, preventing that rejected approval from continuing down
-      // the agent path. See send-watchdog.ts for why the host alerts rather
-      // than sending valid cards itself.
-      slackForAutonomy.registerApprovalListener(async (ts) => {
-        let claimApproval = false;
+      // the agent path.
+      // Arm one approval card: record the exact approved bytes as an email
+      // action. Shared by ✅, typed approval, and owner force-send.
+      const armApprovalCard = async (
+        ts: string,
+        { announce = true }: { announce?: boolean } = {},
+      ): Promise<{ pending: PendingSend | null; rejected: boolean }> => {
         const card = getMessageById(ts);
-        if (card?.content && card.from_group) {
-          const threadRoot = card.thread_ts
-            ? getThreadParent(card.chat_jid, card.thread_ts)
-            : undefined;
-          const approvedGmailThreadId =
-            extractApprovedGmailThreadId(card.content) ??
-            extractApprovedGmailThreadId(threadRoot?.content);
-          const approvedGmailMessageId =
-            extractApprovedGmailMessageId(card.content) ??
-            extractApprovedGmailMessageId(threadRoot?.content);
-          const approvalThreadTs = card.thread_ts ?? card.id;
-          const observation = await observeApprovalCard(
-            {
-              draftTs: ts,
-              groupFolder: card.from_group,
-              chatJid: card.chat_jid,
-              threadTs: approvalThreadTs,
-              cardText: card.content,
-              approvedGmailThreadId,
-              approvedGmailMessageId,
-              authorizedDiscountTerms:
-                card.from_group === 'sales'
-                  ? resolveHumanAuthorizedDiscountTerms(
-                      card.chat_jid,
-                      approvalThreadTs,
-                    )
-                  : [],
-              now: new Date(),
-              authorName:
-                registeredGroups[card.chat_jid]?.name ?? card.from_group,
-            },
-            sendWatchdogStore,
-            (text) =>
-              slackForAutonomy.sendMessage(card.chat_jid, text, {
-                fromGroup: card.from_group,
-                threadTs: approvalThreadTs,
-              }),
-          );
-          const { pending, rejected } = observation;
-          claimApproval = rejected;
-          if (pending?.actionId) {
-            await slackForAutonomy.sendMessage(
-              card.chat_jid,
-              `[EMAIL ACTION] Action-ID: ${pending.actionId}\nCopy this host-issued ID unchanged into the Mailman handoff. Queued is not sent; wait for the Gmail-confirmed receipt in this thread.`,
-              { fromGroup: card.from_group, threadTs: approvalThreadTs },
-            );
-          }
-          if (pending?.gmailThreadId) {
-            grantHostGmailResources('mailman', {
-              threadId: pending.gmailThreadId,
-              emailAddresses: pending.recipient
-                ? [pending.recipient]
-                : undefined,
-            });
-          }
+        if (!card?.content || !card.from_group) {
+          return { pending: null, rejected: false };
         }
-        return claimApproval;
+        const threadRoot = card.thread_ts
+          ? getThreadParent(card.chat_jid, card.thread_ts)
+          : undefined;
+        const approvedGmailThreadId =
+          extractApprovedGmailThreadId(card.content) ??
+          extractApprovedGmailThreadId(threadRoot?.content);
+        const approvedGmailMessageId =
+          extractApprovedGmailMessageId(card.content) ??
+          extractApprovedGmailMessageId(threadRoot?.content);
+        const approvalThreadTs = card.thread_ts ?? card.id;
+        const observation = await observeApprovalCard(
+          {
+            draftTs: ts,
+            groupFolder: card.from_group,
+            chatJid: card.chat_jid,
+            threadTs: approvalThreadTs,
+            cardText: card.content,
+            approvedGmailThreadId,
+            approvedGmailMessageId,
+            authorizedDiscountTerms:
+              card.from_group === 'sales'
+                ? resolveHumanAuthorizedDiscountTerms(
+                    card.chat_jid,
+                    approvalThreadTs,
+                  )
+                : [],
+            now: new Date(),
+            authorName:
+              registeredGroups[card.chat_jid]?.name ?? card.from_group,
+          },
+          sendWatchdogStore,
+          (text) =>
+            slackForAutonomy.sendMessage(card.chat_jid, text, {
+              fromGroup: card.from_group,
+              threadTs: approvalThreadTs,
+            }),
+        );
+        const { pending } = observation;
+        if (announce && pending?.actionId && pending.state === 'approved') {
+          await slackForAutonomy.sendMessage(
+            card.chat_jid,
+            armedActionText(pending.actionId),
+            { fromGroup: card.from_group, threadTs: approvalThreadTs },
+          );
+        }
+        if (pending?.gmailThreadId) {
+          grantHostGmailResources('mailman', {
+            threadId: pending.gmailThreadId,
+            emailAddresses: pending.recipient ? [pending.recipient] : undefined,
+          });
+        }
+        return observation;
+      };
+
+      armForAutonomy = armApprovalCard;
+      slackForAutonomy.registerApprovalListener(
+        async (ts) => (await armApprovalCard(ts)).rejected,
+      );
+
+      // The host sends each approved card itself once the cancel window has
+      // passed (NC-20260927-001). Mailman's Gmail tools remain a fallback that
+      // binds to the same one-time action claim, so the card goes out once.
+      const chiefJid = (): string | undefined =>
+        Object.entries(registeredGroups).find(
+          ([, group]) => group.folder === 'chief',
+        )?.[0];
+      const hostEmailSweepDeps: HostEmailSweepDeps = {
+        getAction: getPendingSendByActionId,
+        getCardText: (action) =>
+          getMessageById(action.draftTs, action.chatJid)?.content,
+        assertGmailWritable: () =>
+          assertExternalWriteAllowed({
+            system: 'gmail',
+            actionClass: 'c3_external_communication',
+            source: 'host:email-executor',
+          }),
+        testRoutingActive: () => Boolean(GMAIL_TEST_RECIPIENT),
+        claim: claimEmailActionExecution,
+        confirm: confirmEmailAction,
+        fail: failEmailAction,
+        hold: holdEmailAction,
+        send: async (payload, onConfirmed, onFailed) => {
+          const chief = chiefJid();
+          await handleGmailSend(
+            payload,
+            chief
+              ? async (text) => {
+                  await slackForAutonomy.sendMessage(chief, text, {
+                    fromGroup: 'chief',
+                  });
+                }
+              : undefined,
+            onConfirmed,
+            onFailed,
+          );
+        },
+        postThread: async (action, text) => {
+          await slackForAutonomy.sendMessage(action.chatJid, text, {
+            fromGroup: action.groupFolder,
+            threadTs: action.threadTs,
+          });
+        },
+        now: () => new Date(),
+        listExecutable: listHostExecutableActions,
+        isApprovalCard,
+      };
+      let hostEmailSweepRunning = false;
+      setInterval(() => {
+        if (hostEmailSweepRunning) return;
+        hostEmailSweepRunning = true;
+        runHostEmailSendSweep(new Date(), hostEmailSweepDeps)
+          .catch((err) =>
+            logger.error({ err }, 'host email executor: sweep error'),
+          )
+          .finally(() => {
+            hostEmailSweepRunning = false;
+          });
+      }, HOST_EMAIL_SEND_TICK_MS);
+
+      // `force send: <reason>` — the one owner override (NC-20260927-001).
+      slackForAutonomy.registerForceSendListener(async (command) => {
+        const postThread = async (text: string): Promise<void> => {
+          await slackForAutonomy.sendMessage(command.jid, text, {
+            threadTs: command.threadTs,
+          });
+        };
+        const reply = await handleForceSend(
+          {
+            chatJid: command.jid,
+            threadTs: command.threadTs,
+            actorUid: command.actorUid,
+            actorName: command.actorName,
+            reason: command.reason,
+          },
+          {
+            allowedActors: () => forceSendActors(EMAIL_FORCE_SEND_SLACK_USERS),
+            listThreadActions: listThreadEmailActions,
+            latestCardTs: (jid, threadTs) =>
+              listRecentBotMessagesInThread(jid, threadTs).find((message) =>
+                isApprovalCard(message.content ?? ''),
+              )?.id,
+            armCard: async (draftTs) => {
+              const { pending } = await armApprovalCard(draftTs, {
+                announce: false,
+              });
+              return pending?.actionId
+                ? getPendingSendByActionId(pending.actionId)
+                : undefined;
+            },
+            // From approval, not the latest attempt: every Gmail attempt of
+            // this action started after it was approved.
+            findSentCopy: (action) =>
+              findSentCopy({
+                to: action.recipient ?? '',
+                subject: action.approvedSubject ?? '',
+                sinceIso: action.approvedAt,
+              }),
+            reconcileAsSent: (action, sent, actor) =>
+              reconcileUncertainEmailActionAsSent(
+                action.actionId!,
+                sent.messageId,
+                sent.threadId,
+                new Date().toISOString(),
+                actor,
+              ),
+            reopen: (action, actor, reason) =>
+              reopenEmailActionForOwnerForce(
+                action.actionId!,
+                actor,
+                reason,
+                new Date().toISOString(),
+              ),
+            execute: (actionId) =>
+              executeApprovedEmailAction(actionId, hostEmailSweepDeps),
+            postThread,
+          },
+        );
+        if (reply) await postThread(reply);
+        logger.warn(
+          {
+            jid: command.jid,
+            threadTs: command.threadTs,
+            actor: command.actorUid,
+          },
+          'email force-send command handled',
+        );
+        return true;
       });
 
-      // Finish an approved send the agent abandoned. Runs before the alert
-      // sweep's grace expires, so the usual outcome is a delivered email rather
-      // than a [SEND NOT OBSERVED] and a manual rescue.
-      setInterval(() => {
-        rescueUnhandedSends(new Date(), {
-          store: sendWatchdogStore,
-          postThread: async (jid, text, threadTs) => {
-            await slackForAutonomy.sendMessage(jid, text, { threadTs });
-          },
-          getApprovedCard: (draftTs) =>
-            getMessageById(draftTs)?.content ?? null,
-          resolveEntryIdByEmail,
-          emitHandoff: (groupFolder, text) =>
-            writeHostMessage(groupFolder, {
-              type: 'message',
-              chatJid: 'host-send-rescue',
-              text,
-            }),
-        }).catch((err) =>
-          logger.error({ err }, 'send-watchdog: handoff rescue error'),
+      // A whole-message "stop"/"cancel" in the thread stops approved emails
+      // that have not reached Gmail yet. The agent still sees the message.
+      slackForAutonomy.registerCancelObserver(async (command) => {
+        const cancelled = cancelPendingEmailActions(
+          { chatJid: command.jid, threadTs: command.threadTs },
+          command.actorUid,
+          new Date().toISOString(),
         );
-      }, SEND_WATCHDOG_TICK_MS);
+        const text = cancelOutcomeText(
+          command.actorName,
+          cancelled,
+          listThreadEmailActions(command.jid, command.threadTs),
+          new Date(),
+        );
+        if (!text) return;
+        await slackForAutonomy.sendMessage(command.jid, text, {
+          threadTs: command.threadTs,
+        });
+      });
 
       setInterval(() => {
         sweepPendingSends(new Date(), {

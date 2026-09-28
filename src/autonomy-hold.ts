@@ -29,6 +29,7 @@ import {
   autonomyGroups,
   computeVetoExpiry,
   isApprovalMessage,
+  l2Enabled,
   permitsSalesAutoApproval,
   parseDraftCategory,
   GUARDED_CATEGORIES,
@@ -53,6 +54,12 @@ export interface AutonomyDeps {
   injectMessage: (msg: NewMessage) => void;
   /** jid → group registration (folder names). */
   registeredGroups: () => Record<string, { folder: string }>;
+  /**
+   * Arm the draft as an approved email action, exactly as a ✅ would
+   * (NC-20260927-001). Without it the injected text never reached the send
+   * path, so L2 could not actually send.
+   */
+  approveDraft?: (draftId: string) => Promise<void>;
   intervalMs?: number;
 }
 
@@ -146,6 +153,10 @@ async function fireDuePendings(deps: AutonomyDeps, now: Date): Promise<void> {
     // Recheck persisted holds after restart/deployment, not just new drafts.
     // A pre-pilot or changed/missing Sales card cannot inherit auto-approval.
     const source = getMessageById(p.draft_id, p.chat_jid);
+    if (!l2Enabled()) {
+      setAutonomyPendingStatus(p.draft_id, 'cancelled');
+      continue;
+    }
     if (
       p.group_folder === 'sales' &&
       (GUARDED_CATEGORIES.has(p.category) ||
@@ -174,6 +185,7 @@ async function fireDuePendings(deps: AutonomyDeps, now: Date): Promise<void> {
     // the injected "✅ Auto-approved" row and count it a second time.
     resolveAutonomyDraftEvent(p.draft_id, 'auto_approved', nowIso);
     recordAutoApproved(p.group_folder, p.category, nowIso);
+    if (deps.approveDraft) await deps.approveDraft(p.draft_id);
     deps.injectMessage(buildAutoApproval(p, now));
     logger.info(
       { draft: p.draft_id, category: p.category },
@@ -190,7 +202,9 @@ export async function autonomyTick(
   const channels = enabledChannels(deps);
   if (channels.length === 0) return;
   const res = ingest(channels, now);
-  for (const d of res.newL2Drafts) await holdNewL2Draft(deps, d, now);
+  if (l2Enabled()) {
+    for (const d of res.newL2Drafts) await holdNewL2Draft(deps, d, now);
+  }
   for (const promo of res.promotions) {
     await deps.sendMessage(
       promo.jid,

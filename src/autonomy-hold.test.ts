@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 
 import {
   _initTestDatabase,
@@ -85,6 +85,12 @@ beforeEach(() => {
   _initTestDatabase();
   storeChatMetadata(JID, '2026-07-06T00:00:00.000Z', '#gru-sales');
   setRouterState('autonomy_wm_sales', '2026-07-06T00:00:00.000Z');
+  // These cases exercise L2 itself, which is off by default (NC-20260927-001).
+  vi.stubEnv('AUTONOMY_L2_ENABLED', 'true');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('autonomy hold-and-send', () => {

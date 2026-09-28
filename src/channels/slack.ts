@@ -29,9 +29,12 @@ import {
   SLACK_THREAD_TTL_MS,
   TRIGGER_PATTERN,
 } from '../config.js';
+import { parseForceSendCommand } from '../email-force-send.js';
 import {
   getMessageById,
-  getLatestBotMessageInThread,
+  getHumanMessagesInThread,
+  hasEmailActionForDraft,
+  listRecentBotMessagesInThread,
   recordThreadAnchor,
   resolveThreadAnchor,
   rollThreadAnchor,
@@ -62,6 +65,7 @@ import {
 } from '../slack-limits.js';
 import {
   buildApprovalContent,
+  isCancelInstructionText,
   isExplicitApprovalText,
   isCheckReaction,
   isThumbsDownReaction,
@@ -69,6 +73,7 @@ import {
 } from '../slack-approval.js';
 import {
   Channel,
+  NewMessage,
   OnBotJoinedChannel,
   OnInboundMessage,
   OnChatMetadata,
@@ -165,6 +170,14 @@ export interface SlackApprovalProvenance {
   threadTs?: string;
 }
 
+/** A human instruction typed inside one Slack thread (NC-20260927-001). */
+export interface SlackThreadCommand {
+  jid: string;
+  threadTs: string;
+  actorUid: string;
+  actorName: string;
+}
+
 /** Exact host-owned reaction provenance, before any agent approval routing. */
 export interface SlackReactionProvenance {
   jid: string;
@@ -218,6 +231,18 @@ export class SlackChannel implements Channel {
       reactor: string,
       provenance: SlackApprovalProvenance,
     ) => Promise<boolean>
+  > = [];
+
+  // `force send: <reason>` typed in a thread. A listener that returns true
+  // owns the command, so the channel's agent is not woken by it.
+  private forceSendListeners: Array<
+    (command: SlackThreadCommand & { reason: string }) => Promise<boolean>
+  > = [];
+
+  // Whole-message stop/cancel words typed in a thread. Observers only: the
+  // agent still receives the message.
+  private cancelObservers: Array<
+    (command: SlackThreadCommand) => Promise<void>
   > = [];
 
   // Host-owned packet reactions run before generic check-mark approval. A
@@ -387,11 +412,25 @@ export class SlackChannel implements Channel {
       // equivalent of reacting to the latest bot-authored draft. Offer that
       // exact draft to host approval listeners before the normal agent wakeup;
       // free-form replies remain feedback and never cross this host boundary.
+      if (
+        !isBotMessage &&
+        threadTs &&
+        msg.user &&
+        (await this.offerThreadCommand(
+          { jid, threadTs, actorUid: msg.user, actorName: senderName },
+          msg.text || '',
+        ))
+      ) {
+        return;
+      }
       const explicitTextApproval =
         !isBotMessage && isExplicitApprovalText(msg.text || '');
       if (explicitTextApproval) {
         if (threadTs) {
-          const approvedMessage = getLatestBotMessageInThread(jid, threadTs);
+          const approvedMessage = this.resolveTypedApprovalTarget(
+            jid,
+            threadTs,
+          );
           if (approvedMessage) {
             for (const listener of this.approvalListeners) {
               try {
@@ -1330,6 +1369,77 @@ export class SlackChannel implements Channel {
     ) => Promise<boolean>,
   ): void {
     this.approvalListeners.push(fn);
+  }
+
+  /** Register a `force send: <reason>` handler. Return true to claim it. */
+  registerForceSendListener(
+    fn: (command: SlackThreadCommand & { reason: string }) => Promise<boolean>,
+  ): void {
+    this.forceSendListeners.push(fn);
+  }
+
+  /** Observe whole-message stop/cancel instructions typed in a thread. */
+  registerCancelObserver(
+    fn: (command: SlackThreadCommand) => Promise<void>,
+  ): void {
+    this.cancelObservers.push(fn);
+  }
+
+  /**
+   * The card a typed approval refers to. Usually the latest bot message; when
+   * a host notice or agent remark was posted after the card, the typed
+   * "Approved" still means the newest card that has not been approved yet
+   * (NC-20260927-001).
+   */
+  private resolveTypedApprovalTarget(
+    jid: string,
+    threadTs: string,
+  ): NewMessage | undefined {
+    const recent = listRecentBotMessagesInThread(jid, threadTs);
+    const latest = recent[0];
+    if (!latest || isApprovalCard(latest.content ?? '')) return latest;
+    const card = recent.find((message) =>
+      isApprovalCard(message.content ?? ''),
+    );
+    // Skip back to the card only when no operator spoke after it: an operator
+    // message may be a revision request, and "send" must not arm the version
+    // they asked to change.
+    const operatorSpokeAfter = card
+      ? getHumanMessagesInThread(jid, threadTs).some(
+          (message) => message.timestamp > card.timestamp,
+        )
+      : true;
+    if (card && !operatorSpokeAfter && !hasEmailActionForDraft(card.id)) {
+      return card;
+    }
+    return latest;
+  }
+
+  /** Offer typed force-send and cancel commands; true when one was claimed. */
+  private async offerThreadCommand(
+    command: SlackThreadCommand,
+    text: string,
+  ): Promise<boolean> {
+    const reason = parseForceSendCommand(text);
+    if (reason !== undefined) {
+      for (const listener of this.forceSendListeners) {
+        try {
+          if (await listener({ ...command, reason })) return true;
+        } catch (err) {
+          logger.warn({ err }, 'Slack: force-send listener threw');
+        }
+      }
+    }
+    if (isCancelInstructionText(text)) {
+      for (const observer of this.cancelObservers) {
+        try {
+          await observer(command);
+        } catch (err) {
+          logger.warn({ err }, 'Slack: cancel observer threw');
+        }
+      }
+    }
+    return false;
   }
 
   /** Register a host-side exact reaction listener. Return true to claim it. */

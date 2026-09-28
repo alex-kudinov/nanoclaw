@@ -21,12 +21,15 @@ import {
   manifestAllowsHostOperation,
 } from './capability-manifest.js';
 import {
+  cancelPendingEmailActions,
   claimEmailActionExecution,
   clearPendingSendsByRecipient,
   confirmEmailAction,
   createTask,
   deleteTask,
   failEmailAction,
+  holdEmailAction,
+  isOwnerHoldCode,
   findPendingSendAction,
   getMessageById,
   getPendingSendByActionId,
@@ -37,6 +40,7 @@ import {
   storeMessageDirect,
   updateTask,
 } from './db.js';
+import { cancelOutcomeText } from './email-thread-notices.js';
 import { observeConfirmedSend, observeOutbound } from './send-watchdog.js';
 import { hashApprovedEmailContent, isEmailActionId } from './email-action.js';
 import { buildHostApprovedEmailExecution } from './approved-email-execution.js';
@@ -585,9 +589,45 @@ export function startIpcWatcher(deps: IpcDeps): void {
                       cancelledCount++;
                     }
                   }
+                  // The host now sends approved cards itself after the same
+                  // window, so the agent's cancel must also stop those
+                  // actions (NC-20260927-001). It reaches only the Slack
+                  // thread of the work unit that emitted it, never another
+                  // thread's approval, and the thread is told.
+                  const cancelThread =
+                    cancelSource === sourceGroup &&
+                    sourceContext?.chatJid &&
+                    sourceContext.threadTs
+                      ? {
+                          chatJid: sourceContext.chatJid,
+                          threadTs: sourceContext.threadTs,
+                        }
+                      : undefined;
+                  const cancelledActions = cancelThread
+                    ? cancelPendingEmailActions(
+                        cancelThread,
+                        `agent:${sourceGroup}`,
+                        new Date().toISOString(),
+                      )
+                    : [];
+                  if (cancelThread && cancelledActions.length > 0) {
+                    const text = cancelOutcomeText(
+                      sourceGroup,
+                      cancelledActions,
+                      [],
+                      new Date(),
+                    );
+                    if (text) {
+                      await deps.sendMessage(cancelThread.chatJid, text, {
+                        fromGroup: sourceGroup,
+                        threadTs: cancelThread.threadTs,
+                      });
+                    }
+                  }
+                  cancelledCount += cancelledActions.length;
                   if (cancelledCount > 0) {
                     logger.info(
-                      { cancelSource, cancelledCount },
+                      { cancelSource, cancelledCount, cancelledActions },
                       'IPC mailman handoff(s) cancelled within hold window',
                     );
                   } else {
@@ -1434,31 +1474,29 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 // particular, a confirmed replay must never be relabeled "was
                 // NOT sent" because the old Slack card is missing, and a
                 // superseded action must never execute its stale card.
-                if (isMailmanSendAction && approvedAction?.actionId) {
-                  if (approvedAction.state === 'confirmed') {
-                    fs.unlinkSync(filePath);
-                    await postActionStatus(
-                      `✅ [EMAIL ALREADY SENT] Action ${approvedAction.actionId} already has Gmail receipt ${approvedAction.gmailMessageId ?? '(recorded)'}. No duplicate was sent.`,
-                    );
-                    continue;
-                  }
-                  if (
-                    approvedAction.state === 'executing' ||
-                    approvedAction.state === 'uncertain'
-                  ) {
-                    fs.unlinkSync(filePath);
-                    await postActionStatus(
-                      `⚠️ [EMAIL HELD] Action ${approvedAction.actionId} has an uncertain prior Gmail attempt. Reconcile the Gmail receipt before any retry.`,
-                    );
-                    continue;
-                  }
-                  if (approvedAction.state === 'blocked') {
-                    fs.unlinkSync(filePath);
-                    await postActionStatus(
-                      `🚫 [EMAIL BLOCKED] Action ${approvedAction.actionId} was NOT sent: ${approvedAction.lastErrorCode ?? 'the action is blocked'}. Gmail was not called.`,
-                    );
-                    continue;
-                  }
+                // The host usually sends the card itself before a late Mailman
+                // request arrives and has already posted the outcome in the
+                // thread, so these repeats are logged, not re-posted
+                // (NC-20260927-001).
+                if (
+                  isMailmanSendAction &&
+                  approvedAction?.actionId &&
+                  (['confirmed', 'executing', 'uncertain', 'blocked'].includes(
+                    approvedAction.state,
+                  ) ||
+                    (approvedAction.state === 'attention_required' &&
+                      isOwnerHoldCode(approvedAction.lastErrorCode)))
+                ) {
+                  fs.unlinkSync(filePath);
+                  logger.info(
+                    {
+                      actionId: approvedAction.actionId,
+                      state: approvedAction.state,
+                      code: approvedAction.lastErrorCode,
+                    },
+                    'Mailman Gmail request for an action the host already settled; no Gmail call',
+                  );
+                  continue;
                 }
 
                 let executableData = data as GmailIpcPayload;
@@ -1587,14 +1625,16 @@ export function startIpcWatcher(deps: IpcDeps): void {
                     deps.deliverSourceInput,
                   );
                   if (approvedAction?.actionId) {
-                    failEmailAction(
+                    // A hold, not a kill: the approval survives so an owner
+                    // can send it after the control is released
+                    // (NC-20260927-001).
+                    holdEmailAction(
                       approvedAction.actionId,
-                      'blocked',
                       `action_safety_${err.code}`,
                       new Date().toISOString(),
                     );
                     await postActionStatus(
-                      `🚫 [EMAIL HELD] Action ${approvedAction.actionId} was NOT sent: the host external-write safety control is active (${err.code}). Gmail was not called and the execution claim was not consumed.`,
+                      `⏸️ [EMAIL HELD] Action ${approvedAction.actionId} was NOT sent: the host external-write safety control is active (${err.code}). Gmail was not called and the approval is kept. An owner can say \`force send: <reason>\` in this thread after the control is released.`,
                     );
                   } else {
                     await postBoundaryFailure(
@@ -1610,15 +1650,14 @@ export function startIpcWatcher(deps: IpcDeps): void {
                 }
                 if (approvedAction?.actionId) {
                   if (GMAIL_TEST_RECIPIENT) {
-                    failEmailAction(
+                    holdEmailAction(
                       approvedAction.actionId,
-                      'blocked',
                       'global_test_routing_active',
                       new Date().toISOString(),
                     );
                     fs.unlinkSync(filePath);
                     await postActionStatus(
-                      `🚫 [EMAIL BLOCKED] Action ${approvedAction.actionId} was NOT sent because global Gmail test routing is active. Use the dedicated host transport canary; never redirect a customer-approved action.`,
+                      `⏸️ [EMAIL HELD] Action ${approvedAction.actionId} was NOT sent because global Gmail test routing is active. A customer-approved action is never redirected; the approval is kept for \`force send: <reason>\` once test routing is off.`,
                     );
                     continue;
                   }

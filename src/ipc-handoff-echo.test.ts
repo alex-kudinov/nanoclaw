@@ -34,6 +34,9 @@ const getHumanMessagesInThread = vi.fn(
 // confirmed send, rather than by group on the mailman handoff. See
 // send-watchdog.ts.
 const clearPendingSendsByRecipient = vi.fn((_recipient: string) => 0);
+const cancelPendingEmailActions = vi.fn(
+  (_scope: unknown, _actor: string, _at: string): string[] => [],
+);
 const markPendingSendHandoff = vi.fn(
   (
     _groupFolder: string,
@@ -50,6 +53,10 @@ vi.mock('./db.js', () => ({
   // consts, so a bare reference would dereference before initialization.
   clearPendingSendsByRecipient: (recipient: string) =>
     clearPendingSendsByRecipient(recipient),
+  cancelPendingEmailActions: (scope: unknown, actor: string, at: string) =>
+    cancelPendingEmailActions(scope, actor, at),
+  holdEmailAction: vi.fn(() => 0),
+  isOwnerHoldCode: () => false,
   markPendingSendHandoff: (
     groupFolder: string,
     recipient: string,
@@ -166,6 +173,8 @@ describe('IPC handoff routing', () => {
     getHumanMessagesInThread.mockReturnValue([]);
     clearPendingSendsByRecipient.mockClear();
     markPendingSendHandoff.mockClear();
+    cancelPendingEmailActions.mockReset();
+    cancelPendingEmailActions.mockReturnValue([]);
     sendMessage = vi.fn(async () => {});
     deps = {
       sendMessage,
@@ -1048,5 +1057,44 @@ describe('IPC handoff routing', () => {
         c[1].includes('[HANDOFF: sales→mailman]'),
     );
     expect(handoffDeliveries).toHaveLength(0);
+  });
+
+  it("stops only the emitting thread's approved email and says so there (NC-20260927-001)", async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '30';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => ({
+      chatJid: 'slack:SALES',
+      threadTs: 'thr-7',
+    }));
+    cancelPendingEmailActions.mockReturnValueOnce(['action-7']);
+    writeHandoffFile('sales', '[CANCEL: sales→mailman] stop', 'thr-7');
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(1100);
+
+    expect(cancelPendingEmailActions).toHaveBeenCalledWith(
+      { chatJid: 'slack:SALES', threadTs: 'thr-7' },
+      'agent:sales',
+      expect.any(String),
+    );
+    expect(sendMessage).toHaveBeenCalledWith(
+      'slack:SALES',
+      expect.stringContaining(
+        '🛑 [EMAIL CANCELLED] sales stopped Action action-7',
+      ),
+      expect.objectContaining({ threadTs: 'thr-7' }),
+    );
+  });
+
+  it('never cancels host actions when the cancel has no source thread', async () => {
+    process.env.MAILMAN_HOLD_SECONDS = '30';
+    const { startIpcWatcher } = await import('./ipc.js');
+    deps.resolveSourceThread = vi.fn(() => undefined);
+    writeHandoffFile('sales', '[CANCEL: sales→mailman] stop', 'thr-7');
+
+    startIpcWatcher(deps);
+    await vi.advanceTimersByTimeAsync(1100);
+
+    expect(cancelPendingEmailActions).not.toHaveBeenCalled();
   });
 });

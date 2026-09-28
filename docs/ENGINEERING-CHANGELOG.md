@@ -1690,6 +1690,80 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260927-001 — Approved email sends without engineer intervention
+
+- Date: 2026-09-28T12:30Z
+- Owner/client: Claude Code, owner-directed after the 2026-09-27 audit
+  (`docs/reports/2026-09-27-email-send-gates-audit.md`)
+- State: validating; branch `claude/email-send-simplification-20260927` from
+  `acef084b` (release `729979b2` plus docs); not committed, released or
+  deployed
+- Change class: C5, because it changes who executes an approved customer email
+  and which checks can stop it
+- Trigger: the owner reported approved emails that would not send and had to
+  be forced through by Claude or Codex. The audit found 11 manual forced sends
+  and 8 guard-loosening commits in 60 days; blocked actions were terminal with
+  no override; L2 injected a text approval that never armed an action; the
+  tracking-pixel rule silently removed approved team CCs; the Sales prompt
+  disagreed with the host on approval words.
+- Send path: the host sends the exact approved card itself after the 30 s
+  cancel window (`src/host-email-executor.ts`, `src/host-email-send.ts`, 5 s
+  sweep in `src/index.ts`), through the same claim/confirm ledger. Approvals
+  older than 15 minutes are not auto-sent. A late Sales-to-Mailman handoff is
+  harmless: the one-time claim returns the existing receipt.
+- Checks removed or softened: execution no longer re-blocks on schedule facts
+  or the content guard (both are shown before approval); approved sends need no
+  CRM Party when the recipient is the approved Email; approved CCs are never
+  stripped (the pixel is dropped instead); the safety control and test routing
+  hold the action (`attention_required`) instead of killing it; L2 is off
+  unless `AUTONOMY_L2_ENABLED=true`.
+- Checks kept: approved hash, recipient and CC equality; malformed, reserved
+  and own-mailbox recipients; exactly-once claim; the external-write safety
+  control; test routing; the card-post content/schedule rejection before
+  approval (a permission checker refused that change).
+- Override: `force send: <reason>` in the approval thread, by a Slack user in
+  `EMAIL_FORCE_SEND_SLACK_USERS` (`.env`, empty by default), reason of at least
+  10 characters. It reopens the newest blocked, held or uncertain action (or
+  arms the newest card), records actor and reason in `email_send_events`
+  (`owner_force`), checks Gmail Sent first for an uncertain action, and sends
+  the approved bytes through the executor. It never bypasses the safety
+  control.
+- Operator words: approval accepts ✅, "approved", "approve", "send",
+  "send it", "yes send it", "ok send it"; a typed approval binds to the newest
+  unapproved card. "stop", "cancel", "wait", "hold", "hold on", "don't send"
+  in the thread cancel unsent actions.
+- Sales: a NO_ACTION run on an acknowledged work item posts one fixed "No
+  reply needed" notice; an Alex/Cherie message after a thanks/resolved
+  customer turn overrides the no-reply shortcut and produces a
+  `[CLIENT SUPPORT REVIEW]` draft (Chisato Nomoto regression). The Sales prompt
+  is split into `groups/sales/CLAUDE.md` plus three `@`-imported files; the
+  release must carry them and the Mini's `groups/sales/` must receive them.
+- Review (Claude correctness and security reviewers, 2026-09-28), all fixed:
+  an agent `[CANCEL]` cancelled every approval of its group in the last 40 s,
+  silently, including other threads (now only its own Slack thread, with a
+  notice); a typed "send" could arm a card the operator had asked to change
+  (now only when no operator spoke after the card); force send could send an
+  older blocked action instead of a newer unapproved card (now targets the
+  newest card) and could race itself (now one per thread); the Gmail Sent check
+  searched from the latest attempt instead of approval and answered "not sent"
+  on missing inputs (now from approval, and it refuses); a late Mailman request
+  could send an action held by the safety control (the claim now refuses owner
+  holds); a stop that arrived too late got no answer (now "Too late to stop");
+  `info+tag@` was not treated as our own mailbox. No security issue found in
+  who can approve, cancel or force-send, in hash/recipient/CC binding, or in
+  the safety control.
+- Schema: additive nullable `actor` and `detail` on `email_send_events`.
+- Verification: typecheck clean; `npm run test:email-critical` 835 + 45 pass;
+  new `host-email-executor`, `email-force-send`, `email-thread-notices`,
+  `db-email-action-overrides`, `group-prompt` tests and new cases in
+  `gmail-api`, `gmail-ipc-handlers`, `slack-approval`, `channels/slack`,
+  `ipc-handoff-echo`, `autonomy-policy`, `index-final-text-suppression`. Full
+  suite: failures only in 6 files this branch does not touch (Contador
+  publication fixtures that need another worktree, local-Postgres academy
+  capacity proofs, CNPC registration wrapper, a Trafft shadow fixture), plus a
+  website-checkout runner that timed out under full-suite load and passes
+  alone.
+
 ### NC-20260925-001 — Restore the regular approved Gmail reply path
 
 - Date: 2026-09-25T15:40Z

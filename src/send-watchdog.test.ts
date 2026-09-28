@@ -816,8 +816,10 @@ describe('sweepPendingSends', () => {
     expect(jid).toBe('slack:C0AHV1SGT6W');
     expect(threadTs).toBe('1785230834.912489');
     expect(text).toContain('[SEND NOT OBSERVED]');
-    // The operator needs to be pointed at where the reason actually is.
-    expect(text).toContain('[EMAIL BLOCKED]');
+    // The operator is told how to send it without Claude or Codex
+    // (NC-20260927-001).
+    expect(text).toContain('`force send: <reason>`');
+    expect(text).toContain('do not redraft it');
   });
 });
 

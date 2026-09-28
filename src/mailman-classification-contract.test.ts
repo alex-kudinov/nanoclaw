@@ -3,6 +3,7 @@ import path from 'path';
 import { describe, expect, it } from 'vitest';
 
 import { CANONICAL_CLASSIFICATION_LABELS } from './classification-policy.js';
+import { readGroupPrompt } from './group-prompt.js';
 
 const root = process.cwd();
 const mailman = fs.readFileSync(
@@ -17,10 +18,7 @@ const retiredChiefDraft = fs.readFileSync(
   path.join(root, 'groups/chief/SUPPORT-REPLY.md'),
   'utf8',
 );
-const sales = fs.readFileSync(
-  path.join(root, 'groups/sales/CLAUDE.md'),
-  'utf8',
-);
+const sales = readGroupPrompt(path.join(root, 'groups/sales'));
 const runner = fs.readFileSync(
   path.join(root, 'container/agent-runner/src/ipc-mcp-stdio.ts'),
   'utf8',

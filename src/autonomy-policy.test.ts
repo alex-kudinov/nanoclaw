@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 
 import {
   computeVetoExpiry,
@@ -127,7 +127,17 @@ describe('computeVetoExpiry', () => {
 });
 
 describe('shouldPromote', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('never promotes while L2 is off, which is the default (NC-20260927-001)', () => {
+    vi.stubEnv('AUTONOMY_L2_ENABLED', '');
+    expect(shouldPromote(1, PROMOTE_STREAK + 10, 'enrollment')).toBe(false);
+  });
+
   it('promotes at the streak threshold for unguarded categories', () => {
+    vi.stubEnv('AUTONOMY_L2_ENABLED', 'true');
     expect(shouldPromote(1, PROMOTE_STREAK, 'enrollment')).toBe(true);
     expect(shouldPromote(1, PROMOTE_STREAK - 1, 'enrollment')).toBe(false);
   });

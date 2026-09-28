@@ -433,11 +433,11 @@ function alertText(row: PendingSend): string {
   return (
     `[SEND NOT OBSERVED]${lead} approved at ${row.approvedAt}, but Gmail has ` +
     `never confirmed a send. The email${who} has NOT gone out.\n\n` +
-    `Common causes, in order of likelihood: the outbound content or recipient ` +
-    `guard blocked it (look for a 🚫 [EMAIL BLOCKED] line in #gru-chief naming ` +
-    `the violation), the agent lost the approval, or the Gmail call failed.\n\n` +
-    `The approved draft is the message this replies to — send that text, do not ` +
-    `redraft it. Reply here with what happened if it cannot be sent.`
+    `Common causes: the host was restarting, the external-write safety ` +
+    `control is on, or the Gmail call failed.\n\n` +
+    `The approved draft is the message this replies to — do not redraft it. ` +
+    'An owner can say `force send: <reason>` in this thread to send that exact ' +
+    'card now.'
   );
 }
 

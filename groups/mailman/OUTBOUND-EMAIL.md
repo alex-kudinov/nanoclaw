@@ -5,6 +5,12 @@ email. The host owns identity, approval binding, recipient validation, content
 validation, Gmail execution, durable receipts, and business interaction
 logging. Mailman parses the handoff and invokes one typed Gmail tool.
 
+Since NC-20260927-001 the host sends an approved Sales card itself once the
+30-second cancel window passes. Sales no longer hands those cards to Mailman;
+a `[HANDOFF: sales→mailman]` now arrives only from an older session or a Chief
+rescue. Follow this procedure unchanged for it. The one-time execution check
+returns the existing receipt when the host already sent the action.
+
 ## Non-negotiable rules
 
 1. Treat the `Body` and `Subject` fields as approved content. Pass both
@@ -80,8 +86,11 @@ The host ignores model drift in recipient, CC, subject, body, thread, Action-ID,
 Party hint, email type, and rendering mode once it resolves one exact action. It reloads the
 customer-facing values from the stored approval card, verifies that card against
 the durable subject/body hash and stored To/CC headers, discards unapproved CC/HTML flags,
-and only then applies primary-recipient/Party, Gmail-resource, content-policy,
-and approved-CC equality checks. It then applies the one-time execution check.
+and only then applies primary-recipient, Gmail-resource, and
+approved-CC equality checks. The approved card is the recipient authority; a CRM Party is
+optional and only drives tracking and interaction logging. Content-policy
+findings were shown on the card before approval and do not re-block the
+approved bytes. It then applies the one-time execution check.
 A repeated confirmed action returns its existing
 receipt without another Gmail send. A process interruption after execution
 begins leaves the action uncertain and blocks automatic retry until Gmail
@@ -95,8 +104,12 @@ The host posts one of these outcomes to the original approval thread:
   recorded.
 - `[EMAIL BLOCKED]`: a deterministic host guard refused the action; nothing was
   sent.
-- `[EMAIL HELD]` or `[EMAIL DELIVERY UNCERTAIN]`: do not retry. An operator must
-  reconcile Gmail before the action can move again.
+- `[EMAIL HELD]`: the external-write safety control or test routing was on;
+  Gmail was not called and the approval is kept.
+- `[EMAIL DELIVERY UNCERTAIN]`: Gmail may or may not have accepted it.
+- For all three, do not retry. An owner types `force send: <reason>` in the
+  approval thread; the host checks Gmail Sent first and then sends the exact
+  approved card.
 - A deterministic pre-execution refusal says `Gmail was not called`; there is
   no receipt to reconcile.
 

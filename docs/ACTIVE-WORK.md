@@ -1,5 +1,56 @@
 # NanoClaw active work
 
+2026-09-27T21:45Z — `NC-20260927-001` make human-approved email send without
+Claude or Codex intervention, owner Claude Code, `in_progress`, C5 (external
+communication and send-boundary change), branch
+`claude/email-send-simplification-20260927` from `acef084b` (release
+`729979b2` plus docs). Owner-directed from the 2026-09-27 audit
+(`docs/reports/2026-09-27-email-send-gates-audit.md`): host sends the exact
+approved card after the cancel window, content/link/discount/schedule checks
+become card warnings, standalone sends no longer need a CRM Party when the
+recipient is the approved Email, approved team CCs are never stripped,
+safety-brake denials hold instead of killing the action, typed approval binds
+to the approval card, L2 auto-approve is disabled until it can arm actions,
+Sales prompt gates the host does not require are removed, and an owner-only
+`force send: <reason>` Slack command reopens a blocked or held action with a
+recorded reason. Overlaps `NC-20260925-001` (Codex, `deployed_unverified`) on
+the same email files; this branch builds on its pushed head so that work is
+included. No commit, push, deploy, Gmail send, Slack post, or production
+write yet. Next: implement, run email-critical and full suites, review, then
+ask the owner before commit and release.
+Addendum 2026-09-28T12:30Z — `validating`; implemented and tested locally,
+not committed, released or deployed. Host executor
+(`src/host-email-executor.ts`, `src/host-email-send.ts`) and a 5 s sweep send
+approved Sales cards after the 30 s cancel window (approvals older than 15 min
+are left for `force send:`); owner `force send: <reason>`
+(`src/email-force-send.ts`; allow-list `EMAIL_FORCE_SEND_SLACK_USERS` in `.env`,
+empty by default, so the owner must set it before release); thread
+stop/cancel/wait/hold and agent `[CANCEL]` stop pre-Gmail actions; the safety
+control and test routing hold (`attention_required`) instead of blocking;
+execution no longer re-blocks on schedule facts or the content guard; approved
+sends need no CRM Party; approved team CCs are kept (the pixel is dropped);
+"send"/"send it"/"approve" bind to the newest unapproved card; L2 is off unless
+`AUTONOMY_L2_ENABLED=true`. Sales prompt split (owner-directed 2026-09-28):
+`groups/sales/CLAUDE.md` 139 lines, `@`-imports `OPERATOR-TURNS.md`,
+`PROCESSING-PROTOCOL.md`, `EDGE-CASES-AND-TOOLS.md`; the NO_ACTION shortcut now
+yields to an operator message (Chisato Nomoto regression). A Sales NO_ACTION on
+an acknowledged work item posts one "No reply needed" notice. Mailman prompts
+say the host sends and a Sales handoff is only a fallback. Unchanged because
+the permission checker refused the edit: the card-post content/schedule
+rejection in `src/ipc.ts` and `src/channels/slack.ts`, and the arm-time refusal
+in `recordApproval`; these still stop a card before approval. Verification:
+typecheck clean; `test:email-critical` 835 + 45 pass; new tests for executor,
+force send, ledger overrides, approval/cancel words, `findSentCopy`, handler
+recipient paths; full suite fails only in 6 files this branch does not touch.
+Correctness and security review found no security hole; its seven defects
+(agent cancel scope, typed approval after feedback, force-send target and race,
+Gmail Sent check window, late Mailman send of a held action, silent late stop,
+plus-addressed own mailbox) are fixed and tested; see the changelog entry.
+Deploy note: the release must carry the three new Sales prompt files and the
+Mini's `~/dev/NanoClaw/groups/sales/` must receive them. Next: review, owner
+decision on commit and release. Chisato has not been replied to; the owner
+handles that instance.
+
 2026-09-25T15:15Z — `NC-20260925-001` restore the normal approved Sales
 email path for existing Gmail conversations, owner Codex, `deployed_unverified`, C5,
 isolated `codex/regular-email-path-20260925` from exact live release

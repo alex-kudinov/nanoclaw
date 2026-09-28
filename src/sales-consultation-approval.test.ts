@@ -70,13 +70,25 @@ describe('selective consultation automatic-approval boundary', () => {
       expect(d.sendMessage).not.toHaveBeenCalled();
     },
   );
-  it('preserves hold-and-send eligibility for a direct factual response', async () => {
+  it('preserves hold-and-send eligibility for a direct factual response when L2 is enabled', async () => {
+    vi.stubEnv('AUTONOMY_L2_ENABLED', 'true');
+    try {
+      storeMessage(message(card()));
+      const d = deps();
+      await autonomyTick(d, new Date(at));
+      expect(getOpenAutonomyPendings()).toHaveLength(1);
+      await autonomyTick(d, new Date('2026-09-07T18:00:00.000Z'));
+      expect(d.injectMessage).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+  it('starts no L2 hold while L2 is disabled (the default, NC-20260927-001)', async () => {
     storeMessage(message(card()));
     const d = deps();
     await autonomyTick(d, new Date(at));
-    expect(getOpenAutonomyPendings()).toHaveLength(1);
-    await autonomyTick(d, new Date('2026-09-07T18:00:00.000Z'));
-    expect(d.injectMessage).toHaveBeenCalledTimes(1);
+    expect(getOpenAutonomyPendings()).toHaveLength(0);
+    expect(d.injectMessage).not.toHaveBeenCalled();
   });
   it.each([
     card().replace('Response-Strategy: DIRECT\n', ''),

@@ -30,6 +30,9 @@ const trackedAuthorityFiles = [
   'groups/sales/VOICE-AND-TONE.md',
   'groups/sales/WORKFLOWS.md',
   'groups/sales/CONSULTATIVE-DIALOGUE.md',
+  'groups/sales/OPERATOR-TURNS.md',
+  'groups/sales/PROCESSING-PROTOCOL.md',
+  'groups/sales/EDGE-CASES-AND-TOOLS.md',
   'scripts/check-doc-continuity.mjs',
   'scripts/sanitize-schema-doc.mjs',
   'tools/refresh-schemas.sh',
@@ -62,11 +65,10 @@ for (const file of requiredFiles) read(file);
 
 function isTracked(relativePath) {
   try {
-    execFileSync(
-      'git',
-      ['ls-files', '--error-unmatch', '--', relativePath],
-      { cwd: root, stdio: 'ignore' },
-    );
+    execFileSync('git', ['ls-files', '--error-unmatch', '--', relativePath], {
+      cwd: root,
+      stdio: 'ignore',
+    });
     return true;
   } catch {
     return false;
@@ -79,16 +81,11 @@ for (const file of trackedAuthorityFiles) {
   }
 }
 
-const migrationDir = path.join(
-  root,
-  'data/business/migrations/nanoclaw-v2',
-);
+const migrationDir = path.join(root, 'data/business/migrations/nanoclaw-v2');
 if (fs.existsSync(migrationDir)) {
   for (const name of fs.readdirSync(migrationDir)) {
     if (
-      (name.endsWith('.sql') ||
-        name.endsWith('.sh') ||
-        name === 'README.md') &&
+      (name.endsWith('.sql') || name.endsWith('.sh') || name === 'README.md') &&
       !isTracked(`data/business/migrations/nanoclaw-v2/${name}`)
     ) {
       failures.push(`business migration source is not Git-tracked: ${name}`);
@@ -116,7 +113,9 @@ if (fs.existsSync(groupsDir)) {
         fs.statSync(path.join(root, relativePath)).isFile() &&
         !isTracked(relativePath)
       ) {
-        failures.push(`group operating support is not Git-tracked: ${relativePath}`);
+        failures.push(
+          `group operating support is not Git-tracked: ${relativePath}`,
+        );
       }
     }
   }
@@ -145,7 +144,9 @@ if (!/^Version:\s+\d+\.\d+\s*$/m.test(protocol)) {
   failures.push('docs/CHANGE-PROTOCOL.md is missing a numeric Version header');
 }
 if (!/^Last updated:\s+\d{4}-\d{2}-\d{2}\s*$/m.test(protocol)) {
-  failures.push('docs/CHANGE-PROTOCOL.md is missing an ISO Last updated header');
+  failures.push(
+    'docs/CHANGE-PROTOCOL.md is missing an ISO Last updated header',
+  );
 }
 
 const activeRows = activeWork
@@ -181,7 +182,9 @@ for (const row of activeRows) {
     failures.push(`invalid active-work status for ${row.id}: ${row.status}`);
   }
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$/.test(row.updated)) {
-    failures.push(`invalid active-work timestamp for ${row.id}: ${row.updated}`);
+    failures.push(
+      `invalid active-work timestamp for ${row.id}: ${row.updated}`,
+    );
   }
   if (
     row.status === 'complete' &&
@@ -226,8 +229,12 @@ for (const match of changelog.matchAll(
 
 for (const row of activeRows) {
   if (
-    ['validating', 'ready_for_review', 'ready_for_deploy', 'deployed_unverified']
-      .includes(row.status) &&
+    [
+      'validating',
+      'ready_for_review',
+      'ready_for_deploy',
+      'deployed_unverified',
+    ].includes(row.status) &&
     !seenChangelogIds.has(row.id)
   ) {
     failures.push(
@@ -243,7 +250,9 @@ const schemaDocs = [
 for (const file of schemaDocs) {
   const text = read(file);
   if (/^Sample row:\s*$/m.test(text)) {
-    failures.push(`${file} contains live sample rows; tracked schemas must be structure-only`);
+    failures.push(
+      `${file} contains live sample rows; tracked schemas must be structure-only`,
+    );
   }
 }
 
@@ -280,10 +289,14 @@ for (const [name, command] of Object.entries(packageData.scripts ?? {})) {
   }
 }
 if (!/^engine-strict=true$/m.test(read('.npmrc'))) {
-  failures.push('.npmrc must reject dependency installation under an unpinned Node');
+  failures.push(
+    '.npmrc must reject dependency installation under an unpinned Node',
+  );
 }
 if (!/^engine-strict=true$/m.test(read('container/agent-runner/.npmrc'))) {
-  failures.push('agent-runner .npmrc must reject unpinned dependency installation');
+  failures.push(
+    'agent-runner .npmrc must reject unpinned dependency installation',
+  );
 }
 const workflowFiles = fs
   .readdirSync(path.join(root, '.github', 'workflows'))
@@ -308,7 +321,9 @@ for (const file of [
   }
 }
 if (!packageJson.includes('sanitize-schema-doc.mjs --self-test')) {
-  failures.push('docs:continuity-check does not run the schema sanitizer self-test');
+  failures.push(
+    'docs:continuity-check does not run the schema sanitizer self-test',
+  );
 }
 const schemaRefresh = read('tools/refresh-schemas.sh');
 if (!schemaRefresh.includes('scripts/sanitize-schema-doc.mjs')) {
