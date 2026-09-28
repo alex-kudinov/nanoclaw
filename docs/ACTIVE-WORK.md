@@ -1,7 +1,7 @@
 # NanoClaw active work
 
 2026-09-27T21:45Z — `NC-20260927-001` make human-approved email send without
-Claude or Codex intervention, owner Claude Code, `in_progress`, C5 (external
+Claude or Codex intervention, owner Claude Code, `deployed_unverified`, C5 (external
 communication and send-boundary change), branch
 `claude/email-send-simplification-20260927` from `acef084b` (release
 `729979b2` plus docs). Owner-directed from the 2026-09-27 audit
@@ -50,6 +50,13 @@ Deploy note: the release must carry the three new Sales prompt files and the
 Mini's `~/dev/NanoClaw/groups/sales/` must receive them. Next: review, owner
 decision on commit and release. Chisato has not been replied to; the owner
 handles that instance.
+Addendum 2026-09-28T17:35Z — `deployed_unverified`. Commit `e43f9acd`
+pushed, released (archive SHA-256 `7c1c2412…953d`, 1,424 files) and activated
+on the Mini with the rollback-capable activator; health verified, Gmail/Slack
+connected. Seven prompts installed and byte-matched before activation;
+`EMAIL_FORCE_SEND_SLACK_USERS` set to the owner's Slack user. Backups under
+`~/.local/share/nanoclaw-release-backups/NC-20260927-001/`. Next: watch the
+first natural approval reach `[EMAIL SENT]` from the host without Mailman.
 
 2026-09-25T15:15Z — `NC-20260925-001` restore the normal approved Sales
 email path for existing Gmail conversations, owner Codex, `deployed_unverified`, C5,

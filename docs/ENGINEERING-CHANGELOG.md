@@ -1695,9 +1695,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Date: 2026-09-28T12:30Z
 - Owner/client: Claude Code, owner-directed after the 2026-09-27 audit
   (`docs/reports/2026-09-27-email-send-gates-audit.md`)
-- State: validating; branch `claude/email-send-simplification-20260927` from
-  `acef084b` (release `729979b2` plus docs); not committed, released or
-  deployed
+- State: deployed_unverified; commit
+  `e43f9acddabf2ab931bd94081b607cc1dc15444a` on
+  `claude/email-send-simplification-20260927` (from `acef084b`, release
+  `729979b2` plus docs), live on the Mini since 2026-09-28T17:32Z
 - Change class: C5, because it changes who executes an approved customer email
   and which checks can stop it
 - Trigger: the owner reported approved emails that would not send and had to
@@ -1763,6 +1764,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   capacity proofs, CNPC registration wrapper, a Trafft shadow fixture), plus a
   website-checkout runner that timed out under full-suite load and passes
   alone.
+- Deployment (2026-09-28T17:32Z): commit `e43f9acd` pushed to origin and
+  built from a clean pinned-Node worktree (Node 22.23.2; runtime doctor ok;
+  typecheck, `test:email-replay` 13/13 and the builder's email-critical gate
+  835 + 45 passed). Source tree `5ce1f77ff95985b9963374e91a01103c139f3ed0`,
+  artifact hash
+  `34eb2a5bffbbd78c8977d020a1c150ad42d326f431e04adc99a2f99f3f17f69b`
+  (1,424 files), archive SHA-256
+  `7c1c241292313785ec15674ddad758fb13e4dc86aaf28ef0f53515c93233953d`.
+  Local fresh extraction and Mini extraction verified; the hash matched on the
+  Mini. Preflight: zero `pending_sends` rows in approved, handoff_routed,
+  mailman_started, executing or attention_required; one Chief worker active.
+  The operational prompts equalled the old release (no untracked edits); they
+  and the service plist and `.env` are backed up privately under
+  `~/.local/share/nanoclaw-release-backups/NC-20260927-001/`. The seven
+  changed/new prompts (`groups/sales/{CLAUDE,WORKFLOWS,OPERATOR-TURNS,
+  PROCESSING-PROTOCOL,EDGE-CASES-AND-TOOLS}.md`,
+  `groups/mailman/{CLAUDE,OUTBOUND-EMAIL}.md`) were copied into the operational
+  `groups/` before activation and byte-match the release.
+  `EMAIL_FORCE_SEND_SLACK_USERS` was set in the Mini `.env` to the one Slack
+  user who made all 338 approvals since 2026-08-01. The dry run named only the
+  three service pointer changes; the activator applied once; rollback plist
+  `~/Library/LaunchAgents/com.nanoclaw.plist.rollback-729979b24bfc-2026-09-28T17-32-37-701Z`.
+  Live health: release mode/verified, commit `e43f9acd`, code root matches,
+  Gmail and Slack connected, one listener, the Chief worker adopted.
+  `email_send_events` gained `actor` and `detail`. The only startup error is
+  the pre-existing checkout-recovery shadow tick failure (4,384 times under the
+  previous process; tracked separately). No customer email was sent by this
+  task.
+- Next: observe a fresh approval in #gru-sales produce `[EMAIL ACTION]`, then
+  `[EMAIL SENT]` with a Gmail receipt about 30 s later without a Mailman
+  handoff, before marking validated. Rollback: run the activator against the
+  `729979b2` release and restore the backed-up prompts.
 
 ### NC-20260925-001 — Restore the regular approved Gmail reply path
 
