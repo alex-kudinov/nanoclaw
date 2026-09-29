@@ -152,6 +152,11 @@ before applying anything.
   lane-bound principal/assignment/decision provenance to follow-up cases,
   remains admin-only, and does not activate projection, drafting, sending,
   provider writes, or follow-up;
+- migration 173 is NC-20260929-001's party display-name upgrade: the owner's
+  exact rule (`fn_display_name_upgrade_verdict`), the host-only
+  `fn_upgrade_party_display_name`, and the append-only admin-only
+  `party_display_name_changes` audit. It changes no existing object and grants
+  nothing to agents; rollback 173 refuses once any name was upgraded;
 - `rollback_118_company_work_ledger.sql` is deliberately not auto-discovered
   and refuses to erase any recorded work history;
 - `rollback_119_company_work_job_runs.sql` is also non-auto-discovered and

@@ -172,6 +172,7 @@ describe('prepareCnpcIntake', () => {
         email: 'jordan@example.org',
         source_hint: 'wordpress',
         agent: 'cnpc:host',
+        upgradeName: true,
       }),
     );
     expect(prepared.intake.id).toBe(501);

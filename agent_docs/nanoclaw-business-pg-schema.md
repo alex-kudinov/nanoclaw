@@ -2116,6 +2116,18 @@ business_v2.fn_*() helpers (see data/business/CLAUDE.md), not base-table DML.
   created_at                    timestamp with time zone NOT NULL DEFAULT=now()
 ```
 
+## business_v2.party_display_name_changes
+
+```
+  id                            bigint               NOT NULL DEFAULT=nextval('business_v2.party_display_name_changes_id_seq'::regclass)
+  party_id                      bigint               NOT NULL
+  previous_display_name         text                 NOT NULL
+  new_display_name              text                 NOT NULL
+  source                        text                 NOT NULL
+  changed_by                    text                 NOT NULL
+  changed_at                    timestamp with time zone NOT NULL DEFAULT=now()
+```
+
 ## business_v2.party_emails
 
 ```

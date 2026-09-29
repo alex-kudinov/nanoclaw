@@ -1,5 +1,26 @@
 # NanoClaw active work
 
+2026-09-29T17:36Z — `NC-20260929-001` upgrade a person's one-word
+`display_name` when a later source knows the full name, owner Claude Code,
+`in_progress`, C5 (identity data), branch `claude/party-name-upgrade-20260929`
+from `0d2b9863` (live release `e43f9acd` plus docs). Owner-approved
+2026-09-29 (TandemOffice session): NanoClaw only names a party at
+`fn_create_party`, so a brochure-form "first name only" stays forever even
+after other sources know the full name (example: party 11641). The registry
+refuses to rename NanoClaw-origin people before 2e, so the fix is here. Exact
+rule, not to be widened: replace only when the current name is one word (no
+whitespace, no `@`), the new name has two or more words and no `@` after
+trimming and collapsing whitespace, and its first word equals the current
+name ignoring case. Scope: migration 173 (rule function, host-only upgrade
+function, append-only `party_display_name_changes` audit); wire it where the
+host already holds a person's own first+last name for an existing party
+(`resolveOrCreateParty` on opt-in for CNPC and Trafft, exact Trafft refs,
+Commerce payer/learner, verified Chaos form submissions' own name fields);
+a backfill CLI over the
+owner's candidate file with a dry run. Overlaps nothing active on these files.
+Next: implement and test, commit, release and apply 173, then a live backfill
+dry run only; the live backfill write waits for a separate go-ahead.
+
 2026-09-27T21:45Z — `NC-20260927-001` make human-approved email send without
 Claude or Codex intervention, owner Claude Code, `deployed_unverified`, C5 (external
 communication and send-boundary change), branch

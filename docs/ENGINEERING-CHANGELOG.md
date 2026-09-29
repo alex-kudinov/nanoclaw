@@ -1690,6 +1690,88 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20260929-001 — Upgrade first-name-only people to their full name
+
+- Date: 2026-09-29T18:10Z
+- Owner/client: Claude Code, owner-approved 2026-09-29 (rule plus backfill)
+- State: validating; implemented and tested locally, not yet committed,
+  migrated or deployed
+- Change class: C5 (identity data: changes who a Party is shown as)
+- Trigger: `fn_create_party` names a person once. 123 Chaos-created people
+  still carry the first name a brochure form asked for (example: party
+  11641), while Encharge, Heartbeat or Commerce know the full name. The
+  Tandem Identity registry copies NanoClaw people and refuses to rename them
+  before 2e, so TandemOffice shows the first name everywhere.
+- Rule (owner, exact, not to be widened): replace `display_name` only when
+  the current name is one word (no whitespace, no `@`), the new name has two
+  or more words and no `@` after trimming and collapsing whitespace, and its
+  first word equals the current name ignoring case. Only live persons.
+- Schema: migration 173 adds `fn_display_name_upgrade_verdict` (the rule,
+  returns `upgrade` or the refusal reason), `fn_display_name_normalize`,
+  host-only `fn_upgrade_party_display_name(party, candidate, source
+  [, expected_current])` and the admin-only append-only
+  `party_display_name_changes` (previous/new name, source, actor). An
+  upgrade sets `parties.updated_at`/`last_updated_by`, which the registry
+  refresh fingerprints (all `parties` columns), so the change reaches the
+  registry and TandemOffice on its next 15-minute run. No agent grant;
+  `fn_create_party` unchanged. Rollback 173 refuses once any row exists.
+- Wiring (a name is offered only where the host holds that person's own
+  name for that person's own email, and only when exactly one party holds
+  the email): `resolveOrCreateParty` on explicit opt-in (`upgradeName: true`:
+  CNPC applicant, Trafft customer by email); exact Trafft customer refs;
+  verified Chaos `form-submitted` events whose form email equals the verified
+  email, using the form's own `first_name/last_name` or
+  `firstName/lastName`, never `participant*`; live Commerce payment
+  deliveries, payer and learner each to their own email. Not wired: Chaos
+  verified-visitor events and the Chaos reconciler (Chaos keeps a visitor's
+  first captured name independently of the form that classified the visitor,
+  so the name is not provably that email's), the pre-payment checkout
+  identity step (unverified email, shared with the TEST runner), agent
+  `fn_create_party` calls, Plutio (NanoClaw only pushes names to Plutio). No
+  Plutio sync is enqueued for an upgrade.
+- Backfill: `dist/party-name-backfill.js --file <tsv> [--apply]` reads the
+  owner's candidate file, picks the one not-all-lowercase variant when a name
+  appears in two capitalisations, and applies the same rule guarded on
+  `display_name` still equal to the file's `cur`. The dry run is a READ ONLY
+  transaction; output is counts only.
+- Files: migration/rollback 173, `src/party-name-upgrade.ts`,
+  `src/party-name-backfill.ts`, `src/identity-join.ts`,
+  `src/cnpc-intake.ts`, `src/webhook-server.ts`,
+  `scripts/build-release.mjs`, tests, `data/business/CLAUDE.md`, migration
+  README, schema reference, project map, active work.
+- Verification (local, Node 22.23.2): typecheck clean. New
+  `party-name-upgrade-migration.test.ts` runs the real base migrations
+  (01-14, 95, 99) plus 173 on a disposable PostgreSQL 16 database: rule
+  verdicts ("steve" to "Steve Rivera" upgrades; multi-word current, different
+  first name, email as either name and one-word candidate refused), audit and
+  attribution through the real `resolveOrCreateParty`, shared-email refusal,
+  Commerce payer/learner, merge following, expected-current guard,
+  append-only audit, no agent EXECUTE, empty rollback and reapply, populated
+  rollback refusal, backfill dry run writing nothing and guarded apply.
+  Unit tests for the helpers, the backfill parser and every call site. Full
+  suite: 6 files fail, the same six as before this change (Contador
+  publication fixtures, local-Postgres academy capacity proofs, CNPC
+  registration wrapper, Trafft shadow time fixture).
+- Security review (Claude, 2026-09-29): definer hygiene, agent reach, input
+  gates, injection, append-only audit and the read-only dry run pass. Three
+  low findings, all fixed: `resolveOrCreateParty` no longer logs the email;
+  its upgrade is now a separate best-effort statement, so a failed upgrade
+  cannot fail party resolution or put a PostgreSQL row detail in an error;
+  the verdict also refuses candidates over 200 characters or holding
+  control, zero-width or bidi-override characters (narrower, never wider).
+- Correctness review (Claude, 2026-09-29): rule SQL, backfill guard, skip
+  reasons, read-only dry run and best-effort paths confirmed. HIGH fixed: the
+  Chaos visitor paths could offer a name Chaos captured from an earlier form,
+  so `chaos-activity` and the reconciler no longer offer names. MEDIUM fixed:
+  `upgradeName` is now opt-in, so a future caller cannot join silently. LOW
+  accepted: the Commerce receiver awaits at most two small transactions
+  before replying; retries are idempotent.
+- Deployment/migration: not yet.
+- Rollback/recovery: code rolls back by the activator. Rollback 173 only while
+  no name was upgraded; afterwards keep the audit and restore a name from
+  `previous_display_name` where `display_name` still equals
+  `new_display_name`, as a separately reviewed step.
+
 ### NC-20260927-001 — Approved email sends without engineer intervention
 
 - Date: 2026-09-28T12:30Z

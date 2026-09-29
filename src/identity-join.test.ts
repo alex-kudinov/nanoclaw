@@ -79,6 +79,55 @@ describe('resolveOrCreateParty', () => {
     ]);
   });
 
+  it('offers display_name to the upgrade rule on opt-in (NC-20260929-001)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: '11641' }] })
+      .mockResolvedValueOnce({ rows: [{ upgraded: true }] });
+    await resolveOrCreateParty({
+      email: 'a@b.com',
+      display_name: 'Steve Rivera',
+      source_hint: 'chaos',
+      upgradeName: true,
+    });
+    expect(mockQuery.mock.calls[0][0]).not.toContain(
+      'fn_upgrade_party_display_name',
+    );
+    const sql = mockQuery.mock.calls[1][0] as string;
+    expect(sql).toContain('resolve_parties_by_email($2::citext)) = 1');
+    expect(sql).toContain('fn_upgrade_party_display_name($1::bigint, $3, $4)');
+    expect(mockQuery.mock.calls[1][1]).toEqual([
+      11641,
+      'a@b.com',
+      'Steve Rivera',
+      'chaos',
+    ]);
+  });
+
+  it('never fails the intake when the name upgrade errors', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: '11641' }] })
+      .mockRejectedValueOnce(new Error('deadlock detected'));
+    await expect(
+      resolveOrCreateParty({
+        email: 'a@b.com',
+        display_name: 'Steve Rivera',
+        upgradeName: true,
+      }),
+    ).resolves.toBe(11641);
+  });
+
+  it('skips the upgrade rule unless the caller opts in', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: '12' }] });
+    await resolveOrCreateParty({
+      email: 'a@b.com',
+      display_name: 'Steve Rivera',
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery.mock.calls[0][0]).not.toContain(
+      'fn_upgrade_party_display_name',
+    );
+  });
+
   it('uses default source_hint=manual when not provided', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ id: '1' }] });
     await resolveOrCreateParty({
@@ -154,19 +203,61 @@ describe('resolveTrafftCustomer', () => {
       'trafft',
       JSON.stringify({ trafft_customer_id: '28' }),
     ]);
+    expect(mockQuery.mock.calls[2][0]).toContain(
+      'fn_upgrade_party_display_name',
+    );
+    expect(mockQuery.mock.calls[2][1]).toEqual([
+      10046,
+      'jamie.maak@finvari.com',
+      'Jamie Maak',
+      'trafft',
+    ]);
   });
 
   it('uses an exact Trafft customer reference before email resolution', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: '10088' }] });
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: '10088' }] })
+      .mockResolvedValueOnce({ rows: [{ upgraded: false }] });
     const id = await resolveTrafftCustomer({
       customerId: 88,
       customerEmail: 'changed@example.com',
     });
     expect(id).toBe(10088);
-    expect(mockQuery).toHaveBeenCalledTimes(1);
+    expect(mockQuery).toHaveBeenCalledTimes(2);
     expect(mockQuery.mock.calls[0][0]).toContain('party_external_refs');
     expect(mockQuery.mock.calls[0][0]).not.toContain('fn_create_party');
     expect(mockQuery.mock.calls[0][1]).toEqual(['88']);
+    expect(mockQuery.mock.calls[1][0]).not.toContain('fn_create_party');
+  });
+
+  it('offers the exact customer their own Trafft name (NC-20260929-001)', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: '10088' }] })
+      .mockResolvedValueOnce({ rows: [{ upgraded: true }] });
+    await resolveTrafftCustomer({
+      customerId: 88,
+      customerEmail: 'jamie@example.com',
+      customerFirstName: 'Jamie',
+      customerLastName: 'Rivera',
+    });
+    expect(mockQuery.mock.calls[1][0]).toContain(
+      "fn_upgrade_party_display_name($1::bigint, $2, 'trafft')",
+    );
+    expect(mockQuery.mock.calls[1][1]).toEqual([10088, 'Jamie Rivera']);
+  });
+
+  it('never fails a booking when the name upgrade errors', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: '10088' }] })
+      .mockRejectedValueOnce(new Error('lock timeout'));
+    await expect(
+      resolveTrafftCustomer({
+        customerId: 88,
+        customerEmail: 'jamie@example.com',
+        customerFirstName: 'Jamie',
+        customerLastName: 'Rivera',
+      }),
+    ).resolves.toBe(10088);
   });
 
   it('includes trafft_customer_id only when provided', async () => {

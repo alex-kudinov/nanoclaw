@@ -100,6 +100,11 @@ import {
   type CommerceBookkeeperResult,
 } from './commerce-bookkeeper.js';
 import {
+  chaosFormNameCandidate,
+  upgradeCommerceOrderNames,
+  upgradePartyNameByEmail,
+} from './party-name-upgrade.js';
+import {
   verifyFiniteBillingRelay,
   type FiniteBillingRelay,
 } from './finite-billing.js';
@@ -1017,6 +1022,14 @@ export class WebhookServer {
               )
             : null;
         if (capacitySummary) summary = `${summary}\n${capacitySummary}`;
+        if (
+          envelope.environment === 'live' &&
+          envelope.deliveryKind === 'payment'
+        ) {
+          // Paid live order: payer and learner each name their own party
+          // (NC-20260929-001). Best-effort; never affects the delivery.
+          await upgradeCommerceOrderNames(envelope.order);
+        }
         const contadorGroups = Object.entries(
           this.deps.getRegisteredGroups(),
         ).filter(([, group]) => group.folder === 'contador');
@@ -1904,6 +1917,21 @@ export class WebhookServer {
         const name =
           displayName || (email ? email.split('@')[0] : null) || 'Anonymous';
         const action = describeFormSubmission(subtype);
+
+        // A verified visitor's own form names the party that holds that
+        // email (NC-20260929-001). Best-effort; never blocks the notice.
+        const formName = chaosFormNameCandidate({
+          identityStatus: identity,
+          email,
+          fields,
+        });
+        if (formName) {
+          await upgradePartyNameByEmail({
+            ...formName,
+            source: 'chaos-form',
+            agent: 'form-submitted',
+          });
+        }
 
         const IDENTITY_KEYS = new Set([
           'first_name',

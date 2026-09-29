@@ -4,6 +4,19 @@ Status: tracked operating guide. Running PostgreSQL schema and permissions
 remain implementation authority; ordered migrations in
 `data/business/migrations/nanoclaw-v2/` are the portable change history.
 
+Migration 173 (NC-20260929-001) lets a later source improve a person's
+first-name-only `display_name`. `fn_display_name_upgrade_verdict(current,
+candidate)` is the owner's exact rule: the current name is one word (no
+whitespace, no `@`); the candidate, trimmed with whitespace collapsed, has two
+or more words and no `@`; its first word equals the current name ignoring
+case (it also refuses a candidate over 200 characters or holding control,
+zero-width or bidi-override characters). `fn_upgrade_party_display_name(party_id, candidate, source
+[, expected_current])` applies it to a live person (following merges), sets
+`updated_at`/`last_updated_by`, and appends one row to the admin-only,
+append-only `party_display_name_changes` (previous and new name, source,
+actor). Host-only: agents get no EXECUTE, and `fn_create_party` is unchanged.
+Rollback refuses once any name was upgraded.
+
 Migration 172 is the narrow custom-invoice successor to the existing live
 finite-billing migration 171. It changes only the cadence CHECK on
 `business_v2.finite_billing_contracts` to admit the exact signed `custom`
@@ -612,6 +625,7 @@ still needs a reply.
 | `fn_add_party_role` | `(bigint, text) → bigint` | Idempotent role assignment |
 | `fn_merge_parties` | `(bigint, bigint, text) → void` | Merge two parties (admin) |
 | `canonical_party_id` | `(bigint) → bigint` | Follow merge chain to canonical |
+| `fn_upgrade_party_display_name` | `(bigint, text, text, text) → boolean` | Host-only (no agent grant): one-word name → full name under the migration-173 rule, audited |
 | `resolve_parties_by_email` | `(citext) → bigint` | Find party by email |
 | `best_party_by_email` | `(citext) → bigint` | Best-match party by email |
 

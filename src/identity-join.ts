@@ -36,6 +36,12 @@ export interface ResolveOrCreatePartyInput {
   metadata?: Record<string, unknown>;
   /** If set, runs the call inside withAgentContext for audit attribution. */
   agent?: string;
+  /**
+   * Opt in only when display_name is this person's own name typed next to
+   * this email: offers it to the migration-173 upgrade rule ("steve" ->
+   * "Steve Rivera") when the email belongs to exactly one party.
+   */
+  upgradeName?: boolean;
 }
 
 function trim(s: unknown): string | null {
@@ -72,6 +78,47 @@ async function callFn<R extends QueryResultRow>(
   return r.rows;
 }
 
+const CREATE_PARTY_SQL = `SELECT business_v2.fn_create_party($1, $2, $3::citext, $4, $5::jsonb)::text AS id`;
+
+/**
+ * The migration-173 name upgrade for the party fn_create_party returned. It
+ * runs only when the email belongs to exactly one party; a new party already
+ * carries display_name, so the rule leaves it alone. The audit source is the
+ * source hint.
+ */
+const UPGRADE_RESOLVED_NAME_SQL = `SELECT CASE
+   WHEN (SELECT count(*) FROM business_v2.resolve_parties_by_email($2::citext)) = 1
+   THEN business_v2.fn_upgrade_party_display_name($1::bigint, $3, $4)
+   ELSE false END AS upgraded`;
+
+/** Best-effort: a failed upgrade never fails the intake that resolved the party. */
+async function upgradeResolvedName(
+  partyId: number,
+  email: string,
+  displayName: string,
+  source: string,
+  agent: string | undefined,
+): Promise<boolean> {
+  try {
+    const rows = await callFn<{ upgraded: boolean }>(
+      UPGRADE_RESOLVED_NAME_SQL,
+      [partyId, email, displayName, source],
+      agent,
+    );
+    return rows[0]?.upgraded === true;
+  } catch (err) {
+    logger.warn(
+      {
+        party_id: partyId,
+        source,
+        err: err instanceof Error ? err.name : 'unknown',
+      },
+      'identity-join: name upgrade skipped after error',
+    );
+    return false;
+  }
+}
+
 /**
  * Idempotent party resolution. Returns the canonical party_id for the email,
  * creating a new party (with auto-enqueued Plutio sync) if none exists.
@@ -85,23 +132,56 @@ export async function resolveOrCreateParty(
   if (!display_name)
     throw new Error('resolveOrCreateParty: display_name required');
 
+  const source = opts.source_hint ?? 'manual';
   const rows = await callFn<{ id: string }>(
-    `SELECT business_v2.fn_create_party($1, $2, $3::citext, $4, $5::jsonb)::text AS id`,
+    CREATE_PARTY_SQL,
     [
       'person',
       display_name,
       email,
-      opts.source_hint ?? 'manual',
+      source,
       JSON.stringify(opts.metadata ?? {}),
     ],
     opts.agent,
   );
   const id = Number(rows[0].id);
+  const nameUpgraded =
+    opts.upgradeName === true &&
+    (await upgradeResolvedName(id, email, display_name, source, opts.agent));
   logger.debug(
-    { email, source_hint: opts.source_hint, party_id: id },
+    {
+      source_hint: opts.source_hint,
+      party_id: id,
+      name_upgraded: nameUpgraded,
+    },
     'identity-join: resolveOrCreateParty',
   );
   return id;
+}
+
+/**
+ * The customer's own name, offered to the migration-173 rule for the party
+ * an exact Trafft customer ref points at. Best-effort: never fails a booking.
+ */
+async function upgradeExactTrafftName(
+  partyId: number,
+  c: TrafftCustomerLike,
+  agent: string | undefined,
+): Promise<boolean> {
+  try {
+    const rows = await callFn<{ upgraded: boolean }>(
+      `SELECT business_v2.fn_upgrade_party_display_name($1::bigint, $2, 'trafft') AS upgraded`,
+      [partyId, buildDisplayName(c)],
+      agent,
+    );
+    return rows[0]?.upgraded === true;
+  } catch (err) {
+    logger.warn(
+      { party_id: partyId, err: err instanceof Error ? err.name : 'unknown' },
+      'identity-join: Trafft name upgrade skipped after error',
+    );
+    return false;
+  }
 }
 
 /**
@@ -136,7 +216,12 @@ export async function resolveTrafftCustomer(
     if (exact.length === 1) {
       const id = Number(exact[0].id);
       logger.debug(
-        { source_hint: 'trafft', party_id: id, identity: 'exact_customer_ref' },
+        {
+          source_hint: 'trafft',
+          party_id: id,
+          identity: 'exact_customer_ref',
+          name_upgraded: await upgradeExactTrafftName(id, c, opts.agent),
+        },
         'identity-join: resolveTrafftCustomer',
       );
       return id;
@@ -151,5 +236,6 @@ export async function resolveTrafftCustomer(
     source_hint: 'trafft',
     metadata: c.customerId ? { trafft_customer_id: String(c.customerId) } : {},
     agent: opts.agent,
+    upgradeName: true,
   });
 }

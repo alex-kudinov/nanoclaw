@@ -369,6 +369,8 @@ export async function prepareCnpcIntake(
       cnpc_entry_id: input.source.entry_id,
     },
     agent: 'cnpc:host',
+    // The applicant's own first and last name next to their own email.
+    upgradeName: true,
   });
 
   const eligibility = deriveCnpcEligibility(input);

@@ -15,6 +15,8 @@ import { logger } from './logger.js';
 
 const mockHandleStripePayment = vi.hoisted(() => vi.fn());
 const mockHandleChaosActivity = vi.hoisted(() => vi.fn());
+const mockUpgradePartyNameByEmail = vi.hoisted(() => vi.fn(async () => false));
+const mockUpgradeCommerceOrderNames = vi.hoisted(() => vi.fn(async () => 0));
 
 vi.mock('./logger.js', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -25,6 +27,15 @@ vi.mock('./stripe-payment-host.js', () => ({
 vi.mock('./chaos-activity.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./chaos-activity.js')>();
   return { ...actual, handleChaosActivity: mockHandleChaosActivity };
+});
+vi.mock('./party-name-upgrade.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('./party-name-upgrade.js')>();
+  return {
+    ...actual,
+    upgradePartyNameByEmail: mockUpgradePartyNameByEmail,
+    upgradeCommerceOrderNames: mockUpgradeCommerceOrderNames,
+  };
 });
 
 vi.mock('fs', async () => {
@@ -454,6 +465,12 @@ describe('WebhookServer', () => {
       'recorded\nCapacity: committed and verified (command_applied; case website-sale:adyen:pool-v1)',
       { fromGroup: 'contador' },
     );
+    expect(mockUpgradeCommerceOrderNames).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payer: expect.objectContaining({ email: 'buyer@example.test' }),
+        learner: expect.objectContaining({ email: 'buyer@example.test' }),
+      }),
+    );
   });
 
   it('accepts an authenticated Adyen TEST receipt without any official projection or capacity write', async () => {
@@ -548,6 +565,7 @@ describe('WebhookServer', () => {
     expect(response.status).toBe(200);
     expect(handle).toHaveBeenCalledOnce();
     expect(recordCapacitySale).not.toHaveBeenCalled();
+    expect(mockUpgradeCommerceOrderNames).not.toHaveBeenCalled();
     expect(deps.sendMessage).toHaveBeenCalledWith(
       'slack:CONTADOR',
       'TEST payment validated — excluded from official ledger',
@@ -1863,6 +1881,94 @@ describe('WebhookServer — form-submitted observed suppression', () => {
       502,
       expect.objectContaining({ handled_by: 'form-submitted:host-handler' }),
     );
+  });
+});
+
+describe('WebhookServer — form-submitted name upgrade (NC-20260929-001)', () => {
+  const formWebhook: WebhookDefinition = {
+    id: 'form-submitted',
+    name: 'Form Submitted',
+    group: 'main',
+    chat_jid: 'slack:C123',
+    prompt_template: '{{payload}}',
+    secret: 'hook-secret',
+    context_mode: 'isolated',
+    created_at: '2026-01-01T00:00:00Z',
+  };
+
+  async function fire(body: unknown): Promise<void> {
+    const deps = makeDeps({
+      archiveWebhook: vi.fn(async () => ({ id: 601, isDuplicate: false })),
+      markWebhookHandled: vi.fn(async () => {}),
+    });
+    const s = new WebhookServer(deps);
+    await s.start();
+    (s as unknown as { webhooks: WebhookDefinition[] }).webhooks = [
+      formWebhook,
+    ];
+    try {
+      await makeRequest(deps.port, {
+        path: '/hook/form-submitted',
+        headers: { 'x-webhook-secret': 'hook-secret' },
+        body: JSON.stringify(body),
+      });
+      await new Promise((r) => setTimeout(r, 40));
+    } finally {
+      await s.stop().catch(() => {});
+    }
+  }
+
+  const checkout = {
+    display_name: 'steve',
+    email: 'Steve@Example.com',
+    identity_status: 'verified',
+    form_page: '/mcs/mentor-coaching-foundations/',
+    fields: {
+      email: 'steve@example.com',
+      firstName: 'Steve',
+      lastName: 'Rivera',
+      participantEmail: 'kid@example.com',
+      participantFirstName: 'Steve',
+      participantLastName: 'Junior',
+    },
+  };
+
+  beforeEach(() => mockUpgradePartyNameByEmail.mockClear());
+
+  it("offers the verified submitter's own first and last name", async () => {
+    await fire(checkout);
+    expect(mockUpgradePartyNameByEmail).toHaveBeenCalledOnce();
+    expect(mockUpgradePartyNameByEmail).toHaveBeenCalledWith({
+      email: 'steve@example.com',
+      candidate: 'Steve Rivera',
+      source: 'chaos-form',
+      agent: 'form-submitted',
+    });
+  });
+
+  it('offers nothing for an unverified visitor', async () => {
+    await fire({ ...checkout, identity_status: 'observed' });
+    expect(mockUpgradePartyNameByEmail).not.toHaveBeenCalled();
+  });
+
+  it("offers nothing when the form's email is not the verified email", async () => {
+    await fire({
+      ...checkout,
+      fields: { ...checkout.fields, email: 'other@example.com' },
+    });
+    expect(mockUpgradePartyNameByEmail).not.toHaveBeenCalled();
+  });
+
+  it('never reads participant fields as the submitter name', async () => {
+    await fire({
+      ...checkout,
+      fields: {
+        email: 'steve@example.com',
+        participantFirstName: 'Steve',
+        participantLastName: 'Junior',
+      },
+    });
+    expect(mockUpgradePartyNameByEmail).not.toHaveBeenCalled();
   });
 });
 
