@@ -2,7 +2,7 @@
 
 2026-09-29T17:36Z — `NC-20260929-001` upgrade a person's one-word
 `display_name` when a later source knows the full name, owner Claude Code,
-`in_progress`, C5 (identity data), branch `claude/party-name-upgrade-20260929`
+`deployed_unverified`, C5 (identity data), branch `claude/party-name-upgrade-20260929`
 from `0d2b9863` (live release `e43f9acd` plus docs). Owner-approved
 2026-09-29 (TandemOffice session): NanoClaw only names a party at
 `fn_create_party`, so a brochure-form "first name only" stays forever even
@@ -20,6 +20,23 @@ a backfill CLI over the
 owner's candidate file with a dry run. Overlaps nothing active on these files.
 Next: implement and test, commit, release and apply 173, then a live backfill
 dry run only; the live backfill write waits for a separate go-ahead.
+Addendum 2026-09-29T18:20Z — commit `17b2deb4` pushed; release archive
+SHA-256 `4336b263…e06d` (1,432 files) verified locally and on the Mini.
+Backup `~/.local/share/nanoclaw-release-backups/NC-20260929-001/`
+(custom-format `business_v2` dump, `pg_restore --list` ok, plus plist).
+Migration 173 (SHA-256 `ce5b2610…339a`) applied on the Mini: table empty,
+owner `nanoclaw_admin`, zero non-admin grants, upgrade function EXECUTE
+admin-only.
+Addendum 2026-09-29T18:22Z — `deployed_unverified`. After a natural drain
+(zero containers, zero active email actions) the activator moved the service
+from `e43f9acd` to `17b2deb4` (rollback plist
+`com.nanoclaw.plist.rollback-e43f9acddabf-2026-09-29T18-19-49-721Z`). Health:
+release mode verified at `17b2deb4`, one process, one listener, Gmail and
+Slack connected; the only error is the pre-existing checkout-recovery shadow
+tick. Backfill dry run on the live database (candidate file kept privately in
+the backup directory): 123 rows, 123 would upgrade, 0 skipped; audit table
+still empty. Next: the live backfill (`--apply`) only after the owner's
+separate go-ahead; then watch a natural verified form or Commerce payment.
 
 2026-09-27T21:45Z — `NC-20260927-001` make human-approved email send without
 Claude or Codex intervention, owner Claude Code, `deployed_unverified`, C5 (external

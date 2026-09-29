@@ -1694,8 +1694,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 - Date: 2026-09-29T18:10Z
 - Owner/client: Claude Code, owner-approved 2026-09-29 (rule plus backfill)
-- State: validating; implemented and tested locally, not yet committed,
-  migrated or deployed
+- State: deployed_unverified; commit
+  `17b2deb4162cb33e2d6fc46810892eddc2fe28ea` on
+  `claude/party-name-upgrade-20260929` (from `0d2b9863`), live on the Mini
+  since 2026-09-29T18:20Z; live backfill not run
 - Change class: C5 (identity data: changes who a Party is shown as)
 - Trigger: `fn_create_party` names a person once. 123 Chaos-created people
   still carry the first name a brochure form asked for (example: party
@@ -1766,7 +1768,28 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   `upgradeName` is now opt-in, so a future caller cannot join silently. LOW
   accepted: the Commerce receiver awaits at most two small transactions
   before replying; retries are idempotent.
-- Deployment/migration: not yet.
+- Deployment (2026-09-29T18:20Z): built from the clean pinned-Node worktree
+  (email-critical gate 835 + 45 passed). Source tree
+  `e29430c40f209754b279bae639986ebe0269125f`, artifact hash
+  `da51f7b58fb9c07da21739bc87d40a365c0791d33d90773cad63fcba8dee9452`
+  (1,432 files), archive SHA-256
+  `4336b263607b595d8cd52ab1f10c63309e469055e4160e56c535f762a211e06d`,
+  verified locally and on the Mini. Backup
+  `~/.local/share/nanoclaw-release-backups/NC-20260929-001/`
+  (custom-format `business_v2` dump SHA-256
+  `e35448643c8c65a5766cee094a63167259a00c83d4ef3de23c90f4ddfebeb0ef`,
+  `pg_restore --list` ok; plist copy). Migration 173 (SHA-256
+  `ce5b2610c6c270991a38fbcbcc0140938f6a5631beaf288595e2149fafba339a`)
+  applied from the release: table empty, owned by `nanoclaw_admin`, zero
+  non-admin grants, upgrade function EXECUTE admin-only. The activator ran
+  after a natural drain (a Sales and then a Certifier conversation finished;
+  zero active email actions) and moved `e43f9acd` to `17b2deb4`; rollback
+  plist `com.nanoclaw.plist.rollback-e43f9acddabf-2026-09-29T18-19-49-721Z`.
+  Health: release mode verified at `17b2deb4`, one process, one listener,
+  Gmail and Slack connected; only the pre-existing checkout-recovery shadow
+  tick error. No group prompt changed.
+- Backfill dry run (live database, READ ONLY): 123 rows, 123 would upgrade,
+  0 skipped; audit table still empty. `--apply` waits for the owner.
 - Rollback/recovery: code rolls back by the activator. Rollback 173 only while
   no name was upgraded; afterwards keep the audit and restore a name from
   `previous_display_name` where `display_name` still equals
