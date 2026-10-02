@@ -1110,3 +1110,23 @@ Large generated/vendor/build artifacts were inventoried, not read as source.
 - **Handoff:** dated context checkpoint, not necessarily current authority.
 - **Skill:** a Claude Code procedure that can add/change capability; availability
   does not imply installation.
++
+
+## Current Practitioner Certifier package checkpoint
+
+`NC-20261001-001` completed five missing live Practitioner packages: Career
+(20 CCE, 14 Core + 6 Resource), ADHD (20, 13 + 7), Running a Coaching Business
+(40, 9 + 31), Systemic Coaching for Executive Teams (30, 22 + 8), and the
+completion-only Setting Up Your Coaching Practice credential with no ICF CCE or
+qualification claim. Each has a rendered/read-back design, source-bound Detail,
+branded template, empty canonical `v1` Draft campaign, preset, and exact aliases.
+
+All seven catalog-bound Practitioner presets retain catalog revision 2 and its
+exact SHA-256. Production fingerprints and `willSend:false` dry runs pass for
+all seven. The Coaching Tools preset records the exact existing badge linked to
+its canonical campaign on 2026-08-30; that source-only reconciliation did not
+alter a provider object or credential. Administrator prerequisite attestation,
+recipient search, pending review, explicit send authorization, duplicate, and
+uncertainty gates remain unchanged. Exact IDs, hashes, rendered evidence,
+rollback paths, and zero-side-effect proof are in
+`docs/reports/NC-20261001-001-CERTIFIER-PACKAGE-GAPS.md`.

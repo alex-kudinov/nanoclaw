@@ -24,10 +24,11 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
   attestation and issuance/send gates remain unchanged.
 - Verification: exact provider readbacks, rendered design/email evidence, zero
   credentials across the five campaigns, focused tests, full five-test
-  Sertifier suite, toolbox `65/65`, independent five-fingerprint verification,
-  five production no-send dry runs, live file hashes, and Mini health.
-- Commits: NanoClaw source/evidence `dbb6aa75`; toolbox current Sertifier
-  baseline dependencies plus package configuration `93a02b2d` on local-only
+  Sertifier suite, toolbox `65/65`, independent seven-fingerprint verification,
+  seven production no-send dry runs, live file hashes, and Mini health.
+- Commits: NanoClaw source/evidence `dbb6aa75` + `662ae107`; toolbox current
+  Sertifier baseline dependencies plus package configuration `93a02b2d` and
+  source-drift reconciliation `4e098ab0` on local-only
   `codex/sertifier-package-coverage-20261001` (no remote configured).
 - Deployment: prompt and preset mounts hot-synced without daemon release or
   restart. Production stayed on verified release `17b2deb4162` / Node 22.23.2.
@@ -37,8 +38,10 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 - Evidence: `docs/reports/NC-20261001-001-CERTIFIER-PACKAGE-GAPS.md` and its
   rendered assets. No certificate, email, DM, graduate announcement, customer
   message, schedule, schema, worker, runtime dependency, auth path, or restart
-  was created. An inherited Coaching Tools `badgeId` all-preset mismatch remains
-  outside this task; all five new fingerprints pass independently.
+  was created. The Coaching Tools preset now records the exact matching badge
+  linked to its canonical campaign on August 30. That source-only reconciliation
+  preserved campaign `v1`, its one existing credential, and every guard; no
+  provider write occurred. All seven Practitioner fingerprints pass.
 
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 

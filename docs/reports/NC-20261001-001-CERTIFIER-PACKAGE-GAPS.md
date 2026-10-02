@@ -237,7 +237,9 @@ The final remaining-four payload/receipt file SHA-256 is
 Rendered design evidence is stored under
 `docs/reports/NC-20261001-001-assets/`: `career-design.jpg`, `adhd-design.jpg`,
 `business-design.jpg`, `systemic-design-corrected.jpg`, and
-`practice-design.jpg`. Systemic was corrected from `20` to `22` Core
+`practice-design.jpg`. `coaching-tools-existing-badge.jpg` independently shows
+the exact existing Coaching Tools badge linked by the live campaign. Systemic
+was corrected from `20` to `22` Core
 Competency hours while retaining `30` total and `8` Resource Development;
 Foundation was normalized to the exact title and completion-only wording with
 no ICF badge or CCE/hour claim. The other three designs were already correct.
@@ -259,14 +261,22 @@ templates together.
 - Each new preset independently passes live and production-mounted
   `verify-campaigns`. Each production `.invalid` dry run resolves its exact
   campaign and component IDs with `willSend:false`.
-- A broad all-existing-preset verification also surfaced one inherited baseline
-  mismatch on `coaching-tools-mastery` (`badgeId`). It does not affect any of
-  the five new package fingerprints and was not altered under this task.
+- A broad all-existing-preset verification surfaced provider/source drift on
+  `coaching-tools-mastery`: source expected `badgeId:null`, while its existing
+  campaign had linked matching badge `08df063c-574e-4be3-8adc-aa9472401d3f`
+  on 2026-08-30. Readback and rendered proof established that the badge is the
+  exact `TPS: Coaching Tools Mastery` design. Source was reconciled to that
+  existing component; no provider object, campaign, credential, or delivery was
+  changed. All seven Practitioner campaign fingerprints and no-send dry runs
+  then passed.
 - Final local/live hashes match: prompt
   `8859d9030f68d65cb330562416fd02d71a94e0399e18865fe1a5e3343e232c82`,
-  presets `83b0306da64409bd0e16179dd004c7492ae99573f6d8a6bf9bb2416518e00fe2`.
+  presets `07e454fc3224bcad906808cc95f8d013895fe47acee7fa0f33fd5956eff583ac`.
   Final rollback files are in
   `/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20261001-001-all5-20261002T0206Z`.
+  The original Coaching Tools `badgeId:null` source is retained there and in
+  toolbox commit `93a02b2`; the immediate badge-reconciliation rollback is
+  `/Users/xbohdpukc/.local/share/nanoclaw-deploy-backups/NC-20261001-001-badge-reconcile-20261002T0220Z`.
 - The Mini remains healthy on verified immutable release
   `17b2deb4162cb33e2d6fc46810892eddc2fe28ea`, Node 22.23.2, with Gmail and
   Slack connected, no waiting groups, and the Certifier circuit closed. No
@@ -294,6 +304,8 @@ remote). The toolbox commit captures the complete current Sertifier subsystem
 because the already-live canonical-campaign and follow-through implementation
 was untracked or uncommitted on the starting toolbox branch; a preset-only
 commit would not have been independently runnable.
+Source-only Aug-30 badge drift was reconciled by follow-up toolbox commit
+`4e098ab09678fe0bb5544d43118d852fae8b6d74` on the same branch.
 
 No student certificate was issued and no certificate email, direct message,
 graduate announcement, customer message, schedule, or service restart occurred.
