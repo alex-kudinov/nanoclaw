@@ -1,0 +1,113 @@
+{
+  "task_id": "NC-20261001-001",
+  "state": "live_verified",
+  "program_facts": {
+    "catalog_id": "practitioner-series",
+    "revision": 2,
+    "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"
+  },
+  "preset": {
+    "code": "career-transition-coaching",
+    "description": "The Practitioner Series: Career & Transition Coaching (20 ICF CCE units: 14 Core Competency + 6 Resource Development)",
+    "designId": "08df06b5-f0a5-4dec-855e-a17c8b31aff6",
+    "detailId": "08df2025-7d97-482d-8098-c0177e5e7ec8",
+    "badgeId": null,
+    "emailTemplateId": "08df2026-10fb-45ab-8910-f5d751929786",
+    "emailFromName": "Tandem Coaching Academy",
+    "emailSubject": "Your Career & Transition Coaching Certificate is Here",
+    "emailFromAddress": "info@tandemcoach.co",
+    "titlePrefix": "TPS Career & Transition Coaching",
+    "sendAliases": [
+      "career coaching",
+      "career transition",
+      "career transition coaching",
+      "career & transition",
+      "career & transition coaching",
+      "career and transition coaching",
+      "practitioner series career"
+    ],
+    "campaign": {
+      "strategy": "canonical_versioned",
+      "id": "08df2026-d59c-45a8-8cfb-ae4082b5ef08",
+      "version": 1,
+      "key": "career-transition-coaching@v1",
+      "private": false,
+      "allowedStatuses": [1, 3]
+    },
+    "requiredAttributes": [],
+    "programFacts": {
+      "catalogId": "practitioner-series",
+      "revision": 2,
+      "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"
+    }
+  },
+  "detail": {
+    "title": "Career & Transition Coaching",
+    "description": "<p>This credential recognizes verified completion of Career & Transition Coaching, a 20-hour, fully asynchronous ICF Continuing Coach Education (CCE) program in The Practitioner Series for practicing and credentialed coaches. The program develops the judgment to coach career transitions without drifting into resume advice, salary tactics, or consulting.</p><p><br></p><p>The holder applied the Coach the Transition framework — Read the Persona, Hold the Stance, Contract the Agreement, and Land the Experiment — across five common transition doorways. The holder also practiced three-party contracting, referral discernment, and engagement planning through a Three-Persona Playbook capstone.</p><p><br></p><p>This certificate documents 20 ICF CCE hours: 14 Core Competency and 6 Resource Development. The curriculum includes 3 hours of ethics instruction within the approved Core Competency hours; those hours are not represented as a separate ICF ethics designation. The credential is released only after every required lesson is complete, the scenario quiz is passed at 80% or higher, and the capstone is rated Satisfactory by the instructor of record.</p>",
+    "type": 19,
+    "duration": 4,
+    "durationNumber": 20,
+    "durationType": 1,
+    "cost": 1,
+    "level": 4,
+    "skills": [
+      {
+        "title": "Career and Transition Coaching",
+        "skillId": "",
+        "languageCode": "en"
+      }
+    ],
+    "earningCriteria": "<p>To earn this credential, the holder completed and was verified on every required element of the program.</p><p><br></p><ol><li>Completed every required lesson in the core Heartbeat course; the platform completion record is the source of truth.</li><li>Passed the 24-question Career &amp; Transition Coaching Scenario Quiz with a score of at least 80%. The quiz draws from a 36-item bank across persona recognition, the four moves under live conditions, and referral-case identification. Up to three attempts are allowed.</li><li>Submitted the Three-Persona Playbook capstone: three complete persona sections covering recognition, engagement arc, contracting language, committed tools, referral patterns, and discipline scripts.</li><li>Earned a Satisfactory rating from the instructor of record, Alex Kudinov, MCC. A Revise outcome includes specific written feedback and one revision opportunity.</li></ol><p><br></p><p>The credential is released only after the administrator confirms lesson completion, the passing quiz result, and the approved capstone in the learner's course record.</p>",
+    "dontSendExpireDateEmail": false
+  },
+  "template": {
+    "cloneSourceId": "08deb7a0-f9f4-42c5-85ac-084123c70544",
+    "id": "08df2026-10fb-45ab-8910-f5d751929786",
+    "title": "TPS: Career & Transition Coaching",
+    "body": "Hi [recipient.name],\n\nCongratulations — your Career & Transition Coaching credential from Tandem Coaching Academy is now live.\n\nThis credential confirms verified completion of a 20-hour ICF Continuing Coach Education program in The Practitioner Series. You completed every required lesson, passed the scenario quiz, and earned a Satisfactory rating on your instructor-reviewed Three-Persona Playbook capstone.\n\nYour credential documents 20 CCE units: 14 Core Competency and 6 Resource Development. The curriculum includes 3 hours of ethics instruction within the Core Competency hours.\n\nKeep using the four moves — Read the Persona, Hold the Stance, Contract the Agreement, and Land the Experiment — to coach the transition without taking over the client's decision.\n\nUse your verified credential link for LinkedIn, your ICF renewal records, and your professional profile.\n\n— Tandem Coaching Academy",
+    "footerText": "Tandem Coaching Academy · The Practitioner Series",
+    "brandButtonColor": "#09705b",
+    "renderedCredentialButton": "View My Credential",
+    "preservedBrandControls": {
+      "qrHelper": true,
+      "customBrand": true,
+      "organizationLogo": true,
+      "organizationSocials": true,
+      "checkboxes1Through5": true
+    }
+  },
+  "canonicalCampaign": {
+    "id": "08df2026-d59c-45a8-8cfb-ae4082b5ef08",
+    "title": "Canonical | career-transition-coaching | v1",
+    "privateCampaign": false,
+    "status": 1,
+    "designId": "08df06b5-f0a5-4dec-855e-a17c8b31aff6",
+    "detailId": "08df2025-7d97-482d-8098-c0177e5e7ec8",
+    "badgeId": null,
+    "emailTemplateId": "08df2026-10fb-45ab-8910-f5d751929786",
+    "emailFromName": "Tandem Coaching Academy",
+    "emailSubject": "Your Career & Transition Coaching Certificate is Here",
+    "emailFromAddress": "info@tandemcoach.co"
+  },
+  "verification": {
+    "requiredBeforeProviderWrite": [
+      "rendered design visibly shows Career & Transition Coaching",
+      "rendered design visibly shows 20 total, 14 Core Competency, and 6 Resource Development hours",
+      "rendered design does not show a superseded title or hour split"
+    ],
+    "requiredBeforeHorizontalReplication": [
+      "Detail and template read back by exact provider ID and content",
+      "canonical campaign readback matches the exact component and sender fingerprint",
+      "canonical campaign contains zero recipients",
+      "local and live preset/prompt hashes match",
+      "production .invalid dry run resolves exact IDs with willSend false"
+    ],
+    "issuanceAuthority": "The existing administrator prerequisite attestation remains the authority for lesson, quiz, and capstone completion. This package adds no automatic completion validation.",
+    "livePromptSha256": "7851820a6ccba67eee0c4bae2d8105ee2cfa2e2d92b1384d738146ebc6529e97",
+    "livePresetSha256": "36d1e093611d538506379ec492e6266420a45e2daf9f19fc4f5ba4c8f4a52b30",
+    "campaignFingerprintVerified": true,
+    "campaignCredentialTotal": 0,
+    "productionDryRunWillSend": false,
+    "productionRelease": "17b2deb4162cb33e2d6fc46810892eddc2fe28ea"
+  }
+}

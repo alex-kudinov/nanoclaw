@@ -1,0 +1,172 @@
+{
+  "task_id": "NC-20261001-001",
+  "state": "live_verified",
+  "program_facts": {
+    "catalog_id": "practitioner-series",
+    "revision": 2,
+    "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"
+  },
+  "template_defaults": {
+    "cloneSourceId": "08df2026-10fb-45ab-8910-f5d751929786",
+    "footerText": "Tandem Coaching Academy · The Practitioner Series",
+    "brandButtonColor": "#09705b",
+    "renderedCredentialButton": "View My Credential"
+  },
+  "packages": {
+    "adhd-coaching": {
+      "preset": {
+        "code": "adhd-coaching",
+        "description": "The Practitioner Series: ADHD Coaching (20 ICF CCE units: 13 Core Competency + 7 Resource Development)",
+        "designId": "08df06c8-703a-428b-83d6-97a207742906",
+        "detailId": "08df2027-bf67-4c56-890e-7e5c0aa55db3",
+        "badgeId": null,
+        "emailTemplateId": "08df2028-b07e-41b8-8a76-586e8172b485",
+        "emailFromName": "Tandem Coaching Academy",
+        "emailSubject": "Your ADHD Coaching Certificate is Here",
+        "emailFromAddress": "info@tandemcoach.co",
+        "titlePrefix": "TPS ADHD Coaching",
+        "sendAliases": ["adhd", "adhd coaching", "adhd coach training", "practitioner series adhd"],
+        "campaign": {"strategy": "canonical_versioned", "id": "08df2028-f8db-4835-8003-61817f369e84", "version": 1, "key": "adhd-coaching@v1", "private": false, "allowedStatuses": [1, 3]},
+        "requiredAttributes": [],
+        "programFacts": {"catalogId": "practitioner-series", "revision": 2, "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"}
+      },
+      "detail": {
+        "title": "ADHD Coaching",
+        "description": "<p>This credential recognizes verified completion of ADHD Coaching, a 20-hour, fully asynchronous ICF Continuing Coach Education (CCE) program in The Practitioner Series for practicing and credentialed coaches. The program develops ADHD-informed coaching judgment that stays within coaching scope and avoids diagnosis, treatment, clinical advice, or client dependency.</p><p><br></p><p>The holder applied the PAAC 5 Essentials — ADHD Lens, Safety, Collaboration, Wonder, and Action — across life-coaching, executive, and entrepreneur lenses. The holder practiced regulation-aware presence, contracting, cross-lens recognition, experiment design, and boundary and referral discipline, then built an ADHD Coach's Working Reference.</p><p><br></p><p>This certificate documents 20 ICF CCE hours: 13 Core Competency and 7 Resource Development. The curriculum includes 3 hours of ethics instruction within the approved Core Competency hours; those hours are not represented as a separate ICF ethics designation. The credential is released only after every required lesson is complete, the lens-shift scenario quiz is passed at 80% or higher, and the capstone is rated Satisfactory by the instructor of record.</p>",
+        "type": 19,
+        "duration": 4,
+        "durationNumber": 20,
+        "durationType": 1,
+        "cost": 1,
+        "level": 4,
+        "skills": [{"title": "ADHD-Informed Coaching", "skillId": "", "languageCode": "en"}],
+        "earningCriteria": "<p>To earn this credential, the holder completed and was verified on every required element of the program.</p><p><br></p><ol><li>Completed every required lesson in the Heartbeat course; the platform completion record is the source of truth.</li><li>Passed the 30-question lens-shift scenario quiz with a score of at least 80% (24 of 30), covering cross-lens recognition, boundary triggers, and contracting moves.</li><li>Submitted the ADHD Coach's Working Reference, a complete three-lens working document with its central boundary-decision flowchart and required coaching moves.</li><li>Earned a Satisfactory rating from the instructor of record, Cherie Silas, MCC, against the published five-criterion rubric. A Revise outcome includes specific written feedback and a revision path.</li></ol><p><br></p><p>The credential is released only after the administrator confirms lesson completion, the passing quiz result, and the approved capstone in the learner's course record.</p>",
+        "dontSendExpireDateEmail": false
+      },
+      "template": {
+        "id": "08df2028-b07e-41b8-8a76-586e8172b485",
+        "title": "TPS: ADHD Coaching",
+        "body": "Hi [recipient.name],\n\nCongratulations — your ADHD Coaching credential from Tandem Coaching Academy is now live.\n\nThis credential confirms verified completion of a 20-hour ICF Continuing Coach Education program in The Practitioner Series. You completed every required lesson, passed the lens-shift scenario quiz, and earned a Satisfactory rating on your instructor-reviewed ADHD Coach's Working Reference.\n\nYour credential documents 20 CCE units: 13 Core Competency and 7 Resource Development. The curriculum includes 3 hours of ethics instruction within the Core Competency hours.\n\nKeep using the three lenses and the PAAC 5 Essentials to stay ADHD-informed while holding the coaching, clinical, and dependency boundaries clearly.\n\nUse your verified credential link for LinkedIn, your ICF renewal records, and your professional profile.\n\n— Tandem Coaching Academy"
+      }
+    },
+    "running-coaching-business": {
+      "preset": {
+        "code": "running-coaching-business",
+        "description": "The Practitioner Series: Running a Coaching Business (40 ICF CCE units: 9 Core Competency + 31 Resource Development)",
+        "designId": "08df06c7-e92b-4daa-84ea-9281b66e0e51",
+        "detailId": "08df2027-c044-4c8c-8a8a-83b16c918a70",
+        "badgeId": null,
+        "emailTemplateId": "08df2029-1268-4299-849d-02e296497d9d",
+        "emailFromName": "Tandem Coaching Academy",
+        "emailSubject": "Your Running a Coaching Business Certificate is Here",
+        "emailFromAddress": "info@tandemcoach.co",
+        "titlePrefix": "TPS Running a Coaching Business",
+        "sendAliases": ["running a coaching business", "coaching business course", "practitioner series business"],
+        "campaign": {"strategy": "canonical_versioned", "id": "08df2029-41bf-4e75-8c83-81df43851b60", "version": 1, "key": "running-coaching-business@v1", "private": false, "allowedStatuses": [1, 3]},
+        "requiredAttributes": [],
+        "programFacts": {"catalogId": "practitioner-series", "revision": 2, "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"}
+      },
+      "detail": {
+        "title": "Running a Coaching Business",
+        "description": "<p>This credential recognizes verified completion of Running a Coaching Business, a 40-hour, fully asynchronous ICF Continuing Coach Education (CCE) program in The Practitioner Series for practicing and credentialed coaches. The program develops the operator discipline to build and run a durable coaching practice while preserving coaching ethics, clear agreements, and sound professional boundaries.</p><p><br></p><p>The holder applied the Coach as Operator framework across niche, offer design, demand generation, discovery, sponsored coaching, operations, finance, ethics, artificial intelligence, growth, and sustainable practice. The holder also assembled a buyer-ready Signature Artifact Pack linking the offer, discovery conversation, and 90-day execution plan.</p><p><br></p><p>This certificate documents 40 ICF CCE hours: 9 Core Competency and 31 Resource Development. The curriculum includes 3 hours of ethics instruction within the approved Core Competency hours; those hours are not represented as a separate ICF ethics designation. The credential is released only after every required lesson is complete, the scenario quiz is passed at 80% or higher, and the capstone is rated Satisfactory by the instructor of record.</p>",
+        "type": 19,
+        "duration": 4,
+        "durationNumber": 40,
+        "durationType": 1,
+        "cost": 1,
+        "level": 4,
+        "skills": [{"title": "Coaching Practice Development", "skillId": "", "languageCode": "en"}],
+        "earningCriteria": "<p>To earn this credential, the holder completed and was verified on every required element of the program.</p><p><br></p><ol><li>Completed every required lesson in the Heartbeat course; the platform completion record is the source of truth.</li><li>Passed the 24-question Running a Coaching Business Scenario Quiz with a score of at least 80%, covering discovery as coaching, three-party contracting, and ethical marketing and sales.</li><li>Submitted the Signature Artifact Pack: a one-page offer, a five-move discovery-call script with Core Competency anchors, and a week-by-week 90-day execution roadmap.</li><li>Earned a Satisfactory rating from the instructor of record, Alex Kudinov, MCC, against the published capstone rubric. A Revise outcome includes specific written feedback and one revision opportunity.</li></ol><p><br></p><p>The credential is released only after the administrator confirms lesson completion, the passing quiz result, and the approved capstone in the learner's course record.</p>",
+        "dontSendExpireDateEmail": false
+      },
+      "template": {
+        "id": "08df2029-1268-4299-849d-02e296497d9d",
+        "title": "TPS: Running a Coaching Business",
+        "body": "Hi [recipient.name],\n\nCongratulations — your Running a Coaching Business credential from Tandem Coaching Academy is now live.\n\nThis credential confirms verified completion of a 40-hour ICF Continuing Coach Education program in The Practitioner Series. You completed every required lesson, passed the scenario quiz, and earned a Satisfactory rating on your instructor-reviewed Signature Artifact Pack.\n\nYour credential documents 40 CCE units: 9 Core Competency and 31 Resource Development. The curriculum includes 3 hours of ethics instruction within the Core Competency hours.\n\nKeep treating niche, offer, demand, discovery, operations, and growth as one operating system, with coaching ethics and professional boundaries built into the practice.\n\nUse your verified credential link for LinkedIn, your ICF renewal records, and your professional profile.\n\n— Tandem Coaching Academy"
+      }
+    },
+    "systemic-coaching-executive-teams": {
+      "preset": {
+        "code": "systemic-coaching-executive-teams",
+        "description": "The Practitioner Series: Systemic Coaching for Executive Teams (30 ICF CCE units: 22 Core Competency + 8 Resource Development)",
+        "designId": "08df06c8-c983-40a0-8083-d37c94619ff2",
+        "detailId": "08df2028-38aa-4dc1-877a-6286e417859d",
+        "badgeId": null,
+        "emailTemplateId": "08df2029-4c0a-46f2-81e2-ad571b3e9a9e",
+        "emailFromName": "Tandem Coaching Academy",
+        "emailSubject": "Your Systemic Coaching for Executive Teams Certificate is Here",
+        "emailFromAddress": "info@tandemcoach.co",
+        "titlePrefix": "TPS Systemic Coaching",
+        "sendAliases": ["systemic coaching", "systemic coaching for executive teams", "coaching the collision", "practitioner series systemic"],
+        "campaign": {"strategy": "canonical_versioned", "id": "08df2029-6b09-48e1-8d08-9cbc6f3b0e68", "version": 1, "key": "systemic-coaching-executive-teams@v1", "private": false, "allowedStatuses": [1, 3]},
+        "requiredAttributes": [],
+        "programFacts": {"catalogId": "practitioner-series", "revision": 2, "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"}
+      },
+      "detail": {
+        "title": "Systemic Coaching for Executive Teams",
+        "description": "<p>This credential recognizes verified completion of Systemic Coaching for Executive Teams, a 30-hour, fully asynchronous ICF Continuing Coach Education (CCE) program in The Practitioner Series for practicing and credentialed coaches. The program develops the judgment to coach the system in the room and help executive teams hold structural tensions without diagnosing personalities or resolving the collision for them.</p><p><br></p><p>The holder applied the Coaching the Collision framework — See the System, Read the Collision, Work the Field, and Metabolize, Don't Resolve. The holder practiced relationship-system mapping, professional-formation and trust-currency reads, constellations, Deep Democracy, multi-party agreements, boundary discipline, and intervention planning.</p><p><br></p><p>This certificate documents 30 ICF CCE hours: 22 Core Competency and 8 Resource Development. The curriculum includes 3 hours of ethics instruction within the approved Core Competency hours; those hours are not represented as a separate ICF ethics designation. The credential is released only after every required lesson is complete, the Scope &amp; Ethics Quiz is passed at 80% or higher, and the capstone is rated Satisfactory by the instructor of record.</p>",
+        "type": 19,
+        "duration": 4,
+        "durationNumber": 30,
+        "durationType": 1,
+        "cost": 1,
+        "level": 4,
+        "skills": [{"title": "Systemic Executive Team Coaching", "skillId": "", "languageCode": "en"}],
+        "earningCriteria": "<p>To earn this credential, the holder completed and was verified on every required element of the program.</p><p><br></p><ol><li>Completed every required lesson in the Heartbeat course; the platform completion record is the source of truth.</li><li>Passed the Scope &amp; Ethics Quiz with a score of at least 80%, covering scope and boundary, multi-party ethics, and reading the system.</li><li>Submitted the Executive-System Map capstone on a real, anonymized executive system: a Relationship-System Map, a map-linked metabolize-not-resolve Intervention Plan, and a Formation-Collision Reflection.</li><li>Earned a Satisfactory rating from the instructor of record, Cherie Silas, MCC, against the published capstone rubric. A Revise outcome includes specific written feedback and one revision opportunity.</li></ol><p><br></p><p>The credential is released only after the administrator confirms lesson completion, the passing quiz result, and the approved capstone in the learner's course record.</p>",
+        "dontSendExpireDateEmail": false
+      },
+      "template": {
+        "id": "08df2029-4c0a-46f2-81e2-ad571b3e9a9e",
+        "title": "TPS: Systemic Coaching for Executive Teams",
+        "body": "Hi [recipient.name],\n\nCongratulations — your Systemic Coaching for Executive Teams credential from Tandem Coaching Academy is now live.\n\nThis credential confirms verified completion of a 30-hour ICF Continuing Coach Education program in The Practitioner Series. You completed every required lesson, passed the Scope & Ethics Quiz, and earned a Satisfactory rating on your instructor-reviewed Executive-System Map capstone.\n\nYour credential documents 30 CCE units: 22 Core Competency and 8 Resource Development. The curriculum includes 3 hours of ethics instruction within the Core Competency hours.\n\nKeep using the four moves — See the System, Read the Collision, Work the Field, and Metabolize, Don't Resolve — to build the team's capacity to hold structural tensions on purpose.\n\nUse your verified credential link for LinkedIn, your ICF renewal records, and your professional profile.\n\n— Tandem Coaching Academy"
+      }
+    },
+    "setting-up-coaching-practice": {
+      "preset": {
+        "code": "setting-up-coaching-practice",
+        "description": "The Practitioner Series: Setting Up Your Coaching Practice (course completion; no ICF CCE hours)",
+        "designId": "08df06c7-6da9-4460-8bfc-561b07be7b91",
+        "detailId": "08df2028-7f6d-4a2c-83a4-0f9266b024c5",
+        "badgeId": null,
+        "emailTemplateId": "08df2029-5b33-4bb7-8c58-b075d6129155",
+        "emailFromName": "Tandem Coaching Academy",
+        "emailSubject": "Your Setting Up Your Coaching Practice Certificate is Here",
+        "emailFromAddress": "info@tandemcoach.co",
+        "titlePrefix": "TPS Setting Up Your Coaching Practice",
+        "sendAliases": ["setting up your coaching practice", "setting up a coaching practice", "coaching practice setup", "practitioner series practice foundation"],
+        "campaign": {"strategy": "canonical_versioned", "id": "08df2029-8b8b-49c9-8ce3-f219c448aaba", "version": 1, "key": "setting-up-coaching-practice@v1", "private": false, "allowedStatuses": [1, 3]},
+        "requiredAttributes": [],
+        "programFacts": {"catalogId": "practitioner-series", "revision": 2, "sha256": "d84b3b06db50d74eb38d4a55b55acf0a9d5d654d66aaa791d3dc935fe117af00"}
+      },
+      "detail": {
+        "title": "Setting Up Your Coaching Practice",
+        "description": "<p>This credential recognizes verified completion of Setting Up Your Coaching Practice, a fully asynchronous Practitioner Series course for coaches building the operational foundation of a practice. This is a course-completion credential and does not document ICF Continuing Coach Education hours.</p><p><br></p><p>The holder applied the Coach as Founder framework across entity formation, banking and bookkeeping, payments and invoicing, professional-service selection, first-year tax discipline, retirement vehicles, insurance, and the annual operating cycle. The holder completed a Founding Pack documenting the working foundation of the practice.</p><p><br></p><p>The credential is released only after every required lesson is complete and the seven-component Founding Pack is rated Satisfactory by the instructor of record.</p>",
+        "type": 19,
+        "cost": 1,
+        "level": 4,
+        "skills": [{"title": "Coaching Practice Formation", "skillId": "", "languageCode": "en"}],
+        "earningCriteria": "<p>To earn this course-completion credential, the holder completed and was verified on every required element of the program.</p><p><br></p><ol><li>Completed every required lesson in the Heartbeat course; the platform completion record is the source of truth.</li><li>Submitted the seven-component Founding Pack documenting: the filed entity; banking and bookkeeping separation; a live payment processor and client policies; the Find Your Pros scorecard; an activated Year-1 calendar; a chosen retirement vehicle with setup status; and an errors-and-omissions policy with the relevant coverage review.</li><li>Earned a Satisfactory rating from the instructor of record, Alex Kudinov, MCC, against the published capstone rubric. A Revise outcome includes specific written feedback and one revision opportunity.</li></ol><p><br></p><p>This credential records verified course completion. It does not represent ICF CCE hours or a coaching qualification.</p>",
+        "dontSendExpireDateEmail": false
+      },
+      "template": {
+        "id": "08df2029-5b33-4bb7-8c58-b075d6129155",
+        "title": "TPS: Setting Up Your Coaching Practice",
+        "body": "Hi [recipient.name],\n\nCongratulations — your Setting Up Your Coaching Practice credential from Tandem Coaching Academy is now live.\n\nThis credential confirms verified completion of The Practitioner Series course. You completed every required lesson and earned a Satisfactory rating on your instructor-reviewed Founding Pack.\n\nThe Founding Pack documents the operating foundation you built across entity, banking and bookkeeping, payments, professional support, first-year tax discipline, retirement, and insurance. This is a course-completion credential; it does not document ICF CCE hours.\n\nKeep using the Coach as Founder framework and your implementation map to maintain the foundation as the practice changes.\n\nUse your verified credential link for LinkedIn and your professional profile.\n\n— Tandem Coaching Academy"
+      }
+    }
+  },
+  "issuanceAuthority": "The existing administrator prerequisite attestation remains the authority for completion. These packages add no automatic completion validation.",
+  "verification": {
+    "campaignFingerprintsVerified": true,
+    "campaignCredentialTotals": {
+      "adhd-coaching": 0,
+      "running-coaching-business": 0,
+      "systemic-coaching-executive-teams": 0,
+      "setting-up-coaching-practice": 0
+    },
+    "productionDryRunsWillSend": false,
+    "livePromptSha256": "8859d9030f68d65cb330562416fd02d71a94e0399e18865fe1a5e3343e232c82",
+    "livePresetSha256": "83b0306da64409bd0e16179dd004c7492ae99573f6d8a6bf9bb2416518e00fe2",
+    "productionRelease": "17b2deb4162cb33e2d6fc46810892eddc2fe28ea"
+  }
+}
