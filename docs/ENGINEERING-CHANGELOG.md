@@ -8,6 +8,38 @@ Protocol: `docs/CHANGE-PROTOCOL.md`
 
 ## Unreleased
 
+### NC-20261001-001 — Complete five missing Practitioner Certifier packages
+
+- Date: 2026-10-02T02:12Z
+- Owner/client: Codex with explicit GPT-5.6 Sol/high execution and
+  owner-authorized provider setup/mounted configuration activation
+- State: complete; five packages active and live-verified, with no recipient or
+  communication side effect
+- Change class: C3 provider configuration and mounted Certifier activation
+- Outcome: Career & Transition Coaching, ADHD Coaching, Running a Coaching
+  Business, Systemic Coaching for Executive Teams, and the non-CCE Setting Up
+  Your Coaching Practice completion course now each have one rendered design,
+  source-bound Detail, branded delivery template, empty canonical `v1` Draft
+  campaign, preset, and exact aliases. Existing administrator prerequisite
+  attestation and issuance/send gates remain unchanged.
+- Verification: exact provider readbacks, rendered design/email evidence, zero
+  credentials across the five campaigns, focused tests, full five-test
+  Sertifier suite, toolbox `65/65`, independent five-fingerprint verification,
+  five production no-send dry runs, live file hashes, and Mini health.
+- Commits: NanoClaw source/evidence `dbb6aa75`; toolbox current Sertifier
+  baseline dependencies plus package configuration `93a02b2d` on local-only
+  `codex/sertifier-package-coverage-20261001` (no remote configured).
+- Deployment: prompt and preset mounts hot-synced without daemon release or
+  restart. Production stayed on verified release `17b2deb4162` / Node 22.23.2.
+- Review: Claude not used; material uncertainty was absent after the Career
+  walking skeleton, exact readbacks, tests, zero-recipient searches and live
+  dry runs, so the two-part risk gate was not met.
+- Evidence: `docs/reports/NC-20261001-001-CERTIFIER-PACKAGE-GAPS.md` and its
+  rendered assets. No certificate, email, DM, graduate announcement, customer
+  message, schedule, schema, worker, runtime dependency, auth path, or restart
+  was created. An inherited Coaching Tools `badgeId` all-preset mismatch remains
+  outside this task; all five new fingerprints pass independently.
+
 ### NC-20260815-006 — Refuse to run a release from inside the release, and say which knowledge tree agents read
 
 - Date: 2026-08-15T20:35Z

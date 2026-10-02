@@ -146,7 +146,8 @@ but the first provider mutation is held at the required rendered-design gate.
 - The source-bound Career Detail, delivery copy, preset shape, aliases, campaign
   fingerprint, and proof checklist are prepared in
   `docs/reports/NC-20261001-001-CAREER-PACKAGE-PAYLOAD.json` (SHA-256
-  `2de1e1db3a636147b7edd87b437695b78cb9e6bff8c78c8322a326cf4c84988f`).
+  `36c59a37f60e8cf2fe3b138627d37963eb6b21ed2a42f322f057ffc5138f5921`
+  after final receipts were recorded).
   Provider-assigned IDs remain deliberately null.
 - The production Mini checkout is `main` at
   `a6e4b13a64a4f0c744da83f74852d52aae764e2f`; the running immutable release is
@@ -230,6 +231,8 @@ campaigns are public Draft containers with the exact design, Detail, template,
 sender, subject, and address fingerprints. Exact per-campaign credential
 searches returned zero. The seven Practitioner Series delivery templates now
 comprise the two existing courses plus these five additions.
+The final remaining-four payload/receipt file SHA-256 is
+`51a94043a8b20e312f6aa7af6875c089331d0c948d1232bbcf022188e8ace248`.
 
 Rendered design evidence is stored under
 `docs/reports/NC-20261001-001-assets/`: `career-design.jpg`, `adhd-design.jpg`,
@@ -282,6 +285,15 @@ material uncertainty was not present after the bounded Career proof, exact
 provider readbacks, deterministic tests, zero-recipient searches, mount hashes,
 and production dry runs. This is established package configuration, not a novel
 authorization or issuance architecture.
+
+Source/evidence commits: NanoClaw `dbb6aa75` on
+`codex/continuity-reconciliation`; toolbox
+`93a02b2d2b2f6763cdba88223dd8538c3110c37f` on the local-only branch
+`codex/sertifier-package-coverage-20261001` (the toolbox repository has no
+remote). The toolbox commit captures the complete current Sertifier subsystem
+because the already-live canonical-campaign and follow-through implementation
+was untracked or uncommitted on the starting toolbox branch; a preset-only
+commit would not have been independently runnable.
 
 No student certificate was issued and no certificate email, direct message,
 graduate announcement, customer message, schedule, or service restart occurred.
