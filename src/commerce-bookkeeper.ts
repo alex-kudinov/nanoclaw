@@ -444,7 +444,10 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     surchargeCents < 0 ||
     surchargeCents > orderAmount
   ) {
-    throw new CommerceBookkeeperRequestError('order.surchargeCents invalid', 422);
+    throw new CommerceBookkeeperRequestError(
+      'order.surchargeCents invalid',
+      422,
+    );
   }
   const preparedEconomics = economics(raw.economics, orderAmount);
   let refund: CommerceBookkeeperEnvelope['refund'] = null;
