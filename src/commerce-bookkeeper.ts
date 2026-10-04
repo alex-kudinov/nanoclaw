@@ -76,6 +76,8 @@ export interface CommerceBookkeeperEnvelope {
     productId: string;
     productName: string;
     amountCents: number;
+    /** Credit card surcharge inside amountCents (0 when none); bookkeeping records it as charged. */
+    surchargeCents: number;
     currency: string;
     rosterPolicy: 'catalog' | 'none';
     payer: { firstName: string; lastName: string; email: string };
@@ -406,6 +408,11 @@ export function prepareCommerceBookkeeperEnvelope(input: {
   const currency = typeof amount.currency === 'string' ? amount.currency : '';
   const amountValue = Number(amount.value);
   const orderAmount = Number(order.amountCents);
+  // Commerce 1.44.107+ sends the actual surcharge; earlier senders omit it.
+  const surchargeCents =
+    order.surchargeCents === undefined || order.surchargeCents === null
+      ? 0
+      : Number(order.surchargeCents);
   const environment = text(raw.environment, 'environment', 8);
   const deliveryKind = text(raw.deliveryKind, 'deliveryKind', 24);
   const orderMerchantReference = text(
@@ -431,6 +438,13 @@ export function prepareCommerceBookkeeperEnvelope(input: {
     !['payment', 'refund', 'fee_reconciliation'].includes(deliveryKind)
   ) {
     throw new CommerceBookkeeperRequestError('delivery scope invalid', 422);
+  }
+  if (
+    !Number.isSafeInteger(surchargeCents) ||
+    surchargeCents < 0 ||
+    surchargeCents > orderAmount
+  ) {
+    throw new CommerceBookkeeperRequestError('order.surchargeCents invalid', 422);
   }
   const preparedEconomics = economics(raw.economics, orderAmount);
   let refund: CommerceBookkeeperEnvelope['refund'] = null;
@@ -580,6 +594,7 @@ export function prepareCommerceBookkeeperEnvelope(input: {
       productId,
       productName,
       amountCents: orderAmount,
+      surchargeCents,
       currency,
       rosterPolicy,
       payer,

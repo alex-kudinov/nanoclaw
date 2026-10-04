@@ -1,5 +1,18 @@
 # NanoClaw active work
 
+2026-10-04T00:50Z — `NC-20261003-001` record the actual credit card surcharge in the
+Payment Log, owner Claude Code, `validating`, C4 (signed Commerce payment projection),
+branch `claude/payment-log-surcharge-20261003` from live release `17b2deb4`.
+Owner-directed (Peri `decision-credit-card-surcharge-policy-v2-2026-10-03`: "Bookkeeping
+records the actual surcharge"; build-out item 5). Commerce 1.44.107+ signs
+`order.surchargeCents` (0 when none) inside the gross `amountCents`. The receiver now
+parses it (absent → 0; non-integer, negative or above the amount → 422) and the
+Contador writer adds a `Surcharge` header at Payment Log Q1 and the dollars at Q on
+surcharged rows, with readback, and names it in the payment receipt. No new endpoint,
+table, migration, worker, credential or provider call. Overlaps nothing active on these
+files. Next: commit, release build, zero-work drain, activate on the Mini, live health
+readback; first surcharged Live payment waits for the owner's switch-on.
+
 2026-09-29T17:36Z — `NC-20260929-001` upgrade a person's one-word
 `display_name` when a later source knows the full name, owner Claude Code,
 `in_progress`, C5 (identity data), branch `claude/party-name-upgrade-20260929`

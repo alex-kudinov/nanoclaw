@@ -1,5 +1,26 @@
 # NanoClaw engineering changelog
 
+# 2026-10-04 — NC-20261003-001 credit card surcharge in the Payment Log
+
+- State: `validating`; implementation and focused tests complete; full suite shows only
+  failures that also fail on live release `17b2deb4` (6 files) plus one load-flaky
+  disposable-Postgres file that passes alone.
+- Change class: C4 (signed Commerce Bookkeeper projection into the Payment Log).
+- Outcome: `prepareCommerceBookkeeperEnvelope` carries `order.surchargeCents` (absent → 0;
+  invalid → 422 `order.surchargeCents invalid`). `process-commerce-payment.cjs` writes a
+  `Surcharge` header at Q1 when first needed and the surcharge dollars at Q on surcharged
+  payment rows, reading the cell back; the receipt says "(includes $X credit card
+  surcharge)". Amount (F), fee/net (G:H) and every other column are unchanged; the
+  surcharge stays inside the gross amount as charged.
+- Topology: no new endpoint, table, migration, service, worker, credential or provider
+  call. Commerce side shipped in Commerce 1.44.107 (Peri evidence
+  `2026-10-03-credit-card-surcharge-1.44.107-release.md`).
+- Files: `src/commerce-bookkeeper.ts`, `src/commerce-bookkeeper.test.ts`,
+  `tools/contador/process-commerce-payment.cjs`, Active Work, this changelog.
+- Verification: `runtime:doctor`, `typecheck`, `test:email-replay`, `test:email-critical`
+  pass under Node 22.23.2; `commerce-bookkeeper.test.ts` 19/19 including the new case.
+- Release state: not yet built or deployed.
+
 # 2026-09-24 — NC-20260924-001 Commerce Bookkeeper accept-and-flag
 
 - State: `in_progress`; local implementation and tests complete, not released.

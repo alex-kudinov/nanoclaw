@@ -13,6 +13,8 @@ const ROSTER_ID = process.env.SHEETS_ROSTER_ID;
 // The host passes an explicit path; Contador's container mounts the same key here.
 const SA_PATH = process.env.SHEETS_SA_JSON || '/workspace/extra/service-accounts/sheets-service-account.json';
 const PAYMENT_PROVIDER_HEADER = 'Payment Provider';
+// Column Q: the credit card surcharge inside the amount, as charged (empty when none).
+const SURCHARGE_HEADER = 'Surcharge';
 let accessToken = null;
 
 function fail(message) { throw new Error(message); }
@@ -149,6 +151,7 @@ function buildFact(envelope) {
     transactionDate: format(event), recordedDate: format(new Date()),
     learnerName: `${learner.firstName || ''} ${learner.lastName || ''}`.trim(), learnerEmail: String(learner.email || '').toLowerCase(),
     productName: envelope.order.productName, amountDollars: (envelope.order.amountCents / 100).toFixed(2), currency: envelope.order.currency,
+    surchargeDollars: Number(envelope.order.surchargeCents || 0) > 0 ? (Number(envelope.order.surchargeCents) / 100).toFixed(2) : '',
     cohort: envelope.order.cohort || null, rosterPolicy: envelope.order.rosterPolicy,
     economics: commerceEconomics(envelope.order.amountCents, envelope.economics),
   };
@@ -162,8 +165,15 @@ async function ensurePaymentProviderHeader() {
   if (verified !== PAYMENT_PROVIDER_HEADER) fail('payment provider header readback mismatch');
 }
 
+async function ensureSurchargeHeader() {
+  const current = String((await get(PAYMENTS_ID, 'Payment Log!Q1')).values?.[0]?.[0] || '').trim();
+  if (current && current !== SURCHARGE_HEADER) fail('surcharge header conflict');
+  if (!current) await update(PAYMENTS_ID, 'Payment Log!Q1', [[SURCHARGE_HEADER]]);
+}
+
 async function recordPaymentLog(fact) {
   await ensurePaymentProviderHeader();
+  if (fact.surchargeDollars) await ensureSurchargeHeader();
   const ids = (await get(PAYMENTS_ID, 'Payment Log!J:J')).values || [];
   const index = ids.findIndex((row, i) => i > 0 && row[0] === fact.pspReference);
   const row = [fact.transactionDate, fact.recordedDate, fact.learnerName, fact.learnerEmail, fact.productName, fact.amountDollars, fact.economics?.feeDollars || '', fact.economics?.netDollars || '', fact.currency, fact.pspReference, 'paid'];
@@ -185,6 +195,11 @@ async function recordPaymentLog(fact) {
   }
   if (!sheetRow) fail('payment log row unavailable');
   await update(PAYMENTS_ID, `Payment Log!P${sheetRow}`, [['Adyen']]);
+  if (fact.surchargeDollars) {
+    await update(PAYMENTS_ID, `Payment Log!Q${sheetRow}`, [[fact.surchargeDollars]]);
+    const recorded = String((await get(PAYMENTS_ID, `Payment Log!Q${sheetRow}`)).values?.[0]?.[0] || '');
+    if (sheetMoneyCents(recorded) !== Number(fact.surchargeDollars.replace('.', ''))) fail('payment log surcharge readback mismatch');
+  }
   await extendPaymentLogFilter(sheetRow);
   const identity = (await get(PAYMENTS_ID, `Payment Log!J${sheetRow}:K${sheetRow}`)).values?.[0] || [];
   const provider = String((await get(PAYMENTS_ID, `Payment Log!P${sheetRow}`)).values?.[0]?.[0] || '');
@@ -422,7 +437,7 @@ function formatCommerceSummary(fact, paymentLog, roster, exceptions = [], delive
         ? 'Student Roster: held — needs your decision below'
         : `Student Roster: recorded and verified (${destinations})`;
   return [
-    `Payment received: ${fact.learnerName} — ${fact.productName} — $${fact.amountDollars} ${fact.currency}`,
+    `Payment received: ${fact.learnerName} — ${fact.productName} — $${fact.amountDollars} ${fact.currency}${fact.surchargeDollars ? ` (includes $${fact.surchargeDollars} credit card surcharge)` : ''}`,
     `Learner: ${fact.learnerName} <${fact.learnerEmail}>`,
     `Provider: Adyen · ${fact.pspReference}`,
     `Paid: ${fact.transactionDate} · Recorded: ${paymentLog.recordedDate}`,

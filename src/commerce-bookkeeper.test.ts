@@ -678,6 +678,30 @@ describe('Tandem Commerce Bookkeeper adapter', () => {
     ).toBe('Existing cohort');
   });
 
+  it('carries the actual credit card surcharge and rejects an impossible one', () => {
+    expect(prepareCommerceBookkeeperEnvelope(signed()).order.surchargeCents).toBe(0);
+    const surcharged = payload();
+    (surcharged.order as Record<string, unknown>).surchargeCents = 897;
+    expect(
+      prepareCommerceBookkeeperEnvelope(signed(surcharged)).order.surchargeCents,
+    ).toBe(897);
+    for (const bad of [-1, 1.5, 'x', Number(surcharged.order.amountCents) + 1]) {
+      const invalid = payload();
+      (invalid.order as Record<string, unknown>).surchargeCents = bad;
+      expect(() => prepareCommerceBookkeeperEnvelope(signed(invalid))).toThrow(
+        /order.surchargeCents invalid/,
+      );
+    }
+    const source = readFileSync(
+      new URL('../tools/contador/process-commerce-payment.cjs', import.meta.url),
+      'utf8',
+    );
+    expect(source).toContain("const SURCHARGE_HEADER = 'Surcharge'");
+    expect(source).toContain("'Payment Log!Q1'");
+    expect(source).toContain('payment log surcharge readback mismatch');
+    expect(source).toContain('credit card surcharge)');
+  });
+
   it('writes and verifies explicit Adyen provenance without renaming the legacy ID header', () => {
     const source = readFileSync(
       new URL(
